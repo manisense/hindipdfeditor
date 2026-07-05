@@ -110,6 +110,31 @@ This is the actual point of Phase 0, and the reason it gated everything else. Bo
 - Exported; pulled the resulting PDF off-device and confirmed with `pdftoppm` that all 3 pages have the correct background and the correct edit text, each in the position it was added.
 - Full suite clean: `tsc --noEmit`, `eslint .`, `jest` (67/67 tests, 5 suites) - no test changes were needed since the underlying store/export logic didn't change.
 
+## [Phase 3] — Masking / replace-existing-text
+
+### Added — `coordinateMath.ts` size conversions
+- `dpSizeToPt`, `ptSizeToDp`, `ptSizeToImagePx`: convert a drawn selection's *size* (width/height, no origin) between dp/pt/px, mirroring the existing position converters but kept as separately-named functions rather than reused at call sites, since a size and a position share the same scale factor but AGENTS.md flags position-vs-size unit confusion as this codebase's likeliest bug class. 6 new unit tests, including an exact-inverse round-trip check between `dpSizeToPt`/`ptSizeToDp`.
+
+### Added — native `sampleAverageColor` (`pdf-page-image` module)
+- New `AsyncFunction` on the existing in-house `pdf-page-image` Expo Module: decodes a page's already-rasterized background JPEG and averages the pixel colors in a band around (but excluding) a given rectangle, returning a `#rrggbb` hex string. Used to pick a mask fill color that matches the real page background instead of a hardcoded white/gray.
+- Fails closed to `#ffffff` in the degenerate case where the rectangle leaves no surrounding band to sample (e.g. it fills the whole page), rather than dividing by zero or crashing. Decode failures throw a new `ColorSampleFailedException`, caught by the JS caller (see below).
+- Wrapped by `pdfToImages.ts`'s `sampleAverageColor`, taking the same background-image-px coordinate space as `PageState.imagePxWidth/Height` (converted from a `MaskEdit`'s stored PDF points via `ptToImagePx`/`ptSizeToImagePx`).
+
+### Added — Phase 3 UI
+- `src/components/MaskOverlay.tsx`: renders committed `MaskEdit`s as filled rectangles, and — in a dedicated "replace mode" — lets the user drag out a new rectangle via `PanResponder` over existing burned-in text. Reports the drawn rectangle in PDF points on release (filtering out drags shorter than a 12dp `minDragDp` threshold, so accidental taps don't trigger a mask); doesn't itself touch `editStore` or the native color-sampling call, keeping it a pure drawing/reporting component.
+- `App.tsx`: added a "Switch to replace text mode" toggle button (chosen over the spec's alternative long-press trigger — see spec Section 10 for why) and `handleMaskDrawn`, which converts the drawn rectangle to background-image px, calls `sampleAverageColor` (falling back to `#ffffff` on any error), commits a `MaskEdit` via `addMaskEdit`, then immediately commits and auto-focuses a fresh, empty `TextEdit` in the same spot for the replacement text.
+
+### Notes
+- `htmlCompositor.ts` needed **no changes** for this phase — its `maskLayerHtml`/`pageHtml` (built ahead of schedule during Phase 1) already rendered masks before text at the same coordinate.
+- New native function required a real (non-incremental-stale) `:pdf-page-image:compileDebugKotlin` + `:app:assembleDebug` rebuild and device reinstall, not just a JS bundle reload, before it could be exercised on-device.
+
+### Verified — Phase 3 passed on a real physical Android device (spec Section 10)
+- Opened the canonical `fixtures/devanagari-fixture.pdf` (same fixture used for every Phase 0/1/3 pass, per AGENTS.md); enabled replace mode; dragged a rectangle over the fixture's first burned-in word ("धर्म").
+- Confirmed the mask filled with a color visually indistinguishable from the page's white background (real color sampling, not the `#ffffff` fallback), and that a text input auto-focused in the same spot.
+- Typed a replacement via Gboard's Hindi transliteration keyboard; the live preview showed it rendered on top of the mask with correct reph shaping.
+- Exported; pulled the resulting PDF off-device and rendered it with `pdftoppm`: the exported page matches the live preview exactly in that region — masked-and-replaced text, not merely text overlaid on top of the original.
+- Full suite clean after all changes: `tsc --noEmit`, `eslint .`, `jest` (72/72 tests, 5 suites).
+
 <!--
 Template for each future phase, add above this line as phases complete:
 
