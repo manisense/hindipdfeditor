@@ -37,6 +37,12 @@ All notable changes to this project are documented here, grouped by phase (see `
 - **Fixed a pre-existing gap found while adding the first test file in this repo:** `@types/jest` was installed but never actually loaded by `tsc` (`describe`/`it`/`expect` resolved as unknown globals despite the package being present) — root `tsconfig.json` had no `types` array, and this project's `moduleResolution: "bundler"` setup wasn't implicitly picking up ambient `@types/*` packages the way a default `node`-style resolution would. Added `"types": ["jest"]` to `tsconfig.json`. Confirmed fix with a full-project `tsc --noEmit`, `eslint .`, and `jest` run, all clean.
 - This work does not touch anything requiring a device and does not start Phase 1 — it's pure-function groundwork the Phase 1 checklist items (`EditableTextOverlay.tsx`, `htmlCompositor.ts`) will import once Phase 0's device-verification gate (see above) is cleared.
 
+### Added — `editStore.ts` (zustand, spec Section 7/8 data model + store)
+- Implemented `DocumentState`/`PageState`/`TextEdit`/`MaskEdit` exactly per spec Section 7, plus a `zustand` store (`createEditStore()` factory + `useEditStore` app-wide singleton) with `loadDocument`, `closeDocument`, `addTextEdit`, `addMaskEdit`, `updateTextEdit`, `updateMaskEdit`, `removeEdit`, `setLegacyFontWarnings`.
+- Id generation is injectable (defaults to `expo-crypto`'s `randomUUID`), which matters in practice, not just in theory: `expo-crypto` is a native module and its jest auto-mock returns `undefined` from `randomUUID()` with no error, which would have made every edit collide on the same `id`. Making it injectable let the test suite catch this in the first run instead of shipping a store where `removeEdit` silently deletes every edit on a page.
+- 15 unit tests: load/close, add/update/remove for both edit types, out-of-range-page and wrong-edit-type error paths, and that two `createEditStore()` instances never share state (so tests can't leak into each other, and so this store could later be scoped per-document instead of being a single app-wide singleton without a rewrite).
+- Like `coordinateMath.ts` above, this is pure-logic groundwork with no device dependency — it does not start Phase 1's UI work (`EditableTextOverlay.tsx`, `PdfPageViewer.tsx`) and remains unused by any screen until Phase 0's device-verification gate clears.
+
 <!--
 Template for each future phase, add above this line as phases complete:
 
