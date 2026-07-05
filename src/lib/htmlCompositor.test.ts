@@ -10,6 +10,7 @@ function makePage(overrides: Partial<PageState> = {}): PageState {
     imagePxWidth: 1190,
     imagePxHeight: 1684,
     edits: [],
+    ocrLines: [],
     ...overrides,
   };
 }
@@ -78,6 +79,22 @@ describe('pageHtml', () => {
     expect(html).toContain('top:40px');
     expect(html).toContain('font-size:28px');
     expect(html).toContain('धर्म');
+  });
+
+  it('renders an unconstrained text edit with white-space:pre and no width', () => {
+    const html = pageHtml(makePage({ edits: [makeTextEdit()] }), 'data:image/jpeg;base64,Zm9udA==');
+    expect(html).toContain('white-space:pre');
+    expect(html).not.toContain('pre-wrap');
+  });
+
+  it('renders a width-constrained text edit as a wrapping fixed-width box', () => {
+    // scale = 2 -> widthPt 120 -> 240px
+    const html = pageHtml(
+      makePage({ edits: [makeTextEdit({ widthPt: 120 })] }),
+      'data:image/jpeg;base64,Zm9udA==',
+    );
+    expect(html).toContain('width:240px');
+    expect(html).toContain('white-space:pre-wrap');
   });
 
   it('escapes a text edit body before interpolating it', () => {

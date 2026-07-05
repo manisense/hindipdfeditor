@@ -38,6 +38,7 @@ function makeDocument(overrides: Partial<DocumentState> = {}): DocumentState {
         imagePxWidth: 800,
         imagePxHeight: 1200,
         edits: [],
+        ocrLines: [],
       },
     ],
     legacyFontWarnings: [],

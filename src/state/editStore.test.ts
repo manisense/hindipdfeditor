@@ -12,6 +12,7 @@ function makeDocument(pageCount = 2): DocumentState {
       imagePxWidth: 1190,
       imagePxHeight: 1684,
       edits: [],
+      ocrLines: [],
     })),
     legacyFontWarnings: [],
   };
@@ -254,6 +255,23 @@ describe('editStore', () => {
   it('setLegacyFontWarnings throws if no document is loaded', () => {
     const store = makeStore();
     expect(() => store.getState().setLegacyFontWarnings([])).toThrow();
+  });
+
+  it('setOcrLines replaces only the targeted page ocrLines', () => {
+    const store = makeStore();
+    store.getState().loadDocument(makeDocument(2));
+    const line = { id: 'ocr-1', text: 'छुट्टी', xPt: 10, yPt: 20, wPt: 100, hPt: 12 };
+
+    store.getState().setOcrLines(1, [line]);
+
+    expect(store.getState().document!.pages[0].ocrLines).toEqual([]);
+    expect(store.getState().document!.pages[1].ocrLines).toEqual([line]);
+  });
+
+  it('setOcrLines throws for an out-of-range page', () => {
+    const store = makeStore();
+    store.getState().loadDocument(makeDocument(1));
+    expect(() => store.getState().setOcrLines(5, [])).toThrow();
   });
 
   it('two store instances from createEditStore() are fully independent', () => {

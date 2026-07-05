@@ -23,6 +23,14 @@ export type TextEdit = {
   /** Hex color, e.g. `#111111`. */
   color: string;
   fontFamily: 'NotoSansDevanagari' | 'NotoSerifDevanagari' | string;
+  /**
+   * Optional fixed width, in PDF points. When set, both the live `TextInput` and the exported
+   * HTML span render at exactly this width and wrap within it, so live view and export break
+   * lines at the same point (OCR-assisted replacements set this to the detected line's width).
+   * When absent, the text renders unwrapped on a single line (plus any explicit newlines) -
+   * the original Phase 1 behavior for freely-placed new text.
+   */
+  widthPt?: number;
 };
 
 export type MaskEdit = {
@@ -44,6 +52,30 @@ export type MaskEdit = {
 
 export type Edit = TextEdit | MaskEdit;
 
+/**
+ * A single line of text detected by on-device OCR (`text-recognition` module) on a page's
+ * background image, converted to PDF points immediately on detection (via
+ * `coordinateMath.ts`'s `imagePxToPt`/`imagePxSizeToPt`) so it lives in the same unit as
+ * every other page-content field. Not a user `Edit` - nothing is exported until the user taps
+ * a detected line and turns it into a real `MaskEdit`/`TextEdit` pair (see `App.tsx`'s
+ * `handleTap`/`handleMaskDrawn`). Purely an assistive, best-effort hint for where existing text
+ * is and what it says - OCR on a real scanned document is never assumed correct (spec Section 9's
+ * "never assume, warn/fail-safe instead" posture applies here too), so this only ever pre-fills
+ * an editable field the user can freely correct before committing anything.
+ */
+export type OcrLine = {
+  id: string;
+  text: string;
+  /** Top-left X origin, page-relative, in PDF points. */
+  xPt: number;
+  /** Top-left Y origin, page-relative, in PDF points. */
+  yPt: number;
+  /** Width, in PDF points. */
+  wPt: number;
+  /** Height, in PDF points. */
+  hPt: number;
+};
+
 export type PageState = {
   pageIndex: number;
   /** Page width, in PDF points. */
@@ -57,6 +89,9 @@ export type PageState = {
   /** Rendered background image height, in px. */
   imagePxHeight: number;
   edits: Edit[];
+  /** OCR-detected text lines on this page, populated lazily (see `App.tsx`) - empty until OCR
+   * has actually run for this page, not necessarily empty because the page has no text. */
+  ocrLines: OcrLine[];
 };
 
 export type DocumentState = {
@@ -89,6 +124,9 @@ export type EditStoreState = {
   removeEdit: (page: number, id: string) => void;
   /** Replaces `DocumentState.legacyFontWarnings`, e.g. after `legacyFontDetector.ts` runs on load. */
   setLegacyFontWarnings: (warnings: DocumentState['legacyFontWarnings']) => void;
+  /** Replaces a page's `ocrLines`, e.g. after `text-recognition`'s on-device OCR finishes for
+   * that page. Throws if `page` is out of range, matching the other page-scoped actions. */
+  setOcrLines: (page: number, lines: OcrLine[]) => void;
 };
 
 function requirePage(document: DocumentState | null, page: number): PageState {
@@ -173,6 +211,17 @@ export function createEditStore(generateId: () => string = Crypto.randomUUID) {
         throw new Error('editStore: cannot set legacy font warnings before a document is loaded');
       }
       set({ document: { ...document, legacyFontWarnings: warnings } });
+    },
+
+    setOcrLines: (page, lines) => {
+      const document = get().document;
+      requirePage(document, page);
+      set({
+        document: {
+          ...document!,
+          pages: document!.pages.map((p, i) => (i === page ? { ...p, ocrLines: lines } : p)),
+        },
+      });
     },
   }));
 }
