@@ -13,18 +13,24 @@ import { getPageCount, renderPage } from './src/lib/pdfToImages';
 import { useEditStore, type PageState, type TextEdit } from './src/state/editStore';
 
 /**
- * Phase 1 MVP editor (spec Section 10): pick an existing PDF, tap the page to add Hindi text
- * at that spot, then export. Replaces the Phase 0 spike entirely, per that screen's own
- * comment and AGENTS.md's phased build process - Phase 0 passed on a real device (see spec
- * Section 10/CHANGELOG), so this is the first screen actually built on that verified ground.
+ * Phase 1+2 editor (spec Section 10): pick an existing PDF, browse its pages, tap a page to
+ * add Hindi text at that spot, then export every page in one PDF. Replaces the Phase 0 spike
+ * entirely, per that screen's own comment and AGENTS.md's phased build process - Phase 0
+ * passed on a real device (see spec Section 10/CHANGELOG), so this is the first screen
+ * actually built on that verified ground.
  *
  * Deliberately does NOT use `react-native-pdf` for this screen, unlike Section 10's Phase 1
- * checklist wording. Section 6's own module spec defines `PdfPageViewer.tsx` as "PNG
- * background + live overlays," not a live `react-native-pdf` render - the whole Render & Print
+ * checklist wording. Section 6's own module spec defines `PdfPageViewer.tsx` as "background
+ * image + live overlays," not a live `react-native-pdf` render - the whole Render & Print
  * architecture depends on the edit canvas being the exact same rasterized image the export
- * pipeline uses, not a second, independent PDF renderer. `expo-document-picker` covers "open
- * from device storage"; `react-native-pdf` stays installed for Phase 2's multi-page browsing,
- * where its scrolling/navigation is the actual point.
+ * pipeline uses, not a second, independent PDF renderer that could disagree with it
+ * pixel-for-pixel. `expo-document-picker` covers "open from device storage"; `react-native-pdf`
+ * stays installed even though this screen doesn't use its rendering.
+ *
+ * All pages are rasterized up front at open time, not lazily per navigation - per AGENTS.md's
+ * performance guidance, don't pre-optimize for large documents until a real device actually
+ * shows a problem; `DocumentState.pages` was already a dense array sized to the whole document
+ * (spec Section 7), so eager rasterization needed no data-model change.
  */
 
 // Default new text size, in PDF points - a reasonable starting size for a body-text edit;
@@ -48,6 +54,7 @@ export default function App() {
   });
   const [status, setStatus] = useState<Status>({ state: 'idle' });
   const [focusedEditId, setFocusedEditId] = useState<string | null>(null);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
   const document = useEditStore((s) => s.document);
   const loadDocument = useEditStore((s) => s.loadDocument);
@@ -66,21 +73,26 @@ export default function App() {
       const sourceUri = result.assets[0].uri;
 
       const pageCount = await getPageCount(sourceUri);
-      const image = await renderPage(sourceUri, 0, RASTER_SCALE);
-      const page: PageState = {
-        pageIndex: 0,
-        // The renderer computed pxWidth/pxHeight as round(widthPt * scale) - dividing back by
-        // the same scale we passed recovers the page's real point-dimensions without a second,
-        // independent read of the source file (see exportPdf.ts's docstring for why this
-        // single-source-of-truth matters).
-        widthPt: image.pxWidth / RASTER_SCALE,
-        heightPt: image.pxHeight / RASTER_SCALE,
-        backgroundImageUri: image.uri,
-        imagePxWidth: image.pxWidth,
-        imagePxHeight: image.pxHeight,
-        edits: [],
-      };
-      loadDocument({ sourceUri, pageCount, pages: [page], legacyFontWarnings: [] });
+      const pages: PageState[] = [];
+      for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+        const image = await renderPage(sourceUri, pageIndex, RASTER_SCALE);
+        pages.push({
+          pageIndex,
+          // The renderer computed pxWidth/pxHeight as round(widthPt * scale) - dividing back by
+          // the same scale we passed recovers the page's real point-dimensions without a second,
+          // independent read of the source file (see exportPdf.ts's docstring for why this
+          // single-source-of-truth matters).
+          widthPt: image.pxWidth / RASTER_SCALE,
+          heightPt: image.pxHeight / RASTER_SCALE,
+          backgroundImageUri: image.uri,
+          imagePxWidth: image.pxWidth,
+          imagePxHeight: image.pxHeight,
+          edits: [],
+        });
+      }
+      loadDocument({ sourceUri, pageCount, pages, legacyFontWarnings: [] });
+      setCurrentPageIndex(0);
+      setFocusedEditId(null);
       setStatus({ state: 'idle' });
     } catch (error) {
       setStatus({
@@ -90,8 +102,14 @@ export default function App() {
     }
   };
 
+  const goToPage = (index: number) => {
+    if (!document || index < 0 || index >= document.pages.length) return;
+    setCurrentPageIndex(index);
+    setFocusedEditId(null);
+  };
+
   const handleTap = (xPt: number, yPt: number) => {
-    const edit = addTextEdit(0, {
+    const edit = addTextEdit(currentPageIndex, {
       xPt,
       yPt,
       fontSizePt: DEFAULT_FONT_SIZE_PT,
@@ -104,7 +122,7 @@ export default function App() {
 
   const handleBlur = (id: string, text: string) => {
     if (text.trim().length === 0) {
-      removeEdit(0, id);
+      removeEdit(currentPageIndex, id);
     }
     if (focusedEditId === id) {
       setFocusedEditId(null);
@@ -144,7 +162,7 @@ export default function App() {
     );
   }
 
-  const page = document?.pages[0];
+  const page = document?.pages[currentPageIndex];
 
   return (
     <View style={styles.container}>
@@ -163,10 +181,31 @@ export default function App() {
           <Text style={[styles.spacerTop, styles.error]}>Failed: {status.message}</Text>
         )}
 
-        {page && (
+        {document && page && (
           <View style={styles.spacerTop}>
+            {document.pages.length > 1 && (
+              <View style={styles.pagerRow}>
+                <Button
+                  title="◀ Prev"
+                  onPress={() => goToPage(currentPageIndex - 1)}
+                  disabled={currentPageIndex === 0}
+                />
+                <Text style={styles.pagerLabel}>
+                  Page {currentPageIndex + 1} of {document.pages.length}
+                </Text>
+                <Button
+                  title="Next ▶"
+                  onPress={() => goToPage(currentPageIndex + 1)}
+                  disabled={currentPageIndex === document.pages.length - 1}
+                />
+              </View>
+            )}
+
             <Text style={styles.hint}>Tap anywhere on the page to add Hindi text.</Text>
             <PdfPageViewer
+              // Remounts the viewer (and drops any transient gesture state) on page change,
+              // instead of the same instance silently rendering a different page's image.
+              key={page.pageIndex}
               page={page}
               onTap={handleTap}
               renderOverlays={(viewWidthDp) =>
@@ -179,14 +218,18 @@ export default function App() {
                       viewWidthDp={viewWidthDp}
                       pageWidthPt={page.widthPt}
                       autoFocus={edit.id === focusedEditId}
-                      onChangeText={(text) => updateTextEdit(0, edit.id, { text })}
+                      onChangeText={(text) => updateTextEdit(currentPageIndex, edit.id, { text })}
                       onBlur={() => handleBlur(edit.id, edit.text)}
                     />
                   ))
               }
             />
 
-            <Button title="Save" onPress={saveAndExport} disabled={status.state === 'saving'} />
+            <Button
+              title="Save (exports all pages)"
+              onPress={saveAndExport}
+              disabled={status.state === 'saving'}
+            />
             {status.state === 'saving' && <ActivityIndicator style={styles.spacerTop} />}
             {status.state === 'saved' && (
               <View style={styles.spacerTop}>
@@ -219,6 +262,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
     marginBottom: 8,
+  },
+  pagerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  pagerLabel: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   spacerTop: {
     marginTop: 16,

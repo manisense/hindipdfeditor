@@ -40,3 +40,7 @@ pdftoppm -png -r 150 -f 1 -l 1 devanagari-fixture.pdf preview  # then look at pr
 ## Verified July 2026
 
 Extracted text round-trips correctly (real Unicode Devanagari, not garbled) and a visual render at 150dpi confirms every conjunct listed above renders as a single joined glyph, reph sits correctly above the following consonant, and matras attach in the correct position — no disconnected pieces. This is a positive signal for the architecture's core HarfBuzz assumption, generated via desktop Chrome rather than Android's WebView — it does not replace the actual Phase 0 spike on a real Android build (spec Section 10), which still must be run and recorded separately.
+
+## `multipage-fixture.pdf`
+
+A separate, minimal 3-page fixture (`multipage-fixture.html` → `multipage-fixture.pdf`, same generation process as above) used only for Phase 2's page-navigation/persistence/multi-page-export verification. Each page has distinct identifying text ("पहला पृष्ठ" / "दूसरा पृष्ठ" / "तीसरा पृष्ठ") so a navigation bug (wrong page rendered, edits leaking across pages) is visually obvious. Kept separate from `devanagari-fixture.pdf` rather than making that one multi-page, since AGENTS.md requires the *same* fixture across every Phase 0/1/3 verification pass for comparable results — this fixture isn't part of that set.
