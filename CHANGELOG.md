@@ -190,6 +190,36 @@ This is the actual point of Phase 0, and the reason it gated everything else. Bo
 - **Verified on-device**: generated a synthetic off-white "aged paper" test PDF on the fly (`@cantoo/pdf-lib`, solid off-white background + burned-in text; not committed to the repo - the canonical `devanagari-fixture.pdf` remains the one reused fixture per AGENTS.md), masked over its text, and confirmed in both the live preview and the pulled exported PDF (`pdftoppm` + a pixel-level scan for color-value jumps along a line through the masked region) that the fill is indistinguishable from the surrounding background - zero detected jumps, not just "visually close."
 - Native rebuild required (`:pdf-page-image:compileDebugKotlin` + `:app:assembleDebug`), same as the original Phase 3 native addition.
 
+## [Phase 4.5] — OCR-assisted tap-to-edit (inline editing for scanned documents)
+
+Driven by real use on a scanned bilingual form: Phase 3's drag-to-mask works but feels like patching, not editing. This phase makes a tap on existing scanned text open a pre-filled, editable input in its exact place — on-device OCR supplies the rectangle and starting text the user previously provided by hand. Still Plan A end to end: a tap produces the same `MaskEdit` + `TextEdit` pair as Phase 3, and nothing new ever *draws* Devanagari (ML Kit only reads pixels).
+
+### Added
+
+- `modules/text-recognition`: second in-house Expo Module (same pattern/rationale as `pdf-page-image`, ADR 0004) wrapping Google ML Kit Text Recognition v2 with the **bundled** Latin + Devanagari models (`com.google.mlkit:text-recognition{,-devanagari}:16.0.1`, versions verified current against ML Kit's release notes) — OCR is fully offline from first launch, free, and never sends the document off-device. `recognizeText(uri, script)` returns per-line text + boxes in the input image's own px space; cached long-lived recognizer clients per script.
+- `src/lib/mergeOcrLines.ts` (pure, 12 unit tests): merges the concurrent Devanagari + Latin passes — Hindi-bearing lines always win their region, the dedicated Latin model wins pure-Latin regions, overlap = intersection > 0.5 of the smaller box; output in reading order.
+- `src/lib/ocr.ts`: the only file importing the native module (same isolation rule as `pdfToImages.ts`); runs both passes concurrently, merges, converts to PDF points, returns `OcrLine[]`.
+- `src/lib/coordinateMath.ts`: `imagePxToPt`/`imagePxSizeToPt` inverse conversions (unit-tested round-trip against the existing forward functions).
+- `src/state/editStore.ts`: `OcrLine` type, `PageState.ocrLines`, `setOcrLines` action (+ tests).
+- `src/lib/ocrHitTest.ts` (pure, unit-tested): `findOcrLineAt` — smallest containing box wins, 3pt finger tolerance; kept in its own pt-only module (vs `mergeOcrLines`' px-only) per AGENTS.md's one-unit-system-per-file concern.
+- `src/components/OcrHighlightLayer.tsx`: purely visual tappable-text markers (`pointerEvents="none"`); the tap itself stays on `PdfPageViewer`'s single existing tap pipeline.
+- `App.tsx`: lazy per-page OCR trigger (event-driven on document open / page navigation — not an effect; skipped on legacy-font-blocked pages; failure fails open to manual editing but is surfaced in the hint text), and tap-on-detected-line → consume line → shared `maskAndReplaceRegion` → auto-focused input pre-filled with the OCR text at `0.75 ×` box height.
+
+### Changed
+
+- `TextEdit` gained optional `widthPt`; `EditableTextOverlay.tsx` and `htmlCompositor.ts` both honor it (fixed-width wrapping box vs. the original unwrapped single line), so the live `TextInput` and the exported HTML span break lines at the same point. OCR replacements set it to `1.25 ×` the detected line width.
+- `handleMaskDrawn`'s mask+sample+edit body extracted into `maskAndReplaceRegion`, now shared by the manual Phase 3 path and the OCR path (no behavior change for manual masks).
+
+### Fixed (found on-device during verification, not by reading code)
+
+- Live pre-filled text wrapped at a different point than export would — the `widthPt` mechanism above.
+- ML Kit's Devanagari line boxes hug the shirorekha band, so the mask cut through tall upper matras (ॉ) leaving a sliver of original ink above the mask. Fixed with asymmetric upward-only padding (`OCR_MASK_PAD_TOP_RATIO`, 0.35 × line height); symmetric padding was tried first and visibly swallowed the top of the next line on the real form.
+
+### Verified end-to-end on a real device
+
+- Real scanned bilingual government leave form (2 pages, Hindi + English, no text layer): highlights on both scripts; tapped the Hindi title "छुट्टी की अर्जी का फॉर्म" → original scanned ink masked seamlessly, pre-filled editable input in its exact place with correct live shaping; appended "2026" via keyboard; exported; pulled the PDF — parse-back check passed (2 pages, 612×792, 446KB) and `pdftoppm` shows the edited title cleanly shaped in place with no leftover slivers.
+- Native rebuild required (new module: `:text-recognition:assembleDebug` + `:app:assembleDebug`, then reinstall); `npx expo-modules-autolinking resolve -p android` confirmed the module resolves. All 100 Jest tests, `tsc --noEmit`, `eslint .`, and `prettier --check` pass.
+
 <!--
 Template for each future phase, add above this line as phases complete:
 
