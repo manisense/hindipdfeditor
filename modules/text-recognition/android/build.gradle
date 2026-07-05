@@ -1,0 +1,27 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.textrecognition'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.textrecognition"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // Bundled ML Kit models (com.google.mlkit:*), NOT the unbundled play-services variants:
+  // the models ship inside the APK (~2MB each), so OCR works fully offline from first use
+  // with no Google Play Services model download - matching this app's local-first design.
+  // Versions verified current against ML Kit's release notes, July 2026.
+  implementation 'com.google.mlkit:text-recognition:16.0.1'
+  implementation 'com.google.mlkit:text-recognition-devanagari:16.0.1'
+}
