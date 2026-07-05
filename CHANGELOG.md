@@ -89,6 +89,27 @@ This is the actual point of Phase 0, and the reason it gated everything else. Bo
 - Pulled the exported PDF off-device (`adb exec-out run-as <pkg> cat <cache-path>`) and rendered it with `pdftoppm` at both 150dpi and 300dpi: the background page (full quality, no visible JPEG artifacts even on the fixture's smallest annotation text under magnification) and the "धर्म" overlay both render correctly, with the overlay positioned exactly where it was tapped and shaped correctly.
 - Full suite clean after all changes: `tsc --noEmit`, `eslint .`, `jest` (67/67 tests, 5 suites).
 
+## [Phase 2] — Multi-page support
+
+### Added
+- `fixtures/multipage-fixture.html`/`.pdf`: a new, separate 3-page test fixture, each page carrying distinct identifying text, used only for this phase's page-navigation/persistence/export verification. Kept separate from the canonical `devanagari-fixture.pdf` since AGENTS.md requires that one to stay fixed across every Phase 0/1/3 pass.
+
+### Changed — `App.tsx`
+- `openPdf` now rasterizes every page of the document up front (looping `getPageCount()`'s result through `renderPage`), not just page 0, and stores them all in `DocumentState.pages`.
+- Added `currentPageIndex` state, a `goToPage` handler, and Prev/Next buttons (shown only when the document has more than one page) with a "Page X of N" label.
+- All edit actions (`handleTap`, `handleBlur`, `updateTextEdit`) now target `currentPageIndex` instead of a hardcoded `0`.
+- `PdfPageViewer` is now keyed on `page.pageIndex` so it remounts cleanly on page change instead of a single instance silently switching the image it displays underneath any transient gesture state.
+
+### Notes
+- `editStore.ts` and `exportPdf.ts`/`htmlCompositor.ts` needed **no changes** for this phase - both already modeled `DocumentState.pages` as a full per-page array and already looped over every page at export time (built ahead of order during Phase 1, since neither needed a device to write or test). The only real gap was `App.tsx` only ever using page 0.
+- **Scope clarification surfaced this phase, not a code change**: confirmed with the user that Phase 1/2's "tap to add text" is intentionally an *add new text* feature, not an *edit existing text* feature - it cannot change what's already printed on a page, since the Render & Print architecture treats each page as a flattened image. Replacing existing text is Phase 3 (mask + overlay), not built yet. Recorded in spec Section 10/Status to avoid re-litigating this later.
+
+### Verified — Phase 2 passed on a real physical Android device (spec Section 10)
+- Opened `fixtures/multipage-fixture.pdf` (3 pages); all 3 rasterized correctly at full 2x scale.
+- Added a distinct text edit on each page; navigated 1→2→3→1 and confirmed each page showed exactly its own edit, with no leakage from or loss between pages.
+- Exported; pulled the resulting PDF off-device and confirmed with `pdftoppm` that all 3 pages have the correct background and the correct edit text, each in the position it was added.
+- Full suite clean: `tsc --noEmit`, `eslint .`, `jest` (67/67 tests, 5 suites) - no test changes were needed since the underlying store/export logic didn't change.
+
 <!--
 Template for each future phase, add above this line as phases complete:
 
