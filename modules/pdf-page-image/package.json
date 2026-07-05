@@ -1,0 +1,9 @@
+{
+  "name": "pdf-page-image",
+  "version": "0.1.0",
+  "description": "In-house Expo Module wrapping android.graphics.pdf.PdfRenderer, replacing the third-party react-native-pdf-page-image package (see hindi-pdf-editor-spec.md Section 4.2 and docs/decisions/0004).",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "license": "UNLICENSED"
+}
