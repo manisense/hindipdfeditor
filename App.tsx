@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 // expo-file-system's top-level `readAsStringAsync` is a stub that unconditionally throws in
@@ -12,13 +12,22 @@ import { StatusBar } from 'expo-status-bar';
 import { EditableTextOverlay } from './src/components/EditableTextOverlay';
 import { LegacyFontWarning } from './src/components/LegacyFontWarning';
 import { MaskOverlay, type DrawnMaskRect } from './src/components/MaskOverlay';
+import { OcrHighlightLayer } from './src/components/OcrHighlightLayer';
 import { PdfPageViewer } from './src/components/PdfPageViewer';
 import { ptSizeToImagePx, ptToImagePx } from './src/lib/coordinateMath';
 import { exportPdf } from './src/lib/exportPdf';
 import { getFontBase64 } from './src/lib/fontAsset';
 import { detectLegacyFonts } from './src/lib/legacyFontDetector';
+import { detectTextLines } from './src/lib/ocr';
+import { findOcrLineAt } from './src/lib/ocrHitTest';
 import { getPageCount, renderPage, sampleAverageColor } from './src/lib/pdfToImages';
-import { useEditStore, type MaskEdit, type PageState, type TextEdit } from './src/state/editStore';
+import {
+  useEditStore,
+  type DocumentState,
+  type MaskEdit,
+  type PageState,
+  type TextEdit,
+} from './src/state/editStore';
 
 /** Sentinel font name used when detection itself fails - see `detectLegacyFontWarnings` below. */
 const UNKNOWN_ENCODING_FONT_NAME = 'unknown (font inspection failed)';
@@ -51,14 +60,16 @@ async function detectLegacyFontWarnings(
 }
 
 /**
- * Phase 1+2+3+4 editor (spec Section 10): pick an existing PDF, browse its pages, tap a page
- * to add Hindi text at that spot or drag out a mask to replace existing text, then export
- * every page in one PDF. Pages whose embedded font matches a known pre-Unicode legacy pattern
- * (or whose font couldn't be inspected at all) are detected on open and have both edit paths
- * disabled - see `legacyFontDetector.ts`/`LegacyFontWarning.tsx` and spec Section 9. Replaces
- * the Phase 0 spike entirely, per that screen's own comment and AGENTS.md's phased build
- * process - Phase 0 passed on a real device (see spec Section 10/CHANGELOG), so this is the
- * first screen actually built on that verified ground.
+ * Phase 1+2+3+4 editor plus OCR-assisted tap-to-edit (spec Section 10): pick an existing PDF,
+ * browse its pages, tap detected existing text to mask-and-edit it in place (on-device ML Kit
+ * OCR via `ocr.ts` finds where text is and pre-fills what it says), tap empty space to add
+ * new Hindi text, or drag out a manual mask in replace mode as the fallback for anything OCR
+ * misses - then export every page in one PDF. Pages whose embedded font matches a known
+ * pre-Unicode legacy pattern (or whose font couldn't be inspected at all) are detected on open
+ * and have all edit paths disabled - see `legacyFontDetector.ts`/`LegacyFontWarning.tsx` and
+ * spec Section 9. Replaces the Phase 0 spike entirely, per that screen's own comment and
+ * AGENTS.md's phased build process - Phase 0 passed on a real device (see spec Section
+ * 10/CHANGELOG), so this is the first screen actually built on that verified ground.
  *
  * Deliberately does NOT use `react-native-pdf` for this screen, unlike Section 10's Phase 1
  * checklist wording. Section 6's own module spec defines `PdfPageViewer.tsx` as "background
@@ -91,6 +102,29 @@ const MASK_SAMPLE_MARGIN_PX = 16;
 // replacement TextEdit is still anchored at the un-expanded drag point, so this only grows mask
 // coverage, not the text's apparent position.
 const MASK_EXPAND_PT = 3;
+// Replacement font size as a fraction of an OCR-detected line's box height. The box spans
+// ascender to descender (for Devanagari: shirorekha-topping matras down to below-base
+// conjunct forms), while a font's nominal size sits a bit smaller than that full span - 0.75
+// visually matches typical scanned body text without the replacement overflowing the mask.
+const OCR_FONT_SIZE_RATIO = 0.75;
+// Floor for the OCR-derived font size, in PDF points - below this, a detection-box hiccup
+// (e.g. a squashed box on a noisy scan) would produce unreadably tiny replacement text.
+const MIN_OCR_FONT_SIZE_PT = 6;
+// Extra mask padding ABOVE an OCR-detected line, as a fraction of the line's height, on top
+// of the flat MASK_EXPAND_PT. ML Kit's Devanagari line boxes hug the shirorekha band and cut
+// through tall upper matras (ॉ, ें) - confirmed on-device with the scanned leave form, where a
+// matra sliver stayed visible above the mask. Deliberately asymmetric: padding below at the
+// same ratio visibly swallowed the top of the next line on the same form (its lines sit only
+// a few points apart), and ML Kit's boxes already include descenders, so below gets only the
+// flat MASK_EXPAND_PT.
+const OCR_MASK_PAD_TOP_RATIO = 0.35;
+// Replacement text can legitimately run a little longer than the original scanned line (OCR
+// replacements wrap at TextEdit.widthPt - see that field's docstring), so the editable width
+// gets this much slack beyond the detected box before wrapping kicks in.
+const OCR_TEXT_WIDTH_SLACK_RATIO = 1.25;
+
+/** Per-page on-device OCR progress, keyed by page index - absent means not yet attempted. */
+type OcrStatusByPage = Record<number, 'running' | 'done' | 'failed'>;
 
 type Status =
   | { state: 'idle' }
@@ -112,12 +146,21 @@ export default function App() {
   // PdfPageViewer's own tap-to-add-text on the exact same gesture.
   const [replaceMode, setReplaceMode] = useState(false);
 
+  // OCR-assisted tap-to-edit: per-page detection progress (drives the hint text). Reset
+  // whenever a new document is opened (see `openPdf`), since page indices only mean anything
+  // within one document.
+  const [ocrStatusByPage, setOcrStatusByPage] = useState<OcrStatusByPage>({});
+  // Pages OCR has already been kicked off for, so navigating back and forth doesn't re-run
+  // detection. A ref (not state): this is bookkeeping for the trigger, never rendered.
+  const ocrAttemptedPagesRef = useRef(new Set<number>());
+
   const document = useEditStore((s) => s.document);
   const loadDocument = useEditStore((s) => s.loadDocument);
   const addTextEdit = useEditStore((s) => s.addTextEdit);
   const addMaskEdit = useEditStore((s) => s.addMaskEdit);
   const updateTextEdit = useEditStore((s) => s.updateTextEdit);
   const removeEdit = useEditStore((s) => s.removeEdit);
+  const setOcrLines = useEditStore((s) => s.setOcrLines);
 
   const openPdf = async () => {
     setStatus({ state: 'opening' });
@@ -145,12 +188,17 @@ export default function App() {
           imagePxWidth: image.pxWidth,
           imagePxHeight: image.pxHeight,
           edits: [],
+          ocrLines: [],
         });
       }
       const legacyFontWarnings = await detectLegacyFontWarnings(sourceUri, pageCount);
-      loadDocument({ sourceUri, pageCount, pages, legacyFontWarnings });
+      const newDocument: DocumentState = { sourceUri, pageCount, pages, legacyFontWarnings };
+      loadDocument(newDocument);
       setCurrentPageIndex(0);
       setFocusedEditId(null);
+      ocrAttemptedPagesRef.current.clear();
+      setOcrStatusByPage({});
+      ensureOcrForPage(newDocument, 0);
       setStatus({ state: 'idle' });
     } catch (error) {
       setStatus({
@@ -178,46 +226,66 @@ export default function App() {
   );
   const editingBlocked = currentPageLegacyFontNames.length > 0;
 
+  /**
+   * OCR-assisted tap-to-edit: kicks off on-device text detection for one page, if it hasn't
+   * been attempted yet. Called from the two places a page comes on screen - document open and
+   * page navigation - i.e. lazily per visited page, not eagerly for the whole document (two
+   * ML Kit passes per page are much slower than rasterization; per AGENTS.md, keep heavy work
+   * off pages the user may never visit). Takes the document as a parameter rather than reading
+   * the `document` state variable because `openPdf` calls it in the same tick it calls
+   * `loadDocument`, before React re-renders.
+   */
+  const ensureOcrForPage = (doc: DocumentState, pageIndex: number) => {
+    const pageState = doc.pages[pageIndex];
+    if (!pageState) return;
+    // Same fail-closed rule as every edit path: a legacy/unknown-encoding page blocks editing,
+    // so detecting tappable text on it would only advertise an interaction that's disabled.
+    if (doc.legacyFontWarnings.some((w) => w.page === pageIndex)) return;
+    if (ocrAttemptedPagesRef.current.has(pageIndex)) return;
+    ocrAttemptedPagesRef.current.add(pageIndex);
+
+    setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'running' }));
+    detectTextLines(pageState)
+      .then((lines) => {
+        // A different document may have been opened while detection ran - never write a stale
+        // result into whatever happens to be loaded now.
+        if (useEditStore.getState().document?.sourceUri !== doc.sourceUri) return;
+        setOcrLines(pageIndex, lines);
+        setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'done' }));
+      })
+      .catch((error) => {
+        // Fails open to manual editing (tap-to-add and drag-to-mask both still work) but the
+        // failure is surfaced in the hint text, not silently swallowed - the user should know
+        // why nothing on this page is highlighted as tappable.
+        console.warn(`OCR failed on page ${pageIndex}`, error);
+        if (useEditStore.getState().document?.sourceUri !== doc.sourceUri) return;
+        setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'failed' }));
+      });
+  };
+
   const goToPage = (index: number) => {
     if (!document || index < 0 || index >= document.pages.length) return;
     setCurrentPageIndex(index);
     setFocusedEditId(null);
+    ensureOcrForPage(document, index);
   };
 
-  const handleTap = (xPt: number, yPt: number) => {
-    // Belt-and-suspenders: MaskOverlay's PanResponder claims the gesture before it reaches
-    // PdfPageViewer's Pressable while replaceMode is on, so this shouldn't normally fire, but
-    // skipping it here too avoids ever stacking a stray text edit under a freshly drawn mask.
-    if (replaceMode) return;
-    // AGENTS.md/spec Section 9: never allow adding text on a page whose font couldn't be
-    // confirmed Unicode-safe - "do not silently allow masking/editing" on such a page.
-    if (editingBlocked) return;
-    const edit = addTextEdit(currentPageIndex, {
-      xPt,
-      yPt,
-      fontSizePt: DEFAULT_FONT_SIZE_PT,
-      text: '',
-      color: '#111111',
-      fontFamily: 'NotoSansDevanagari',
-    });
-    setFocusedEditId(edit.id);
-  };
+  /**
+   * The one shared mask-and-replace path, used by both manual drag-to-mask (Phase 3) and
+   * OCR-assisted tap-to-edit: grows `rect` by MASK_EXPAND_PT (clamped to the page), samples
+   * the surrounding background color, commits the `MaskEdit`, then commits and focuses a
+   * replacement `TextEdit`. The text is described separately from the mask rectangle because
+   * the OCR path pads the mask taller than the detected line (see OCR_MASK_PAD_RATIO_Y) while
+   * anchoring the text at the line's own origin; the manual path passes the same origin for
+   * both. All `text` fields are in PDF points except the text itself.
+   */
+  const maskAndReplaceRegion = async (
+    rect: { xPt: number; yPt: number; wPt: number; hPt: number },
+    text: { xPt: number; yPt: number; prefill: string; fontSizePt: number; widthPt?: number },
+  ) => {
+    if (!page) return;
 
-  const handleBlur = (id: string, text: string) => {
-    if (text.trim().length === 0) {
-      removeEdit(currentPageIndex, id);
-    }
-    if (focusedEditId === id) {
-      setFocusedEditId(null);
-    }
-  };
-
-  const handleMaskDrawn = async (rect: DrawnMaskRect) => {
-    // Same fail-closed rule as `handleTap` above - `MaskOverlay`'s `active` prop is also gated
-    // on `!editingBlocked` so this shouldn't normally fire, but this stays as a second guard.
-    if (!page || editingBlocked) return;
-
-    // Grow the raw drag rectangle by MASK_EXPAND_PT before it's used for anything, clamped to
+    // Grow the raw rectangle by MASK_EXPAND_PT before it's used for anything, clamped to
     // the page - see that constant's docstring for why.
     const maskRect = {
       xPt: Math.max(0, rect.xPt - MASK_EXPAND_PT),
@@ -269,14 +337,89 @@ export default function App() {
     });
 
     const textEdit = addTextEdit(currentPageIndex, {
-      xPt: rect.xPt,
-      yPt: rect.yPt,
+      xPt: text.xPt,
+      yPt: text.yPt,
+      fontSizePt: text.fontSizePt,
+      text: text.prefill,
+      color: '#111111',
+      fontFamily: 'NotoSansDevanagari',
+      ...(text.widthPt !== undefined ? { widthPt: text.widthPt } : {}),
+    });
+    setFocusedEditId(textEdit.id);
+  };
+
+  const handleTap = async (xPt: number, yPt: number) => {
+    // Belt-and-suspenders: MaskOverlay's PanResponder claims the gesture before it reaches
+    // PdfPageViewer's Pressable while replaceMode is on, so this shouldn't normally fire, but
+    // skipping it here too avoids ever stacking a stray text edit under a freshly drawn mask.
+    if (replaceMode) return;
+    // AGENTS.md/spec Section 9: never allow adding text on a page whose font couldn't be
+    // confirmed Unicode-safe - "do not silently allow masking/editing" on such a page.
+    if (editingBlocked) return;
+    if (!page) return;
+
+    // OCR-assisted tap-to-edit: a tap on detected text edits that text in place - masks its
+    // region and opens a pre-filled input right on top of it. A tap on empty page keeps the
+    // Phase 1 behavior: add brand-new text at that spot.
+    const hitLine = findOcrLineAt(page.ocrLines, xPt, yPt);
+    if (hitLine) {
+      // Consume the line so its highlight disappears and a second tap can't double-mask it.
+      setOcrLines(
+        currentPageIndex,
+        page.ocrLines.filter((l) => l.id !== hitLine.id),
+      );
+      const fontSizePt = Math.max(MIN_OCR_FONT_SIZE_PT, hitLine.hPt * OCR_FONT_SIZE_RATIO);
+      // Mask taller than the detected box, upward only (see OCR_MASK_PAD_TOP_RATIO's
+      // docstring), but keep the replacement text anchored at the detected line's own origin.
+      const padTop = hitLine.hPt * OCR_MASK_PAD_TOP_RATIO;
+      await maskAndReplaceRegion(
+        {
+          xPt: hitLine.xPt,
+          yPt: hitLine.yPt - padTop,
+          wPt: hitLine.wPt,
+          hPt: hitLine.hPt + padTop,
+        },
+        {
+          xPt: hitLine.xPt,
+          yPt: hitLine.yPt,
+          prefill: hitLine.text,
+          fontSizePt,
+          widthPt: hitLine.wPt * OCR_TEXT_WIDTH_SLACK_RATIO,
+        },
+      );
+      return;
+    }
+
+    const edit = addTextEdit(currentPageIndex, {
+      xPt,
+      yPt,
       fontSizePt: DEFAULT_FONT_SIZE_PT,
       text: '',
       color: '#111111',
       fontFamily: 'NotoSansDevanagari',
     });
-    setFocusedEditId(textEdit.id);
+    setFocusedEditId(edit.id);
+  };
+
+  const handleBlur = (id: string, text: string) => {
+    if (text.trim().length === 0) {
+      removeEdit(currentPageIndex, id);
+    }
+    if (focusedEditId === id) {
+      setFocusedEditId(null);
+    }
+  };
+
+  const handleMaskDrawn = async (rect: DrawnMaskRect) => {
+    // Same fail-closed rule as `handleTap` above - `MaskOverlay`'s `active` prop is also gated
+    // on `!editingBlocked` so this shouldn't normally fire, but this stays as a second guard.
+    if (!page || editingBlocked) return;
+    await maskAndReplaceRegion(rect, {
+      xPt: rect.xPt,
+      yPt: rect.yPt,
+      prefill: '',
+      fontSizePt: DEFAULT_FONT_SIZE_PT,
+    });
   };
 
   const saveAndExport = async () => {
@@ -363,7 +506,11 @@ export default function App() {
                 ? 'Editing is disabled on this page - see warning above.'
                 : replaceMode
                   ? 'Drag a box over existing text to mask and replace it.'
-                  : 'Tap anywhere on the page to add Hindi text.'}
+                  : ocrStatusByPage[currentPageIndex] === 'running'
+                    ? 'Detecting text on this page…'
+                    : ocrStatusByPage[currentPageIndex] === 'failed'
+                      ? 'Text detection failed - tap empty space to add text, or use replace mode.'
+                      : 'Tap highlighted text to edit it in place, or tap empty space to add new text.'}
             </Text>
             <PdfPageViewer
               // Remounts the viewer (and drops any transient gesture state) on page change,
@@ -373,6 +520,11 @@ export default function App() {
               onTap={handleTap}
               renderOverlays={(viewWidthDp) => (
                 <>
+                  <OcrHighlightLayer
+                    lines={page.ocrLines}
+                    viewWidthDp={viewWidthDp}
+                    pageWidthPt={page.widthPt}
+                  />
                   <MaskOverlay
                     masks={page.edits.filter((e): e is MaskEdit => e.type === 'mask')}
                     viewWidthDp={viewWidthDp}

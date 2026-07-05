@@ -27,8 +27,16 @@ function maskLayerHtml(edit: MaskEdit, page: PageState): string {
 
 function textLayerHtml(edit: TextEdit, page: PageState): string {
   const { x, y } = ptToImagePx(edit.xPt, edit.yPt, page.imagePxWidth, page.widthPt);
-  const fontPx = edit.fontSizePt * (page.imagePxWidth / page.widthPt);
-  return `<span style="position:absolute;left:${x}px;top:${y}px;font-size:${fontPx}px;font-family:'${edit.fontFamily}';color:${edit.color};white-space:pre">${escapeHtml(edit.text)}</span>`;
+  const scale = page.imagePxWidth / page.widthPt;
+  const fontPx = edit.fontSizePt * scale;
+  // A width-constrained edit (OCR-assisted replacement) wraps inside its fixed box, exactly
+  // like the live TextInput does at the same width - see TextEdit.widthPt's docstring. An
+  // unconstrained edit keeps white-space:pre: a single line unless the user typed newlines.
+  const widthStyle =
+    edit.widthPt === undefined
+      ? 'white-space:pre'
+      : `width:${edit.widthPt * scale}px;white-space:pre-wrap;overflow-wrap:break-word`;
+  return `<span style="position:absolute;left:${x}px;top:${y}px;font-size:${fontPx}px;font-family:'${edit.fontFamily}';color:${edit.color};${widthStyle}">${escapeHtml(edit.text)}</span>`;
 }
 
 /**

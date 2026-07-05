@@ -1,6 +1,6 @@
 import { TextInput, StyleSheet } from 'react-native';
 
-import { ptToDp } from '../lib/coordinateMath';
+import { ptSizeToDp, ptToDp } from '../lib/coordinateMath';
 import type { TextEdit } from '../state/editStore';
 
 type Props = {
@@ -36,6 +36,13 @@ export function EditableTextOverlay({
 }: Props) {
   const { xDp, yDp } = ptToDp(edit.xPt, edit.yPt, viewWidthDp, pageWidthPt);
   const fontSizeDp = edit.fontSizePt * (viewWidthDp / pageWidthPt);
+  // An OCR-assisted replacement carries the detected line's width so the input wraps at the
+  // same point the exported HTML will (see TextEdit.widthPt's docstring); freely-placed new
+  // text has no width and stays a single growing line, the original Phase 1 behavior.
+  const widthDp =
+    edit.widthPt === undefined
+      ? undefined
+      : ptSizeToDp(edit.widthPt, 0, viewWidthDp, pageWidthPt).wDp;
 
   return (
     <TextInput
@@ -53,6 +60,7 @@ export function EditableTextOverlay({
           color: edit.color,
           fontFamily: edit.fontFamily,
         },
+        widthDp !== undefined && { width: widthDp },
       ]}
     />
   );
