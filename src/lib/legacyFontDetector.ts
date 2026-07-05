@@ -88,8 +88,16 @@ export type LegacyFontWarning = { page: number; fontName: string };
  * does not mean the document is guaranteed Unicode-safe if `PDFDocument.load` itself failed;
  * per AGENTS.md, callers must treat a thrown error here as "unknown encoding," not "safe to
  * proceed," and surface `LegacyFontWarning.tsx` accordingly rather than swallowing it.
+ *
+ * @param pdfBytes Either raw PDF bytes, or a base64-encoded string of them - `@cantoo/pdf-lib`'s
+ *   `PDFDocument.load` accepts both natively. `App.tsx` reads a picked document via
+ *   `expo-file-system/legacy`'s `readAsStringAsync(..., { encoding: Base64 })` (the same pattern
+ *   `exportPdf.ts` already uses for its own re-parse check), so passing that base64 string
+ *   straight through avoids a separate decode step app-side.
  */
-export async function detectLegacyFonts(pdfBytes: Uint8Array): Promise<LegacyFontWarning[]> {
+export async function detectLegacyFonts(
+  pdfBytes: Uint8Array | string,
+): Promise<LegacyFontWarning[]> {
   const doc = await PDFDocument.load(pdfBytes);
   const warnings: LegacyFontWarning[] = [];
 

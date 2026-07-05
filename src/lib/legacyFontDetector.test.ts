@@ -88,4 +88,13 @@ describe('detectLegacyFonts', () => {
     const warnings = await detectLegacyFonts(bytes);
     expect(warnings).toEqual([]);
   });
+
+  it('accepts a base64-encoded string, the shape App.tsx actually reads from disk', async () => {
+    // App.tsx reads a picked document via expo-file-system's Base64 encoding (same pattern
+    // exportPdf.ts already uses for its own re-parse check) rather than a raw Uint8Array -
+    // covering that exact input shape here, not just Uint8Array/Buffer.
+    const bytes = fs.readFileSync(FIXTURE_PATH);
+    const warnings = await detectLegacyFonts(bytes.toString('base64'));
+    expect(warnings).toEqual([]);
+  });
 });
