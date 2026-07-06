@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Button,
+  Keyboard,
   Modal,
   ScrollView,
   StyleSheet,
@@ -19,26 +19,31 @@ import { useFonts } from 'expo-font';
 import * as Sharing from 'expo-sharing';
 import { StatusBar } from 'expo-status-bar';
 
+import { AboutModal } from './src/components/AboutModal';
+import { AppButton } from './src/components/AppButton';
 import { EditableTextOverlay } from './src/components/EditableTextOverlay';
+import { EditToolbar } from './src/components/EditToolbar';
 import { LegacyFontWarning } from './src/components/LegacyFontWarning';
 import { MaskOverlay, type DrawnMaskRect } from './src/components/MaskOverlay';
 import { OcrHighlightLayer } from './src/components/OcrHighlightLayer';
 import { PdfPageViewer } from './src/components/PdfPageViewer';
+import { clearGeminiApiKey, getGeminiApiKey, setGeminiApiKey } from './src/lib/apiKeyStore';
 import { ptSizeToImagePx, ptToImagePx } from './src/lib/coordinateMath';
 import { exportPdf } from './src/lib/exportPdf';
 import { getFontBase64 } from './src/lib/fontAsset';
-import { clearGeminiApiKey, getGeminiApiKey, setGeminiApiKey } from './src/lib/apiKeyStore';
 import { detectLegacyFonts } from './src/lib/legacyFontDetector';
 import { detectTextLines, detectTextLinesWithGemini } from './src/lib/ocr';
-import { findOcrLineAt } from './src/lib/ocrHitTest';
+import { findOcrTargetAt, findTextEditAt } from './src/lib/ocrHitTest';
 import { getPageCount, renderPage, sampleAverageColor } from './src/lib/pdfToImages';
 import {
   useEditStore,
   type DocumentState,
   type MaskEdit,
+  type OcrLine,
   type PageState,
   type TextEdit,
 } from './src/state/editStore';
+import { colors, radius, spacing } from './src/theme';
 
 /** Sentinel font name used when detection itself fails - see `detectLegacyFontWarnings` below. */
 const UNKNOWN_ENCODING_FONT_NAME = 'unknown (font inspection failed)';
@@ -71,16 +76,16 @@ async function detectLegacyFontWarnings(
 }
 
 /**
- * Phase 1+2+3+4 editor plus OCR-assisted tap-to-edit (spec Section 10): pick an existing PDF,
- * browse its pages, tap detected existing text to mask-and-edit it in place (on-device ML Kit
- * OCR via `ocr.ts` finds where text is and pre-fills what it says), tap empty space to add
- * new Hindi text, or drag out a manual mask in replace mode as the fallback for anything OCR
- * misses - then export every page in one PDF. Pages whose embedded font matches a known
- * pre-Unicode legacy pattern (or whose font couldn't be inspected at all) are detected on open
- * and have all edit paths disabled - see `legacyFontDetector.ts`/`LegacyFontWarning.tsx` and
- * spec Section 9. Replaces the Phase 0 spike entirely, per that screen's own comment and
- * AGENTS.md's phased build process - Phase 0 passed on a real device (see spec Section
- * 10/CHANGELOG), so this is the first screen actually built on that verified ground.
+ * The full editor (spec Section 10, Phases 1-4 plus Phase 4.5 OCR-assisted tap-to-edit and
+ * the post-4.5 polish pass): pick an existing PDF, browse its pages, tap detected existing
+ * text to mask-and-edit it in place (on-device ML Kit OCR via `ocr.ts` finds where text is
+ * and pre-fills what it says), tap empty space to add new Hindi text, or drag out a manual
+ * mask in replace mode as the fallback for anything OCR misses - then export every page in
+ * one PDF. Focused edits get a contextual toolbar (font size, delete-with-restore); every
+ * committing gesture takes an undo checkpoint (`editStore.checkpoint`/`undo`). Pages whose
+ * embedded font matches a known pre-Unicode legacy pattern (or whose font couldn't be
+ * inspected at all) are detected on open and have all edit paths disabled - see
+ * `legacyFontDetector.ts`/`LegacyFontWarning.tsx` and spec Section 9.
  *
  * Deliberately does NOT use `react-native-pdf` for this screen, unlike Section 10's Phase 1
  * checklist wording. Section 6's own module spec defines `PdfPageViewer.tsx` as "background
@@ -97,7 +102,7 @@ async function detectLegacyFontWarnings(
  */
 
 // Default new text size, in PDF points - a reasonable starting size for a body-text edit;
-// no per-edit size UI yet (not a Phase 1 checklist item).
+// adjustable per edit via the EditToolbar once the edit is focused.
 const DEFAULT_FONT_SIZE_PT = 14;
 // Output px per PDF point when rasterizing the page background - see spec Section 4.1/AGENTS.md's
 // "2-3x, not arbitrarily higher" performance constraint.
@@ -137,6 +142,13 @@ const OCR_TEXT_WIDTH_SLACK_RATIO = 1.25;
 /** Per-page on-device OCR progress, keyed by page index - absent means not yet attempted. */
 type OcrStatusByPage = Record<number, 'running' | 'done' | 'failed'>;
 
+/**
+ * What a replacement `TextEdit` was created together with, so removing it can undo the whole
+ * group: its paired `MaskEdit`, and - for OCR-assisted replacements - the consumed `OcrLine`
+ * to restore, which brings the original scanned text's highlight (and tappability) back.
+ */
+type EditPairing = { maskId?: string; ocrLine?: OcrLine };
+
 type Status =
   | { state: 'idle' }
   | { state: 'opening' }
@@ -152,10 +164,8 @@ export default function App() {
   const [status, setStatus] = useState<Status>({ state: 'idle' });
   const [focusedEditId, setFocusedEditId] = useState<string | null>(null);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  // Phase 3 (spec Section 10): a dedicated mode toggle, not a long-press gesture - the spec
-  // allows either trigger, and a toggle avoids MaskOverlay's drag-to-select racing against
-  // PdfPageViewer's own tap-to-add-text on the exact same gesture.
-  const [replaceMode, setReplaceMode] = useState(false);
+  /** OCR replacement edits select all text on first focus so typing replaces instantly. */
+  const [selectAllEditId, setSelectAllEditId] = useState<string | null>(null);
 
   // OCR-assisted tap-to-edit: per-page detection progress (drives the hint text). Reset
   // whenever a new document is opened (see `openPdf`), since page indices only mean anything
@@ -164,11 +174,15 @@ export default function App() {
   // Pages OCR has already been kicked off for, so navigating back and forth doesn't re-run
   // detection. A ref (not state): this is bookkeeping for the trigger, never rendered.
   const ocrAttemptedPagesRef = useRef(new Set<number>());
+  // TextEdit id -> what it was created with (mask + consumed OCR line), so delete/clear can
+  // remove the whole group and restore the original text. A ref for the same reason as above.
+  const editPairingsRef = useRef(new Map<string, EditPairing>());
   // "Enhance with AI" (opt-in Gemini cloud OCR): which page a cloud pass is currently running
   // for (null = none), and whether the one-time API key prompt is showing.
   const [enhancingPage, setEnhancingPage] = useState<number | null>(null);
   const [apiKeyPromptVisible, setApiKeyPromptVisible] = useState(false);
   const [apiKeyDraft, setApiKeyDraft] = useState('');
+  const [aboutVisible, setAboutVisible] = useState(false);
 
   const document = useEditStore((s) => s.document);
   const loadDocument = useEditStore((s) => s.loadDocument);
@@ -177,6 +191,9 @@ export default function App() {
   const updateTextEdit = useEditStore((s) => s.updateTextEdit);
   const removeEdit = useEditStore((s) => s.removeEdit);
   const setOcrLines = useEditStore((s) => s.setOcrLines);
+  const checkpoint = useEditStore((s) => s.checkpoint);
+  const undo = useEditStore((s) => s.undo);
+  const canUndo = useEditStore((s) => s.history.length > 0);
 
   const openPdf = async () => {
     setStatus({ state: 'opening' });
@@ -212,9 +229,11 @@ export default function App() {
       loadDocument(newDocument);
       setCurrentPageIndex(0);
       setFocusedEditId(null);
+      setSelectAllEditId(null);
       ocrAttemptedPagesRef.current.clear();
+      editPairingsRef.current.clear();
       setOcrStatusByPage({});
-      ensureOcrForPage(newDocument, 0);
+      ensureOcrForAllPages(newDocument);
       setStatus({ state: 'idle' });
     } catch (error) {
       setStatus({
@@ -225,6 +244,8 @@ export default function App() {
   };
 
   const page = document?.pages[currentPageIndex];
+  const focusedEdit =
+    page?.edits.find((e): e is TextEdit => e.type === 'text' && e.id === focusedEditId) ?? null;
 
   // Phase 4 (spec Section 9): distinct legacy font names flagged on the page currently being
   // viewed. A non-empty array - including the `UNKNOWN_ENCODING_FONT_NAME` sentinel when
@@ -242,15 +263,6 @@ export default function App() {
   );
   const editingBlocked = currentPageLegacyFontNames.length > 0;
 
-  /**
-   * OCR-assisted tap-to-edit: kicks off on-device text detection for one page, if it hasn't
-   * been attempted yet. Called from the two places a page comes on screen - document open and
-   * page navigation - i.e. lazily per visited page, not eagerly for the whole document (two
-   * ML Kit passes per page are much slower than rasterization; per AGENTS.md, keep heavy work
-   * off pages the user may never visit). Takes the document as a parameter rather than reading
-   * the `document` state variable because `openPdf` calls it in the same tick it calls
-   * `loadDocument`, before React re-renders.
-   */
   const ensureOcrForPage = (doc: DocumentState, pageIndex: number) => {
     const pageState = doc.pages[pageIndex];
     if (!pageState) return;
@@ -279,11 +291,33 @@ export default function App() {
       });
   };
 
+  /** Runs on-device OCR for every page in the background so text is tappable as soon as ready. */
+  const ensureOcrForAllPages = (doc: DocumentState) => {
+    for (let pageIndex = 0; pageIndex < doc.pages.length; pageIndex++) {
+      ensureOcrForPage(doc, pageIndex);
+    }
+  };
+
   const goToPage = (index: number) => {
     if (!document || index < 0 || index >= document.pages.length) return;
     setCurrentPageIndex(index);
     setFocusedEditId(null);
     ensureOcrForPage(document, index);
+  };
+
+  const handleUndo = () => {
+    // The focused input may be about to disappear with the undone state - drop focus first so
+    // its blur handler can't fire against an edit the undo already removed.
+    setFocusedEditId(null);
+    Keyboard.dismiss();
+    undo();
+  };
+
+  const handleEditDone = () => {
+    // Clearing focus state alone doesn't blur the native TextInput, so dismiss explicitly -
+    // otherwise "Done" leaves the keyboard covering half the page.
+    setFocusedEditId(null);
+    Keyboard.dismiss();
   };
 
   /**
@@ -341,13 +375,15 @@ export default function App() {
    * OCR-assisted tap-to-edit: grows `rect` by MASK_EXPAND_PT (clamped to the page), samples
    * the surrounding background color, commits the `MaskEdit`, then commits and focuses a
    * replacement `TextEdit`. The text is described separately from the mask rectangle because
-   * the OCR path pads the mask taller than the detected line (see OCR_MASK_PAD_RATIO_Y) while
-   * anchoring the text at the line's own origin; the manual path passes the same origin for
-   * both. All `text` fields are in PDF points except the text itself.
+   * the OCR path pads the mask taller than the detected line (see OCR_MASK_PAD_TOP_RATIO)
+   * while anchoring the text at the line's own origin; the manual path passes the same origin
+   * for both. All `text` fields are in PDF points except the text itself. `consumedOcrLine`
+   * is recorded in the pairing map so deleting the replacement restores the original.
    */
   const maskAndReplaceRegion = async (
     rect: { xPt: number; yPt: number; wPt: number; hPt: number },
     text: { xPt: number; yPt: number; prefill: string; fontSizePt: number; widthPt?: number },
+    consumedOcrLine?: OcrLine,
   ) => {
     if (!page) return;
 
@@ -394,7 +430,7 @@ export default function App() {
       console.warn('sampleAverageColor failed, falling back to white', error);
     }
 
-    addMaskEdit(currentPageIndex, {
+    const maskEdit = addMaskEdit(currentPageIndex, {
       xPt: maskRect.xPt,
       yPt: maskRect.yPt,
       wPt: maskRect.wPt,
@@ -411,24 +447,57 @@ export default function App() {
       fontFamily: 'NotoSansDevanagari',
       ...(text.widthPt !== undefined ? { widthPt: text.widthPt } : {}),
     });
+    editPairingsRef.current.set(textEdit.id, {
+      maskId: maskEdit.id,
+      ocrLine: consumedOcrLine,
+    });
     setFocusedEditId(textEdit.id);
+    if (consumedOcrLine) {
+      setSelectAllEditId(textEdit.id);
+    }
+  };
+
+  /**
+   * Removes a `TextEdit` together with whatever it was created with (see `EditPairing`):
+   * its mask, and - for an OCR replacement - the consumed OCR line is put back, restoring
+   * the original scanned text and its tappable highlight. Used by the toolbar's Delete and
+   * by blurring an OCR replacement empty.
+   */
+  const removeEditGroup = (id: string) => {
+    const pairing = editPairingsRef.current.get(id);
+    checkpoint();
+    removeEdit(currentPageIndex, id);
+    if (pairing?.maskId) removeEdit(currentPageIndex, pairing.maskId);
+    if (pairing?.ocrLine && page) {
+      setOcrLines(currentPageIndex, [...page.ocrLines, pairing.ocrLine]);
+    }
+    editPairingsRef.current.delete(id);
+    if (focusedEditId === id) setFocusedEditId(null);
   };
 
   const handleTap = async (xPt: number, yPt: number) => {
-    // Belt-and-suspenders: MaskOverlay's PanResponder claims the gesture before it reaches
-    // PdfPageViewer's Pressable while replaceMode is on, so this shouldn't normally fire, but
-    // skipping it here too avoids ever stacking a stray text edit under a freshly drawn mask.
-    if (replaceMode) return;
-    // AGENTS.md/spec Section 9: never allow adding text on a page whose font couldn't be
-    // confirmed Unicode-safe - "do not silently allow masking/editing" on such a page.
     if (editingBlocked) return;
     if (!page) return;
 
-    // OCR-assisted tap-to-edit: a tap on detected text edits that text in place - masks its
-    // region and opens a pre-filled input right on top of it. A tap on empty page keeps the
-    // Phase 1 behavior: add brand-new text at that spot.
-    const hitLine = findOcrLineAt(page.ocrLines, xPt, yPt);
+    const textEdits = page.edits.filter((e): e is TextEdit => e.type === 'text');
+    const hitEdit = findTextEditAt(textEdits, xPt, yPt);
+    if (hitEdit) {
+      if (focusedEditId !== hitEdit.id) {
+        setFocusedEditId(hitEdit.id);
+      }
+      return;
+    }
+
+    // Tap on empty page or OCR text — dismiss any previous edit first.
+    if (focusedEditId) {
+      Keyboard.dismiss();
+      setFocusedEditId(null);
+    }
+
+    const hitLine = findOcrTargetAt(page.ocrLines, xPt, yPt);
     if (hitLine) {
+      // One checkpoint for the whole group (consume line + mask + text) = one undo step.
+      checkpoint();
       // Consume the line so its highlight disappears and a second tap can't double-mask it.
       setOcrLines(
         currentPageIndex,
@@ -452,10 +521,18 @@ export default function App() {
           fontSizePt,
           widthPt: hitLine.wPt * OCR_TEXT_WIDTH_SLACK_RATIO,
         },
+        hitLine,
       );
       return;
     }
 
+    // Don't spawn a free-floating text box while OCR is still scanning — the user likely
+    // tapped existing text that isn't tappable yet.
+    if (ocrStatusByPage[currentPageIndex] === 'running') {
+      return;
+    }
+
+    checkpoint();
     const edit = addTextEdit(currentPageIndex, {
       xPt,
       yPt,
@@ -469,6 +546,17 @@ export default function App() {
 
   const handleBlur = (id: string, text: string) => {
     if (text.trim().length === 0) {
+      const pairing = editPairingsRef.current.get(id);
+      if (pairing?.ocrLine) {
+        // Blurring an OCR replacement empty means "never mind" - removing just the text would
+        // leave its mask silently hiding the original, so the whole group goes and the
+        // original text comes back.
+        removeEditGroup(id);
+        return;
+      }
+      // A manually-masked region blurred empty keeps its mask: the user explicitly drew it,
+      // and "erase this text" (mask, no replacement) is a legitimate outcome. A plain
+      // tap-to-add edit has no pairing, so this just removes the abandoned empty input.
       removeEdit(currentPageIndex, id);
     }
     if (focusedEditId === id) {
@@ -480,6 +568,7 @@ export default function App() {
     // Same fail-closed rule as `handleTap` above - `MaskOverlay`'s `active` prop is also gated
     // on `!editingBlocked` so this shouldn't normally fire, but this stays as a second guard.
     if (!page || editingBlocked) return;
+    checkpoint();
     await maskAndReplaceRegion(rect, {
       xPt: rect.xPt,
       yPt: rect.yPt,
@@ -514,89 +603,143 @@ export default function App() {
 
   if (!fontsLoaded) {
     return (
-      <View style={styles.container}>
-        <StatusBar style="auto" />
-        <ActivityIndicator />
+      <View style={[styles.container, styles.centered]}>
+        <StatusBar style="dark" />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
 
+  const ocrStatus = ocrStatusByPage[currentPageIndex];
+  const ocrReadyCount = document
+    ? Object.values(ocrStatusByPage).filter((s) => s === 'done').length
+    : 0;
+  const hintText = editingBlocked
+    ? 'Editing is disabled on this page — see the warning above.'
+    : ocrStatus === 'running'
+      ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
+      : ocrStatus === 'failed'
+        ? 'Tap text to edit. Hold and drag over text OCR missed. Tap empty space to add new text.'
+        : 'Tap any text to edit it — just like Canva. Hold and drag to erase text OCR missed.';
+
   return (
     <View style={styles.container}>
-      <StatusBar style="auto" />
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Hindi PDF Editor</Text>
+      <StatusBar style="dark" />
 
-        <Button
-          title="Open PDF"
-          onPress={openPdf}
-          disabled={status.state === 'opening' || status.state === 'saving'}
-        />
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>Hindi PDF Editor</Text>
+          {document && (
+            <Text style={styles.headerSubtitle} numberOfLines={1}>
+              {document.pages.length} page{document.pages.length === 1 ? '' : 's'} loaded
+            </Text>
+          )}
+        </View>
+        <View style={styles.headerActions}>
+          <AppButton title="About" small variant="ghost" onPress={() => setAboutVisible(true)} />
+          <AppButton
+            title={document ? 'Open another' : 'Open PDF'}
+            small
+            variant={document ? 'secondary' : 'primary'}
+            onPress={openPdf}
+            disabled={status.state === 'opening' || status.state === 'saving'}
+          />
+        </View>
+      </View>
 
-        {status.state === 'opening' && <ActivityIndicator style={styles.spacerTop} />}
-        {status.state === 'error' && (
-          <Text style={[styles.spacerTop, styles.error]}>Failed: {status.message}</Text>
-        )}
+      {status.state === 'opening' && (
+        <View style={[styles.centered, styles.fill]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.progressText}>Opening PDF…</Text>
+          <Text style={styles.progressSubText}>Rendering pages and detecting text</Text>
+        </View>
+      )}
 
-        {document && page && (
-          <View style={styles.spacerTop}>
-            {document.pages.length > 1 && (
-              <View style={styles.pagerRow}>
-                <Button
-                  title="◀ Prev"
-                  onPress={() => goToPage(currentPageIndex - 1)}
-                  disabled={currentPageIndex === 0}
-                />
-                <Text style={styles.pagerLabel}>
-                  Page {currentPageIndex + 1} of {document.pages.length}
-                </Text>
-                <Button
-                  title="Next ▶"
-                  onPress={() => goToPage(currentPageIndex + 1)}
-                  disabled={currentPageIndex === document.pages.length - 1}
-                />
-              </View>
-            )}
+      {status.state !== 'opening' && !document && (
+        <View style={[styles.centered, styles.fill, styles.landing]}>
+          <View style={styles.landingBadge}>
+            <Text style={styles.landingBadgeText}>अ</Text>
+          </View>
+          <Text style={styles.landingTitle}>Edit Hindi text in any PDF</Text>
+          <Text style={styles.landingBody}>
+            Open a scanned PDF and tap any text to change it — Hindi or English. No boxes, no modes,
+            fully offline. Hold and drag if OCR misses a word.
+          </Text>
+          <AppButton title="Open a PDF" onPress={openPdf} style={styles.landingButton} />
+          {status.state === 'error' && (
+            <View style={[styles.statusCard, styles.errorCard]}>
+              <Text style={styles.errorText}>{status.message}</Text>
+            </View>
+          )}
+        </View>
+      )}
 
-            {editingBlocked && <LegacyFontWarning fontNames={currentPageLegacyFontNames} />}
-
-            <View style={styles.modeRow}>
-              <Button
-                title={replaceMode ? '✓ Replace text mode' : 'Switch to replace text mode'}
-                onPress={() => setReplaceMode((prev) => !prev)}
-                disabled={editingBlocked}
+      {status.state !== 'opening' && document && page && (
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.toolbarCard}>
+            <View style={styles.toolbarRow}>
+              {document.pages.length > 1 ? (
+                <View style={styles.pagerGroup}>
+                  <AppButton
+                    title="◀"
+                    small
+                    variant="secondary"
+                    onPress={() => goToPage(currentPageIndex - 1)}
+                    disabled={currentPageIndex === 0}
+                  />
+                  <Text style={styles.pagerLabel}>
+                    {currentPageIndex + 1} / {document.pages.length}
+                  </Text>
+                  <AppButton
+                    title="▶"
+                    small
+                    variant="secondary"
+                    onPress={() => goToPage(currentPageIndex + 1)}
+                    disabled={currentPageIndex === document.pages.length - 1}
+                  />
+                </View>
+              ) : (
+                <Text style={styles.pagerLabel}>1 page</Text>
+              )}
+              <AppButton
+                title="↩ Undo"
+                small
+                variant="ghost"
+                onPress={handleUndo}
+                disabled={!canUndo}
               />
             </View>
-            {!editingBlocked && ocrStatusByPage[currentPageIndex] !== 'running' && (
-              <View style={styles.modeRow}>
-                <Button
-                  title={
-                    enhancingPage === currentPageIndex
-                      ? 'Enhancing with AI…'
-                      : 'Enhance with AI (sends this page to Google)'
-                  }
-                  onPress={handleEnhancePressed}
-                  disabled={enhancingPage !== null}
-                />
-              </View>
-            )}
-            <Text style={styles.hint}>
-              {editingBlocked
-                ? 'Editing is disabled on this page - see warning above.'
-                : replaceMode
-                  ? 'Drag a box over existing text to mask and replace it.'
-                  : ocrStatusByPage[currentPageIndex] === 'running'
-                    ? 'Detecting text on this page…'
-                    : ocrStatusByPage[currentPageIndex] === 'failed'
-                      ? 'Text detection failed - tap empty space to add text, or use replace mode.'
-                      : 'Tap highlighted text to edit it in place, or tap empty space to add new text.'}
-            </Text>
+            <View style={styles.toolbarRow}>
+              <AppButton
+                title={enhancingPage === currentPageIndex ? 'Enhancing…' : '✨ Enhance with AI'}
+                small
+                variant="secondary"
+                onPress={handleEnhancePressed}
+                disabled={editingBlocked || enhancingPage !== null || ocrStatus === 'running'}
+              />
+            </View>
+            <Text style={styles.hint}>{hintText}</Text>
+          </View>
+
+          {editingBlocked && <LegacyFontWarning fontNames={currentPageLegacyFontNames} />}
+
+          {focusedEdit && (
+            <EditToolbar
+              fontSizePt={focusedEdit.fontSizePt}
+              onFontSizeChange={(fontSizePt) =>
+                updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
+              }
+              onDelete={() => removeEditGroup(focusedEdit.id)}
+              onDone={handleEditDone}
+            />
+          )}
+
+          <View style={styles.pageCard}>
             <PdfPageViewer
-              // Remounts the viewer (and drops any transient gesture state) on page change,
-              // instead of the same instance silently rendering a different page's image.
               key={page.pageIndex}
               page={page}
               onTap={handleTap}
+              disablePress={!editingBlocked}
               renderOverlays={(viewWidthDp) => (
                 <>
                   <OcrHighlightLayer
@@ -608,7 +751,9 @@ export default function App() {
                     masks={page.edits.filter((e): e is MaskEdit => e.type === 'mask')}
                     viewWidthDp={viewWidthDp}
                     pageWidthPt={page.widthPt}
-                    active={replaceMode && !editingBlocked}
+                    active={false}
+                    enableLongPressDraw={!editingBlocked}
+                    onShortTap={handleTap}
                     onMaskDrawn={handleMaskDrawn}
                   />
                   {page.edits
@@ -620,6 +765,12 @@ export default function App() {
                         viewWidthDp={viewWidthDp}
                         pageWidthPt={page.widthPt}
                         autoFocus={edit.id === focusedEditId}
+                        focused={edit.id === focusedEditId}
+                        selectAllOnFocus={edit.id === selectAllEditId}
+                        onFocus={() => {
+                          setFocusedEditId(edit.id);
+                          if (edit.id === selectAllEditId) setSelectAllEditId(null);
+                        }}
                         onChangeText={(text) => updateTextEdit(currentPageIndex, edit.id, { text })}
                         onBlur={() => handleBlur(edit.id, edit.text)}
                       />
@@ -627,22 +778,34 @@ export default function App() {
                 </>
               )}
             />
-
-            <Button
-              title="Save (exports all pages)"
-              onPress={saveAndExport}
-              disabled={status.state === 'saving'}
-            />
-            {status.state === 'saving' && <ActivityIndicator style={styles.spacerTop} />}
-            {status.state === 'saved' && (
-              <View style={styles.spacerTop}>
-                <Text style={styles.success}>Exported: {status.uri}</Text>
-                <Button title="Share / open in a PDF viewer" onPress={shareResult} />
-              </View>
-            )}
           </View>
-        )}
-      </ScrollView>
+
+          <AppButton
+            title={status.state === 'saving' ? 'Exporting…' : 'Export PDF'}
+            onPress={saveAndExport}
+            disabled={status.state === 'saving'}
+          />
+          {status.state === 'saving' && (
+            <ActivityIndicator color={colors.primary} style={styles.savingSpinner} />
+          )}
+          {status.state === 'saved' && (
+            <View style={[styles.statusCard, styles.successCard]}>
+              <Text style={styles.successTitle}>Exported successfully</Text>
+              <Text style={styles.successPath} numberOfLines={1}>
+                {status.uri.split('/').pop()}
+              </Text>
+              <AppButton title="Share / open in a PDF viewer" small onPress={shareResult} />
+            </View>
+          )}
+          {status.state === 'error' && (
+            <View style={[styles.statusCard, styles.errorCard]}>
+              <Text style={styles.errorText}>{status.message}</Text>
+            </View>
+          )}
+        </ScrollView>
+      )}
+
+      <AboutModal visible={aboutVisible} onClose={() => setAboutVisible(false)} />
 
       <Modal
         visible={apiKeyPromptVisible}
@@ -668,9 +831,15 @@ export default function App() {
               style={styles.modalInput}
             />
             <View style={styles.modalButtons}>
-              <Button title="Cancel" onPress={() => setApiKeyPromptVisible(false)} />
-              <Button
+              <AppButton
+                title="Cancel"
+                small
+                variant="ghost"
+                onPress={() => setApiKeyPromptVisible(false)}
+              />
+              <AppButton
                 title="Save & run"
+                small
                 onPress={handleApiKeySubmitted}
                 disabled={apiKeyDraft.trim() === ''}
               />
@@ -685,77 +854,193 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
-  content: {
-    flexGrow: 1,
-    padding: 24,
-    gap: 16,
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
+  fill: {
+    flex: 1,
   },
-  hint: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 8,
-  },
-  pagerRow: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    backgroundColor: colors.surface,
+    paddingTop: 56,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTitle: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  progressText: {
+    marginTop: spacing.lg,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  progressSubText: {
+    marginTop: spacing.xs,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  landing: {
+    padding: spacing.xl,
+  },
+  landingBadge: {
+    width: 84,
+    height: 84,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xl,
+  },
+  landingBadgeText: {
+    fontSize: 44,
+    color: colors.textOnPrimary,
+    fontWeight: '700',
+  },
+  landingTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  landingBody: {
+    marginTop: spacing.md,
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    maxWidth: 320,
+  },
+  landingButton: {
+    marginTop: spacing.xl,
+    alignSelf: 'center',
+    width: 280,
+  },
+  content: {
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  toolbarCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  toolbarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  pagerGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   pagerLabel: {
     fontSize: 14,
     fontWeight: '600',
+    color: colors.textPrimary,
+    minWidth: 48,
+    textAlign: 'center',
   },
-  modeRow: {
-    marginBottom: 4,
+  hint: {
+    fontSize: 12.5,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
-  spacerTop: {
-    marginTop: 16,
+  pageCard: {
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  success: {
-    color: '#0a7a0a',
-    marginBottom: 12,
+  savingSpinner: {
+    marginTop: spacing.sm,
   },
-  error: {
-    color: '#b00020',
+  statusCard: {
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  successCard: {
+    backgroundColor: colors.successSoft,
+  },
+  successTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.success,
+  },
+  successPath: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  errorCard: {
+    backgroundColor: colors.dangerSoft,
+    marginTop: spacing.lg,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: 13,
+    lineHeight: 19,
   },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.xl,
   },
   modalCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    gap: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    gap: spacing.md,
   },
   modalTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
   modalBody: {
     fontSize: 13,
-    color: '#444',
+    color: colors.textSecondary,
     lineHeight: 19,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     fontSize: 14,
+    color: colors.textPrimary,
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
+    gap: spacing.md,
   },
 });
