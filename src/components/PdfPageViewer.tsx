@@ -16,6 +16,11 @@ type Props = {
   /** Called with the tapped position converted to PDF points, page-relative (spec Section 8). */
   onTap: (xPt: number, yPt: number) => void;
   /**
+   * When true, the page `Pressable` does not handle taps — a child overlay (e.g. `MaskOverlay`'s
+   * `onShortTap`) owns the tap pipeline so `onTap` is not fired twice.
+   */
+  disablePress?: boolean;
+  /**
    * Renders overlay elements (e.g. `EditableTextOverlay`) on top of the background image,
    * given the view's currently measured width in dp - callers need this to convert a stored
    * edit's position (points) back to dp via `coordinateMath.ts`'s `ptToDp`, using the same
@@ -32,7 +37,7 @@ type Props = {
  * to the caller via `renderOverlays` so this component stays single-purpose (display + tap),
  * not also responsible for edit rendering.
  */
-export function PdfPageViewer({ page, onTap, renderOverlays }: Props) {
+export function PdfPageViewer({ page, onTap, disablePress, renderOverlays }: Props) {
   const [viewWidthDp, setViewWidthDp] = useState(0);
 
   const handleLayout = (event: LayoutChangeEvent) => {
@@ -54,7 +59,7 @@ export function PdfPageViewer({ page, onTap, renderOverlays }: Props) {
     <View style={styles.container} onLayout={handleLayout}>
       {viewWidthDp > 0 && (
         <Pressable
-          onPress={handlePress}
+          onPress={disablePress ? undefined : handlePress}
           style={[styles.pageArea, { width: viewWidthDp, height: heightDp }]}
         >
           <Image

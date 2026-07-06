@@ -1,6 +1,8 @@
-import { TextInput, StyleSheet } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { StyleSheet, TextInput } from 'react-native';
 
 import { ptSizeToDp, ptToDp } from '../lib/coordinateMath';
+import { colors } from '../theme';
 import type { TextEdit } from '../state/editStore';
 
 type Props = {
@@ -12,7 +14,12 @@ type Props = {
   onChangeText: (text: string) => void;
   /** True for a just-created edit, so the keyboard opens immediately without a second tap. */
   autoFocus?: boolean;
+  /** When true, selects all text once focused (OCR replacements - type to replace instantly). */
+  selectAllOnFocus?: boolean;
+  /** Whether this edit is the actively focused one (shows Canva-style selection outline). */
+  focused?: boolean;
   onBlur?: () => void;
+  onFocus?: () => void;
 };
 
 /**
@@ -32,23 +39,41 @@ export function EditableTextOverlay({
   pageWidthPt,
   onChangeText,
   autoFocus,
+  selectAllOnFocus,
+  focused,
   onBlur,
+  onFocus,
 }: Props) {
+  const inputRef = useRef<TextInput>(null);
   const { xDp, yDp } = ptToDp(edit.xPt, edit.yPt, viewWidthDp, pageWidthPt);
   const fontSizeDp = edit.fontSizePt * (viewWidthDp / pageWidthPt);
-  // An OCR-assisted replacement carries the detected line's width so the input wraps at the
-  // same point the exported HTML will (see TextEdit.widthPt's docstring); freely-placed new
-  // text has no width and stays a single growing line, the original Phase 1 behavior.
   const widthDp =
     edit.widthPt === undefined
       ? undefined
       : ptSizeToDp(edit.widthPt, 0, viewWidthDp, pageWidthPt).wDp;
 
+  useEffect(() => {
+    if (focused) {
+      inputRef.current?.focus();
+    }
+  }, [focused]);
+
+  const handleFocus = () => {
+    onFocus?.();
+    if (selectAllOnFocus && edit.text.length > 0) {
+      requestAnimationFrame(() => {
+        inputRef.current?.setSelection(0, edit.text.length);
+      });
+    }
+  };
+
   return (
     <TextInput
+      ref={inputRef}
       value={edit.text}
       onChangeText={onChangeText}
       onBlur={onBlur}
+      onFocus={handleFocus}
       autoFocus={autoFocus}
       multiline
       style={[
@@ -61,6 +86,7 @@ export function EditableTextOverlay({
           fontFamily: edit.fontFamily,
         },
         widthDp !== undefined && { width: widthDp },
+        focused && styles.focused,
       ]}
     />
   );
@@ -73,5 +99,11 @@ const styles = StyleSheet.create({
     margin: 0,
     minWidth: 40,
     backgroundColor: 'transparent',
+  },
+  focused: {
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.35)',
   },
 });

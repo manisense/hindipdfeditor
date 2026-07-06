@@ -20,10 +20,18 @@ type Props = {
   viewWidthDp: number;
   /** The source page's width, in PDF points. */
   pageWidthPt: number;
-  /** Replace-mode toggle (spec Section 10, Phase 3): when true, dragging on this overlay draws
-   * a new mask selection; when false, this only displays existing masks and lets touches pass
-   * through to `PdfPageViewer`'s own tap-to-add-text handler underneath. */
+  /** Replace-mode toggle (spec Section 10, Phase 3): when true, dragging draws a mask immediately.
+   * When false but `enableLongPressDraw` is true, hold ~400ms then drag to draw (Canva-style
+   * fallback for text OCR missed). */
   active: boolean;
+  /** Lets the user long-press then drag to mask text without flipping a mode toggle first. */
+  enableLongPressDraw?: boolean;
+  /**
+   * When `enableLongPressDraw` captures a touch that turns out to be a quick tap (not a hold-
+   * and-drag), this fires with the release position in PDF points so the page still feels
+   * tappable - otherwise MaskOverlay would eat every touch.
+   */
+  onShortTap?: (xPt: number, yPt: number) => void;
   /** Minimum drag distance, in dp, before a drag commits as a mask - filters out accidental taps. */
   minDragDp?: number;
   /** Called with the drawn rectangle, in PDF points, once the user releases a large-enough drag. */
@@ -31,13 +39,17 @@ type Props = {
 };
 
 const DEFAULT_MIN_DRAG_DP = 12;
+/** Hold duration before a passive long-press drag arms, in ms. */
+const LONG_PRESS_MS = 400;
 
 type LatestProps = {
   viewWidthDp: number;
   pageWidthPt: number;
   active: boolean;
+  enableLongPressDraw: boolean;
   minDragDp: number;
   onMaskDrawn: (rect: DrawnMaskRect) => void;
+  onShortTap?: (xPt: number, yPt: number) => void;
 };
 
 /**
@@ -53,8 +65,10 @@ export function MaskOverlay({
   viewWidthDp,
   pageWidthPt,
   active,
+  enableLongPressDraw = false,
   minDragDp = DEFAULT_MIN_DRAG_DP,
   onMaskDrawn,
+  onShortTap,
 }: Props) {
   const [dragRectDp, setDragRectDp] = useState<{
     x: number;
@@ -71,15 +85,28 @@ export function MaskOverlay({
     viewWidthDp,
     pageWidthPt,
     active,
+    enableLongPressDraw,
     minDragDp,
     onMaskDrawn,
+    onShortTap,
   });
   useEffect(() => {
-    latestRef.current = { viewWidthDp, pageWidthPt, active, minDragDp, onMaskDrawn };
+    latestRef.current = {
+      viewWidthDp,
+      pageWidthPt,
+      active,
+      enableLongPressDraw,
+      minDragDp,
+      onMaskDrawn,
+      onShortTap,
+    };
   });
 
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const dragRectRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
+  const holdStartMsRef = useRef<number | null>(null);
+  const longPressArmedRef = useRef(false);
+  const releasePointRef = useRef<{ x: number; y: number } | null>(null);
 
   // Built inside an effect (not directly during render) so the ref reads in its callbacks
   // are unambiguously "outside render" per react-hooks/refs - PanResponder's identity only
@@ -89,19 +116,41 @@ export function MaskOverlay({
   useEffect(() => {
     setPanResponder(
       PanResponder.create({
-        onStartShouldSetPanResponder: () => latestRef.current.active,
-        onMoveShouldSetPanResponder: () => latestRef.current.active,
+        onStartShouldSetPanResponder: () =>
+          latestRef.current.active || latestRef.current.enableLongPressDraw,
+        onMoveShouldSetPanResponder: () =>
+          latestRef.current.active || latestRef.current.enableLongPressDraw,
         onPanResponderGrant: (event: GestureResponderEvent) => {
+          const { active: isActive, enableLongPressDraw: longPress } = latestRef.current;
           const { locationX, locationY } = event.nativeEvent;
+          releasePointRef.current = { x: locationX, y: locationY };
+          if (!isActive && longPress) {
+            holdStartMsRef.current = Date.now();
+            longPressArmedRef.current = false;
+            return;
+          }
           dragStartRef.current = { x: locationX, y: locationY };
           const rect = { x: locationX, y: locationY, w: 0, h: 0 };
           dragRectRef.current = rect;
           setDragRectDp(rect);
         },
         onPanResponderMove: (event: GestureResponderEvent) => {
+          const { active: isActive, enableLongPressDraw: longPress } = latestRef.current;
+          const { locationX, locationY } = event.nativeEvent;
+          releasePointRef.current = { x: locationX, y: locationY };
+          if (!isActive && longPress) {
+            if (holdStartMsRef.current === null) return;
+            if (!longPressArmedRef.current) {
+              if (Date.now() - holdStartMsRef.current < LONG_PRESS_MS) return;
+              longPressArmedRef.current = true;
+              dragStartRef.current = { x: locationX, y: locationY };
+              const rect = { x: locationX, y: locationY, w: 0, h: 0 };
+              dragRectRef.current = rect;
+              setDragRectDp(rect);
+            }
+          }
           const start = dragStartRef.current;
           if (!start) return;
-          const { locationX, locationY } = event.nativeEvent;
           const rect = {
             x: Math.min(start.x, locationX),
             y: Math.min(start.y, locationY),
@@ -112,17 +161,40 @@ export function MaskOverlay({
           setDragRectDp(rect);
         },
         onPanResponderRelease: () => {
+          const wasLongPress = longPressArmedRef.current;
+          holdStartMsRef.current = null;
+          longPressArmedRef.current = false;
+
           const rect = dragRectRef.current;
+          const releasePoint = releasePointRef.current;
           dragStartRef.current = null;
           dragRectRef.current = null;
+          releasePointRef.current = null;
           setDragRectDp(null);
 
           const {
+            active: isActive,
             viewWidthDp: viewWidth,
             pageWidthPt: pageWidthPtValue,
             minDragDp: minDrag,
             onMaskDrawn: notify,
+            onShortTap: shortTap,
+            enableLongPressDraw: longPress,
           } = latestRef.current;
+
+          if (!isActive && !wasLongPress) {
+            if (longPress && releasePoint && viewWidth > 0 && shortTap) {
+              const { xPt, yPt } = dpToPt(
+                releasePoint.x,
+                releasePoint.y,
+                viewWidth,
+                pageWidthPtValue,
+              );
+              shortTap(xPt, yPt);
+            }
+            return;
+          }
+
           if (!rect || viewWidth === 0) return;
           if (rect.w < minDrag || rect.h < minDrag) return;
 
@@ -133,6 +205,8 @@ export function MaskOverlay({
         onPanResponderTerminate: () => {
           dragStartRef.current = null;
           dragRectRef.current = null;
+          holdStartMsRef.current = null;
+          longPressArmedRef.current = false;
           setDragRectDp(null);
         },
       }),
@@ -142,8 +216,8 @@ export function MaskOverlay({
   return (
     <View
       style={StyleSheet.absoluteFill}
-      pointerEvents={active ? 'auto' : 'box-none'}
-      {...(active && panResponder ? panResponder.panHandlers : {})}
+      pointerEvents={active || enableLongPressDraw ? 'auto' : 'box-none'}
+      {...((active || enableLongPressDraw) && panResponder ? panResponder.panHandlers : {})}
     >
       {masks.map((mask) => {
         const { xDp, yDp } = ptToDp(mask.xPt, mask.yPt, viewWidthDp, pageWidthPt);

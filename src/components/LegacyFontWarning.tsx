@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { colors, radius, spacing } from '../theme';
+
 type Props = {
   /** Distinct legacy font names detected on the current page (spec Section 9). */
   fontNames: string[];
@@ -41,20 +43,18 @@ export function LegacyFontWarning({ fontNames }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff4e5',
-    borderColor: '#e6a23c',
-    borderWidth: 1,
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 8,
+    backgroundColor: colors.warningSoft,
+    borderRadius: radius.md,
+    padding: spacing.lg,
   },
   title: {
     fontWeight: '700',
-    color: '#8a5a00',
-    marginBottom: 4,
+    color: colors.warning,
+    marginBottom: spacing.xs,
   },
   body: {
-    color: '#5c4300',
+    color: colors.warning,
     fontSize: 13,
+    lineHeight: 19,
   },
 });
