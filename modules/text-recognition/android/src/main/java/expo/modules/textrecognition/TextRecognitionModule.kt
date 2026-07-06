@@ -64,19 +64,39 @@ class TextRecognitionModule : Module() {
           val lines = mutableListOf<OcrLineResult>()
           for (block in result.textBlocks) {
             for (line in block.lines) {
-              // Lines without a bounding box can't be positioned on the page, so they're
-              // useless to the editor - skip rather than fabricate a position.
-              val box = line.boundingBox ?: continue
-              if (line.text.isBlank()) continue
-              lines.add(
-                OcrLineResult(
-                  text = line.text,
-                  x = box.left,
-                  y = box.top,
-                  width = box.width(),
-                  height = box.height()
+              val elements = line.elements
+              // Element-level boxes (words/phrases) make tap-to-edit feel like Canva: the user
+              // can tap "50000" without selecting the whole "Pay: 50000" line. When ML Kit
+              // returns no elements, fall back to the whole line as one unit.
+              if (elements.isNotEmpty()) {
+                for (element in elements) {
+                  val box = element.boundingBox ?: continue
+                  val text = element.text
+                  if (text.isBlank()) continue
+                  lines.add(
+                    OcrLineResult(
+                      text = text,
+                      x = box.left,
+                      y = box.top,
+                      width = box.width(),
+                      height = box.height()
+                    )
+                  )
+                }
+              } else {
+                val box = line.boundingBox ?: continue
+                val text = line.text
+                if (text.isBlank()) continue
+                lines.add(
+                  OcrLineResult(
+                    text = text,
+                    x = box.left,
+                    y = box.top,
+                    width = box.width(),
+                    height = box.height()
+                  )
                 )
-              )
+              }
             }
           }
           promise.resolve(lines)
