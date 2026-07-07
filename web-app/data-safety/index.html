@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Data Safety - Hindi PDF Editor</title>
+    <meta
+      name="description"
+      content="Data safety summary for Hindi PDF Editor, matching the Google Play declaration."
+    />
+    <link rel="canonical" href="https://hindipdfeditor.com/data-safety/" />
+    <link rel="icon" href="/assets/app-icon.png" />
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Primary navigation">
+        <a class="brand" href="/">
+          <img src="/assets/app-icon.png" alt="" />
+          <span>Hindi PDF Editor</span>
+        </a>
+        <div class="nav-links">
+          <a href="/">Tools</a>
+          <a href="/privacy/">Privacy</a>
+          <a href="/support/">Support</a>
+          <a class="active" href="/data-safety/">Data Safety</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="page-hero-inner">
+          <p class="eyebrow">Play Store</p>
+          <h1>Data Safety Summary</h1>
+          <p>
+            This page summarizes the app's expected Google Play Data Safety
+            declaration in plain English.
+          </p>
+        </div>
+      </section>
+
+      <article class="content">
+        <h2>Overview</h2>
+        <ul>
+          <li>
+            Core PDF editing works without developer-hosted document storage.
+          </li>
+          <li>No account is required.</li>
+          <li>No ads SDK is included.</li>
+          <li>No analytics SDK is included.</li>
+          <li>
+            Optional AI enhancement sends the current page image to Google
+            Gemini only by user action.
+          </li>
+        </ul>
+
+        <h2>Data Types</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Collected or shared?</th>
+                <th>Purpose</th>
+                <th>Required?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>PDF page image</td>
+                <td>Shared with Google only if Enhance with AI is used.</td>
+                <td>Text detection for difficult scans.</td>
+                <td>No.</td>
+              </tr>
+              <tr>
+                <td>Gemini API key</td>
+                <td>
+                  Stored locally on device; sent to Google as part of the API
+                  request.
+                </td>
+                <td>Authenticate optional AI enhancement.</td>
+                <td>No.</td>
+              </tr>
+              <tr>
+                <td>Opened PDFs and edits</td>
+                <td>Processed locally by the app.</td>
+                <td>Open, preview, edit, and export PDFs.</td>
+                <td>Yes for app functionality.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Security Practices</h2>
+        <ul>
+          <li>Network requests for optional AI use HTTPS.</li>
+          <li>
+            Gemini API key storage uses Android encrypted storage through Expo
+            SecureStore.
+          </li>
+          <li>
+            The original PDF is not overwritten; exports create a new file.
+          </li>
+        </ul>
+
+        <h2>Data Not Collected By Developer</h2>
+        <p>
+          The developer does not collect name, email, phone number, contacts,
+          location, financial information, advertising identifiers, or analytics
+          events through developer-operated servers or SDKs.
+        </p>
+
+        <h2>Deletion</h2>
+        <p>
+          There is no developer-hosted account data to delete. Users can delete
+          local app data by clearing app storage or uninstalling the app.
+          Exported PDFs remain wherever the user saved or shared them.
+        </p>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-bottom">Copyright 2026 Manisense.</div>
+    </footer>
+    <script src="/assets/analytics.js" defer></script>
+  </body>
+</html>

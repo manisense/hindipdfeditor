@@ -1,17 +1,17 @@
 # AGENTS.md — Hindi PDF Editor
 
-Read `hindi-pdf-editor-spec.md` first — it has the architecture, the phased build plan, data models, and module specs. This file governs *how* to work, not *what* to build. It is reloaded fresh at the start of every session — it has no memory of past sessions and will not learn new rules on its own. If a rule here needs to change permanently, edit this file directly; a verbal correction in one session will not persist to the next.
+Read `mobile-app/hindi-pdf-editor-spec.md` first before touching the mobile app — it has the architecture, the phased build plan, data models, and module specs. This file governs _how_ to work, not _what_ to build. It is reloaded fresh at the start of every session — it has no memory of past sessions and will not learn new rules on its own. If a rule here needs to change permanently, edit this file directly; a verbal correction in one session will not persist to the next.
 
 ## Non-negotiable architecture rules
 
 - Never draw Devanagari text via `Canvas.drawText()`, `android.graphics.pdf.PdfDocument`, or `pdf-lib`'s string-based `drawText()`. All Devanagari rendering goes through the WebView/HTML/print pipeline described in the spec (Section 5). If a task seems to call for one of these anyway, stop and flag it instead of implementing it — this is the one rule the whole project depends on.
 - Do not switch from Plan A ("Render & Print") to Plan B (direct glyph injection) mid-build, even if it looks like a shortcut for a specific edit case. Plan B is Phase 5, deferred, and only happens as an explicit, separate decision after Phases 0–4 are working.
-- Any change to `coordinateMath.ts`, `htmlCompositor.ts`, or `legacyFontDetector.ts` must be verified against an actual exported PDF or screenshot, not just read through — these are the modules where a subtle bug silently corrupts what the user sees without throwing an error.
+- Any change to `mobile-app/src/lib/coordinateMath.ts`, `mobile-app/src/lib/htmlCompositor.ts`, or `mobile-app/src/lib/legacyFontDetector.ts` must be verified against an actual exported PDF or screenshot, not just read through — these are the modules where a subtle bug silently corrupts what the user sees without throwing an error.
 
 ## Code quality bar
 
 - TypeScript strict mode on. No `any` without a one-line comment explaining why it's unavoidable.
-- Every exported function in `/lib` gets a docstring stating the unit of every numeric parameter (dp, pt, or px). This codebase has three coexisting coordinate systems (Section 7–8 of the spec); unit confusion is the single most likely bug class here, and it will not show up as a compile error.
+- Every exported function in `mobile-app/src/lib` gets a docstring stating the unit of every numeric parameter (dp, pt, or px). This codebase has three coexisting coordinate systems (Section 7–8 of the spec); unit confusion is the single most likely bug class here, and it will not show up as a compile error.
 - Favor loose coupling and high cohesion over what "tightly engineered" often gets mistaken for: modules should be swappable, not intertwined. Swapping `expo-print` for `react-native-html-to-pdf`, for instance, should require touching only `exportPdf.ts`. If a change to one file forces edits in three unrelated files, that's a coupling problem to fix, not a one-off exception.
 - No dead code and no commented-out blocks left "just in case" — delete it, git history keeps it if it's ever needed again.
 - Run the linter/formatter before considering any checklist item done, not as a separate cleanup pass at the end.
@@ -52,10 +52,10 @@ Standard pyramid, mapped to this project:
 Every real change gets recorded in more than just the diff — a future session (yours or Codex's) has no memory of this one, and "I'll remember why" doesn't survive a context reset. Three lightweight mechanisms, layered:
 
 1. **Git + Conventional Commits.** Prefix every commit: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`. Costs nothing, and it's machine-parseable — a changelog can be generated from commit history later, and `git log --oneline` tells you what kind of change each commit was without opening it.
-2. **`CHANGELOG.md`, Keep a Changelog format.** A running, human-readable log grouped by version or by phase (matching the spec's Phase 0–5 structure works well here — "Phase 1: viewer + tap-to-edit + Plan A export" as a heading, bullets underneath). This is what gets read in six months when it's forgotten what shipped when, without spelunking through `git log`.
-3. **`docs/decisions/` — lightweight ADRs.** This is the actual fix for the "AGENTS.md has no memory" gap noted above. One short markdown file per real architectural call — `0001-render-and-print-over-glyph-injection.md`, `0002-expo-custom-dev-client.md` — each just: what was decided, why, what was rejected and why. When a future session wonders "why aren't we just using pdf-lib directly," the answer already exists instead of getting re-litigated or re-discovered the hard way.
+2. **`mobile-app/CHANGELOG.md`, Keep a Changelog format.** A running, human-readable log grouped by version or by phase (matching the spec's Phase 0–5 structure works well here — "Phase 1: viewer + tap-to-edit + Plan A export" as a heading, bullets underneath). This is what gets read in six months when it's forgotten what shipped when, without spelunking through `git log`.
+3. **`mobile-app/docs/decisions/` — lightweight ADRs.** This is the actual fix for the "AGENTS.md has no memory" gap noted above. One short markdown file per real architectural call — `0001-render-and-print-over-glyph-injection.md`, `0002-expo-custom-dev-client.md` — each just: what was decided, why, what was rejected and why. When a future session wonders "why aren't we just using pdf-lib directly," the answer already exists instead of getting re-litigated or re-discovered the hard way.
 
-**The discipline that matters more than any of the three tools above:** update `hindi-pdf-editor-spec.md` and this file in the *same commit* that changes the behavior they describe, not as a separate cleanup pass later. A spec that's stale by even one phase is worse than no spec, because it will be trusted.
+**The discipline that matters more than any of the three tools above:** update `mobile-app/hindi-pdf-editor-spec.md` and this file in the _same commit_ that changes the behavior they describe, not as a separate cleanup pass later. A spec that's stale by even one phase is worse than no spec, because it will be trusted.
 
 ## Skills
 
