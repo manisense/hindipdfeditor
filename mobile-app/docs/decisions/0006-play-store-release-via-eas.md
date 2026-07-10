@@ -11,7 +11,7 @@ The app uses custom native modules (`pdf-page-image`, `text-recognition`) and ca
 ## Decision
 
 1. **`app.config.ts`** is the single source for version, permissions (`blockedPermissions` for overlay/storage), splash, and release optimizations via `expo-build-properties` (R8 minify + shrink resources + ML Kit ProGuard keeps).
-2. **`eas.json`** defines `production` profile building an **Android App Bundle** (`.aab`) with `autoIncrement` for `versionCode`.
+2. **`eas.json`** defines `production` profile building an **Android App Bundle** (`.aab`). Because this app uses dynamic Expo config (`app.config.ts`), `versionCode` is bumped explicitly in `app.config.ts` before each Play Store release instead of using EAS `autoIncrement`.
 3. **`expo-dev-client`** stays in **devDependencies** only — production EAS builds use `developmentClient: false` (default for production profile).
 4. Remove unused **`react-native-pdf`** and **`react-native-blob-util`** from dependencies (never imported; reduced APK size and permission surface).
 5. In-app **About** modal links to a public **privacy policy** (required for optional Gemini cloud OCR).

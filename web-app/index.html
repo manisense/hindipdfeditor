@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Hindi PDF Editor - Edit Hindi PDFs on Android</title>
+    <title>Hindi PDF Editor - Every tool you need for Hindi PDFs</title>
     <meta
       name="description"
-      content="Hindi PDF Editor helps you open, edit, replace text, and export Hindi PDFs on Android while keeping Devanagari shaping correct."
+      content="Edit Hindi PDFs online with correct Devanagari shaping. Merge, split, and compress PDFs locally in your browser — 100% free, no account required."
     />
     <link rel="canonical" href="https://hindipdfeditor.com/" />
     <meta property="og:title" content="Hindi PDF Editor" />
     <meta
       property="og:description"
-      content="Local-first Android PDF editor built for Hindi and Devanagari documents."
+      content="Every tool you need to work with Hindi PDFs — edit text, merge, split, compress. Free and local-first."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://hindipdfeditor.com/" />
@@ -21,6 +21,12 @@
       content="https://hindipdfeditor.com/assets/app-icon.png"
     />
     <link rel="icon" href="/assets/app-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/assets/site.css" />
     <script type="application/ld+json">
       {
@@ -28,13 +34,13 @@
         "@type": "SoftwareApplication",
         "name": "Hindi PDF Editor",
         "applicationCategory": "ProductivityApplication",
-        "operatingSystem": "Android",
+        "operatingSystem": "Android, Web",
         "offers": {
           "@type": "Offer",
           "price": "0",
           "priceCurrency": "USD"
         },
-        "description": "Hindi PDF Editor helps Android users edit Hindi and English text in PDFs, then export a new PDF without overwriting the original file.",
+        "description": "Edit Hindi and English text in PDFs with correct Devanagari shaping. Merge, split, and compress PDFs locally in the browser.",
         "privacyPolicy": "https://hindipdfeditor.com/privacy/"
       }
     </script>
@@ -43,100 +49,39 @@
     <header class="site-header">
       <nav class="nav" aria-label="Primary navigation">
         <a class="brand" href="/">
-          <img src="/assets/app-icon.png" alt="" />
-          <span>Hindi PDF Editor</span>
+          <img src="/assets/app-icon.png" alt="" width="32" height="32" />
+          <span>Hindi<span class="brand-accent">PDF</span></span>
         </a>
         <div class="nav-links">
-          <a class="active" href="/">Tools</a>
-          <a href="#how-it-works">How it works</a>
-          <a href="/privacy/">Privacy</a>
-          <a href="/support/">Support</a>
+          <a href="/edit/?tool=merge">MERGE PDF</a>
+          <a href="/edit/?tool=split">SPLIT PDF</a>
+          <a href="/edit/?tool=compress">COMPRESS PDF</a>
+          <a href="/edit/?tool=edit">EDIT PDF</a>
+          <a href="#tools">ALL PDF TOOLS</a>
         </div>
         <div class="nav-actions">
-          <a class="button secondary" href="/support/">Contact</a>
+          <a class="nav-text" href="/support/">Support</a>
           <a
             class="button primary"
             href="https://play.google.com/store/apps/details?id=com.manisense.hindipdfeditor"
           >
-            <span class="icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M8 5v14l11-7L8 5Z" fill="currentColor" />
-              </svg>
-            </span>
-            Google Play
+            Get App
           </a>
         </div>
       </nav>
     </header>
 
     <main>
-      <section class="hero">
-        <div class="hero-inner">
-          <div>
-            <p class="eyebrow">Android PDF editor for Hindi documents</p>
-            <h1>Edit Hindi PDFs without breaking Devanagari text.</h1>
-            <p class="lead">
-              Open a PDF, add or replace text, keep Hindi shaping correct, and
-              export a new PDF from your Android phone. Built for forms,
-              letters, school files, office PDFs, and everyday India-first
-              document work.
-            </p>
-            <div class="hero-actions">
-              <a
-                class="button primary"
-                href="https://play.google.com/store/apps/details?id=com.manisense.hindipdfeditor"
-              >
-                <span class="icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M8 5v14l11-7L8 5Z" fill="currentColor" />
-                  </svg>
-                </span>
-                Download Android app
-              </a>
-              <a class="button secondary" href="#tools">View PDF tools</a>
-            </div>
-            <div class="trust-row" aria-label="Product highlights">
-              <div class="trust-item">
-                <strong>Local-first</strong>
-                No account or developer document upload for core editing.
-              </div>
-              <div class="trust-item">
-                <strong>Hindi-safe export</strong>
-                Designed around proper Devanagari rendering.
-              </div>
-              <div class="trust-item">
-                <strong>Original preserved</strong>
-                Exports a new file instead of overwriting your PDF.
-              </div>
-            </div>
-          </div>
+      <section class="hero-tools" id="tools">
+        <div class="hero-tools__blobs" aria-hidden="true"></div>
+        <div class="hero-tools__inner">
+          <h1>Every tool you need to work with Hindi PDFs in one place</h1>
+          <p class="hero-tools__lead">
+            Edit Devanagari text correctly, merge and split files, or compress
+            large scans — all free, in your browser. No account. Your PDFs stay
+            on your device.
+          </p>
 
-          <aside class="phone-panel" aria-label="App preview">
-            <div class="phone-frame">
-              <img
-                src="/assets/app-preview.png"
-                alt="Hindi PDF Editor Android app preview"
-              />
-            </div>
-            <p class="phone-caption">
-              Tap-to-edit workflow with page preview, Hindi text overlays,
-              mask-and-replace mode, and export controls.
-            </p>
-          </aside>
-        </div>
-      </section>
-
-      <section class="section" id="tools">
-        <div class="section-header">
-          <div>
-            <p class="eyebrow">PDF tools</p>
-            <h2>Focused tools for Hindi PDF editing</h2>
-            <p>
-              A compact toolkit inspired by modern PDF utility sites, but
-              centered on the Android app's real strengths: editing, replacing,
-              OCR assistance, and private export.
-            </p>
-          </div>
           <div class="tabs" role="tablist" aria-label="Filter PDF tools">
             <button
               class="tab active"
@@ -152,262 +97,330 @@
               data-tool-tab="edit"
               aria-selected="false"
             >
-              Edit
+              Edit &amp; OCR
             </button>
             <button
               class="tab"
               type="button"
-              data-tool-tab="scan"
+              data-tool-tab="organize"
               aria-selected="false"
             >
-              OCR
+              Organize
             </button>
             <button
               class="tab"
               type="button"
-              data-tool-tab="privacy"
+              data-tool-tab="optimize"
               aria-selected="false"
             >
-              Privacy
+              Optimize
             </button>
           </div>
-        </div>
 
-        <div class="tool-grid">
-          <article class="tool-card" data-tool-category="edit">
-            <span class="tool-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                <path
-                  d="M4 20h4l11-11-4-4L4 16v4Z"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <path d="m13 7 4 4" stroke="currentColor" stroke-width="2" />
-              </svg>
-            </span>
-            <h3>Edit Hindi PDF</h3>
-            <p>
-              Add new Hindi or English text directly on the PDF page and export
-              a fresh file.
-            </p>
-          </article>
-          <article class="tool-card" data-tool-category="edit">
-            <span class="tool-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                <path
-                  d="M4 7h16M4 12h10M4 17h7"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <path d="M16 15h4v4h-4z" fill="currentColor" />
-              </svg>
-            </span>
-            <h3>Replace Text</h3>
-            <p>
-              Cover old burned-in text with a sampled background color, then
-              place fresh text.
-            </p>
-          </article>
-          <article class="tool-card" data-tool-category="edit privacy">
-            <span class="tool-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                <path
-                  d="M5 5h14v14H5z"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <path
-                  d="M8 9h8M8 13h6"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-              </svg>
-            </span>
-            <h3>Export PDF</h3>
-            <p>
-              Save edits as a new PDF and share it to WhatsApp, email, or any
-              PDF viewer.
-            </p>
-          </article>
-          <article class="tool-card" data-tool-category="scan privacy">
-            <span class="tool-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                <path
-                  d="M6 4h12v16H6z"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <path
-                  d="M9 8h6M9 12h6M9 16h3"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-              </svg>
-            </span>
-            <h3>On-device OCR</h3>
-            <p>
-              Detect text on the phone for scanned pages without uploading
-              documents to us.
-            </p>
-          </article>
-          <article class="tool-card" data-tool-category="scan">
-            <span class="tool-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                <path
-                  d="M12 3v4M12 17v4M3 12h4M17 12h4"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="2" />
-              </svg>
-            </span>
-            <h3>Optional AI Enhance</h3>
-            <p>
-              Use your own Gemini API key for difficult scans only when you
-              explicitly choose it.
-            </p>
-          </article>
-          <article class="tool-card" data-tool-category="privacy">
-            <span class="tool-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                <path
-                  d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <path
-                  d="M9 12l2 2 4-5"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-              </svg>
-            </span>
-            <h3>No Account Needed</h3>
-            <p>
-              Core PDF editing does not require login, ads, analytics, or
-              developer servers.
-            </p>
-          </article>
+          <div class="tool-grid">
+            <a
+              class="tool-card"
+              data-tool-category="edit"
+              href="/edit/?tool=edit"
+            >
+              <span class="tool-icon tool-icon--red" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                  <path
+                    d="M4 20h4l11-11-4-4L4 16v4Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="m13 7 4 4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                </svg>
+              </span>
+              <h3>Edit Hindi PDF</h3>
+              <p>
+                Tap detected Hindi or English text and replace it with correctly
+                shaped Devanagari.
+              </p>
+            </a>
+
+            <a
+              class="tool-card"
+              data-tool-category="edit"
+              href="/edit/?tool=edit&amp;mode=erase"
+            >
+              <span class="tool-icon tool-icon--orange" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                  <rect
+                    x="5"
+                    y="6"
+                    width="14"
+                    height="12"
+                    rx="2"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M8 10h8M8 14h5"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                </svg>
+              </span>
+              <h3>Replace text</h3>
+              <p>
+                Cover burned-in text with a sampled background, then type a
+                fresh replacement.
+              </p>
+            </a>
+
+            <a
+              class="tool-card"
+              data-tool-category="edit"
+              href="/edit/?tool=edit&amp;mode=addText"
+            >
+              <span class="tool-icon tool-icon--blue" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                  <path
+                    d="M12 5v14M5 12h14"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </span>
+              <h3>Add text</h3>
+              <p>
+                Place new Hindi or English text anywhere on the page with proper
+                shaping.
+              </p>
+            </a>
+
+            <a
+              class="tool-card"
+              data-tool-category="organize"
+              href="/edit/?tool=merge"
+            >
+              <span class="tool-icon tool-icon--orange" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                  <path
+                    d="M8 4h5l3 3v13H8V4Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M14 3h4l2 2v10h-4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    opacity="0.55"
+                  />
+                </svg>
+              </span>
+              <h3>Merge PDF</h3>
+              <p>
+                Combine PDFs in the order you want into a single file, right in
+                your browser.
+              </p>
+            </a>
+
+            <a
+              class="tool-card"
+              data-tool-category="organize"
+              href="/edit/?tool=split"
+            >
+              <span class="tool-icon tool-icon--orange" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                  <path
+                    d="M9 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h3"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M15 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M12 8v8"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </span>
+              <h3>Split PDF</h3>
+              <p>
+                Extract a page range into a new PDF — perfect for forms and
+                chapters.
+              </p>
+            </a>
+
+            <a
+              class="tool-card"
+              data-tool-category="optimize"
+              href="/edit/?tool=compress"
+            >
+              <span class="tool-icon tool-icon--green" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                  <path
+                    d="M8 4h8v4H8V4Zm0 12h8v4H8v-4Zm-3-6h14v4H5v-4Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+              <h3>Compress PDF</h3>
+              <p>
+                Reduce file size by re-encoding pages — great for large scanned
+                documents.
+              </p>
+            </a>
+
+            <a
+              class="tool-card"
+              data-tool-category="edit"
+              href="/edit/?tool=edit"
+            >
+              <span class="tool-icon tool-icon--purple" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="8"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M9 12h6M12 9v6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </span>
+              <h3>OCR text detect</h3>
+              <p>
+                Automatically find Hindi and English lines so you can tap to
+                edit them.
+              </p>
+            </a>
+
+            <a
+              class="tool-card"
+              data-tool-category="edit"
+              href="/edit/?tool=edit"
+            >
+              <span class="tool-icon tool-icon--teal" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                  <path
+                    d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M9 12l2 2 4-5"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+              <h3>Local-first export</h3>
+              <p>
+                Download a new PDF. Your original file is never overwritten or
+                uploaded to us.
+              </p>
+            </a>
+          </div>
         </div>
       </section>
 
-      <section class="feature-band">
-        <div class="section">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Why it exists</p>
-              <h2>Built for the PDF problem Hindi users actually face.</h2>
+      <section class="work-way" id="how-it-works">
+        <h2>Work your way</h2>
+        <div class="work-way__grid">
+          <article class="work-card">
+            <div class="work-card__visual work-card__visual--web">
+              <img
+                src="/assets/app-preview.png"
+                alt="Hindi PDF Editor in the browser"
+              />
             </div>
-          </div>
-          <div class="feature-grid">
-            <article class="feature">
-              <h3>Correct Hindi shaping</h3>
-              <p>
-                Designed to avoid broken matras, conjuncts, and reph in
-                Devanagari text.
-              </p>
-            </article>
-            <article class="feature">
-              <h3>Phone-first workflow</h3>
-              <p>
-                Edit common documents without needing a laptop, printer, or
-                scanner desk.
-              </p>
-            </article>
-            <article class="feature">
-              <h3>Offline core editing</h3>
-              <p>
-                Open, edit, mask, and export documents on device for normal use.
-              </p>
-            </article>
-            <article class="feature">
-              <h3>Privacy-aware AI</h3>
-              <p>
-                Cloud OCR enhancement is optional and uses the user's own Google
-                API key.
-              </p>
-            </article>
-          </div>
+            <h3>Hindi PDF on the web</h3>
+            <p>
+              Open any tool in your browser, drop a PDF, edit or process it, and
+              download the result — no install required.
+            </p>
+            <a class="work-card__link" href="/edit/">Open web tools →</a>
+          </article>
+          <article class="work-card">
+            <div class="work-card__visual work-card__visual--mobile">
+              <img
+                src="/assets/app-preview.png"
+                alt="Hindi PDF Editor Android app"
+              />
+            </div>
+            <h3>Hindi PDF on Android</h3>
+            <p>
+              The same tap-to-edit Hindi workflow on your phone, with on-device
+              OCR and private export.
+            </p>
+            <a
+              class="work-card__link"
+              href="https://play.google.com/store/apps/details?id=com.manisense.hindipdfeditor"
+              >Get the Android app →</a
+            >
+          </article>
+          <article class="work-card">
+            <div class="work-card__visual work-card__visual--privacy">
+              <span class="work-card__glyph" aria-hidden="true">अ</span>
+            </div>
+            <h3>Built for Devanagari</h3>
+            <p>
+              Shaping goes through a real browser engine so conjuncts, matras,
+              and reph stay correct in preview and export.
+            </p>
+            <a class="work-card__link" href="/edit/?tool=edit"
+              >Try Edit PDF →</a
+            >
+          </article>
         </div>
       </section>
 
-      <section class="section" id="how-it-works">
-        <div class="section-header">
+      <section class="promo-band">
+        <div class="promo-band__inner">
           <div>
-            <p class="eyebrow">How it works</p>
-            <h2>Open, edit, export</h2>
+            <h2>Private by default. Hindi-safe by design.</h2>
+            <ul class="promo-list">
+              <li>Core tools run locally in your browser or on your phone</li>
+              <li>Original PDFs are never overwritten</li>
+              <li>Optional AI OCR uses only your own Gemini API key</li>
+              <li>No account required for editing, merge, split, or compress</li>
+            </ul>
+            <a class="button primary" href="/edit/?tool=edit">Start editing</a>
           </div>
-        </div>
-        <div class="steps">
-          <article class="step">
-            <span class="step-number">1</span>
-            <h3>Pick a PDF</h3>
-            <p>
-              Use Android's document picker. The app does not need broad storage
-              permission.
-            </p>
-          </article>
-          <article class="step">
-            <span class="step-number">2</span>
-            <h3>Tap or select</h3>
-            <p>
-              Add text by tapping, or use replace mode to cover old text first.
-            </p>
-          </article>
-          <article class="step">
-            <span class="step-number">3</span>
-            <h3>Type Hindi</h3>
-            <p>
-              Use your normal Hindi keyboard and preview the edit directly on
-              the page.
-            </p>
-          </article>
-          <article class="step">
-            <span class="step-number">4</span>
-            <h3>Export a copy</h3>
-            <p>
-              The original PDF remains unchanged. The edited output is a new
-              file.
-            </p>
-          </article>
+          <div class="promo-band__art" aria-hidden="true">
+            <div class="promo-doc">
+              <span>नमस्ते</span>
+              <span>PDF</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section class="legal-preview">
-        <div class="section">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Play Store readiness</p>
-              <h2>Public app policy pages</h2>
-              <p>
-                These pages are hosted on the same domain so Google Play
-                reviewers and users can inspect privacy, support, terms, and
-                data safety details.
-              </p>
-            </div>
-          </div>
-          <div class="legal-grid">
-            <a class="legal-link" href="/privacy/">
-              <h3>Privacy Policy</h3>
-              <p>
-                Local-first data handling and optional Gemini OCR disclosure.
-              </p>
-            </a>
-            <a class="legal-link" href="/support/">
-              <h3>Support</h3>
-              <p>Contact, bug reports, feedback, and response expectations.</p>
-            </a>
-            <a class="legal-link" href="/terms/">
-              <h3>Terms</h3>
-              <p>Use rules, document ownership, and service limitations.</p>
-            </a>
-            <a class="legal-link" href="/data-safety/">
-              <h3>Data Safety</h3>
-              <p>
-                Plain-English summary matching the Play Console declaration.
-              </p>
-            </a>
-          </div>
+      <section class="trust-band">
+        <h2>Made for everyday Hindi documents</h2>
+        <p>
+          Forms, letters, school files, office PDFs — edit them without broken
+          Devanagari characters.
+        </p>
+        <div class="trust-pills">
+          <span>Local-first</span>
+          <span>No signup</span>
+          <span>Android + Web</span>
+          <span>Devanagari-safe</span>
         </div>
       </section>
     </main>
@@ -415,41 +428,51 @@
     <footer class="site-footer">
       <div class="footer-inner">
         <div>
-          <a class="brand" href="/">
-            <img src="/assets/app-icon.png" alt="" />
-            <span>Hindi PDF Editor</span>
-          </a>
-          <p>
-            Local-first Android PDF editor for Hindi and English documents.
-            Built by Manisense for practical mobile document editing.
-          </p>
-        </div>
-        <div>
-          <h3>Product</h3>
-          <a href="#tools">Tools</a>
-          <a href="#how-it-works">How it works</a>
+          <h3>HINDI PDF</h3>
+          <a href="/">Home</a>
+          <a href="/edit/">All tools</a>
           <a
             href="https://play.google.com/store/apps/details?id=com.manisense.hindipdfeditor"
+            >Android app</a
           >
-            Google Play
-          </a>
         </div>
         <div>
-          <h3>Support</h3>
-          <a href="/support/">Contact</a>
+          <h3>TOOLS</h3>
+          <a href="/edit/?tool=edit">Edit PDF</a>
+          <a href="/edit/?tool=merge">Merge PDF</a>
+          <a href="/edit/?tool=split">Split PDF</a>
+          <a href="/edit/?tool=compress">Compress PDF</a>
+        </div>
+        <div>
+          <h3>HELP</h3>
+          <a href="/support/">Support</a>
+          <a href="mailto:support@hindipdfeditor.com">Email</a>
           <a href="/data-safety/">Data Safety</a>
-          <a href="mailto:support@hindipdfeditor.com">Email support</a>
         </div>
         <div>
-          <h3>Legal</h3>
+          <h3>LEGAL</h3>
           <a href="/privacy/">Privacy Policy</a>
           <a href="/terms/">Terms</a>
           <a href="/sitemap.xml">Sitemap</a>
         </div>
+        <div class="footer-apps">
+          <h3>GET THE APP</h3>
+          <a
+            class="store-badge"
+            href="https://play.google.com/store/apps/details?id=com.manisense.hindipdfeditor"
+          >
+            Google Play
+          </a>
+          <a class="store-badge store-badge--ghost" href="/edit/"
+            >Open web tools</a
+          >
+        </div>
       </div>
       <div class="footer-bottom">
-        Copyright 2026 Manisense. Hindi PDF Editor is not affiliated with
-        iLovePDF.
+        <span
+          >© 2026 Manisense. Hindi PDF Editor is not affiliated with
+          iLovePDF.</span
+        >
       </div>
     </footer>
     <script src="/assets/site.js" defer></script>

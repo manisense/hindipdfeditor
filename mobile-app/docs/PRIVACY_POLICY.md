@@ -1,7 +1,7 @@
 # Privacy Policy — Hindi PDF Editor
 
 **Last updated:** 7 July 2026
-**App:** Hindi PDF Editor (`com.manisense.hindipdfeditor`)  
+**App:** Hindi PDF Editor (`com.hindipdfeditor.app`)
 **Developer:** Manisense
 **Public URL:** `https://hindipdfeditor.com/privacy/`
 

@@ -26,7 +26,17 @@ mobile-app/*.tsbuildinfo
 *.pem
 .env*.local
 
+# Web editor local/generated state
+web-app/editor/node_modules/
+web-app/editor/tsconfig.tsbuildinfo
+web-app/edit/
+
 # Local Expo Module native build outputs
+mobile-app/modules/*/android/.gradle/
 mobile-app/modules/*/android/build/
 mobile-app/modules/*/android/.cxx/
 mobile-app/modules/*/ios/build/
+
+# Redundant zip of already-tracked play-store assets
+mobile-app/play-store-assets/play-store-assets.zip
+

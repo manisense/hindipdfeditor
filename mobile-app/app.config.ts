@@ -6,14 +6,14 @@ import type { ExpoConfig } from 'expo/config';
  */
 const config: ExpoConfig = {
   name: 'Hindi PDF Editor',
-  slug: 'hindi-pdf-editor',
+  slug: 'hindipdfeditor',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
   scheme: 'hindipdfeditor',
   android: {
-    package: 'com.manisense.hindipdfeditor',
+    package: 'com.hindipdfeditor.app',
     versionCode: 1,
     adaptiveIcon: {
       backgroundColor: '#2453B2',
@@ -31,7 +31,7 @@ const config: ExpoConfig = {
       'android.permission.RECORD_AUDIO',
       'android.permission.CAMERA',
     ],
-    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.manisense.hindipdfeditor',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.hindipdfeditor.app',
   },
   plugins: [
     [

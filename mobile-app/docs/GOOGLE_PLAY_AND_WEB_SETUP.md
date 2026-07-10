@@ -8,7 +8,7 @@ Use this as the field guide while creating the Play Console app and connecting
 | Field            | Value                                                                                                                                       |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | App name         | `Hindi PDF Editor`                                                                                                                          |
-| Package name     | `com.manisense.hindipdfeditor`                                                                                                              |
+| Package name     | `com.hindipdfeditor.app`                                                                                                                    |
 | Default language | Prefer `English (India) - en-IN` if available; otherwise use `English (United States)` or the closest English option shown in Play Console. |
 | App or game      | `App`                                                                                                                                       |
 | Free or paid     | `Free`                                                                                                                                      |

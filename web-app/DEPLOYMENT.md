@@ -3,6 +3,9 @@
 The public Play Store support site lives in `web-app/` and is designed to deploy as a static
 Cloudflare Pages project for `hindipdfeditor.com`.
 
+The browser PDF tools (edit / merge / split / compress) live under `web-app/editor/` and build
+into `web-app/edit/`.
+
 ## Target account
 
 Deploy this from the Cloudflare account for `localcode.ai@gmail.com`.
@@ -14,6 +17,7 @@ deploy until Wrangler is authenticated to the target account or a target-account
 
 ```bash
 cd /Users/manish/Downloads/Projects/hindi-pdf-editor/web-app
+npm run build:editor
 npx wrangler logout
 npx wrangler login
 npx wrangler whoami

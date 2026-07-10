@@ -4,7 +4,7 @@
 
 - [ ] Create [Expo account](https://expo.dev) and run `eas login`
 - [ ] Confirm `extra.eas.projectId` in `app.config.ts` points to the intended Expo project
-- [ ] Create [Google Play Console](https://play.google.com/console) app listing (`com.manisense.hindipdfeditor`)
+- [ ] Create [Google Play Console](https://play.google.com/console) app listing (`com.hindipdfeditor.app`)
 - [ ] Deploy the Cloudflare Pages website in `../web-app/` to `https://hindipdfeditor.com`
 - [ ] Confirm privacy policy URL works: `https://hindipdfeditor.com/privacy/`
 - [ ] Confirm support URL works: `https://hindipdfeditor.com/support/`

@@ -1,0 +1,277 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family:
+    'Noto Sans Devanagari',
+    'NotoSansDevanagari',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: #f2f3f7;
+  color: #1b1d24;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app__file-input {
+  display: none;
+}
+
+.app__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e2e4eb;
+}
+
+.app__title {
+  margin: 0;
+  font-size: 19px;
+}
+
+.app__subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #5b616e;
+  max-width: 60vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app__centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.app__fill {
+  flex: 1;
+}
+
+.app__landing {
+  padding: 24px;
+  text-align: center;
+}
+
+.app__badge {
+  width: 84px;
+  height: 84px;
+  border-radius: 24px;
+  background: #2453b2;
+  color: #fff;
+  font-size: 44px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.app__landing-title {
+  margin: 0;
+  font-size: 22px;
+}
+
+.app__landing-body {
+  margin: 12px 0 24px;
+  max-width: 520px;
+  color: #5b616e;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.app__content {
+  padding: 0;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app__filename {
+  color: #5b616e;
+  flex: 1;
+  font-size: 12px;
+  max-width: 40vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app__landing {
+  padding: 8px 0 24px;
+  text-align: center;
+  width: 100%;
+}
+
+.app__landing .app__status {
+  margin-top: 16px;
+  max-width: 640px;
+  width: 100%;
+}
+
+.app__toolbar-card {
+  background: #fff;
+  border: 1px solid #e2e4eb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.app__toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.app__pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.app__hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: #5b616e;
+  line-height: 1.4;
+}
+
+.app__page-card {
+  border: 1px solid #e2e4eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.app__status {
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 13px;
+}
+
+.app__status--success {
+  background: #e9f5ec;
+  color: #1e7b34;
+}
+
+.app__status--error {
+  background: #fbeaec;
+  color: #c6303e;
+}
+
+.app__progress {
+  margin: 16px 0 4px;
+  font-weight: 600;
+}
+
+.app__progress-sub {
+  margin: 0;
+  color: #5b616e;
+  font-size: 13px;
+}
+
+.app__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e8eefb;
+  border-top-color: #2453b2;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.app__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.app__modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 440px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app__modal h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.app__modal p {
+  margin: 0;
+  font-size: 13px;
+  color: #5b616e;
+  line-height: 1.45;
+}
+
+.app__modal-input {
+  border: 1px solid #e2e4eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.app__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .app__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .app__subtitle {
+    max-width: 100%;
+  }
+}

@@ -1,0 +1,142 @@
+.tool-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family:
+    'Montserrat',
+    'Segoe UI',
+    system-ui,
+    sans-serif;
+}
+
+.tool-shell__header {
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid #e8eaf0;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 12px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.tool-shell__brand {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-weight: 800;
+  gap: 8px;
+  letter-spacing: -0.02em;
+}
+
+.tool-shell__sep {
+  color: #c5c8d1;
+}
+
+.tool-shell__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tool-shell__intro {
+  margin: 0 auto;
+  max-width: 960px;
+  padding: 36px 20px 8px;
+  text-align: center;
+  width: 100%;
+}
+
+.tool-shell__intro h1 {
+  color: #1f2330;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 8px;
+}
+
+.tool-shell__intro p {
+  color: #6b7280;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 560px;
+}
+
+.tool-shell__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  list-style: none;
+  margin: 20px auto 0;
+  max-width: 960px;
+  padding: 0 20px;
+  width: 100%;
+}
+
+.tool-shell__step {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e8eaf0;
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(31, 35, 48, 0.04);
+  color: #8a8a96;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 8px;
+  padding: 8px 14px;
+}
+
+.tool-shell__step.is-active {
+  border-color: #e5322d;
+  color: #1f2330;
+}
+
+.tool-shell__step.is-done {
+  border-color: #22a06b;
+  color: #22a06b;
+}
+
+.tool-shell__step-num {
+  align-items: center;
+  background: #f3f4f8;
+  border-radius: 50%;
+  display: inline-flex;
+  font-size: 12px;
+  height: 22px;
+  justify-content: center;
+  width: 22px;
+}
+
+.tool-shell__step.is-active .tool-shell__step-num {
+  background: #e5322d;
+  color: #fff;
+}
+
+.tool-shell__step.is-done .tool-shell__step-num {
+  background: #22a06b;
+  color: #fff;
+}
+
+.tool-shell__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin: 0 auto;
+  max-width: 960px;
+  padding: 20px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .tool-shell__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

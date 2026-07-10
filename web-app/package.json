@@ -1,0 +1,9 @@
+{
+  "name": "hindi-pdf-editor-website",
+  "private": true,
+  "scripts": {
+    "build:editor": "npm --prefix editor run build",
+    "build": "npm run build:editor",
+    "dev:editor": "npm --prefix editor run dev"
+  }
+}

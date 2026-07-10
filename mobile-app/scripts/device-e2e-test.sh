@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APK="$ROOT/android/app/build/outputs/apk/debug/app-debug.apk"
-PKG="com.manisense.hindipdfeditor"
+PKG="com.hindipdfeditor.app"
 ACTIVITY="$PKG/.MainActivity"
 
 echo "==> Checking adb device…"

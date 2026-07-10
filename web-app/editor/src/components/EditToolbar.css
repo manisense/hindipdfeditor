@@ -1,0 +1,60 @@
+.edit-toolbar {
+  background: #fff;
+  border: 1px solid #e2e4eb;
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-toolbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-toolbar__chip {
+  border: 1px solid #e2e4eb;
+  border-radius: 8px;
+  padding: 4px 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  color: #5b616e;
+}
+
+.edit-toolbar__chip.active {
+  border-color: #2453b2;
+  background: #e8eefb;
+  color: #1a3e8a;
+}
+
+.edit-toolbar__size {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5b616e;
+  min-width: 38px;
+  text-align: center;
+}
+
+.edit-toolbar__swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #e2e4eb;
+  cursor: pointer;
+  padding: 0;
+}
+
+.edit-toolbar__swatch.active {
+  border-color: #2453b2;
+  border-width: 3px;
+}
+
+.edit-toolbar__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

@@ -5,9 +5,9 @@
   "main": "index.ts",
   "dependencies": {
     "@cantoo/pdf-lib": "^2.7.1",
-    "expo": "~56.0.14",
-    "expo-asset": "~56.0.18",
-    "expo-build-properties": "~56.0.8",
+    "expo": "~56.0.15",
+    "expo-asset": "~56.0.19",
+    "expo-build-properties": "~56.0.22",
     "expo-constants": "~56.0.8",
     "expo-crypto": "~56.0.4",
     "expo-document-picker": "~56.0.4",
@@ -15,7 +15,7 @@
     "expo-font": "~56.0.7",
     "expo-print": "~56.0.4",
     "expo-secure-store": "~56.0.4",
-    "expo-sharing": "~56.0.20",
+    "expo-sharing": "~56.0.21",
     "expo-splash-screen": "~56.0.12",
     "expo-status-bar": "~56.0.4",
     "pdf-page-image": "file:./modules/pdf-page-image",
@@ -25,7 +25,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@react-native/jest-preset": "^0.86.0",
+    "@react-native/jest-preset": "0.85.3",
     "@types/jest": "29.5.14",
     "@types/node": "^26.1.0",
     "@types/react": "~19.2.2",

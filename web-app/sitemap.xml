@@ -2,7 +2,27 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://hindipdfeditor.com/</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-11</lastmod>
+  </url>
+  <url>
+    <loc>https://hindipdfeditor.com/edit/</loc>
+    <lastmod>2026-07-11</lastmod>
+  </url>
+  <url>
+    <loc>https://hindipdfeditor.com/edit/?tool=edit</loc>
+    <lastmod>2026-07-11</lastmod>
+  </url>
+  <url>
+    <loc>https://hindipdfeditor.com/edit/?tool=merge</loc>
+    <lastmod>2026-07-11</lastmod>
+  </url>
+  <url>
+    <loc>https://hindipdfeditor.com/edit/?tool=split</loc>
+    <lastmod>2026-07-11</lastmod>
+  </url>
+  <url>
+    <loc>https://hindipdfeditor.com/edit/?tool=compress</loc>
+    <lastmod>2026-07-11</lastmod>
   </url>
   <url>
     <loc>https://hindipdfeditor.com/privacy/</loc>

@@ -1,0 +1,33 @@
+.pdf-page-viewer {
+  width: 100%;
+  overflow: hidden;
+}
+
+.pdf-page-viewer__scroll {
+  overflow: auto;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pdf-page-viewer__content {
+  position: relative;
+}
+
+.pdf-page-viewer__page {
+  position: relative;
+  transform-origin: top left;
+}
+
+.pdf-page-viewer__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  user-select: none;
+  pointer-events: none;
+}
+
+.pdf-page-viewer__overlays {
+  position: relative;
+}

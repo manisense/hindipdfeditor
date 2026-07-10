@@ -1,0 +1,18 @@
+.legacy-font-warning {
+  background: #fff4dc;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.legacy-font-warning__title {
+  font-weight: 700;
+  color: #8a5a00;
+  margin: 0 0 4px;
+}
+
+.legacy-font-warning__body {
+  color: #8a5a00;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+}

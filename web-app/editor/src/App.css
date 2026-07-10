@@ -1,0 +1,26 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family:
+    'Montserrat',
+    'Noto Sans Devanagari',
+    'NotoSansDevanagari',
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: #fff;
+  color: #1f2330;
+  -webkit-font-smoothing: antialiased;
+}

@@ -1,0 +1,22 @@
+.mask-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.mask-overlay--active {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.mask-overlay__mask {
+  position: absolute;
+  pointer-events: none;
+}
+
+.mask-overlay__drag {
+  position: absolute;
+  border: 2px solid #1a73e8;
+  background: rgba(26, 115, 232, 0.15);
+  pointer-events: none;
+}

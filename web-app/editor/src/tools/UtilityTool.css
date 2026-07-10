@@ -1,0 +1,125 @@
+.utility-tool {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.utility-tool__panel {
+  background: #fff;
+  border: 1px solid #e7e2da;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  width: 100%;
+}
+
+.utility-tool__panel h2 {
+  font-size: 1.05rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.utility-tool__meta {
+  color: #62626d;
+  font-size: 13px;
+  margin: 0;
+}
+
+.utility-tool__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.utility-tool__list li {
+  align-items: center;
+  background: #f7f7f4;
+  border-radius: 10px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.utility-tool__remove {
+  background: transparent;
+  border: none;
+  color: #d83b35;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0;
+}
+
+.utility-tool__range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.utility-tool__range label {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 6px;
+}
+
+.utility-tool__range input {
+  border: 1px solid #e7e2da;
+  border-radius: 8px;
+  font-size: 15px;
+  padding: 8px 10px;
+  width: 100px;
+}
+
+.utility-tool__slider {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 8px;
+}
+
+.utility-tool__slider input {
+  width: 100%;
+}
+
+.utility-tool__note {
+  color: #8a8a96;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.utility-tool__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.utility-tool__status {
+  border-radius: 12px;
+  font-size: 13px;
+  padding: 14px 16px;
+  width: 100%;
+}
+
+.utility-tool__status--error {
+  background: #fbeaec;
+  color: #c6303e;
+}
+
+.utility-tool__status--ok {
+  background: #e9f5ec;
+  color: #1e7b34;
+}

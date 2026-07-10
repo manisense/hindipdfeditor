@@ -4,10 +4,16 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Fixed — EAS dependency install
+
+- Pinned `@react-native/jest-preset` to `0.85.3`, matching `react-native@0.85.3` and satisfying `jest-expo@56.0.5`'s `^0.85.0` peer dependency so production EAS builds can complete `npm ci --include=dev`.
+
 ### Added — Play Store website
 
 - Added a Cloudflare Pages-ready static public website in `web-app/` for `hindipdfeditor.com`, including the homepage, privacy policy, support page, terms, data safety summary, sitemap, redirects, and security headers.
 - Updated Play Store release documentation and app config to use `https://hindipdfeditor.com/privacy/` and `https://hindipdfeditor.com/support/` instead of the GitHub-hosted policy draft.
+- Aligned the Expo slug and Android package identity for the first Play Store AAB: `hindipdfeditor` / `com.hindipdfeditor.app`.
+- Updated the EAS production profile to use the explicit `android.versionCode` from `app.config.ts`, since EAS `autoIncrement` is not supported with this dynamic config.
 - Added an inactive shared GA4 loader for the website and `docs/GOOGLE_PLAY_AND_WEB_SETUP.md` with Play Console field values, Google Cloud Console guidance, Google Analytics setup, and Search Console DNS verification steps.
 - Added `web-app/DEPLOYMENT.md` with target-account deployment steps for `localcode.ai@gmail.com`, after verifying local Wrangler was logged in as a different Cloudflare account.
 
@@ -21,7 +27,7 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 - Fixed a broken local Homebrew `watchman` install (stale `libfmt` dylib link).
 - Scaffolded the Expo project (TypeScript template), pinned down from the default SDK 57 to **SDK 56** per ADR 0002.
-- Installed the full pinned dependency set from spec Section 4.1; corrected `app.json`'s Android package identity (was auto-generated as `com.medikle.hpescaffold`, now `com.manisense.hindipdfeditor`).
+- Installed the full pinned dependency set from spec Section 4.1; corrected `app.json`'s Android package identity (was auto-generated as `com.medikle.hpescaffold`, later finalized as `com.hindipdfeditor.app` for Play Store release).
 - Set up ESLint (flat config, `eslint-config-expo`), Prettier, and Jest (`jest-expo`) — had to pin `eslint` to `^9.18.0` (the `eslint-config-expo`-bundled `eslint-plugin-react` isn't compatible with ESLint 10's removal of the deprecated `context.getFilename()` API) and add the `@react-native/jest-preset` peer dependency `jest-expo` now requires separately.
 - Ran `expo prebuild -p android` to generate the native Android project; confirmed `newArchEnabled=true` (New Architecture is mandatory on this SDK, matching ADR 0002).
 - Downloaded Noto Sans/Serif Devanagari fonts — first attempt from `notofonts/devanagari`'s assumed raw path silently downloaded HTML error pages instead of font binaries (caught by checking `file` output, not by trusting the download succeeded). Switched to the `google/fonts` repo, which ships these two families as **variable fonts** (`wght`/`wdth` axes) rather than separate static Regular/Bold files — spec Section 4.1/6 updated to match.
