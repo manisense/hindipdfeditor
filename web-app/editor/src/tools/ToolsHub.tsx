@@ -55,7 +55,7 @@ export function ToolsHub() {
         </nav>
         <a
           className="ilove-hub__cta"
-          href="https://play.google.com/store/apps/details?id=com.manisense.hindipdfeditor"
+          href="https://play.google.com/store/apps/details?id=com.hindipdfeditor.app"
         >
           Get App
         </a>
@@ -143,7 +143,7 @@ export function ToolsHub() {
                 The same tap-to-edit Hindi workflow on your phone, with on-device OCR and private
                 export.
               </p>
-              <a href="https://play.google.com/store/apps/details?id=com.manisense.hindipdfeditor">
+              <a href="https://play.google.com/store/apps/details?id=com.hindipdfeditor.app">
                 Get the Android app →
               </a>
             </article>
@@ -205,7 +205,7 @@ export function ToolsHub() {
             <h3>HINDI PDF</h3>
             <a href="/">Home</a>
             <a href="/edit/">All tools</a>
-            <a href="https://play.google.com/store/apps/details?id=com.manisense.hindipdfeditor">
+            <a href="https://play.google.com/store/apps/details?id=com.hindipdfeditor.app">
               Android app
             </a>
           </div>
@@ -232,7 +232,7 @@ export function ToolsHub() {
             <h3>GET THE APP</h3>
             <a
               className="ilove-hub__store"
-              href="https://play.google.com/store/apps/details?id=com.manisense.hindipdfeditor"
+              href="https://play.google.com/store/apps/details?id=com.hindipdfeditor.app"
             >
               Google Play
             </a>
@@ -242,7 +242,7 @@ export function ToolsHub() {
           </div>
         </div>
         <div className="ilove-hub__footer-bottom">
-          © 2026 Manisense. Hindi PDF Editor is not affiliated with iLovePDF.
+          © 2026 Hindi PDF Editor is not affiliated with iLovePDF.
         </div>
       </footer>
     </div>
