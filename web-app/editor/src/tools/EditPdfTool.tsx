@@ -6,6 +6,7 @@ import { EditableTextOverlay } from '../components/EditableTextOverlay';
 import { EditToolbar } from '../components/EditToolbar';
 import { LegacyFontWarning } from '../components/LegacyFontWarning';
 import { MaskOverlay, type DrawnMaskRect } from '../components/MaskOverlay';
+import { OcrHighlightLayer } from '../components/OcrHighlightLayer';
 import { PdfPageViewer } from '../components/PdfPageViewer';
 import { ToolShell } from '../components/ToolShell';
 import { clearGeminiApiKey, getGeminiApiKey, setGeminiApiKey } from '../lib/apiKeyStore';
@@ -106,6 +107,21 @@ export function EditPdfTool() {
   useEffect(() => {
     ensureFontsLoaded();
   }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setFocusedEditId(null);
+      setEditMode('edit');
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  const exitToolMode = () => {
+    setFocusedEditId(null);
+    setEditMode('edit');
+  };
 
   const openPdfFile = async (file: File) => {
     setStatus({ state: 'opening' });
@@ -381,7 +397,7 @@ export function EditPdfTool() {
     if (focusedEditId) {
       if (hitEdit?.id === focusedEditId) return;
       setFocusedEditId(null);
-      return;
+      // Fall through so the same click can select another line / place text.
     }
 
     if (hitEdit) {
@@ -445,7 +461,11 @@ export function EditPdfTool() {
       return;
     }
 
-    if (editMode !== 'addText') return;
+    if (editMode !== 'addText') {
+      // Empty click in Edit mode exits any transient tool state.
+      if (editMode !== 'edit') setEditMode('edit');
+      return;
+    }
     if (ocrStatusByPage[currentPageIndex] === 'running') return;
 
     checkpoint();
@@ -515,16 +535,18 @@ export function EditPdfTool() {
   const hintText = editingBlocked
     ? 'Editing is disabled on this page — see the warning above.'
     : editMode === 'erase'
-      ? `Erase mode — drag a box over text OCR missed, then type replacement text.${zoomHint}`
+      ? `Erase mode — drag a box over text to replace. Click without dragging, click outside the page, or press Esc to cancel.${zoomHint}`
       : editMode === 'addText'
         ? ocrStatus === 'running'
           ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
-          : `Add Text — click anywhere to place new text.${zoomHint}`
+          : `Add Text — click the page to place text. Click outside the page or press Esc to cancel.${zoomHint}`
         : ocrStatus === 'running'
           ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
-          : ocrStatus === 'failed'
-            ? `Edit text — click a line to change it.${zoomHint}`
-            : `Edit text — click any detected line to change it.${zoomHint}`;
+            : ocrStatus === 'failed'
+              ? `Could not detect text automatically — use Erase box or Add text. Press Esc to clear selection.${zoomHint}`
+              : (page?.ocrLines.length ?? 0) === 0
+                ? `No tappable text found yet — try Enhance with AI, Erase box, or Add text.${zoomHint}`
+                : `Edit text — click a highlighted line to change it. Press Esc to finish.${zoomHint}`;
 
   const step = status.state === 'saved' ? 3 : document ? 2 : 1;
 
@@ -583,7 +605,18 @@ export function EditPdfTool() {
       )}
 
       {status.state !== 'opening' && document && page && (
-        <main className="app__content">
+        <main
+          className="app__content"
+          onMouseDown={(event) => {
+            const target = event.target as HTMLElement;
+            if (target.closest('.app__page-card, .app__toolbar-card, .edit-toolbar, .app__modal')) {
+              return;
+            }
+            if (editMode !== 'edit' || focusedEditId) {
+              exitToolMode();
+            }
+          }}
+        >
           <section className="app__toolbar-card">
             <div className="app__toolbar-row">
               {document.pages.length > 1 ? (
@@ -687,12 +720,24 @@ export function EditPdfTool() {
               onZoomChange={setPageZoom}
               renderOverlays={(viewWidthPx) => (
                 <>
+                  <OcrHighlightLayer
+                    lines={page.ocrLines}
+                    viewWidthPx={viewWidthPx}
+                    pageWidthPt={page.widthPt}
+                    visible={
+                      !editingBlocked &&
+                      editMode !== 'erase' &&
+                      !focusedEditId &&
+                      ocrStatus === 'done'
+                    }
+                  />
                   <MaskOverlay
                     masks={page.edits.filter((e): e is MaskEdit => e.type === 'mask')}
                     viewWidthPx={viewWidthPx}
                     pageWidthPt={page.widthPt}
                     active={editMode === 'erase' && !editingBlocked}
                     onMaskDrawn={(rect) => void handleMaskDrawn(rect)}
+                    onCancel={exitToolMode}
                   />
                   {page.edits
                     .filter((e): e is TextEdit => e.type === 'text')

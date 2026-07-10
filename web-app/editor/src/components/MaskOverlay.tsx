@@ -12,11 +12,20 @@ type Props = {
   pageWidthPt: number;
   active: boolean;
   onMaskDrawn: (rect: DrawnMaskRect) => void;
+  /** Fired when the user clicks/taps without dragging a real erase box (cancel erase mode). */
+  onCancel?: () => void;
 };
 
 const MIN_DRAG_PX = 12;
 
-export function MaskOverlay({ masks, viewWidthPx, pageWidthPt, active, onMaskDrawn }: Props) {
+export function MaskOverlay({
+  masks,
+  viewWidthPx,
+  pageWidthPt,
+  active,
+  onMaskDrawn,
+  onCancel,
+}: Props) {
   const [dragRectPx, setDragRectPx] = useState<{ x: number; y: number; w: number; h: number } | null>(
     null,
   );
@@ -25,6 +34,7 @@ export function MaskOverlay({ masks, viewWidthPx, pageWidthPt, active, onMaskDra
   const handlePointerDown = (event: React.PointerEvent) => {
     if (!active) return;
     event.preventDefault();
+    event.stopPropagation();
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
@@ -57,8 +67,14 @@ export function MaskOverlay({ masks, viewWidthPx, pageWidthPt, active, onMaskDra
     } catch {
       /* ignore */
     }
-    if (!rect || viewWidthPx === 0) return;
-    if (rect.w < MIN_DRAG_PX || rect.h < MIN_DRAG_PX) return;
+    if (!rect || viewWidthPx === 0) {
+      onCancel?.();
+      return;
+    }
+    if (rect.w < MIN_DRAG_PX || rect.h < MIN_DRAG_PX) {
+      onCancel?.();
+      return;
+    }
     const { xPt, yPt } = dpToPt(rect.x, rect.y, viewWidthPx, pageWidthPt);
     const { wPt, hPt } = dpSizeToPt(rect.w, rect.h, viewWidthPx, pageWidthPt);
     onMaskDrawn({ xPt, yPt, wPt, hPt });

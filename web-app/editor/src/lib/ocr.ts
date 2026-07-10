@@ -3,6 +3,8 @@ import { createWorker, type Worker, type Page as TesseractPage } from 'tesseract
 import { imagePxSizeToPt, imagePxToPt } from './coordinateMath';
 import { recognizeTextWithGemini } from './geminiOcr';
 import { mergeOcrLines } from './mergeOcrLines';
+import { extractEmbeddedTextLines } from './pdfTextExtract';
+import { getPdfBytes } from './pdfToImages';
 import type { RecognizedLine } from './recognizedLine';
 import type { OcrLine, PageState } from '../state/editStore';
 
@@ -25,21 +27,43 @@ async function getEngWorker(): Promise<Worker> {
 
 function tesseractPageToRecognized(page: TesseractPage): RecognizedLine[] {
   const lines: RecognizedLine[] = [];
+
+  const pushLine = (text: string, bbox: { x0: number; y0: number; x1: number; y1: number }) => {
+    const trimmed = text.trim();
+    if (trimmed.length === 0) return;
+    lines.push({
+      text: trimmed,
+      x: bbox.x0,
+      y: bbox.y0,
+      width: bbox.x1 - bbox.x0,
+      height: bbox.y1 - bbox.y0,
+    });
+  };
+
   for (const block of page.blocks ?? []) {
     for (const paragraph of block.paragraphs) {
       for (const line of paragraph.lines) {
-        const text = line.text.trim();
-        if (text.length === 0) continue;
-        lines.push({
-          text,
-          x: line.bbox.x0,
-          y: line.bbox.y0,
-          width: line.bbox.x1 - line.bbox.x0,
-          height: line.bbox.y1 - line.bbox.y0,
-        });
+        pushLine(line.text, line.bbox);
       }
     }
   }
+
+  // tesseract.js sometimes omits nested blocks but still fills top-level lines/words.
+  if (lines.length === 0) {
+    const pageExtra = page as TesseractPage & {
+      lines?: { text: string; bbox: { x0: number; y0: number; x1: number; y1: number } }[];
+      words?: { text: string; bbox: { x0: number; y0: number; x1: number; y1: number } }[];
+    };
+    for (const line of pageExtra.lines ?? []) {
+      pushLine(line.text, line.bbox);
+    }
+    if (lines.length === 0) {
+      for (const word of pageExtra.words ?? []) {
+        pushLine(word.text, word.bbox);
+      }
+    }
+  }
+
   return lines;
 }
 
@@ -69,11 +93,22 @@ async function recognizeWithLanguage(
 }
 
 /**
- * Detects text lines on one page using browser Tesseract (Hindi + English passes, merged).
+ * Detects tappable text on one page. Prefers embedded PDF text (digital docs like Word
+ * exports); falls back to browser Tesseract for scanned/image-only pages.
  *
- * @param page The page whose `backgroundImageUri` to scan.
+ * @param page The page whose `backgroundImageUri` / page index to scan.
  */
 export async function detectTextLines(page: PageState): Promise<OcrLine[]> {
+  const pdfBytes = getPdfBytes();
+  if (pdfBytes) {
+    try {
+      const embedded = await extractEmbeddedTextLines(pdfBytes, page.pageIndex);
+      if (embedded.length > 0) return embedded;
+    } catch (error) {
+      console.warn('Embedded PDF text extraction failed; falling back to Tesseract', error);
+    }
+  }
+
   const [devanagariLines, latinLines] = await Promise.all([
     recognizeWithLanguage(page.backgroundImageUri, 'hin'),
     recognizeWithLanguage(page.backgroundImageUri, 'eng'),

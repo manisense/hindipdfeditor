@@ -1,0 +1,13 @@
+.ocr-highlight-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ocr-highlight-layer__box {
+  position: absolute;
+  border: 1px solid rgba(229, 50, 45, 0.35);
+  background: rgba(229, 50, 45, 0.06);
+  border-radius: 2px;
+}

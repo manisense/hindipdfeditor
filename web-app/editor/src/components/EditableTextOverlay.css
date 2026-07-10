@@ -8,6 +8,7 @@
   resize: none;
   overflow: hidden;
   outline: none;
+  z-index: 2;
 }
 
 .editable-text-overlay--focused {

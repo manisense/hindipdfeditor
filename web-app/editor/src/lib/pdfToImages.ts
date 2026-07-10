@@ -23,6 +23,11 @@ export function setPdfBytes(bytes: Uint8Array): void {
   pdfBytesCache = bytes;
 }
 
+/** Returns the currently loaded PDF bytes, or null if none. */
+export function getPdfBytes(): Uint8Array | null {
+  return pdfBytesCache;
+}
+
 /** Number of pages in the loaded PDF. */
 export async function getPageCount(): Promise<number> {
   if (!pdfBytesCache) throw new Error('No PDF loaded');
