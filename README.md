@@ -19,8 +19,8 @@ npx eas-cli@latest build --profile production --platform android
 
 ```bash
 cd web-app
-npm run build:editor
-npx wrangler pages deploy . --project-name hindipdfeditor --branch main
+npm run build
+npx wrangler pages deploy dist --project-name hindipdfeditor --branch main
 ```
 
 Local editor development:

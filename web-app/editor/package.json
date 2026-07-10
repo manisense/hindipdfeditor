@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node ../scripts/prepare-publish.mjs",
     "preview": "vite preview",
-    "lint": "eslint src --max-warnings 0"
+    "lint": "eslint src --max-warnings 0",
+    "deploy": "wrangler pages deploy ../dist --project-name hindipdfeditor"
   },
   "dependencies": {
     "@cantoo/pdf-lib": "^2.7.1",

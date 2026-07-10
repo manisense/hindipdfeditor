@@ -1,31 +1,40 @@
 # Cloudflare Pages website deployment
 
-The public Play Store support site lives in `web-app/` and is designed to deploy as a static
-Cloudflare Pages project for `hindipdfeditor.com`.
+The public site lives in `web-app/` and deploys as a Cloudflare Pages project for
+`hindipdfeditor.com`. The browser PDF tools build from `web-app/editor/` into
+`web-app/edit/`, then `npm run build` assembles a clean publish folder at
+`web-app/dist/`.
 
-The browser PDF tools (edit / merge / split / compress) live under `web-app/editor/` and build
-into `web-app/edit/`.
+## Cloudflare dashboard settings (required)
+
+Use these so Git builds do not fail:
+
+| Setting | Value |
+| --- | --- |
+| Root directory | `web-app` |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler pages deploy dist --project-name hindipdfeditor` |
+| Build output directory | `dist` (if the UI asks for one instead of a deploy command) |
+
+If the root directory is still `web-app/editor`, keep deploy as
+`npx wrangler deploy` — the editor `wrangler.toml` publishes `../dist` as
+static assets after `npm run build`.
+
+Do **not** use bare `npx wrangler deploy` against the Pages project without an
+`[assets]` directory (that is what caused the missing entry-point error).
 
 ## Target account
 
 Deploy this from the Cloudflare account for `localcode.ai@gmail.com`.
 
-Current check on 7 July 2026 showed local Wrangler is logged in as `medikleapp@gmail.com`, so do not
-deploy until Wrangler is authenticated to the target account or a target-account API token is set.
-
-## First deploy
+## First / manual deploy
 
 ```bash
 cd /Users/manish/Downloads/Projects/hindi-pdf-editor/web-app
-npm run build:editor
-npx wrangler logout
-npx wrangler login
-npx wrangler whoami
-npx wrangler pages project create hindipdfeditor --production-branch main
-npx wrangler pages deploy . --project-name hindipdfeditor --branch main
+npm install
+npm run build
+npx wrangler pages deploy dist --project-name hindipdfeditor --branch main
 ```
-
-Confirm `wrangler whoami` shows `localcode.ai@gmail.com` before running the deploy command.
 
 ## Domain wiring
 

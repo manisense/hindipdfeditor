@@ -1,3 +1,11 @@
+# Cloudflare Pages / Workers static site for hindipdfeditor.com
 name = "hindipdfeditor"
 compatibility_date = "2026-07-07"
-pages_build_output_dir = "."
+
+# Used by `wrangler pages deploy` and Pages Git builds
+pages_build_output_dir = "dist"
+
+# Used when the dashboard deploy command is `npx wrangler deploy`
+[assets]
+directory = "./dist"
+not_found_handling = "404-page"

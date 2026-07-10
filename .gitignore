@@ -30,6 +30,8 @@ mobile-app/*.tsbuildinfo
 web-app/editor/node_modules/
 web-app/editor/tsconfig.tsbuildinfo
 web-app/edit/
+web-app/dist/
+web-app/node_modules/
 
 # Local Expo Module native build outputs
 mobile-app/modules/*/android/.gradle/

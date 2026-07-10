@@ -2,8 +2,13 @@
   "name": "hindi-pdf-editor-website",
   "private": true,
   "scripts": {
-    "build:editor": "npm --prefix editor run build",
-    "build": "npm run build:editor",
-    "dev:editor": "npm --prefix editor run dev"
+    "build:editor": "npm --prefix editor ci --progress=false && npm --prefix editor run build",
+    "prepare:publish": "node scripts/prepare-publish.mjs",
+    "build": "npm run build:editor && npm run prepare:publish",
+    "dev:editor": "npm --prefix editor run dev",
+    "deploy": "wrangler pages deploy dist --project-name hindipdfeditor"
+  },
+  "devDependencies": {
+    "wrangler": "^4.110.0"
   }
 }
