@@ -242,7 +242,7 @@ export function ToolsHub() {
           </div>
         </div>
         <div className="ilove-hub__footer-bottom">
-          © 2026 Hindi PDF Editor is not affiliated with iLovePDF.
+          © 2026 Hindi PDF Editor. All rights reserved.
         </div>
       </footer>
     </div>
