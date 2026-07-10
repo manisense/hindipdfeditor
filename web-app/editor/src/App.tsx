@@ -6,6 +6,7 @@ import { EditPdfTool } from './tools/EditPdfTool';
 import { MergePdfTool } from './tools/MergePdfTool';
 import { SplitPdfTool } from './tools/SplitPdfTool';
 import { ToolsHub } from './tools/ToolsHub';
+import { TranslatePdfTool } from './tools/TranslatePdfTool';
 import './App.css';
 
 function useToolId(): ToolId | null {
@@ -26,6 +27,8 @@ export default function App() {
   switch (toolId) {
     case 'edit':
       return <EditPdfTool />;
+    case 'translate':
+      return <TranslatePdfTool />;
     case 'merge':
       return <MergePdfTool />;
     case 'split':

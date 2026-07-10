@@ -29,13 +29,14 @@ export function AboutModal({ visible, onClose }: Props) {
           <Text style={styles.body}>
             Hindi PDF Editor lets you change Hindi and English text in scanned or digital PDFs on
             your device. Core editing (open, OCR, mask, export) works fully offline — your PDFs
-            never leave your phone unless you turn on Enhance with AI.
+            never leave your phone unless you turn on Enhance with AI or Translate to EN.
           </Text>
           <Text style={styles.sectionTitle}>Your data</Text>
           <Text style={styles.body}>
             • PDFs you open stay on your device{'\n'}• On-device OCR uses Google ML Kit bundled
             in the app (offline){'\n'}• Enhance with AI (optional) sends one page image to
-            Google&apos;s Gemini API using your own API key
+            Google&apos;s Gemini API using your own API key{'\n'}• Translate to EN (optional)
+            sends detected Hindi line text to Gemini using your own API key
           </Text>
           <AppButton title="Privacy policy" small variant="secondary" onPress={openPrivacy} />
           <AppButton title="Close" small variant="ghost" onPress={onClose} />

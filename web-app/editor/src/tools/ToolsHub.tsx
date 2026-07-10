@@ -6,6 +6,10 @@ const ICONS: Record<ToolId, { color: string; path: string }> = {
     color: '#e5322d',
     path: 'M4 20h4l11-11-4-4L4 16v4Zm9-13 4 4',
   },
+  translate: {
+    color: '#5b4fc9',
+    path: 'M5 5h6v2H5V5Zm0 6h14v2H5v-2Zm0 6h10v2H5v-2ZM15 4l4 4-4 4',
+  },
   merge: {
     color: '#f59e0b',
     path: 'M8 4h5l3 3v13H8V4Zm6-1h4l2 2v10h-4',
@@ -51,6 +55,7 @@ export function ToolsHub() {
           <a href={toolHref('merge')}>MERGE PDF</a>
           <a href={toolHref('split')}>SPLIT PDF</a>
           <a href={toolHref('compress')}>COMPRESS PDF</a>
+          <a href={toolHref('translate')}>TRANSLATE</a>
           <a href={toolHref('edit')}>EDIT PDF</a>
         </nav>
         <a
@@ -67,8 +72,8 @@ export function ToolsHub() {
           <div className="ilove-hub__inner">
             <h1>Every tool you need to work with Hindi PDFs in one place</h1>
             <p>
-              Edit Devanagari text correctly, merge and split files, or compress large scans — free,
-              local-first, no account.
+              Edit Devanagari text correctly, translate Hindi to English, merge and split files, or
+              compress large scans — free, local-first, no account.
             </p>
 
             <div className="ilove-hub__grid">
@@ -168,7 +173,7 @@ export function ToolsHub() {
               <ul>
                 <li>Core tools run locally in your browser or on your phone</li>
                 <li>Original PDFs are never overwritten</li>
-                <li>Optional AI OCR uses only your own Gemini API key</li>
+                <li>Optional AI OCR and translation use only your own Gemini API key</li>
                 <li>No account required for editing, merge, split, or compress</li>
               </ul>
               <a className="ilove-hub__cta" href={toolHref('edit')}>
@@ -212,6 +217,7 @@ export function ToolsHub() {
           <div>
             <h3>TOOLS</h3>
             <a href={toolHref('edit')}>Edit PDF</a>
+            <a href={toolHref('translate')}>Translate PDF</a>
             <a href={toolHref('merge')}>Merge PDF</a>
             <a href={toolHref('split')}>Split PDF</a>
             <a href={toolHref('compress')}>Compress PDF</a>

@@ -1,4 +1,4 @@
-export type ToolId = 'edit' | 'merge' | 'split' | 'compress';
+export type ToolId = 'edit' | 'merge' | 'split' | 'compress' | 'translate';
 
 export type ToolMeta = {
   id: ToolId;
@@ -6,7 +6,7 @@ export type ToolMeta = {
   shortTitle: string;
   description: string;
   accent: string;
-  category: 'edit' | 'organize' | 'optimize';
+  category: 'edit' | 'organize' | 'optimize' | 'convert';
 };
 
 export const TOOLS: ToolMeta[] = [
@@ -18,6 +18,15 @@ export const TOOLS: ToolMeta[] = [
       'Tap detected Hindi or English text to replace it, add new overlays, or erase burned-in text — then export a new PDF.',
     accent: '#d83b35',
     category: 'edit',
+  },
+  {
+    id: 'translate',
+    title: 'Translate Hindi to English',
+    shortTitle: 'Translate',
+    description:
+      'Detect Hindi text, translate it to English with your Gemini API key, and download a new English PDF.',
+    accent: '#5b4fc9',
+    category: 'convert',
   },
   {
     id: 'merge',
@@ -57,7 +66,13 @@ export function toolHref(id: ToolId): string {
 export function readToolIdFromLocation(): ToolId | null {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get('tool');
-  if (raw === 'edit' || raw === 'merge' || raw === 'split' || raw === 'compress') {
+  if (
+    raw === 'edit' ||
+    raw === 'merge' ||
+    raw === 'split' ||
+    raw === 'compress' ||
+    raw === 'translate'
+  ) {
     return raw;
   }
   return null;

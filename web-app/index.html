@@ -6,13 +6,13 @@
     <title>Hindi PDF Editor - Every tool you need for Hindi PDFs</title>
     <meta
       name="description"
-      content="Edit Hindi PDFs online with correct Devanagari shaping. Merge, split, and compress PDFs locally in your browser — 100% free, no account required."
+      content="Edit Hindi PDFs online with correct Devanagari shaping. Translate Hindi to English, merge, split, and compress PDFs locally — 100% free, no account required."
     />
     <link rel="canonical" href="https://hindipdfeditor.com/" />
     <meta property="og:title" content="Hindi PDF Editor" />
     <meta
       property="og:description"
-      content="Every tool you need to work with Hindi PDFs — edit text, merge, split, compress. Free and local-first."
+      content="Every tool you need to work with Hindi PDFs — edit text, translate to English, merge, split, compress. Free and local-first."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://hindipdfeditor.com/" />
@@ -40,7 +40,7 @@
           "price": "0",
           "priceCurrency": "USD"
         },
-        "description": "Edit Hindi and English text in PDFs with correct Devanagari shaping. Merge, split, and compress PDFs locally in the browser.",
+        "description": "Edit Hindi and English text in PDFs with correct Devanagari shaping. Translate Hindi PDFs to English. Merge, split, and compress PDFs locally in the browser.",
         "privacyPolicy": "https://hindipdfeditor.com/privacy/"
       }
     </script>
@@ -56,6 +56,7 @@
           <a href="/edit/?tool=merge">MERGE PDF</a>
           <a href="/edit/?tool=split">SPLIT PDF</a>
           <a href="/edit/?tool=compress">COMPRESS PDF</a>
+          <a href="/edit/?tool=translate">TRANSLATE</a>
           <a href="/edit/?tool=edit">EDIT PDF</a>
           <a href="#tools">ALL PDF TOOLS</a>
         </div>
@@ -142,6 +143,35 @@
               <p>
                 Tap detected Hindi or English text and replace it with correctly
                 shaped Devanagari.
+              </p>
+            </a>
+
+            <a
+              class="tool-card"
+              data-tool-category="edit"
+              href="/edit/?tool=translate"
+            >
+              <span class="tool-icon tool-icon--purple" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                  <path
+                    d="M5 5h6v2H5V5Zm0 6h14v2H5v-2Zm0 6h10v2H5v-2Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="m15 4 4 4-4 4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+              <h3>Translate to English</h3>
+              <p>
+                Detect Hindi text, translate it with your Gemini API key, and
+                download a new English PDF.
               </p>
             </a>
 
@@ -439,6 +469,7 @@
         <div>
           <h3>TOOLS</h3>
           <a href="/edit/?tool=edit">Edit PDF</a>
+          <a href="/edit/?tool=translate">Translate PDF</a>
           <a href="/edit/?tool=merge">Merge PDF</a>
           <a href="/edit/?tool=split">Split PDF</a>
           <a href="/edit/?tool=compress">Compress PDF</a>

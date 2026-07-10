@@ -1,0 +1,332 @@
+import { useState } from 'react';
+
+import { AppButton } from '../components/AppButton';
+import { DropZone } from '../components/DropZone';
+import { ToolShell } from '../components/ToolShell';
+import { clearGeminiApiKey, getGeminiApiKey, setGeminiApiKey } from '../lib/apiKeyStore';
+import { ptSizeToImagePx, ptToImagePx } from '../lib/coordinateMath';
+import { downloadPdfBlob, exportPdf } from '../lib/exportPdf';
+import { getFontBase64 } from '../lib/fontAsset';
+import { containsDevanagari, translateHindiLinesToEnglish } from '../lib/geminiTranslate';
+import { detectTextLines } from '../lib/ocr';
+import {
+  getPageCount,
+  renderPage,
+  sampleAverageColor,
+  sampleTextColor,
+  setPdfBytes,
+} from '../lib/pdfToImages';
+import { getTool } from '../lib/tools';
+import { geometryForTranslatedLine } from '../lib/translateEdits';
+import type { DocumentState, Edit, OcrLine, PageState } from '../state/editStore';
+import './UtilityTool.css';
+
+const tool = getTool('translate')!;
+const RASTER_SCALE = 2;
+const MASK_SAMPLE_MARGIN_PX = 16;
+
+type Progress = {
+  phase: 'loading' | 'detecting' | 'translating' | 'exporting';
+  detail: string;
+};
+
+type Result = {
+  filename: string;
+  pageCount: number;
+  translatedLines: number;
+};
+
+async function buildTranslatedDocument(
+  file: File,
+  apiKey: string,
+  onProgress: (p: Progress) => void,
+): Promise<{ doc: DocumentState; translatedLines: number }> {
+  onProgress({ phase: 'loading', detail: 'Reading PDF…' });
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  setPdfBytes(bytes);
+  const pageCount = await getPageCount();
+
+  const pages: PageState[] = [];
+  for (let i = 0; i < pageCount; i++) {
+    onProgress({
+      phase: 'loading',
+      detail: `Rasterizing page ${i + 1} of ${pageCount}…`,
+    });
+    const image = await renderPage(i, RASTER_SCALE);
+    // pdf.js viewport at scale N is N × page points
+    const widthPt = image.pxWidth / RASTER_SCALE;
+    const heightPt = image.pxHeight / RASTER_SCALE;
+    pages.push({
+      pageIndex: i,
+      widthPt,
+      heightPt,
+      backgroundImageUri: image.uri,
+      imagePxWidth: image.pxWidth,
+      imagePxHeight: image.pxHeight,
+      edits: [],
+      ocrLines: [],
+    });
+  }
+
+  let translatedLines = 0;
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i];
+    onProgress({
+      phase: 'detecting',
+      detail: `Detecting text on page ${i + 1} of ${pageCount}…`,
+    });
+    let lines: OcrLine[] = [];
+    try {
+      lines = await detectTextLines(page);
+    } catch (error) {
+      console.warn(`Text detection failed on page ${i}`, error);
+    }
+    const hindiLines = lines.filter((l) => containsDevanagari(l.text));
+    if (hindiLines.length === 0) {
+      pages[i] = { ...page, ocrLines: lines };
+      continue;
+    }
+
+    onProgress({
+      phase: 'translating',
+      detail: `Translating ${hindiLines.length} line(s) on page ${i + 1}…`,
+    });
+    const english = await translateHindiLinesToEnglish(
+      hindiLines.map((l) => l.text),
+      apiKey,
+    );
+
+    const edits: Edit[] = [];
+    for (let j = 0; j < hindiLines.length; j++) {
+      const line = hindiLines[j];
+      const translated = english[j]?.trim();
+      if (!translated) continue;
+
+      const geo = geometryForTranslatedLine(line, page.widthPt, page.heightPt);
+      const { x: mx, y: my } = ptToImagePx(
+        geo.mask.xPt,
+        geo.mask.yPt,
+        page.imagePxWidth,
+        page.widthPt,
+      );
+      const { wPx: mw, hPx: mh } = ptSizeToImagePx(
+        geo.mask.wPt,
+        geo.mask.hPt,
+        page.imagePxWidth,
+        page.widthPt,
+      );
+      const { x: tx, y: ty } = ptToImagePx(
+        line.xPt,
+        line.yPt,
+        page.imagePxWidth,
+        page.widthPt,
+      );
+      const { wPx: tw, hPx: th } = ptSizeToImagePx(
+        line.wPt,
+        line.hPt,
+        page.imagePxWidth,
+        page.widthPt,
+      );
+
+      let maskColor = '#ffffff';
+      let textColor = '#111111';
+      try {
+        maskColor = await sampleAverageColor(
+          page.backgroundImageUri,
+          Math.round(mx),
+          Math.round(my),
+          Math.round(mw),
+          Math.round(mh),
+          MASK_SAMPLE_MARGIN_PX,
+        );
+      } catch {
+        /* keep white */
+      }
+      try {
+        textColor = await sampleTextColor(
+          page.backgroundImageUri,
+          Math.round(tx),
+          Math.round(ty),
+          Math.round(tw),
+          Math.round(th),
+        );
+      } catch {
+        /* keep black */
+      }
+
+      const maskId = crypto.randomUUID();
+      const textId = crypto.randomUUID();
+      edits.push({
+        type: 'mask',
+        id: maskId,
+        page: i,
+        ...geo.mask,
+        color: maskColor,
+      });
+      edits.push({
+        type: 'text',
+        id: textId,
+        page: i,
+        xPt: geo.text.xPt,
+        yPt: geo.text.yPt,
+        fontSizePt: geo.text.fontSizePt,
+        text: translated,
+        color: textColor,
+        fontFamily: 'NotoSansDevanagari',
+        fontWeight: geo.text.fontWeight,
+        widthPt: geo.text.widthPt,
+      });
+      translatedLines += 1;
+    }
+
+    const remaining = lines.filter((l) => !hindiLines.some((h) => h.id === l.id));
+    pages[i] = { ...page, edits, ocrLines: remaining };
+  }
+
+  return {
+    doc: {
+      sourceName: file.name,
+      pageCount,
+      pages,
+      legacyFontWarnings: [],
+    },
+    translatedLines,
+  };
+}
+
+export function TranslatePdfTool() {
+  const [file, setFile] = useState<File | null>(null);
+  const [apiKeyDraft, setApiKeyDraft] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<Progress | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<Result | null>(null);
+
+  const step = result ? 3 : file ? 2 : 1;
+
+  const runTranslate = async (apiKey: string) => {
+    if (!file) return;
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    try {
+      await setGeminiApiKey(apiKey);
+      const { doc, translatedLines } = await buildTranslatedDocument(file, apiKey, setProgress);
+      if (translatedLines === 0) {
+        throw new Error(
+          'No Hindi (Devanagari) text was found to translate. Try a clearer scan or use Edit PDF with Enhance with AI first.',
+        );
+      }
+      setProgress({ phase: 'exporting', detail: 'Building English PDF…' });
+      const [sans, serif] = await Promise.all([
+        getFontBase64('NotoSansDevanagari'),
+        getFontBase64('NotoSerifDevanagari'),
+      ]);
+      const blob = await exportPdf(doc, {
+        NotoSansDevanagari: sans,
+        NotoSerifDevanagari: serif,
+      });
+      const base = file.name.replace(/\.pdf$/i, '') || 'translated';
+      const filename = `${base}-en.pdf`;
+      downloadPdfBlob(blob, filename);
+      setResult({ filename, pageCount: doc.pageCount, translatedLines });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/api key/i.test(message)) {
+        await clearGeminiApiKey().catch(() => {});
+      }
+      setError(message);
+    } finally {
+      setBusy(false);
+      setProgress(null);
+    }
+  };
+
+  const handleStart = async () => {
+    const stored = (await getGeminiApiKey())?.trim() ?? '';
+    const key = (apiKeyDraft.trim() || stored).trim();
+    if (!key) {
+      setError('Paste your Gemini API key to translate. Create a free key at aistudio.google.com.');
+      return;
+    }
+    await runTranslate(key);
+  };
+
+  return (
+    <ToolShell
+      tool={tool}
+      steps={[
+        { label: 'Select PDF', active: step === 1, done: step > 1 },
+        { label: 'Translate', active: step === 2, done: step > 2 },
+        { label: 'Download', active: step === 3, done: step === 3 },
+      ]}
+    >
+      <div className="utility-tool">
+        {!file ? (
+          <DropZone
+            accent={tool.accent}
+            title="Translate Hindi PDF to English"
+            subtitle="Detects Hindi text, translates with your Gemini API key, and exports a new English PDF — original file is never overwritten."
+            buttonLabel="Select PDF"
+            onFiles={(files) => {
+              setFile(files[0]);
+              setResult(null);
+              setError(null);
+            }}
+          />
+        ) : (
+          <div className="utility-tool__panel">
+            <h2>{file.name}</h2>
+            <p className="utility-tool__meta">{(file.size / 1024).toFixed(1)} KB</p>
+            <label className="utility-tool__field">
+              Gemini API key
+              <input
+                type="password"
+                autoComplete="off"
+                placeholder="Paste key (stored only in this browser)"
+                value={apiKeyDraft}
+                onChange={(e) => setApiKeyDraft(e.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <p className="utility-tool__note">
+              Translation sends detected Hindi line text to Google&apos;s Gemini API using your own
+              free key. Page images stay in the browser except when you use Edit PDF&apos;s Enhance
+              with AI. The output is a new PDF; your source file is never modified.
+            </p>
+            <div className="utility-tool__actions">
+              <AppButton
+                title="Choose another"
+                variant="ghost"
+                small
+                disabled={busy}
+                onClick={() => {
+                  setFile(null);
+                  setResult(null);
+                  setError(null);
+                }}
+              />
+              <AppButton
+                title={busy ? 'Working…' : 'Translate & download'}
+                onClick={() => void handleStart()}
+                disabled={busy}
+              />
+            </div>
+          </div>
+        )}
+        {progress && (
+          <div className="utility-tool__status">
+            {progress.detail}
+          </div>
+        )}
+        {error && <div className="utility-tool__status utility-tool__status--error">{error}</div>}
+        {result && (
+          <div className="utility-tool__status utility-tool__status--ok">
+            Downloaded {result.filename} · {result.pageCount} pages · {result.translatedLines}{' '}
+            line{result.translatedLines === 1 ? '' : 's'} translated
+          </div>
+        )}
+      </div>
+    </ToolShell>
+  );
+}

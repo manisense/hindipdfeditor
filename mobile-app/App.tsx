@@ -31,10 +31,12 @@ import { clearGeminiApiKey, getGeminiApiKey, setGeminiApiKey } from './src/lib/a
 import { ptSizeToImagePx, ptToImagePx } from './src/lib/coordinateMath';
 import { exportPdf } from './src/lib/exportPdf';
 import { getFontBase64, type DevanagariFontFamily } from './src/lib/fontAsset';
+import { containsDevanagari, translateHindiLinesToEnglish } from './src/lib/geminiTranslate';
 import { detectLegacyFonts } from './src/lib/legacyFontDetector';
 import { detectTextLines, detectTextLinesWithGemini } from './src/lib/ocr';
 import { findOcrTargetAt, findTextEditAt } from './src/lib/ocrHitTest';
 import { getPageCount, renderPage, sampleAverageColor, sampleTextColor } from './src/lib/pdfToImages';
+import { geometryForTranslatedLine } from './src/lib/translateEdits';
 import {
   useEditStore,
   type DocumentState,
@@ -186,7 +188,9 @@ export default function App() {
   // "Enhance with AI" (opt-in Gemini cloud OCR): which page a cloud pass is currently running
   // for (null = none), and whether the one-time API key prompt is showing.
   const [enhancingPage, setEnhancingPage] = useState<number | null>(null);
+  const [translating, setTranslating] = useState(false);
   const [apiKeyPromptVisible, setApiKeyPromptVisible] = useState(false);
+  const [apiKeyPurpose, setApiKeyPurpose] = useState<'enhance' | 'translate'>('enhance');
   const [apiKeyDraft, setApiKeyDraft] = useState('');
   const [aboutVisible, setAboutVisible] = useState(false);
   const [editMode, setEditMode] = useState<EditMode>('edit');
@@ -391,6 +395,167 @@ export default function App() {
     if (storedKey) {
       await runEnhanceWithAi(storedKey);
     } else {
+      setApiKeyPurpose('enhance');
+      setApiKeyDraft('');
+      setApiKeyPromptVisible(true);
+    }
+  };
+
+  /**
+   * Detects Hindi lines across the open document, translates them to English via Gemini, and
+   * applies mask + English text overlays (same Plan A export path as tap-to-edit). Opt-in only:
+   * sends line text (not page images) to Google using the user's API key.
+   */
+  const runTranslateToEnglish = async (apiKey: string) => {
+    const doc = useEditStore.getState().document;
+    if (!doc || translating || enhancingPage !== null) return;
+    setTranslating(true);
+    try {
+      checkpoint();
+      let translatedCount = 0;
+      const legacyPages = new Set(doc.legacyFontWarnings.map((w) => w.page));
+
+      for (let pageIndex = 0; pageIndex < doc.pages.length; pageIndex++) {
+        if (legacyPages.has(pageIndex)) continue;
+        const page = useEditStore.getState().document?.pages[pageIndex];
+        if (!page) continue;
+
+        let lines = page.ocrLines;
+        if (lines.length === 0) {
+          try {
+            lines = await detectTextLines(page);
+            if (useEditStore.getState().document?.sourceUri !== doc.sourceUri) return;
+            setOcrLines(pageIndex, lines);
+            setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'done' }));
+          } catch (error) {
+            console.warn(`OCR failed on page ${pageIndex} during translate`, error);
+            setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'failed' }));
+            continue;
+          }
+        }
+
+        const hindiLines = lines.filter((l) => containsDevanagari(l.text));
+        if (hindiLines.length === 0) continue;
+
+        const english = await translateHindiLinesToEnglish(
+          hindiLines.map((l) => l.text),
+          apiKey,
+        );
+        if (useEditStore.getState().document?.sourceUri !== doc.sourceUri) return;
+
+        const hindiIds = new Set(hindiLines.map((l) => l.id));
+        setOcrLines(
+          pageIndex,
+          lines.filter((l) => !hindiIds.has(l.id)),
+        );
+
+        for (let j = 0; j < hindiLines.length; j++) {
+          const line = hindiLines[j];
+          const translated = english[j]?.trim();
+          if (!translated) continue;
+
+          const geo = geometryForTranslatedLine(line, page.widthPt, page.heightPt);
+          const { x: sampleXPx, y: sampleYPx } = ptToImagePx(
+            line.xPt,
+            line.yPt,
+            page.imagePxWidth,
+            page.widthPt,
+          );
+          const { wPx: sampleWPx, hPx: sampleHPx } = ptSizeToImagePx(
+            line.wPt,
+            line.hPt,
+            page.imagePxWidth,
+            page.widthPt,
+          );
+          const { x: maskXPx, y: maskYPx } = ptToImagePx(
+            geo.mask.xPt,
+            geo.mask.yPt,
+            page.imagePxWidth,
+            page.widthPt,
+          );
+          const { wPx: maskWPx, hPx: maskHPx } = ptSizeToImagePx(
+            geo.mask.wPt,
+            geo.mask.hPt,
+            page.imagePxWidth,
+            page.widthPt,
+          );
+
+          let maskColor = '#ffffff';
+          let textColor = '#111111';
+          try {
+            maskColor = await sampleAverageColor(
+              page.backgroundImageUri,
+              Math.round(maskXPx),
+              Math.round(maskYPx),
+              Math.round(maskWPx),
+              Math.round(maskHPx),
+              16,
+            );
+          } catch (error) {
+            console.warn('sampleAverageColor failed during translate', error);
+          }
+          try {
+            textColor = await sampleTextColor(
+              page.backgroundImageUri,
+              Math.round(sampleXPx),
+              Math.round(sampleYPx),
+              Math.round(sampleWPx),
+              Math.round(sampleHPx),
+            );
+          } catch (error) {
+            console.warn('sampleTextColor failed during translate', error);
+          }
+
+          const maskEdit = addMaskEdit(pageIndex, {
+            xPt: geo.mask.xPt,
+            yPt: geo.mask.yPt,
+            wPt: geo.mask.wPt,
+            hPt: geo.mask.hPt,
+            color: maskColor,
+          });
+          const textEdit = addTextEdit(pageIndex, {
+            xPt: geo.text.xPt,
+            yPt: geo.text.yPt,
+            fontSizePt: geo.text.fontSizePt,
+            text: translated,
+            color: textColor,
+            fontFamily: 'NotoSansDevanagari',
+            fontWeight: geo.text.fontWeight,
+            widthPt: geo.text.widthPt,
+          });
+          editPairingsRef.current.set(textEdit.id, { maskId: maskEdit.id, ocrLine: line });
+          translatedCount += 1;
+        }
+      }
+
+      if (translatedCount === 0) {
+        Alert.alert(
+          'Nothing to translate',
+          'No Hindi (Devanagari) text was found. Try Enhance with AI on scanned pages, then translate again.',
+        );
+      } else {
+        Alert.alert(
+          'Translation ready',
+          `Replaced ${translatedCount} Hindi line${translatedCount === 1 ? '' : 's'} with English. Review the overlays, then tap Export PDF.`,
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/api key/i.test(message)) {
+        await clearGeminiApiKey().catch(() => {});
+      }
+      Alert.alert('Translate failed', message);
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleTranslatePressed = async () => {
+    const storedKey = await getGeminiApiKey().catch(() => null);
+    if (storedKey) {
+      await runTranslateToEnglish(storedKey);
+    } else {
+      setApiKeyPurpose('translate');
       setApiKeyDraft('');
       setApiKeyPromptVisible(true);
     }
@@ -404,7 +569,11 @@ export default function App() {
       // Key storage failing shouldn't block this one run - it just means re-entry next time.
       console.warn('Failed to persist Gemini API key', error);
     });
-    await runEnhanceWithAi(key);
+    if (apiKeyPurpose === 'translate') {
+      await runTranslateToEnglish(key);
+    } else {
+      await runEnhanceWithAi(key);
+    }
   };
 
   /**
@@ -813,7 +982,21 @@ export default function App() {
                 small
                 variant="secondary"
                 onPress={handleEnhancePressed}
-                disabled={editingBlocked || enhancingPage !== null || ocrStatus === 'running'}
+                disabled={
+                  editingBlocked ||
+                  enhancingPage !== null ||
+                  translating ||
+                  ocrStatus === 'running'
+                }
+              />
+              <AppButton
+                title={translating ? 'Translating…' : 'Translate to EN'}
+                small
+                variant="secondary"
+                onPress={handleTranslatePressed}
+                disabled={
+                  enhancingPage !== null || translating || status.state === 'saving'
+                }
               />
             </View>
             <View style={styles.toolbarRow}>
@@ -963,10 +1146,9 @@ export default function App() {
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Gemini API key needed</Text>
             <Text style={styles.modalBody}>
-              Enhance with AI sends this page&apos;s image to Google&apos;s Gemini API for
-              higher-accuracy text detection. It needs your own free API key (no credit card) -
-              create one at aistudio.google.com, then paste it here. The key is stored only on this
-              device, in encrypted storage.
+              {apiKeyPurpose === 'translate'
+                ? "Translate to English sends detected Hindi line text to Google's Gemini API. It needs your own free API key (no credit card) - create one at aistudio.google.com, then paste it here. The key is stored only on this device."
+                : "Enhance with AI sends this page's image to Google's Gemini API for higher-accuracy text detection. It needs your own free API key (no credit card) - create one at aistudio.google.com, then paste it here. The key is stored only on this device, in encrypted storage."}
             </Text>
             <TextInput
               value={apiKeyDraft}

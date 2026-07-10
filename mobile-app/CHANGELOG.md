@@ -4,6 +4,11 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Added — Translate Hindi PDF to English
+
+- Mobile: **Translate to EN** applies mask + English overlays for every detected Devanagari line (Gemini translation with the user’s API key), then export via the existing Render & Print pipeline.
+- Web: new **Translate** tool at `/edit/?tool=translate` — detect Hindi, translate, download a new English PDF without overwriting the source.
+
 ### Fixed — EAS dependency install
 
 - Pinned `@react-native/jest-preset` to `0.85.3`, matching `react-native@0.85.3` and satisfying `jest-expo@56.0.5`'s `^0.85.0` peer dependency so production EAS builds can complete `npm ci --include=dev`.

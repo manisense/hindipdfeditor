@@ -92,6 +92,23 @@
   width: 100%;
 }
 
+.utility-tool__field {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 6px;
+}
+
+.utility-tool__field input {
+  border: 1px solid #e7e2da;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 400;
+  padding: 10px 12px;
+  width: 100%;
+}
+
 .utility-tool__note {
   color: #8a8a96;
   font-size: 13px;
