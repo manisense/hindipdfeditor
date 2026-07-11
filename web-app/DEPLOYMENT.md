@@ -58,9 +58,6 @@ Use these in Play Console:
 
 ## Google Analytics
 
-The website includes an inactive GA4 loader at `web-app/assets/analytics.js`. Add the real
-measurement ID from Google Analytics before deploy:
-
-```js
-const GOOGLE_ANALYTICS_ID = "G-XXXXXXXXXX";
-```
+GA4 is enabled via `web-app/assets/analytics.js` (measurement ID `G-1K5ZEEBHE5`).
+Every public HTML page and the editor SPA load that script once, immediately after
+`<head>`. Do not paste a second Google tag into those pages.

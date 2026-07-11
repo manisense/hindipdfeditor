@@ -1,4 +1,4 @@
-const GOOGLE_ANALYTICS_ID = "";
+const GOOGLE_ANALYTICS_ID = "G-1K5ZEEBHE5";
 
 if (/^G-[A-Z0-9]+$/.test(GOOGLE_ANALYTICS_ID)) {
   const tag = document.createElement("script");
