@@ -1,0 +1,93 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   Hindi PDF Editor — design tokens (from hindipdfeditor landing)
+   Brand colors sourced from the Figma logo
+   ============================================================ */
+@theme {
+  --color-brand: #1843dd;
+  --color-brand-hover: #1130a8;
+  --color-brand-500: #3a5cf0;
+  --color-brand-tint: #d7e7ff;
+  --color-brand-wash: #eef3ff;
+
+  --color-accent: #01873e;
+  --color-accent-500: #12a551;
+  --color-accent-tint: #d6f3e3;
+
+  --color-navy: #050839;
+  --color-navy-800: #0c1150;
+
+  --color-pop-yellow: #ffce45;
+  --color-pop-yellow-tint: #fff0c2;
+  --color-pop-lav: #e9e6ff;
+  --color-pop-coral: #ff8b5e;
+
+  --color-ink: #15172c;
+  --color-muted: #5b6172;
+  --color-cream: #fbf8f1;
+  --color-line: #eceae2;
+
+  --font-display: 'Plus Jakarta Sans', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Inter', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-soft: 0 12px 34px rgba(21, 23, 44, 0.09);
+  --shadow-brand: 0 14px 34px rgba(24, 67, 221, 0.28);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  .home-root {
+    font-family: var(--font-body);
+    color: var(--color-ink);
+    background: #ffffff;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .home-root h1,
+  .home-root h2,
+  .home-root h3,
+  .home-root h4,
+  .home-root h5 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+  .home-root ::selection {
+    background: var(--color-brand-tint);
+    color: var(--color-brand-hover);
+  }
+}
+
+/* Typewriter caret */
+@keyframes caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+.caret {
+  display: inline-block;
+  width: 2px;
+  margin-left: 2px;
+  animation: caret-blink 1s steps(1) infinite;
+}
+
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(24, 67, 221, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(24, 67, 221, 0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 40%, transparent 100%);
+}
+
+.section-x {
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}

@@ -1,11 +1,11 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 
+import { HomePage } from './home/HomePage';
 import { readToolIdFromLocation, type ToolId } from './lib/tools';
 import { CompressPdfTool } from './tools/CompressPdfTool';
 import { EditPdfTool } from './tools/EditPdfTool';
 import { MergePdfTool } from './tools/MergePdfTool';
 import { SplitPdfTool } from './tools/SplitPdfTool';
-import { ToolsHub } from './tools/ToolsHub';
 import './App.css';
 
 /** Lazy so ORT / transformers only load when the user opens Translate. */
@@ -53,6 +53,6 @@ export default function App() {
     case 'compress':
       return <CompressPdfTool />;
     default:
-      return <ToolsHub />;
+      return <HomePage />;
   }
 }

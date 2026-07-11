@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { AppButton } from '../components/AppButton';
 import { DropZone } from '../components/DropZone';
@@ -27,6 +27,10 @@ const RASTER_SCALE = 2;
 const MASK_SAMPLE_MARGIN_PX = 16;
 const UNKNOWN_ENCODING_FONT_NAME = 'unknown (font inspection failed)';
 
+/** Soft caps so a phone/tab browser does not OOM on huge scans. */
+const MAX_FILE_BYTES = 40 * 1024 * 1024;
+const MAX_PAGES = 40;
+
 type Progress = {
   phase: 'loading' | 'detecting' | 'translating' | 'exporting';
   detail: string;
@@ -39,6 +43,12 @@ type Result = {
   skippedLines: number;
   usedOcrFallback: boolean;
 };
+
+function throwIfAborted(signal: AbortSignal): void {
+  if (signal.aborted) {
+    throw new DOMException('Translation cancelled', 'AbortError');
+  }
+}
 
 async function detectLegacyFontWarnings(
   pageCount: number,
@@ -61,23 +71,41 @@ async function detectLegacyFontWarnings(
 async function buildTranslatedDocument(
   file: File,
   onProgress: (p: Progress) => void,
+  signal: AbortSignal,
 ): Promise<{
   doc: DocumentState;
   translatedLines: number;
   skippedLines: number;
   usedOcrFallback: boolean;
 }> {
+  if (file.size > MAX_FILE_BYTES) {
+    throw new Error(
+      `This PDF is too large for in-browser translation (max ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB). Try Compress PDF first, or split into smaller files.`,
+    );
+  }
+
   onProgress({ phase: 'loading', detail: 'Reading PDF…' });
   const bytes = new Uint8Array(await file.arrayBuffer());
+  throwIfAborted(signal);
   setPdfBytes(bytes);
   const pageCount = await getPageCount();
+  if (pageCount > MAX_PAGES) {
+    throw new Error(
+      `This PDF has ${pageCount} pages (max ${MAX_PAGES} for Translate). Split it into smaller ranges first.`,
+    );
+  }
 
   onProgress({ phase: 'loading', detail: 'Checking fonts…' });
   const legacyFontWarnings = await detectLegacyFontWarnings(pageCount);
+  throwIfAborted(signal);
   const forceOcr = legacyFontWarnings.length > 0;
 
   const pages: PageState[] = [];
+  let translatedLines = 0;
+  let skippedLines = 0;
+
   for (let i = 0; i < pageCount; i++) {
+    throwIfAborted(signal);
     onProgress({
       phase: 'loading',
       detail: `Rasterizing page ${i + 1} of ${pageCount}…`,
@@ -85,7 +113,7 @@ async function buildTranslatedDocument(
     const image = await renderPage(i, RASTER_SCALE);
     const widthPt = image.pxWidth / RASTER_SCALE;
     const heightPt = image.pxHeight / RASTER_SCALE;
-    pages.push({
+    const page: PageState = {
       pageIndex: i,
       widthPt,
       heightPt,
@@ -94,13 +122,8 @@ async function buildTranslatedDocument(
       imagePxHeight: image.pxHeight,
       edits: [],
       ocrLines: [],
-    });
-  }
+    };
 
-  let translatedLines = 0;
-  let skippedLines = 0;
-  for (let i = 0; i < pages.length; i++) {
-    const page = pages[i];
     onProgress({
       phase: 'detecting',
       detail: forceOcr
@@ -113,9 +136,11 @@ async function buildTranslatedDocument(
     } catch (error) {
       console.warn(`Text detection failed on page ${i}`, error);
     }
+    throwIfAborted(signal);
+
     const hindiLines = lines.filter((l) => containsDevanagari(l.text));
     if (hindiLines.length === 0) {
-      pages[i] = { ...page, ocrLines: lines };
+      pages.push({ ...page, ocrLines: lines });
       continue;
     }
 
@@ -125,7 +150,10 @@ async function buildTranslatedDocument(
     });
     const english = await translateHindiLinesToEnglish(
       hindiLines.map((l) => l.text),
-      (detail) => onProgress({ phase: 'translating', detail }),
+      {
+        signal,
+        onProgress: (detail) => onProgress({ phase: 'translating', detail }),
+      },
     );
 
     const edits: Edit[] = [];
@@ -214,8 +242,11 @@ async function buildTranslatedDocument(
       translatedLines += 1;
     }
 
-    const remaining = lines.filter((l) => !consumedIds.has(l.id));
-    pages[i] = { ...page, edits, ocrLines: remaining };
+    pages.push({
+      ...page,
+      edits,
+      ocrLines: lines.filter((l) => !consumedIds.has(l.id)),
+    });
   }
 
   return {
@@ -237,17 +268,24 @@ export function TranslatePdfTool() {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const step = result ? 3 : file ? 2 : 1;
 
+  const cancelTranslate = () => {
+    abortRef.current?.abort();
+  };
+
   const runTranslate = async () => {
-    if (!file) return;
+    if (!file || busy) return;
+    const controller = new AbortController();
+    abortRef.current = controller;
     setBusy(true);
     setError(null);
     setResult(null);
     try {
       const { doc, translatedLines, skippedLines, usedOcrFallback } =
-        await buildTranslatedDocument(file, setProgress);
+        await buildTranslatedDocument(file, setProgress, controller.signal);
       if (translatedLines === 0) {
         throw new Error(
           skippedLines > 0
@@ -255,6 +293,7 @@ export function TranslatePdfTool() {
             : 'No Hindi (Devanagari) text was found to translate. Try a clearer scan, or open Edit PDF and use Enhance with AI first for difficult pages.',
         );
       }
+      throwIfAborted(controller.signal);
       setProgress({ phase: 'exporting', detail: 'Building English PDF…' });
       const [sans, serif] = await Promise.all([
         getFontBase64('NotoSansDevanagari'),
@@ -264,6 +303,7 @@ export function TranslatePdfTool() {
         NotoSansDevanagari: sans,
         NotoSerifDevanagari: serif,
       });
+      throwIfAborted(controller.signal);
       const base = file.name.replace(/\.pdf$/i, '') || 'translated';
       const filename = `${base}-en.pdf`;
       downloadPdfBlob(blob, filename);
@@ -275,8 +315,13 @@ export function TranslatePdfTool() {
         usedOcrFallback,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Translation cancelled.');
+      } else {
+        setError(err instanceof Error ? err.message : String(err));
+      }
     } finally {
+      abortRef.current = null;
       setBusy(false);
       setProgress(null);
     }
@@ -307,11 +352,14 @@ export function TranslatePdfTool() {
         ) : (
           <div className="utility-tool__panel">
             <h2>{file.name}</h2>
-            <p className="utility-tool__meta">{(file.size / 1024).toFixed(1)} KB</p>
+            <p className="utility-tool__meta">
+              {(file.size / 1024).toFixed(1)} KB · max {MAX_PAGES} pages /{' '}
+              {Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB
+            </p>
             <p className="utility-tool__note">
               Translation runs locally with the Helsinki-NLP Opus-MT Hindi→English model. The first
-              run downloads the model once (cached afterward). Your PDF never leaves this browser
-              for translation. Output is a new file; the source is never modified.
+              run downloads the model once from Hugging Face (cached afterward). Your PDF never
+              leaves this browser. Output is a new file; the source is never modified.
             </p>
             <div className="utility-tool__actions">
               <AppButton
@@ -325,11 +373,11 @@ export function TranslatePdfTool() {
                   setError(null);
                 }}
               />
-              <AppButton
-                title={busy ? 'Working…' : 'Translate & download'}
-                onClick={() => void runTranslate()}
-                disabled={busy}
-              />
+              {busy ? (
+                <AppButton title="Cancel" variant="secondary" onClick={cancelTranslate} />
+              ) : (
+                <AppButton title="Translate & download" onClick={() => void runTranslate()} />
+              )}
             </div>
           </div>
         )}

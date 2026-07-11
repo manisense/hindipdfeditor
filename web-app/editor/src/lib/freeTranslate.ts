@@ -3,7 +3,8 @@
  * and the Helsinki-NLP Opus-MT hi→en model (ONNX, quantized). No API key, no cloud LLM.
  *
  * First use downloads ~70–100MB of model weights from Hugging Face (then cached in
- * IndexedDB by the library). Subsequent runs reuse the cache.
+ * IndexedDB by the library). Subsequent runs reuse the cache. PDF bytes never leave
+ * the browser for translation — only the model weights are fetched.
  *
  * The `@huggingface/transformers` package is loaded via dynamic `import()` so Edit / Merge /
  * Split / Compress never pay for the ORT WASM + transformers chunk.
@@ -25,6 +26,12 @@ type TranslatorFn = (
   options?: { max_new_tokens?: number },
 ) => Promise<unknown>;
 
+export type TranslateOptions = {
+  onProgress?: ProgressCallback;
+  /** When aborted, throws `DOMException` with name `AbortError`. */
+  signal?: AbortSignal;
+};
+
 let translatorPromise: Promise<TranslatorFn> | null = null;
 /** Latest UI progress callback — updated on every call so a shared load promise stays current. */
 let activeProgress: ProgressCallback | undefined;
@@ -33,15 +40,40 @@ function report(detail: string): void {
   activeProgress?.(detail);
 }
 
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new DOMException('Translation cancelled', 'AbortError');
+  }
+}
+
+function friendlyModelLoadError(error: unknown): Error {
+  if (error instanceof DOMException && error.name === 'AbortError') return error;
+  const message = error instanceof Error ? error.message : String(error);
+  if (/fetch|network|Failed to fetch|Load failed|offline/i.test(message)) {
+    return new Error(
+      'Could not download the translation model. Check your internet connection and try again. The model is cached after the first successful download.',
+    );
+  }
+  if (/WebAssembly|out of memory|OOM|memory/i.test(message)) {
+    return new Error(
+      'This browser ran out of memory loading the translation model. Try a smaller PDF, close other tabs, or use a desktop browser.',
+    );
+  }
+  return new Error(`Translation model failed to load: ${message}`);
+}
+
 /**
  * Lazily loads (and caches) the Opus-MT Hindi→English pipeline.
  *
- * @param onProgress Optional human-readable load progress for the UI.
+ * @param options Progress + optional abort signal.
  */
 export async function loadHindiEnglishTranslator(
-  onProgress?: ProgressCallback,
+  options: TranslateOptions = {},
 ): Promise<TranslatorFn> {
+  const { onProgress, signal } = options;
   activeProgress = onProgress;
+  throwIfAborted(signal);
+
   if (!translatorPromise) {
     translatorPromise = (async () => {
       report('Downloading Hindi→English model (one-time, free, cached)…');
@@ -50,10 +82,12 @@ export async function loadHindiEnglishTranslator(
         env.allowLocalModels = false;
         env.useBrowserCache = true;
 
+        throwIfAborted(signal);
         const translator = await pipeline('translation', MODEL_ID, {
           // q8 is the practical accuracy/size tradeoff for MarianMT in-browser.
           dtype: 'q8',
           progress_callback: (data) => {
+            if (signal?.aborted) return;
             if (
               data &&
               typeof data === 'object' &&
@@ -69,15 +103,21 @@ export async function loadHindiEnglishTranslator(
             }
           },
         });
+        throwIfAborted(signal);
         report('Translation model ready');
         return translator as unknown as TranslatorFn;
       } catch (error) {
         translatorPromise = null;
-        throw error;
+        throw friendlyModelLoadError(error);
       }
     })();
   }
-  return translatorPromise;
+
+  try {
+    return await translatorPromise;
+  } catch (error) {
+    throw friendlyModelLoadError(error);
+  }
 }
 
 function readTranslationText(output: unknown): string {
@@ -110,19 +150,23 @@ export function isSuccessfulEnglishTranslation(source: string, translated: strin
  * (caller must skip overlay for that line — never mask with the original Hindi).
  *
  * @param lines Source strings containing Devanagari.
- * @param onProgress Optional progress updates (model load + per-line status).
+ * @param options Progress + optional abort signal.
  */
 export async function translateHindiLinesToEnglish(
   lines: string[],
-  onProgress?: ProgressCallback,
+  options: TranslateOptions = {},
 ): Promise<(string | null)[]> {
   if (lines.length === 0) return [];
 
+  const { onProgress, signal } = options;
   activeProgress = onProgress;
-  const translator = await loadHindiEnglishTranslator(onProgress);
+  throwIfAborted(signal);
+
+  const translator = await loadHindiEnglishTranslator(options);
   const out: (string | null)[] = [];
 
   for (let i = 0; i < lines.length; i++) {
+    throwIfAborted(signal);
     report(`Translating line ${i + 1} of ${lines.length}…`);
     const source = lines[i].trim();
     if (source === '') {
@@ -131,9 +175,11 @@ export async function translateHindiLinesToEnglish(
     }
     try {
       const result = await translator(source, { max_new_tokens: 256 });
+      throwIfAborted(signal);
       const english = readTranslationText(result);
       out.push(isSuccessfulEnglishTranslation(source, english) ? english : null);
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
       console.warn(`Opus-MT failed on line ${i}; skipping overlay`, error);
       out.push(null);
     }

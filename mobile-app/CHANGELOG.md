@@ -7,7 +7,7 @@ All notable changes to this project are documented here, grouped by phase (see `
 ### Added — Translate Hindi PDF to English
 
 - Mobile: **Translate to EN** applies mask + English overlays for every detected Devanagari line (Gemini translation with the user’s API key), then export via the existing Render & Print pipeline.
-- Web: new **Translate** tool at `/edit/?tool=translate` — detect Hindi, translate, download a new English PDF without overwriting the source.
+- Web: **Translate** at `/edit/?tool=translate` uses free in-browser Helsinki-NLP Opus-MT (no API key). Detects Hindi, translates locally, downloads a new English PDF. Source is never overwritten. First run caches the model from Hugging Face.
 
 ### Fixed — EAS dependency install
 

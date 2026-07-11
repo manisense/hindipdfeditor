@@ -66,6 +66,11 @@
             Optional AI enhancement sends the current page image to Google
             Gemini only by user action.
           </li>
+          <li>
+            Web Translate runs Opus-MT in your browser; PDF content is not
+            uploaded. A translation model may be downloaded once from Hugging
+            Face.
+          </li>
         </ul>
 
         <h2>Data Types</h2>
@@ -100,6 +105,15 @@
                 <td>Processed locally by the app.</td>
                 <td>Open, preview, edit, and export PDFs.</td>
                 <td>Yes for app functionality.</td>
+              </tr>
+              <tr>
+                <td>Opus-MT model weights (web Translate)</td>
+                <td>
+                  Downloaded once from Hugging Face to your browser cache; not
+                  your PDF.
+                </td>
+                <td>Free offline Hindi→English translation in the browser.</td>
+                <td>No — only if you use Translate on the website.</td>
               </tr>
             </tbody>
           </table>
