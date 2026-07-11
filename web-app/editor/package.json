@@ -12,11 +12,16 @@
   },
   "dependencies": {
     "@cantoo/pdf-lib": "^2.7.1",
+    "@huggingface/transformers": "^3.8.1",
+    "clsx": "^2.1.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",
+    "lucide-react": "^1.24.0",
+    "motion": "^12.42.2",
     "pdfjs-dist": "^5.3.93",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.6.0",
     "tesseract.js": "^6.0.1",
     "zustand": "^5.0.14"
   },

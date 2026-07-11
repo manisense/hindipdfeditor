@@ -24,7 +24,7 @@ export const TOOLS: ToolMeta[] = [
     title: 'Translate Hindi to English',
     shortTitle: 'Translate',
     description:
-      'Detect Hindi text, translate it to English with your Gemini API key, and download a new English PDF.',
+      'Detect Hindi text and translate it to English free in your browser (Opus-MT) — no API key — then download a new PDF.',
     accent: '#5b4fc9',
     category: 'convert',
   },

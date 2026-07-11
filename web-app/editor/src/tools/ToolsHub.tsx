@@ -173,7 +173,8 @@ export function ToolsHub() {
               <ul>
                 <li>Core tools run locally in your browser or on your phone</li>
                 <li>Original PDFs are never overwritten</li>
-                <li>Optional AI OCR and translation use only your own Gemini API key</li>
+                <li>Optional AI OCR uses only your own Gemini API key</li>
+                <li>Translate runs free in your browser — no account or API key</li>
                 <li>No account required for editing, merge, split, or compress</li>
               </ul>
               <a className="ilove-hub__cta" href={toolHref('edit')}>

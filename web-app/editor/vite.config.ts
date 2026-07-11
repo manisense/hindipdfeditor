@@ -47,6 +47,10 @@ export default defineConfig({
     outDir: '../edit',
     emptyOutDir: true,
   },
+  // Transformers.js pulls ONNX Runtime WASM at runtime; keep it out of Vite pre-bundling.
+  optimizeDeps: {
+    exclude: ['@huggingface/transformers'],
+  },
   server: {
     port: 5173,
   },

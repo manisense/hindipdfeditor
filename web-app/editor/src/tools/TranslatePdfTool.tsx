@@ -3,11 +3,10 @@ import { useState } from 'react';
 import { AppButton } from '../components/AppButton';
 import { DropZone } from '../components/DropZone';
 import { ToolShell } from '../components/ToolShell';
-import { clearGeminiApiKey, getGeminiApiKey, setGeminiApiKey } from '../lib/apiKeyStore';
 import { ptSizeToImagePx, ptToImagePx } from '../lib/coordinateMath';
 import { downloadPdfBlob, exportPdf } from '../lib/exportPdf';
 import { getFontBase64 } from '../lib/fontAsset';
-import { containsDevanagari, translateHindiLinesToEnglish } from '../lib/geminiTranslate';
+import { containsDevanagari, translateHindiLinesToEnglish } from '../lib/freeTranslate';
 import { detectTextLines } from '../lib/ocr';
 import {
   getPageCount,
@@ -38,7 +37,6 @@ type Result = {
 
 async function buildTranslatedDocument(
   file: File,
-  apiKey: string,
   onProgress: (p: Progress) => void,
 ): Promise<{ doc: DocumentState; translatedLines: number }> {
   onProgress({ phase: 'loading', detail: 'Reading PDF…' });
@@ -53,7 +51,6 @@ async function buildTranslatedDocument(
       detail: `Rasterizing page ${i + 1} of ${pageCount}…`,
     });
     const image = await renderPage(i, RASTER_SCALE);
-    // pdf.js viewport at scale N is N × page points
     const widthPt = image.pxWidth / RASTER_SCALE;
     const heightPt = image.pxHeight / RASTER_SCALE;
     pages.push({
@@ -93,7 +90,7 @@ async function buildTranslatedDocument(
     });
     const english = await translateHindiLinesToEnglish(
       hindiLines.map((l) => l.text),
-      apiKey,
+      (detail) => onProgress({ phase: 'translating', detail }),
     );
 
     const edits: Edit[] = [];
@@ -154,18 +151,16 @@ async function buildTranslatedDocument(
         /* keep black */
       }
 
-      const maskId = crypto.randomUUID();
-      const textId = crypto.randomUUID();
       edits.push({
         type: 'mask',
-        id: maskId,
+        id: crypto.randomUUID(),
         page: i,
         ...geo.mask,
         color: maskColor,
       });
       edits.push({
         type: 'text',
-        id: textId,
+        id: crypto.randomUUID(),
         page: i,
         xPt: geo.text.xPt,
         yPt: geo.text.yPt,
@@ -196,7 +191,6 @@ async function buildTranslatedDocument(
 
 export function TranslatePdfTool() {
   const [file, setFile] = useState<File | null>(null);
-  const [apiKeyDraft, setApiKeyDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -204,17 +198,16 @@ export function TranslatePdfTool() {
 
   const step = result ? 3 : file ? 2 : 1;
 
-  const runTranslate = async (apiKey: string) => {
+  const runTranslate = async () => {
     if (!file) return;
     setBusy(true);
     setError(null);
     setResult(null);
     try {
-      await setGeminiApiKey(apiKey);
-      const { doc, translatedLines } = await buildTranslatedDocument(file, apiKey, setProgress);
+      const { doc, translatedLines } = await buildTranslatedDocument(file, setProgress);
       if (translatedLines === 0) {
         throw new Error(
-          'No Hindi (Devanagari) text was found to translate. Try a clearer scan or use Edit PDF with Enhance with AI first.',
+          'No Hindi (Devanagari) text was found to translate. Try a clearer scan, or open Edit PDF and use Enhance with AI first for difficult pages.',
         );
       }
       setProgress({ phase: 'exporting', detail: 'Building English PDF…' });
@@ -231,25 +224,11 @@ export function TranslatePdfTool() {
       downloadPdfBlob(blob, filename);
       setResult({ filename, pageCount: doc.pageCount, translatedLines });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      if (/api key/i.test(message)) {
-        await clearGeminiApiKey().catch(() => {});
-      }
-      setError(message);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
       setProgress(null);
     }
-  };
-
-  const handleStart = async () => {
-    const stored = (await getGeminiApiKey())?.trim() ?? '';
-    const key = (apiKeyDraft.trim() || stored).trim();
-    if (!key) {
-      setError('Paste your Gemini API key to translate. Create a free key at aistudio.google.com.');
-      return;
-    }
-    await runTranslate(key);
   };
 
   return (
@@ -266,7 +245,7 @@ export function TranslatePdfTool() {
           <DropZone
             accent={tool.accent}
             title="Translate Hindi PDF to English"
-            subtitle="Detects Hindi text, translates with your Gemini API key, and exports a new English PDF — original file is never overwritten."
+            subtitle="Detects Hindi text and translates it free in your browser with Opus-MT — no account, no API key. Original file is never overwritten."
             buttonLabel="Select PDF"
             onFiles={(files) => {
               setFile(files[0]);
@@ -278,21 +257,10 @@ export function TranslatePdfTool() {
           <div className="utility-tool__panel">
             <h2>{file.name}</h2>
             <p className="utility-tool__meta">{(file.size / 1024).toFixed(1)} KB</p>
-            <label className="utility-tool__field">
-              Gemini API key
-              <input
-                type="password"
-                autoComplete="off"
-                placeholder="Paste key (stored only in this browser)"
-                value={apiKeyDraft}
-                onChange={(e) => setApiKeyDraft(e.target.value)}
-                disabled={busy}
-              />
-            </label>
             <p className="utility-tool__note">
-              Translation sends detected Hindi line text to Google&apos;s Gemini API using your own
-              free key. Page images stay in the browser except when you use Edit PDF&apos;s Enhance
-              with AI. The output is a new PDF; your source file is never modified.
+              Translation runs locally with the Helsinki-NLP Opus-MT Hindi→English model. The first
+              run downloads the model once (cached afterward). Your PDF never leaves this browser
+              for translation. Output is a new file; the source is never modified.
             </p>
             <div className="utility-tool__actions">
               <AppButton
@@ -308,17 +276,13 @@ export function TranslatePdfTool() {
               />
               <AppButton
                 title={busy ? 'Working…' : 'Translate & download'}
-                onClick={() => void handleStart()}
+                onClick={() => void runTranslate()}
                 disabled={busy}
               />
             </div>
           </div>
         )}
-        {progress && (
-          <div className="utility-tool__status">
-            {progress.detail}
-          </div>
-        )}
+        {progress && <div className="utility-tool__status">{progress.detail}</div>}
         {error && <div className="utility-tool__status utility-tool__status--error">{error}</div>}
         {result && (
           <div className="utility-tool__status utility-tool__status--ok">
