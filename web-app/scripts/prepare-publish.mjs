@@ -8,6 +8,7 @@ const editDir = path.join(webAppRoot, 'edit');
 
 const STATIC_ENTRIES = [
   'index.html',
+  'favicon.ico',
   'robots.txt',
   'sitemap.xml',
   'llms.txt',

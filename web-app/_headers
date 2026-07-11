@@ -9,3 +9,25 @@
 
 /edit/assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Favicons change with branding — do not pin immutable year-long cache.
+/favicon.ico
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/edit/favicon.ico
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/assets/favicon.ico
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/assets/favicon-32.png
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/assets/apple-touch-icon.png
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/edit/assets/favicon-32.png
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/edit/assets/apple-touch-icon.png
+  Cache-Control: public, max-age=86400, must-revalidate
