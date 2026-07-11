@@ -4,7 +4,7 @@ const MASK_EXPAND_PT = 3;
 const OCR_FONT_SIZE_RATIO = 0.82;
 const MIN_OCR_FONT_SIZE_PT = 6;
 const OCR_MASK_PAD_TOP_RATIO = 0.35;
-const OCR_TEXT_WIDTH_SLACK_RATIO = 1.25;
+const OCR_TEXT_WIDTH_SLACK_RATIO = 1.85;
 const OCR_TEXT_BASELINE_NUDGE_RATIO = 0.06;
 
 export type TranslationGeometry = {
@@ -21,6 +21,7 @@ export type TranslationGeometry = {
 /**
  * Computes mask + English overlay geometry for one detected Hindi line, in PDF points.
  * Matches the OCR tap-to-edit padding used by Edit PDF so export alignment stays consistent.
+ * Width slack is wider than edit-mode (1.85×) because English often expands vs Hindi.
  *
  * @param line Detected line box, in PDF points.
  * @param pageWidthPt Page width, in PDF points.
@@ -52,8 +53,10 @@ export function geometryForTranslatedLine(
       xPt: line.xPt,
       yPt: textY,
       fontSizePt,
-      widthPt: line.wPt * OCR_TEXT_WIDTH_SLACK_RATIO,
-      fontWeight: fontSizePt >= 13 ? 'bold' : 'normal',
+      // Cap slack to remaining page width so overlays don't spill past the right edge.
+      widthPt: Math.min(pageWidthPt - line.xPt, line.wPt * OCR_TEXT_WIDTH_SLACK_RATIO),
+      // Prefer normal weight for English body text (size-based bold was a false heuristic).
+      fontWeight: 'normal',
     },
   };
 }

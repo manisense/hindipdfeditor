@@ -46,6 +46,18 @@ export default defineConfig({
   build: {
     outDir: '../edit',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes('node_modules/@huggingface/transformers') ||
+            id.includes('node_modules/onnxruntime-web')
+          ) {
+            return 'transformers';
+          }
+        },
+      },
+    },
   },
   // Transformers.js pulls ONNX Runtime WASM at runtime; keep it out of Vite pre-bundling.
   optimizeDeps: {

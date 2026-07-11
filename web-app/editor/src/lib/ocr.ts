@@ -97,10 +97,15 @@ async function recognizeWithLanguage(
  * exports); falls back to browser Tesseract for scanned/image-only pages.
  *
  * @param page The page whose `backgroundImageUri` / page index to scan.
+ * @param options.forceOcr When true, skip embedded text (use for legacy-font PDFs whose
+ *   embedded strings are mojibake, not Unicode Devanagari).
  */
-export async function detectTextLines(page: PageState): Promise<OcrLine[]> {
+export async function detectTextLines(
+  page: PageState,
+  options?: { forceOcr?: boolean },
+): Promise<OcrLine[]> {
   const pdfBytes = getPdfBytes();
-  if (pdfBytes) {
+  if (!options?.forceOcr && pdfBytes) {
     try {
       const embedded = await extractEmbeddedTextLines(pdfBytes, page.pageIndex);
       if (embedded.length > 0) return embedded;

@@ -7,9 +7,11 @@ import { ptSizeToImagePx, ptToImagePx } from '../lib/coordinateMath';
 import { downloadPdfBlob, exportPdf } from '../lib/exportPdf';
 import { getFontBase64 } from '../lib/fontAsset';
 import { containsDevanagari, translateHindiLinesToEnglish } from '../lib/freeTranslate';
+import { detectLegacyFonts } from '../lib/legacyFontDetector';
 import { detectTextLines } from '../lib/ocr';
 import {
   getPageCount,
+  getPdfBase64,
   renderPage,
   sampleAverageColor,
   sampleTextColor,
@@ -23,6 +25,7 @@ import './UtilityTool.css';
 const tool = getTool('translate')!;
 const RASTER_SCALE = 2;
 const MASK_SAMPLE_MARGIN_PX = 16;
+const UNKNOWN_ENCODING_FONT_NAME = 'unknown (font inspection failed)';
 
 type Progress = {
   phase: 'loading' | 'detecting' | 'translating' | 'exporting';
@@ -33,16 +36,45 @@ type Result = {
   filename: string;
   pageCount: number;
   translatedLines: number;
+  skippedLines: number;
+  usedOcrFallback: boolean;
 };
+
+async function detectLegacyFontWarnings(
+  pageCount: number,
+): Promise<{ page: number; fontName: string }[]> {
+  try {
+    const base64 = await getPdfBase64();
+    return await detectLegacyFonts(base64);
+  } catch (error) {
+    console.warn(
+      'legacyFontDetector failed during translate; forcing OCR (fail closed)',
+      error,
+    );
+    return Array.from({ length: pageCount }, (_, page) => ({
+      page,
+      fontName: UNKNOWN_ENCODING_FONT_NAME,
+    }));
+  }
+}
 
 async function buildTranslatedDocument(
   file: File,
   onProgress: (p: Progress) => void,
-): Promise<{ doc: DocumentState; translatedLines: number }> {
+): Promise<{
+  doc: DocumentState;
+  translatedLines: number;
+  skippedLines: number;
+  usedOcrFallback: boolean;
+}> {
   onProgress({ phase: 'loading', detail: 'Reading PDF…' });
   const bytes = new Uint8Array(await file.arrayBuffer());
   setPdfBytes(bytes);
   const pageCount = await getPageCount();
+
+  onProgress({ phase: 'loading', detail: 'Checking fonts…' });
+  const legacyFontWarnings = await detectLegacyFontWarnings(pageCount);
+  const forceOcr = legacyFontWarnings.length > 0;
 
   const pages: PageState[] = [];
   for (let i = 0; i < pageCount; i++) {
@@ -66,15 +98,18 @@ async function buildTranslatedDocument(
   }
 
   let translatedLines = 0;
+  let skippedLines = 0;
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
     onProgress({
       phase: 'detecting',
-      detail: `Detecting text on page ${i + 1} of ${pageCount}…`,
+      detail: forceOcr
+        ? `OCR on page ${i + 1} of ${pageCount} (legacy font — skipping embedded text)…`
+        : `Detecting text on page ${i + 1} of ${pageCount}…`,
     });
     let lines: OcrLine[] = [];
     try {
-      lines = await detectTextLines(page);
+      lines = await detectTextLines(page, { forceOcr });
     } catch (error) {
       console.warn(`Text detection failed on page ${i}`, error);
     }
@@ -94,10 +129,14 @@ async function buildTranslatedDocument(
     );
 
     const edits: Edit[] = [];
+    const consumedIds = new Set<string>();
     for (let j = 0; j < hindiLines.length; j++) {
       const line = hindiLines[j];
-      const translated = english[j]?.trim();
-      if (!translated) continue;
+      const translated = english[j];
+      if (translated == null) {
+        skippedLines += 1;
+        continue;
+      }
 
       const geo = geometryForTranslatedLine(line, page.widthPt, page.heightPt);
       const { x: mx, y: my } = ptToImagePx(
@@ -171,10 +210,11 @@ async function buildTranslatedDocument(
         fontWeight: geo.text.fontWeight,
         widthPt: geo.text.widthPt,
       });
+      consumedIds.add(line.id);
       translatedLines += 1;
     }
 
-    const remaining = lines.filter((l) => !hindiLines.some((h) => h.id === l.id));
+    const remaining = lines.filter((l) => !consumedIds.has(l.id));
     pages[i] = { ...page, edits, ocrLines: remaining };
   }
 
@@ -183,9 +223,11 @@ async function buildTranslatedDocument(
       sourceName: file.name,
       pageCount,
       pages,
-      legacyFontWarnings: [],
+      legacyFontWarnings,
     },
     translatedLines,
+    skippedLines,
+    usedOcrFallback: forceOcr,
   };
 }
 
@@ -204,10 +246,13 @@ export function TranslatePdfTool() {
     setError(null);
     setResult(null);
     try {
-      const { doc, translatedLines } = await buildTranslatedDocument(file, setProgress);
+      const { doc, translatedLines, skippedLines, usedOcrFallback } =
+        await buildTranslatedDocument(file, setProgress);
       if (translatedLines === 0) {
         throw new Error(
-          'No Hindi (Devanagari) text was found to translate. Try a clearer scan, or open Edit PDF and use Enhance with AI first for difficult pages.',
+          skippedLines > 0
+            ? `Found Hindi text but could not translate any lines (${skippedLines} skipped). Try a clearer scan.`
+            : 'No Hindi (Devanagari) text was found to translate. Try a clearer scan, or open Edit PDF and use Enhance with AI first for difficult pages.',
         );
       }
       setProgress({ phase: 'exporting', detail: 'Building English PDF…' });
@@ -222,7 +267,13 @@ export function TranslatePdfTool() {
       const base = file.name.replace(/\.pdf$/i, '') || 'translated';
       const filename = `${base}-en.pdf`;
       downloadPdfBlob(blob, filename);
-      setResult({ filename, pageCount: doc.pageCount, translatedLines });
+      setResult({
+        filename,
+        pageCount: doc.pageCount,
+        translatedLines,
+        skippedLines,
+        usedOcrFallback,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -288,6 +339,8 @@ export function TranslatePdfTool() {
           <div className="utility-tool__status utility-tool__status--ok">
             Downloaded {result.filename} · {result.pageCount} pages · {result.translatedLines}{' '}
             line{result.translatedLines === 1 ? '' : 's'} translated
+            {result.skippedLines > 0 ? ` · ${result.skippedLines} skipped` : ''}
+            {result.usedOcrFallback ? ' · used OCR (legacy font)' : ''}
           </div>
         )}
       </div>

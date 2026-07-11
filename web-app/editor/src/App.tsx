@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 
 import { readToolIdFromLocation, type ToolId } from './lib/tools';
 import { CompressPdfTool } from './tools/CompressPdfTool';
@@ -6,8 +6,13 @@ import { EditPdfTool } from './tools/EditPdfTool';
 import { MergePdfTool } from './tools/MergePdfTool';
 import { SplitPdfTool } from './tools/SplitPdfTool';
 import { ToolsHub } from './tools/ToolsHub';
-import { TranslatePdfTool } from './tools/TranslatePdfTool';
 import './App.css';
+
+/** Lazy so ORT / transformers only load when the user opens Translate. */
+const TranslatePdfTool = lazy(async () => {
+  const mod = await import('./tools/TranslatePdfTool');
+  return { default: mod.TranslatePdfTool };
+});
 
 function useToolId(): ToolId | null {
   const [toolId, setToolId] = useState<ToolId | null>(() => readToolIdFromLocation());
@@ -21,6 +26,14 @@ function useToolId(): ToolId | null {
   return toolId;
 }
 
+function ToolLoading() {
+  return (
+    <div className="utility-tool" style={{ padding: 48, textAlign: 'center' }}>
+      Loading translate tool…
+    </div>
+  );
+}
+
 export default function App() {
   const toolId = useToolId();
 
@@ -28,7 +41,11 @@ export default function App() {
     case 'edit':
       return <EditPdfTool />;
     case 'translate':
-      return <TranslatePdfTool />;
+      return (
+        <Suspense fallback={<ToolLoading />}>
+          <TranslatePdfTool />
+        </Suspense>
+      );
     case 'merge':
       return <MergePdfTool />;
     case 'split':

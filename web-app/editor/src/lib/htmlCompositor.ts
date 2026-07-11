@@ -38,7 +38,7 @@ function textLayerHtml(edit: TextEdit, page: PageState): string {
       ? 'white-space:pre'
       : `width:${edit.widthPt * scale}px;white-space:pre-wrap;overflow-wrap:break-word`;
   const weightStyle = edit.fontWeight === 'bold' ? 'font-weight:700;' : '';
-  return `<span style="position:absolute;left:${x}px;top:${y}px;font-size:${fontPx}px;font-family:'${edit.fontFamily}';color:${edit.color};line-height:1;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span>`;
+  return `<span style="position:absolute;left:${x}px;top:${y}px;font-size:${fontPx}px;font-family:'${edit.fontFamily}',system-ui,sans-serif;color:${edit.color};line-height:1.15;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span>`;
 }
 
 /**
