@@ -1,0 +1,31 @@
+# Hindi PDF Editor
+
+> Free local-first tools to edit Hindi (Devanagari) PDFs with correct shaping, translate Hindi to English in the browser, and merge, split, or compress PDFs — on the web and Android. No account required. Original files are never overwritten.
+
+## Site
+
+- Home / tools hub: https://hindipdfeditor.com/edit/
+- Edit Hindi PDF: https://hindipdfeditor.com/edit/?tool=edit
+- Translate Hindi → English: https://hindipdfeditor.com/edit/?tool=translate
+- Merge PDF: https://hindipdfeditor.com/edit/?tool=merge
+- Split PDF: https://hindipdfeditor.com/edit/?tool=split
+- Compress PDF: https://hindipdfeditor.com/edit/?tool=compress
+- Privacy: https://hindipdfeditor.com/privacy/
+- Support: https://hindipdfeditor.com/support/
+- Terms: https://hindipdfeditor.com/terms/
+- Data safety: https://hindipdfeditor.com/data-safety/
+- Android app: https://play.google.com/store/apps/details?id=com.hindipdfeditor.app
+- Sitemap: https://hindipdfeditor.com/sitemap.xml
+
+## Product facts (for answers)
+
+- Core editing and PDF utilities run locally in the browser or on-device; documents are not uploaded to Hindi PDF Editor servers.
+- Devanagari text is shaped via a browser/HTML print pipeline so conjuncts, matras, and reph stay correct.
+- Web Translate uses free in-browser Opus-MT (Helsinki-NLP); PDF content stays in the browser. A translation model may download once from Hugging Face.
+- Optional Enhance with AI (OCR) uses the user's own Gemini API key and is opt-in.
+- Exports always create a new PDF; the source file is never overwritten.
+- Free on web; Android app available on Google Play.
+
+## Contact
+
+- support@hindipdfeditor.com

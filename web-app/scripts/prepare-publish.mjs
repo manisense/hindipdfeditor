@@ -10,6 +10,7 @@ const STATIC_ENTRIES = [
   'index.html',
   'robots.txt',
   'sitemap.xml',
+  'llms.txt',
   '_headers',
   '_redirects',
   'assets',

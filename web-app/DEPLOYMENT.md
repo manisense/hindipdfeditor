@@ -68,3 +68,52 @@ GA4 stream **hindipdfeditor** (`https://hindipdfeditor.com`):
 Enabled via `web-app/assets/analytics.js`. Every public HTML page and the editor SPA
 load that script once, immediately after `<head>`. Do not paste a second Google tag
 into those pages.
+
+## Google Search Console (get started)
+
+### 1. Verify ownership (Domain property — recommended)
+
+1. Open [Google Search Console](https://search.google.com/search-console).
+2. Add property → **Domain** → `hindipdfeditor.com` (covers `www`, HTTP, and HTTPS).
+3. Copy the DNS TXT record Google shows (looks like `google-site-verification=…`).
+4. In Cloudflare → DNS → Add record:
+   - Type: `TXT`
+   - Name: `@` (or `hindipdfeditor.com`)
+   - Content: paste Google’s value
+   - Proxy: DNS only is fine for TXT
+5. Wait a few minutes (sometimes up to 48h), then click **Verify** in Search Console.
+
+Prefer Domain verification over URL-prefix so one property covers the whole site.
+
+### 2. Submit the sitemap
+
+1. In Search Console open the `hindipdfeditor.com` property.
+2. Go to **Sitemaps**.
+3. Submit: `https://hindipdfeditor.com/sitemap.xml`
+4. Confirm it shows **Success** after Google fetches it.
+
+Also publicly available:
+
+- `https://hindipdfeditor.com/robots.txt`
+- `https://hindipdfeditor.com/llms.txt` (AI / answer-engine summary)
+
+### 3. What to monitor (beginner → developer)
+
+| Report | Why |
+| --- | --- |
+| **Performance** | Queries, clicks, impressions, average position |
+| **Page indexing** | Crawl/index errors after deploy |
+| **URL Inspection** | Test a single URL (e.g. `/edit/?tool=translate`) |
+| **Enhancements / rich results** | FAQ / SoftwareApplication structured data (when eligible) |
+
+After each meaningful content deploy, use **URL Inspection → Request indexing** on `/edit/` and key tool URLs if they are new or heavily changed.
+
+### 4. SEO / AEO / AISEO already in the site
+
+- Titles, descriptions, canonicals, Open Graph, Twitter cards
+- JSON-LD: Organization, WebSite, SoftwareApplication, FAQPage
+- SPA head updates when switching tools (`SeoHead`)
+- `llms.txt` for LLM / answer-engine discoverability
+- `robots.txt` allows major search + AI crawlers
+
+You cannot finish Search Console verification from this repo alone — the DNS TXT step must be done in Cloudflare + Search Console UI.

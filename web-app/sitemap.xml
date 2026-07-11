@@ -3,45 +3,73 @@
   <url>
     <loc>https://hindipdfeditor.com/</loc>
     <lastmod>2026-07-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
   </url>
   <url>
     <loc>https://hindipdfeditor.com/edit/</loc>
     <lastmod>2026-07-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
   </url>
   <url>
     <loc>https://hindipdfeditor.com/edit/?tool=edit</loc>
     <lastmod>2026-07-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://hindipdfeditor.com/edit/?tool=translate</loc>
     <lastmod>2026-07-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://hindipdfeditor.com/edit/?tool=merge</loc>
     <lastmod>2026-07-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://hindipdfeditor.com/edit/?tool=split</loc>
     <lastmod>2026-07-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://hindipdfeditor.com/edit/?tool=compress</loc>
     <lastmod>2026-07-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://hindipdfeditor.com/privacy/</loc>
     <lastmod>2026-07-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
   </url>
   <url>
     <loc>https://hindipdfeditor.com/support/</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://hindipdfeditor.com/terms/</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
   <url>
     <loc>https://hindipdfeditor.com/data-safety/</loc>
     <lastmod>2026-07-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://hindipdfeditor.com/llms.txt</loc>
+    <lastmod>2026-07-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

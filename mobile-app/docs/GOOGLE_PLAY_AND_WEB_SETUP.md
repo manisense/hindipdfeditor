@@ -59,17 +59,23 @@ secrets.
 const GOOGLE_ANALYTICS_ID = 'G-XXXXXXXXXX';
 ```
 
-The loader is currently inactive because the ID is blank. After the ID is set, all website pages
-will load Google Analytics through the shared script.
+The website loads Google Analytics 4 through `web-app/assets/analytics.js`
+(measurement ID `G-1K5ZEEBHE5`).
 
 ## Google Search Console
 
+Follow the full checklist in `web-app/DEPLOYMENT.md` (Search Console section). Short version:
+
 1. Open Google Search Console.
-2. Add a Domain property for `hindipdfeditor.com`.
+2. Add a **Domain** property for `hindipdfeditor.com`.
 3. Copy the DNS TXT verification record Google gives you.
 4. Add that TXT record in Cloudflare DNS for `hindipdfeditor.com`.
 5. Return to Search Console and click Verify after DNS propagation.
 6. Submit sitemap: `https://hindipdfeditor.com/sitemap.xml`.
+7. Optionally request indexing for `https://hindipdfeditor.com/edit/` via URL Inspection.
 
 Use a Domain property rather than a URL-prefix property because it covers apex, `www`, HTTP, and
 HTTPS variants through one DNS verification.
+
+Public crawl aids already on the site: `/robots.txt`, `/sitemap.xml`, `/llms.txt`, plus
+FAQPage / SoftwareApplication JSON-LD on the tools hub.

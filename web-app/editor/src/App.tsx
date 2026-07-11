@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 
+import { SeoHead } from './components/SeoHead';
 import { HomePage } from './home/HomePage';
 import { readToolIdFromLocation, type ToolId } from './lib/tools';
 import { CompressPdfTool } from './tools/CompressPdfTool';
@@ -47,22 +48,24 @@ function ToolLoading() {
 export default function App() {
   const toolId = useToolId();
 
-  switch (toolId) {
-    case 'edit':
-      return <EditPdfTool />;
-    case 'translate':
-      return (
+  return (
+    <>
+      <SeoHead toolId={toolId} />
+      {toolId === 'edit' ? (
+        <EditPdfTool />
+      ) : toolId === 'translate' ? (
         <Suspense fallback={<ToolLoading />}>
           <TranslatePdfTool />
         </Suspense>
-      );
-    case 'merge':
-      return <MergePdfTool />;
-    case 'split':
-      return <SplitPdfTool />;
-    case 'compress':
-      return <CompressPdfTool />;
-    default:
-      return <HomePage />;
-  }
+      ) : toolId === 'merge' ? (
+        <MergePdfTool />
+      ) : toolId === 'split' ? (
+        <SplitPdfTool />
+      ) : toolId === 'compress' ? (
+        <CompressPdfTool />
+      ) : (
+        <HomePage />
+      )}
+    </>
+  );
 }

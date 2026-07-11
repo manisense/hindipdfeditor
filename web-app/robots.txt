@@ -1,4 +1,30 @@
+# Allow search and answer-engine crawlers. PDFs opened in tools never leave the user's device;
+# this file only governs public marketing/tool pages.
 User-agent: *
 Allow: /
 
+# Common AI / answer-engine crawlers (explicit allow for AISEO discoverability)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
 Sitemap: https://hindipdfeditor.com/sitemap.xml
+# Machine-readable site summary for LLMs / AEO:
+# https://hindipdfeditor.com/llms.txt
