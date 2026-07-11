@@ -58,6 +58,13 @@ Use these in Play Console:
 
 ## Google Analytics
 
-GA4 is enabled via `web-app/assets/analytics.js` (measurement ID `G-1K5ZEEBHE5`).
-Every public HTML page and the editor SPA load that script once, immediately after
-`<head>`. Do not paste a second Google tag into those pages.
+GA4 stream **hindipdfeditor** (`https://hindipdfeditor.com`):
+
+| Field | Value |
+| --- | --- |
+| Measurement ID | `G-1K5ZEEBHE5` |
+| Stream ID | `11532595788` |
+
+Enabled via `web-app/assets/analytics.js`. Every public HTML page and the editor SPA
+load that script once, immediately after `<head>`. Do not paste a second Google tag
+into those pages.
