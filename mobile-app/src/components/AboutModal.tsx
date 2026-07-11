@@ -1,4 +1,4 @@
-import { Linking, Modal, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Modal, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from './AppButton';
 import { APP_VERSION, PRIVACY_POLICY_URL } from '../constants/legal';
@@ -24,8 +24,17 @@ export function AboutModal({ visible, onClose }: Props) {
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={styles.title}>About</Text>
-          <Text style={styles.version}>Version {APP_VERSION}</Text>
+          <View style={styles.brandRow}>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.logo}
+              accessibilityLabel="Hindi PDF Editor logo"
+            />
+            <View style={styles.brandText}>
+              <Text style={styles.title}>Hindi PDF Editor</Text>
+              <Text style={styles.version}>Version {APP_VERSION}</Text>
+            </View>
+          </View>
           <Text style={styles.body}>
             Hindi PDF Editor lets you change Hindi and English text in scanned or digital PDFs on
             your device. Core editing (open, OCR, mask, export) works fully offline — your PDFs
@@ -59,6 +68,20 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.md,
   },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  logo: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+  },
+  brandText: {
+    flex: 1,
+    gap: 2,
+  },
   title: {
     fontSize: 18,
     fontWeight: '700',
@@ -67,7 +90,6 @@ const styles = StyleSheet.create({
   version: {
     fontSize: 13,
     color: colors.textSecondary,
-    marginTop: -spacing.sm,
   },
   sectionTitle: {
     fontSize: 14,

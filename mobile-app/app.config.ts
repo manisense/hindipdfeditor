@@ -16,7 +16,7 @@ const config: ExpoConfig = {
     package: 'com.hindipdfeditor.app',
     versionCode: 1,
     adaptiveIcon: {
-      backgroundColor: '#2453B2',
+      backgroundColor: '#1843DD',
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundImage: './assets/android-icon-background.png',
       monochromeImage: './assets/android-icon-monochrome.png',
@@ -40,7 +40,7 @@ const config: ExpoConfig = {
         image: './assets/splash-icon.png',
         imageWidth: 200,
         resizeMode: 'contain',
-        backgroundColor: '#2453B2',
+        backgroundColor: '#1843DD',
       },
     ],
     'expo-status-bar',

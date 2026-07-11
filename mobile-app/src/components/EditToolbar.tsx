@@ -7,7 +7,7 @@ import type { DevanagariFontFamily } from '../lib/fontAsset';
 /** Preset ink colors matching common Hindi textbook / form styling. */
 export const TEXT_COLOR_PRESETS = [
   { label: 'Black', value: '#111111' },
-  { label: 'Blue', value: '#2453B2' },
+  { label: 'Blue', value: '#1843DD' },
   { label: 'Red', value: '#C6303E' },
   { label: 'Green', value: '#1E7B34' },
 ] as const;

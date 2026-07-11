@@ -5,11 +5,11 @@
  * be dead weight.
  */
 export const colors = {
-  /** Primary action color - buttons, active states, OCR highlights. */
-  primary: '#2453B2',
-  primaryDark: '#1A3E8A',
+  /** Primary action color - buttons, active states, OCR highlights (matches brand logo #1843DD). */
+  primary: '#1843DD',
+  primaryDark: '#1130A8',
   /** Subtle tinted background for secondary buttons and chips. */
-  primarySoft: '#E8EEFB',
+  primarySoft: '#D7E7FF',
   /** App background behind the page canvas. */
   background: '#F2F3F7',
   /** Cards, toolbars, headers. */

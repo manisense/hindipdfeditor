@@ -14,7 +14,7 @@ export function Nav() {
     <div className="pointer-events-none fixed inset-x-0 top-3 z-50 px-4">
       <header className="pointer-events-auto mx-auto flex h-[62px] max-w-4xl items-center justify-between rounded-full border border-black/[0.06] bg-white/70 pl-5 pr-2.5 shadow-[0_8px_30px_rgba(21,23,44,0.08)] backdrop-blur-xl backdrop-saturate-150">
         <a href="#top" className="flex items-center gap-2.5">
-          <img src={LOGO_BADGE} alt="Hindi PDF Editor logo" className="size-8" />
+          <img src={LOGO_BADGE} alt="Hindi PDF Editor logo" className="size-8 rounded-lg" />
           <span className="font-display text-[17px] font-bold tracking-tight whitespace-nowrap">
             Hindi PDF <span className="text-brand">Editor</span>
           </span>

@@ -21,9 +21,9 @@ CHROME_CANDIDATES = [
 ]
 
 COLORS = {
-    "primary": "#2453B2",
-    "primary_dark": "#1A3E8A",
-    "primary_soft": "#E8EEFB",
+    "primary": "#1843DD",
+    "primary_dark": "#1130A8",
+    "primary_soft": "#D7E7FF",
     "background": "#F2F3F7",
     "surface": "#FFFFFF",
     "border": "#E2E4EB",
@@ -59,31 +59,18 @@ def save_optimized_png(path: Path) -> None:
         image.save(path, optimize=True)
 
 
-def icon_html() -> str:
-    return f"""
-<!doctype html>
-<html>
-<head><meta charset="utf-8"><style>{css(512, 512)}</style></head>
-<body>
-  <div style="width:512px;height:512px;background:linear-gradient(145deg,#2453B2 0%,#163C8E 100%);position:relative;overflow:hidden;">
-    <div style="position:absolute;inset:0;background:radial-gradient(circle at 74% 14%,rgba(255,255,255,.22),transparent 28%),radial-gradient(circle at 16% 88%,rgba(255,255,255,.16),transparent 30%);"></div>
-    <div style="position:absolute;left:106px;top:82px;width:300px;height:348px;border-radius:36px;background:#fff;box-shadow:0 28px 70px rgba(7,22,64,.25);">
-      <div style="position:absolute;right:0;top:0;width:86px;height:86px;background:linear-gradient(135deg,#BBD0FF 0%,#EAF0FF 100%);clip-path:polygon(0 0,100% 0,100% 100%);border-top-right-radius:36px;"></div>
-      <div style="position:absolute;left:48px;right:48px;top:80px;height:12px;border-radius:999px;background:#D9E3F7;"></div>
-      <div style="position:absolute;left:48px;right:78px;top:114px;height:12px;border-radius:999px;background:#D9E3F7;"></div>
-      <div style="position:absolute;left:48px;right:62px;bottom:52px;height:12px;border-radius:999px;background:#D9E3F7;"></div>
-      <div style="position:absolute;left:0;right:0;top:136px;text-align:center;color:#2453B2;font-family:'NotoSansDevanagariLocal',Inter,sans-serif;font-size:136px;line-height:1;font-weight:900;">हि</div>
-    </div>
-  </div>
-</body>
-</html>
-"""
-
-
 def make_icon(chrome: Path) -> None:
+    """Copy the official brand logo (not the old HTML mock) into Play listing assets."""
+    del chrome  # unused — logo is the checked-in PNG, not Chrome-rendered
     icon_dir = OUT / "app-icon"
     ensure_clean_dir(icon_dir)
-    render_html(chrome, icon_html(), icon_dir / "app-icon-512.png", 512, 512)
+    src = ROOT / "assets" / "icon.png"
+    with Image.open(src) as image:
+        image.resize((512, 512), Image.Resampling.LANCZOS).save(
+            icon_dir / "app-icon-512.png",
+            format="PNG",
+            optimize=True,
+        )
 
 
 def css(width: int, height: int) -> str:

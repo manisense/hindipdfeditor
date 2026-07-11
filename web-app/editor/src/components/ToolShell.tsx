@@ -18,7 +18,16 @@ export function ToolShell({ tool, steps, actions, children }: Props) {
     <div className="tool-shell">
       <header className="tool-shell__header">
         <div className="tool-shell__brand">
-          <AppLink href="/">Hindi PDF Editor</AppLink>
+          <AppLink href="/" className="tool-shell__logo-link">
+            <img
+              className="tool-shell__logo"
+              src="/assets/app-icon.png"
+              alt=""
+              width={28}
+              height={28}
+            />
+            Hindi PDF Editor
+          </AppLink>
           {tool && (
             <>
               <span className="tool-shell__sep" aria-hidden="true">

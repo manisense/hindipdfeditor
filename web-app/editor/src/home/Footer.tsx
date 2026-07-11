@@ -40,7 +40,7 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <a href="#top" className="flex items-center gap-2.5">
-              <img src={LOGO_BADGE} alt="" className="size-8" />
+              <img src={LOGO_BADGE} alt="" className="size-8 rounded-lg" />
               <span className="font-display text-[17px] font-bold">
                 Hindi PDF <span className="text-brand">Editor</span>
               </span>

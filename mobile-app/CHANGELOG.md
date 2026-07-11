@@ -4,6 +4,10 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Changed — Official brand logo
+
+- Adopted the official ह / blue-circle mark across web (`app-icon.png`, nav/footer/tool shell), Android (`icon.png`, adaptive icons, splash `#1843DD`), and Play Store listing icon + feature graphic.
+
 ### Added — Translate Hindi PDF to English
 
 - Mobile: **Translate to EN** applies mask + English overlays for every detected Devanagari line (Gemini translation with the user’s API key), then export via the existing Render & Print pipeline.
