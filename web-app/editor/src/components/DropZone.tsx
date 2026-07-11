@@ -29,7 +29,7 @@ export function DropZone({
   title,
   subtitle,
   buttonLabel = 'Select PDF files',
-  accent = '#d83b35',
+  accent = '#1843dd',
   onFiles,
   children,
 }: Props) {

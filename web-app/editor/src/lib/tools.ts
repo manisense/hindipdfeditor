@@ -16,7 +16,7 @@ export const TOOLS: ToolMeta[] = [
     shortTitle: 'Edit PDF',
     description:
       'Tap detected Hindi or English text to replace it, add new overlays, or erase burned-in text — then export a new PDF.',
-    accent: '#d83b35',
+    accent: '#1843dd',
     category: 'edit',
   },
   {
@@ -25,7 +25,7 @@ export const TOOLS: ToolMeta[] = [
     shortTitle: 'Translate',
     description:
       'Detect Hindi text and translate it to English free in your browser (Opus-MT) — no API key — then download a new PDF.',
-    accent: '#5b4fc9',
+    accent: '#01873e',
     category: 'convert',
   },
   {
@@ -33,7 +33,7 @@ export const TOOLS: ToolMeta[] = [
     title: 'Merge PDF',
     shortTitle: 'Merge',
     description: 'Combine multiple PDFs into one file. Runs entirely in your browser.',
-    accent: '#2453b2',
+    accent: '#5b4bd6',
     category: 'organize',
   },
   {
@@ -41,7 +41,7 @@ export const TOOLS: ToolMeta[] = [
     title: 'Split PDF',
     shortTitle: 'Split',
     description: 'Extract page ranges into a new PDF without uploading to a server.',
-    accent: '#157f54',
+    accent: '#12a551',
     category: 'organize',
   },
   {
@@ -49,7 +49,7 @@ export const TOOLS: ToolMeta[] = [
     title: 'Compress PDF',
     shortTitle: 'Compress',
     description: 'Shrink a PDF by re-encoding page images at a lower quality.',
-    accent: '#c47a12',
+    accent: '#b58400',
     category: 'optimize',
   },
 ];

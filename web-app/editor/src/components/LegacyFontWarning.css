@@ -1,17 +1,19 @@
 .legacy-font-warning {
-  background: #fff4dc;
+  background: var(--warning-soft);
+  border: 1px solid color-mix(in srgb, var(--warning) 25%, var(--line));
   border-radius: 12px;
   padding: 16px;
 }
 
 .legacy-font-warning__title {
+  font-family: var(--font-display);
   font-weight: 700;
-  color: #8a5a00;
+  color: var(--warning);
   margin: 0 0 4px;
 }
 
 .legacy-font-warning__body {
-  color: #8a5a00;
+  color: var(--warning);
   font-size: 13px;
   line-height: 1.45;
   margin: 0;

@@ -3,10 +3,10 @@ import type { DevanagariFontFamily } from '../lib/fontAsset';
 import './EditToolbar.css';
 
 export const TEXT_COLOR_PRESETS = [
-  { label: 'Black', value: '#111111' },
-  { label: 'Blue', value: '#2453B2' },
-  { label: 'Red', value: '#C6303E' },
-  { label: 'Green', value: '#1E7B34' },
+  { label: 'Black', value: '#15172c' },
+  { label: 'Blue', value: '#1843dd' },
+  { label: 'Red', value: '#c6303e' },
+  { label: 'Green', value: '#01873e' },
 ] as const;
 
 type Props = {

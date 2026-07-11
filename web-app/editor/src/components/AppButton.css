@@ -1,12 +1,16 @@
 .app-button {
   border: none;
-  border-radius: 8px;
-  padding: 12px 16px;
+  border-radius: 999px;
+  padding: 12px 18px;
   font-size: 15px;
   font-weight: 600;
+  font-family: var(--font-display);
   cursor: pointer;
-  font-family: inherit;
-  transition: opacity 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 .app-button:disabled {
@@ -15,40 +19,47 @@
 }
 
 .app-button:not(:disabled):hover {
-  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .app-button--small {
-  padding: 8px 12px;
+  padding: 8px 14px;
   font-size: 13px;
 }
 
 .app-button--primary {
-  background: #e5322d;
+  background: var(--brand);
   color: #fff;
+  box-shadow: var(--shadow-brand);
+}
+
+.app-button--primary:not(:disabled):hover {
+  background: var(--brand-hover);
 }
 
 .app-button--secondary {
-  background: #f3f4f8;
-  color: #1f2330;
+  background: var(--brand-wash);
+  color: var(--brand-hover);
 }
 
 .app-button--danger {
-  background: #fbeaec;
-  color: #c6303e;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .app-button--ghost {
   background: transparent;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .app-link {
-  color: #e5322d;
+  color: var(--brand);
   text-decoration: none;
   font-weight: 700;
+  font-family: var(--font-display);
 }
 
 .app-link:hover {
+  color: var(--brand-hover);
   text-decoration: underline;
 }

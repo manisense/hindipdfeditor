@@ -1,3 +1,5 @@
+@import './brand.css';
+
 *,
 *::before,
 *::after {
@@ -12,15 +14,24 @@ body,
 }
 
 body {
-  font-family:
-    'Montserrat',
-    'Noto Sans Devanagari',
-    'NotoSansDevanagari',
-    'Segoe UI',
-    system-ui,
-    -apple-system,
-    sans-serif;
-  background: #fff;
-  color: #1f2330;
+  font-family: var(--font-body);
+  background: var(--surface);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body ::selection {
+  background: var(--brand-tint);
+  color: var(--brand-hover);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }

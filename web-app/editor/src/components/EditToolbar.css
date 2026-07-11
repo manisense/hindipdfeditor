@@ -1,6 +1,6 @@
 .edit-toolbar {
-  background: #fff;
-  border: 1px solid #e2e4eb;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 8px;
   display: flex;
@@ -16,25 +16,25 @@
 }
 
 .edit-toolbar__chip {
-  border: 1px solid #e2e4eb;
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 4px 10px;
-  background: #fff;
+  background: var(--surface);
   cursor: pointer;
   font-size: 13px;
-  color: #5b616e;
+  color: var(--muted);
 }
 
 .edit-toolbar__chip.active {
-  border-color: #2453b2;
-  background: #e8eefb;
-  color: #1a3e8a;
+  border-color: var(--brand);
+  background: var(--brand-tint);
+  color: var(--brand-hover);
 }
 
 .edit-toolbar__size {
   font-size: 13px;
   font-weight: 600;
-  color: #5b616e;
+  color: var(--muted);
   min-width: 38px;
   text-align: center;
 }
@@ -43,13 +43,13 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 2px solid #e2e4eb;
+  border: 2px solid var(--line);
   cursor: pointer;
   padding: 0;
 }
 
 .edit-toolbar__swatch.active {
-  border-color: #2453b2;
+  border-color: var(--brand);
   border-width: 3px;
 }
 

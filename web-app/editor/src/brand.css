@@ -1,0 +1,49 @@
+/**
+ * Shared brand tokens — same palette as the homepage (`home.css` / Figma logo).
+ * Non-Tailwind tool UI reads these via `var(--brand-*)`.
+ */
+:root {
+  --brand: #1843dd;
+  --brand-hover: #1130a8;
+  --brand-500: #3a5cf0;
+  --brand-tint: #d7e7ff;
+  --brand-wash: #eef3ff;
+
+  --accent: #01873e;
+  --accent-500: #12a551;
+  --accent-tint: #d6f3e3;
+
+  --navy: #050839;
+  --navy-800: #0c1150;
+
+  --pop-yellow: #ffce45;
+  --pop-yellow-tint: #fff0c2;
+  --pop-lav: #e9e6ff;
+  --pop-lav-ink: #5b4bd6;
+  --pop-coral: #ff8b5e;
+  --pop-yellow-ink: #b58400;
+
+  --ink: #15172c;
+  --muted: #5b6172;
+  --cream: #fbf8f1;
+  --line: #eceae2;
+  --surface: #ffffff;
+  --background: #fbf8f1;
+
+  --danger: #c6303e;
+  --danger-soft: #fbeaec;
+  --success: #01873e;
+  --success-soft: #d6f3e3;
+  --warning: #b58400;
+  --warning-soft: #fff0c2;
+
+  --shadow-soft: 0 12px 34px rgba(21, 23, 44, 0.09);
+  --shadow-brand: 0 14px 34px rgba(24, 67, 221, 0.28);
+
+  --font-display: 'Plus Jakarta Sans', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Inter', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}

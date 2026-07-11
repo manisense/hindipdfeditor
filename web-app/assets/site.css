@@ -2,22 +2,26 @@
   color-scheme: light;
   --bg: #ffffff;
   --surface: #ffffff;
-  --ink: #1f2330;
-  --muted: #6b7280;
-  --line: #e8eaf0;
-  --accent: #e5322d;
-  --accent-dark: #c62828;
-  --orange: #f59e0b;
-  --blue: #3b82f6;
-  --green: #22a06b;
-  --purple: #8b5cf6;
-  --teal: #14b8a6;
-  --shadow: 0 2px 12px rgba(31, 35, 48, 0.08);
-  --shadow-hover: 0 10px 28px rgba(31, 35, 48, 0.12);
-  --radius: 10px;
-  --max: 1180px;
+  --ink: #15172c;
+  --muted: #5b6172;
+  --line: #eceae2;
+  --accent: #1843dd;
+  --accent-dark: #1130a8;
+  --orange: #b58400;
+  --blue: #3a5cf0;
+  --green: #01873e;
+  --purple: #5b4bd6;
+  --teal: #12a551;
+  --cream: #fbf8f1;
+  --navy: #050839;
+  --brand-wash: #eef3ff;
+  --shadow: 0 12px 34px rgba(21, 23, 44, 0.09);
+  --shadow-hover: 0 14px 34px rgba(24, 67, 221, 0.28);
+  --radius: 12px;
+  --max: 1120px;
   font-family:
-    "Montserrat",
+    "Inter",
+    "Noto Sans Devanagari",
     "Segoe UI",
     system-ui,
     -apple-system,
@@ -131,6 +135,7 @@ img {
 }
 
 .button {
+  border-radius: 999px;
   align-items: center;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -254,7 +259,7 @@ img {
 .tab.active,
 .tab:hover,
 .tab:focus-visible {
-  background: #2d3340;
+  background: var(--navy, #050839);
   color: #fff;
 }
 
@@ -294,7 +299,7 @@ img {
 }
 
 .tool-icon--red {
-  color: #e5322d;
+  color: var(--accent);
 }
 .tool-icon--orange {
   color: #f59e0b;
@@ -339,7 +344,7 @@ img {
 /* ——— Work your way ——— */
 
 .work-way {
-  background: #f7f8fc;
+  background: var(--brand-wash);
   padding: 72px 24px;
   text-align: center;
 }
@@ -372,7 +377,7 @@ img {
 
 .work-card__visual {
   align-items: center;
-  background: linear-gradient(160deg, #f3f4f8, #eef0f7);
+  background: linear-gradient(160deg, var(--brand-wash), #ffffff);
   display: flex;
   height: 180px;
   justify-content: center;
@@ -442,7 +447,7 @@ img {
 /* ——— Promo band ——— */
 
 .promo-band {
-  background: #fff4e5;
+  background: var(--cream);
   padding: 64px 24px;
 }
 
@@ -544,7 +549,7 @@ img {
 }
 
 .trust-pills span {
-  background: #f3f4f8;
+  background: var(--brand-wash);
   border-radius: 999px;
   color: var(--ink);
   font-size: 13px;
@@ -555,7 +560,7 @@ img {
 /* ——— Footer ——— */
 
 .site-footer {
-  background: #1a1d26;
+  background: var(--navy, #050839);
   color: #c5c8d1;
 }
 
@@ -590,7 +595,7 @@ img {
 
 .store-badge {
   align-items: center;
-  background: #2a2f3c;
+  background: #0c1150;
   border-radius: 8px;
   color: #fff !important;
   display: inline-flex !important;
@@ -603,7 +608,7 @@ img {
 }
 
 .store-badge:hover {
-  background: #353b4b;
+  background: #15172c;
 }
 
 .store-badge--ghost {
@@ -639,7 +644,7 @@ h3 {
 }
 
 .page-hero {
-  background: #f7f8fc;
+  background: var(--brand-wash);
   border-bottom: 1px solid var(--line);
 }
 
@@ -733,7 +738,7 @@ td {
 }
 
 .notice {
-  background: #fff4e5;
+  background: var(--cream);
   border-radius: var(--radius);
   color: #7a4a12;
   padding: 16px;
@@ -755,7 +760,7 @@ td {
 }
 
 .legal-preview {
-  background: #f7f8fc;
+  background: var(--brand-wash);
 }
 
 .legal-grid {

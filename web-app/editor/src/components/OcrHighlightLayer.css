@@ -7,7 +7,7 @@
 
 .ocr-highlight-layer__box {
   position: absolute;
-  border: 1px solid rgba(229, 50, 45, 0.35);
-  background: rgba(229, 50, 45, 0.06);
+  border: 1px solid color-mix(in srgb, var(--brand) 40%, transparent);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
   border-radius: 2px;
 }

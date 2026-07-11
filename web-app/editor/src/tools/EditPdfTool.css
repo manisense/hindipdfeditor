@@ -13,13 +13,9 @@ body,
 
 body {
   font-family:
-    'Noto Sans Devanagari',
-    'NotoSansDevanagari',
-    system-ui,
-    -apple-system,
-    sans-serif;
-  background: #f2f3f7;
-  color: #1b1d24;
+    var(--font-body);
+  background: var(--background);
+  color: var(--ink);
 }
 
 .app {
@@ -38,8 +34,8 @@ body {
   justify-content: space-between;
   gap: 16px;
   padding: 16px 20px;
-  background: #fff;
-  border-bottom: 1px solid #e2e4eb;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
 }
 
 .app__title {
@@ -50,7 +46,7 @@ body {
 .app__subtitle {
   margin: 2px 0 0;
   font-size: 12px;
-  color: #5b616e;
+  color: var(--muted);
   max-width: 60vw;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -83,8 +79,8 @@ body {
   width: 84px;
   height: 84px;
   border-radius: 24px;
-  background: #2453b2;
-  color: #fff;
+  background: var(--brand);
+  color: var(--surface);
   font-size: 44px;
   font-weight: 700;
   display: flex;
@@ -101,7 +97,7 @@ body {
 .app__landing-body {
   margin: 12px 0 24px;
   max-width: 520px;
-  color: #5b616e;
+  color: var(--muted);
   line-height: 1.5;
   font-size: 14px;
 }
@@ -117,7 +113,7 @@ body {
 }
 
 .app__filename {
-  color: #5b616e;
+  color: var(--muted);
   flex: 1;
   font-size: 12px;
   max-width: 40vw;
@@ -139,8 +135,8 @@ body {
 }
 
 .app__toolbar-card {
-  background: #fff;
-  border: 1px solid #e2e4eb;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 12px;
   display: flex;
@@ -165,15 +161,15 @@ body {
 .app__hint {
   margin: 0;
   font-size: 12.5px;
-  color: #5b616e;
+  color: var(--muted);
   line-height: 1.4;
 }
 
 .app__page-card {
-  border: 1px solid #e2e4eb;
+  border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;
-  background: #fff;
+  background: var(--surface);
 }
 
 .app__status {
@@ -183,13 +179,13 @@ body {
 }
 
 .app__status--success {
-  background: #e9f5ec;
-  color: #1e7b34;
+  background: var(--success-soft);
+  color: var(--success);
 }
 
 .app__status--error {
-  background: #fbeaec;
-  color: #c6303e;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .app__progress {
@@ -199,15 +195,15 @@ body {
 
 .app__progress-sub {
   margin: 0;
-  color: #5b616e;
+  color: var(--muted);
   font-size: 13px;
 }
 
 .app__spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e8eefb;
-  border-top-color: #2453b2;
+  border: 3px solid var(--brand-tint);
+  border-top-color: var(--brand);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -230,7 +226,7 @@ body {
 }
 
 .app__modal {
-  background: #fff;
+  background: var(--surface);
   border-radius: 16px;
   padding: 24px;
   max-width: 440px;
@@ -248,12 +244,12 @@ body {
 .app__modal p {
   margin: 0;
   font-size: 13px;
-  color: #5b616e;
+  color: var(--muted);
   line-height: 1.45;
 }
 
 .app__modal-input {
-  border: 1px solid #e2e4eb;
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
