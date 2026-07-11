@@ -132,16 +132,55 @@ function readTranslationText(output: unknown): string {
 }
 
 /**
+ * True when a line is predominantly Devanagari and worth sending to Opus-MT.
+ * Skips bilingual / English-heavy OCR noise that produces garbage translations.
+ */
+export function isTranslatableHindiLine(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.length < 2) return false;
+  let dev = 0;
+  let latin = 0;
+  for (const ch of trimmed) {
+    if (/[\u0900-\u097F]/.test(ch)) dev += 1;
+    else if (/[A-Za-z]/.test(ch)) latin += 1;
+  }
+  if (dev < 3) return false;
+  const letterTotal = dev + latin;
+  if (letterTotal > 0 && dev / letterTotal < 0.6) return false;
+  return true;
+}
+
+/**
  * True when a model output is usable English (non-empty and no remaining Devanagari).
- * Failed / noop translations that still look like Hindi must not be painted as "English".
+ * Failed / noop / OCR-garbage translations must not be painted as "English".
  */
 export function isSuccessfulEnglishTranslation(source: string, translated: string): boolean {
   const t = translated.trim();
   if (t === '') return false;
   if (containsDevanagari(t)) return false;
-  // Exact echo of the source (after trim) means the model did nothing useful.
   if (t === source.trim()) return false;
+
+  const letters = (t.match(/[A-Za-z]/g) ?? []).length;
+  if (letters < 3) return false;
+
+  const vowels = (t.match(/[aeiouAEIOU]/g) ?? []).length;
+  if (letters > 8 && vowels / letters < 0.12) return false;
+
+  const words = t.split(/\s+/).filter(Boolean);
+  const shouty = words.filter((w) => /^[A-Z]{5,}$/.test(w.replace(/[^A-Za-z]/g, '')));
+  if (words.length >= 2 && shouty.length >= Math.ceil(words.length * 0.5)) return false;
+
+  // Obvious OCR→MT failure patterns seen on bilingual government forms.
+  if (/\bWindows\s*2000\b/i.test(t)) return false;
+  if (/\bnan of the\b/i.test(t)) return false;
+
   return true;
+}
+
+function yieldToUi(): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, 0);
+  });
 }
 
 /**
@@ -168,8 +207,11 @@ export async function translateHindiLinesToEnglish(
   for (let i = 0; i < lines.length; i++) {
     throwIfAborted(signal);
     report(`Translating line ${i + 1} of ${lines.length}…`);
+    // Yield so the UI stays responsive and Chrome is less likely to freeze the tab
+    // when the user switches away mid-run.
+    await yieldToUi();
     const source = lines[i].trim();
-    if (source === '') {
+    if (source === '' || !isTranslatableHindiLine(source)) {
       out.push(null);
       continue;
     }

@@ -17,38 +17,14 @@ function rgbToHex(r: number, g: number, b: number): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-function averageRgb(
-  data: Uint8ClampedArray,
-  width: number,
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-): { r: number; g: number; b: number } {
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  let count = 0;
-  const left = Math.max(0, Math.floor(x0));
-  const top = Math.max(0, Math.floor(y0));
-  const right = Math.min(width, Math.ceil(x1));
-  const bottom = Math.ceil(y1);
-
-  for (let y = top; y < bottom; y++) {
-    for (let x = left; x < right; x++) {
-      const i = (y * width + x) * 4;
-      r += data[i];
-      g += data[i + 1];
-      b += data[i + 2];
-      count++;
-    }
-  }
-  if (count === 0) return { r: 255, g: 255, b: 255 };
-  return { r: r / count, g: g / count, b: b / count };
+function lumaOf(r: number, g: number, b: number): number {
+  return 0.299 * r + 0.587 * g + 0.114 * b;
 }
 
 /**
- * Samples the average color in a band surrounding (but excluding) the given rectangle.
+ * Samples paper/background color from a band around a rectangle.
+ * Prefers light pixels (paper) over averages that include ink — averaging ink+paper
+ * is what produced grey mask boxes behind English overlays.
  *
  * @param dataUrl Page background JPEG as a data URL.
  * @param xPx Left edge of inner rectangle, in px.
@@ -73,38 +49,84 @@ export async function sampleAverageColorFromDataUrl(
   if (!ctx) throw new Error('Canvas 2D context unavailable');
   ctx.drawImage(img, 0, 0);
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const { data, width, height } = imageData;
 
   const outer = {
-    x0: xPx - marginPx,
-    y0: yPx - marginPx,
-    x1: xPx + wPx + marginPx,
-    y1: yPx + hPx + marginPx,
+    x0: Math.max(0, Math.floor(xPx - marginPx)),
+    y0: Math.max(0, Math.floor(yPx - marginPx)),
+    x1: Math.min(width, Math.ceil(xPx + wPx + marginPx)),
+    y1: Math.min(height, Math.ceil(yPx + hPx + marginPx)),
   };
-  const inner = { x0: xPx, y0: yPx, x1: xPx + wPx, y1: yPx + hPx };
-
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  let count = 0;
-  const { data, width } = imageData;
-
-  const addRegion = (rx0: number, ry0: number, rx1: number, ry1: number) => {
-    const avg = averageRgb(data, width, rx0, ry0, rx1, ry1);
-    const area = Math.max(0, rx1 - rx0) * Math.max(0, ry1 - ry0);
-    if (area <= 0) return;
-    r += avg.r * area;
-    g += avg.g * area;
-    b += avg.b * area;
-    count += area;
+  const inner = {
+    x0: Math.max(0, Math.floor(xPx)),
+    y0: Math.max(0, Math.floor(yPx)),
+    x1: Math.min(width, Math.ceil(xPx + wPx)),
+    y1: Math.min(height, Math.ceil(yPx + hPx)),
   };
 
-  addRegion(outer.x0, outer.y0, outer.x1, inner.y0);
-  addRegion(outer.x0, inner.y1, outer.x1, outer.y1);
-  addRegion(outer.x0, inner.y0, inner.x0, inner.y1);
-  addRegion(inner.x1, inner.y0, outer.x1, inner.y1);
+  const light: number[] = [];
+  const pushIfInBand = (x: number, y: number) => {
+    const inInner = x >= inner.x0 && x < inner.x1 && y >= inner.y0 && y < inner.y1;
+    if (inInner) return;
+    const i = (y * width + x) * 4;
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const luma = lumaOf(r, g, b);
+    // Keep paper-like pixels only — skip ink / shadows that drag the average grey.
+    if (luma >= 200) light.push(r, g, b);
+  };
 
-  if (count === 0) return '#ffffff';
-  return rgbToHex(r / count, g / count, b / count);
+  for (let y = outer.y0; y < outer.y1; y++) {
+    for (let x = outer.x0; x < outer.x1; x++) {
+      pushIfInBand(x, y);
+    }
+  }
+
+  if (light.length >= 3) {
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    const n = light.length / 3;
+    for (let i = 0; i < light.length; i += 3) {
+      r += light[i];
+      g += light[i + 1];
+      b += light[i + 2];
+    }
+    r /= n;
+    g /= n;
+    b /= n;
+    // Near-white / light-grey paper → exact white so masks never show as grey slabs.
+    if (lumaOf(r, g, b) >= 200) return '#ffffff';
+    return rgbToHex(r, g, b);
+  }
+
+  return '#ffffff';
+}
+
+/**
+ * Samples paper color from the four corners of a page image (away from body text).
+ * Prefer this for full-page translate masks on typical white forms.
+ *
+ * @param dataUrl Page background JPEG as a data URL.
+ * @param pxWidth Page image width, in px.
+ * @param pxHeight Page image height, in px.
+ */
+export async function samplePagePaperColorFromDataUrl(
+  dataUrl: string,
+  pxWidth: number,
+  pxHeight: number,
+): Promise<string> {
+  const patch = Math.max(24, Math.round(Math.min(pxWidth, pxHeight) * 0.04));
+  const samples = await Promise.all([
+    sampleAverageColorFromDataUrl(dataUrl, patch, patch, 1, 1, patch),
+    sampleAverageColorFromDataUrl(dataUrl, pxWidth - patch - 1, patch, 1, 1, patch),
+    sampleAverageColorFromDataUrl(dataUrl, patch, pxHeight - patch - 1, 1, 1, patch),
+    sampleAverageColorFromDataUrl(dataUrl, pxWidth - patch - 1, pxHeight - patch - 1, 1, 1, patch),
+  ]);
+  // Any near-white corner wins — forms are almost always white paper.
+  if (samples.some((c) => c.toLowerCase() === '#ffffff')) return '#ffffff';
+  return samples[0] ?? '#ffffff';
 }
 
 /**
@@ -135,7 +157,7 @@ export async function sampleTextColorFromDataUrl(
   const left = Math.max(0, Math.floor(xPx));
   const top = Math.max(0, Math.floor(yPx));
   const right = Math.min(width, Math.ceil(xPx + wPx));
-  const bottom = Math.ceil(yPx + hPx);
+  const bottom = Math.min(canvas.height, Math.ceil(yPx + hPx));
 
   let bestLuma = 255;
   let best = { r: 17, g: 17, b: 17 };
@@ -146,7 +168,7 @@ export async function sampleTextColorFromDataUrl(
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
-      const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+      const luma = lumaOf(r, g, b);
       if (luma < bestLuma) {
         bestLuma = luma;
         best = { r, g, b };

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, type Plugin } from 'vitest/config';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const siteAssetsDir = path.resolve(rootDir, '../assets');
@@ -66,5 +66,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+  },
+  test: {
+    environment: 'happy-dom',
+    include: ['src/**/*.test.ts'],
+    globals: true,
+    setupFiles: ['src/test/setupCanvas.ts'],
   },
 });

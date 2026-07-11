@@ -6,14 +6,14 @@ import { ToolShell } from '../components/ToolShell';
 import { ptSizeToImagePx, ptToImagePx } from '../lib/coordinateMath';
 import { downloadPdfBlob, exportPdf } from '../lib/exportPdf';
 import { getFontBase64 } from '../lib/fontAsset';
-import { containsDevanagari, translateHindiLinesToEnglish } from '../lib/freeTranslate';
+import { containsDevanagari, isTranslatableHindiLine, translateHindiLinesToEnglish } from '../lib/freeTranslate';
 import { detectLegacyFonts } from '../lib/legacyFontDetector';
 import { detectTextLines } from '../lib/ocr';
 import {
   getPageCount,
   getPdfBase64,
   renderPage,
-  sampleAverageColor,
+  samplePagePaperColor,
   sampleTextColor,
   setPdfBytes,
 } from '../lib/pdfToImages';
@@ -24,7 +24,6 @@ import './UtilityTool.css';
 
 const tool = getTool('translate')!;
 const RASTER_SCALE = 2;
-const MASK_SAMPLE_MARGIN_PX = 16;
 const UNKNOWN_ENCODING_FONT_NAME = 'unknown (font inspection failed)';
 
 /** Soft caps so a phone/tab browser does not OOM on huge scans. */
@@ -138,8 +137,10 @@ async function buildTranslatedDocument(
     }
     throwIfAborted(signal);
 
-    const hindiLines = lines.filter((l) => containsDevanagari(l.text));
+    const hindiLines = lines.filter((l) => isTranslatableHindiLine(l.text));
     if (hindiLines.length === 0) {
+      // Still count Devanagari-but-skipped (bilingual / Latin-heavy) as skipped for UX.
+      skippedLines += lines.filter((l) => containsDevanagari(l.text)).length;
       pages.push({ ...page, ocrLines: lines });
       continue;
     }
@@ -156,6 +157,17 @@ async function buildTranslatedDocument(
       },
     );
 
+    let paperColor = '#ffffff';
+    try {
+      paperColor = await samplePagePaperColor(
+        page.backgroundImageUri,
+        page.imagePxWidth,
+        page.imagePxHeight,
+      );
+    } catch {
+      /* keep white */
+    }
+
     const edits: Edit[] = [];
     const consumedIds = new Set<string>();
     for (let j = 0; j < hindiLines.length; j++) {
@@ -167,18 +179,6 @@ async function buildTranslatedDocument(
       }
 
       const geo = geometryForTranslatedLine(line, page.widthPt, page.heightPt);
-      const { x: mx, y: my } = ptToImagePx(
-        geo.mask.xPt,
-        geo.mask.yPt,
-        page.imagePxWidth,
-        page.widthPt,
-      );
-      const { wPx: mw, hPx: mh } = ptSizeToImagePx(
-        geo.mask.wPt,
-        geo.mask.hPt,
-        page.imagePxWidth,
-        page.widthPt,
-      );
       const { x: tx, y: ty } = ptToImagePx(
         line.xPt,
         line.yPt,
@@ -192,20 +192,7 @@ async function buildTranslatedDocument(
         page.widthPt,
       );
 
-      let maskColor = '#ffffff';
       let textColor = '#111111';
-      try {
-        maskColor = await sampleAverageColor(
-          page.backgroundImageUri,
-          Math.round(mx),
-          Math.round(my),
-          Math.round(mw),
-          Math.round(mh),
-          MASK_SAMPLE_MARGIN_PX,
-        );
-      } catch {
-        /* keep white */
-      }
       try {
         textColor = await sampleTextColor(
           page.backgroundImageUri,
@@ -223,7 +210,7 @@ async function buildTranslatedDocument(
         id: crypto.randomUUID(),
         page: i,
         ...geo.mask,
-        color: maskColor,
+        color: paperColor,
       });
       edits.push({
         type: 'text',

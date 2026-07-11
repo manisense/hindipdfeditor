@@ -1,6 +1,6 @@
 import * as pdfjs from 'pdfjs-dist';
 
-import { sampleAverageColorFromDataUrl, sampleTextColorFromDataUrl } from './imageColor';
+import { sampleAverageColorFromDataUrl, samplePagePaperColorFromDataUrl, sampleTextColorFromDataUrl } from './imageColor';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -76,6 +76,21 @@ export async function sampleAverageColor(
   marginPx: number,
 ): Promise<string> {
   return sampleAverageColorFromDataUrl(uri, xPx, yPx, wPx, hPx, marginPx);
+}
+
+/**
+ * Samples page paper color from image corners (preferred for translate masks).
+ *
+ * @param uri Page background data URL.
+ * @param pxWidth Image width, in px.
+ * @param pxHeight Image height, in px.
+ */
+export async function samplePagePaperColor(
+  uri: string,
+  pxWidth: number,
+  pxHeight: number,
+): Promise<string> {
+  return samplePagePaperColorFromDataUrl(uri, pxWidth, pxHeight);
 }
 
 /** Estimates dominant ink color inside a text region on the page background image. */
