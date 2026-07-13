@@ -104,7 +104,7 @@ export function PdfPageViewer({
   const scrollAtTouchStartRef = useRef({ x: 0, y: 0 });
   const touchMovedRef = useRef(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     pageRef.current = page;
   }, [page]);
 
@@ -126,8 +126,9 @@ export function PdfPageViewer({
     pendingScrollRef.current = null;
   }, [zoom, baseViewWidthDp, viewportHeightDp]);
 
-  useEffect(() => {
-    if (!focusedEditId || baseViewWidthDp <= 0 || viewportHeightDp <= 0) return;
+  useLayoutEffect(() => {
+    if (!focusedEditId) return;
+    if (baseViewWidthDp <= 0 || viewportHeightDp <= 0) return;
     const currentPage = pageRef.current;
     const edit = currentPage.edits.find(
       (candidate): candidate is TextEdit =>
@@ -166,8 +167,8 @@ export function PdfPageViewer({
       baseViewWidthDp,
       pageHeightDp,
     );
-    horizontalScrollRef.current?.scrollTo({ x: nextScroll.x, animated: true });
-    verticalScrollRef.current?.scrollTo({ y: nextScroll.y, animated: true });
+    horizontalScrollRef.current?.scrollTo({ x: nextScroll.x, animated: false });
+    verticalScrollRef.current?.scrollTo({ y: nextScroll.y, animated: false });
     scrollOffsetRef.current = nextScroll;
   }, [focusedEditId, baseViewWidthDp, viewportHeightDp]);
 
@@ -345,6 +346,10 @@ export function PdfPageViewer({
           bounces={false}
           nestedScrollEnabled
           keyboardShouldPersistTaps="always"
+          // React Native Android otherwise honors TextInput's caret-reveal request after every
+          // controlled value update. Its transformed bounds are wrong at page zoom, which caused
+          // the observed per-letter corner jumps. Focus reveal is handled explicitly above.
+          scrollsChildToFocus={false}
           onScroll={(event) => {
             scrollOffsetRef.current.x = event.nativeEvent.contentOffset.x;
           }}
@@ -362,6 +367,7 @@ export function PdfPageViewer({
             bounces={false}
             nestedScrollEnabled
             keyboardShouldPersistTaps="always"
+            scrollsChildToFocus={false}
             onScroll={(event) => {
               scrollOffsetRef.current.y = event.nativeEvent.contentOffset.y;
             }}

@@ -23,12 +23,10 @@ export function textBoxGeometry(
   requestedXPt: number,
   preferredWidthPt?: number,
 ): TextBoxGeometry {
-  const preferred =
-    preferredWidthPt ??
-    Math.min(
-      MAX_TEXT_WIDTH_PT,
-      Math.max(MIN_TEXT_WIDTH_PT, pageWidthPt * DEFAULT_TEXT_WIDTH_RATIO),
-    );
+  const preferred = Math.max(
+    MIN_TEXT_WIDTH_PT,
+    preferredWidthPt ?? Math.min(MAX_TEXT_WIDTH_PT, pageWidthPt * DEFAULT_TEXT_WIDTH_RATIO),
+  );
   const widthPt = Math.min(preferred, Math.max(MIN_TEXT_WIDTH_PT, pageWidthPt - 8));
   const xPt = Math.min(Math.max(4, requestedXPt), Math.max(4, pageWidthPt - widthPt - 4));
   return { xPt, widthPt };

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ptSizeToDp, ptToDp } from '../lib/coordinateMath';
@@ -69,37 +69,84 @@ export function EditableTextOverlay({
   const availableWidthPt = Math.max(24, pageWidthPt - edit.xPt - 4);
   const effectiveWidthPt = edit.widthPt ?? Math.min(desiredFallbackWidthPt, availableWidthPt);
   const widthDp = ptSizeToDp(effectiveWidthPt, 0, viewWidthDp, pageWidthPt).wDp;
-
-  const positionFromDrag = (dxDp: number, dyDp: number) => {
-    const screenDpToPt = pageWidthPt / (viewWidthDp * zoom);
-    const maxXPt = Math.max(0, pageWidthPt - effectiveWidthPt);
-    const maxYPt = Math.max(0, pageHeightPt - edit.fontSizePt * 1.6);
-    return {
-      xPt: Math.min(maxXPt, Math.max(0, edit.xPt + dxDp * screenDpToPt)),
-      yPt: Math.min(maxYPt, Math.max(0, edit.yPt + dyDp * screenDpToPt)),
-    };
-  };
-  const finishMove = (dxDp: number, dyDp: number) => {
-    const next = positionFromDrag(dxDp, dyDp);
-    onMove?.(next.xPt, next.yPt);
-    setDraftPosition(null);
-    onMoveEnd?.();
-  };
-  const moveResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: () => onMoveStart?.(),
-    onPanResponderMove: (_event, gestureState) => {
-      setDraftPosition(positionFromDrag(gestureState.dx, gestureState.dy));
-    },
-    onPanResponderRelease: (_event, gestureState) => {
-      finishMove(gestureState.dx, gestureState.dy);
-    },
-    onPanResponderTerminate: (_event, gestureState) => {
-      finishMove(gestureState.dx, gestureState.dy);
-    },
+  const moveContextRef = useRef({
+    xPt: edit.xPt,
+    yPt: edit.yPt,
+    fontSizePt: edit.fontSizePt,
+    effectiveWidthPt,
+    pageWidthPt,
+    pageHeightPt,
+    viewWidthDp,
+    zoom,
   });
+  const moveCallbacksRef = useRef({ onMoveStart, onMove, onMoveEnd });
+
+  useLayoutEffect(() => {
+    moveContextRef.current = {
+      xPt: edit.xPt,
+      yPt: edit.yPt,
+      fontSizePt: edit.fontSizePt,
+      effectiveWidthPt,
+      pageWidthPt,
+      pageHeightPt,
+      viewWidthDp,
+      zoom,
+    };
+    moveCallbacksRef.current = { onMoveStart, onMove, onMoveEnd };
+  }, [
+    edit.xPt,
+    edit.yPt,
+    edit.fontSizePt,
+    effectiveWidthPt,
+    pageWidthPt,
+    pageHeightPt,
+    viewWidthDp,
+    zoom,
+    onMoveStart,
+    onMove,
+    onMoveEnd,
+  ]);
+
+  const moveResponder = useMemo(
+    () =>
+      // PanResponder stores these closures and invokes them only after a native touch event.
+      // eslint-disable-next-line react-hooks/refs
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
+        onShouldBlockNativeResponder: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: () => moveCallbacksRef.current.onMoveStart?.(),
+        onPanResponderMove: (_event, gestureState) => {
+          const context = moveContextRef.current;
+          const screenDpToPt = context.pageWidthPt / (context.viewWidthDp * context.zoom);
+          const maxXPt = Math.max(0, context.pageWidthPt - context.effectiveWidthPt);
+          const maxYPt = Math.max(0, context.pageHeightPt - context.fontSizePt * 1.6);
+          setDraftPosition({
+            xPt: Math.min(maxXPt, Math.max(0, context.xPt + gestureState.dx * screenDpToPt)),
+            yPt: Math.min(maxYPt, Math.max(0, context.yPt + gestureState.dy * screenDpToPt)),
+          });
+        },
+        onPanResponderRelease: (_event, gestureState) => {
+          const context = moveContextRef.current;
+          const screenDpToPt = context.pageWidthPt / (context.viewWidthDp * context.zoom);
+          const maxXPt = Math.max(0, context.pageWidthPt - context.effectiveWidthPt);
+          const maxYPt = Math.max(0, context.pageHeightPt - context.fontSizePt * 1.6);
+          const xPt = Math.min(maxXPt, Math.max(0, context.xPt + gestureState.dx * screenDpToPt));
+          const yPt = Math.min(maxYPt, Math.max(0, context.yPt + gestureState.dy * screenDpToPt));
+          moveCallbacksRef.current.onMove?.(xPt, yPt);
+          setDraftPosition(null);
+          moveCallbacksRef.current.onMoveEnd?.();
+        },
+        onPanResponderTerminate: () => {
+          setDraftPosition(null);
+          moveCallbacksRef.current.onMoveEnd?.();
+        },
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (focused) {

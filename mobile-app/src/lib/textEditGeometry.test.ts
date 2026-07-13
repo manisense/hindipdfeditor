@@ -13,6 +13,10 @@ describe('textBoxGeometry', () => {
     expect(textBoxGeometry(600, 40, 180)).toEqual({ xPt: 40, widthPt: 180 });
   });
 
+  it('keeps a narrow OCR fragment wide enough to edit without per-character wrapping', () => {
+    expect(textBoxGeometry(600, 40, 28)).toEqual({ xPt: 40, widthPt: 72 });
+  });
+
   it('keeps the minimum inset at the left edge', () => {
     expect(textBoxGeometry(600, -20, 120)).toEqual({ xPt: 4, widthPt: 120 });
   });
