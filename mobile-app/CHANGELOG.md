@@ -6,6 +6,8 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ### Changed — Phase 4.6 stable editor viewport and asset-led UI
 
+- Reworked the home screen to follow the supplied app graphics: a concise Hindi greeting, a high-contrast "open PDF" entry card, and three tappable Edit, Translate, and OCR tool cards. Each tool opens the system PDF picker and leads into the existing editor, rather than advertising unsupported actions with static placeholders.
+- Raised Android `versionCode` to `2` for the next production App Bundle.
 - Rebuilt the mobile landing/editor layout from the supplied phone and tablet references: branded header, feature cards, blue active tools, soft-gray document workspace, compact page/undo/zoom controls, top-level export, and a wide-screen text-properties panel. Existing Edit, OCR, AI OCR, Translate, paging, undo, legacy-font blocking, and validated export features remain accessible.
 - Fixed the keyboard covering/disorienting the editor by removing the page-length outer editor scroll. The page now stays in a fixed viewport, nonessential chrome collapses while typing, and the selected edit is revealed above the resized Android keyboard without re-running on each keystroke.
 - Fixed zoomed horizontal navigation by composing horizontal and vertical native scroll surfaces around the same zoomed page; pinch anchoring now clamps against actual page and viewport dimensions.

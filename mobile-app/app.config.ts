@@ -14,7 +14,7 @@ const config: ExpoConfig = {
   scheme: 'hindipdfeditor',
   android: {
     package: 'com.hindipdfeditor.app',
-    versionCode: 1,
+    versionCode: 2,
     adaptiveIcon: {
       backgroundColor: '#1843DD',
       foregroundImage: './assets/android-icon-foreground.png',

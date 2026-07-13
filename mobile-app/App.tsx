@@ -5,6 +5,7 @@ import {
   Image,
   Keyboard,
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -960,50 +961,70 @@ export default function App() {
 
       {status.state !== 'opening' && !document && (
         <ScrollView contentContainerStyle={styles.landing} showsVerticalScrollIndicator={false}>
-          <View style={styles.heroBadge}>
-            <View style={styles.onlineDot} />
-            <Text style={styles.heroBadgeText}>Free · No account · On-device OCR</Text>
+          <View style={styles.homeGreeting}>
+            <Text style={styles.homeGreetingTitle}>नमस्ते 👋</Text>
+            <Text style={styles.homeGreetingBody}>
+              अपनी हिंदी PDF को आसानी से पढ़ें, बदलें और सुरक्षित रखें।
+            </Text>
           </View>
-          <Text style={styles.landingTitle}>हर हिंदी PDF के लिए,{`\n`}एक ही एडिटर।</Text>
-          <Text style={styles.landingBody}>
-            Edit Hindi and English in place, read scanned pages with OCR, translate with Gemini, and
-            export a fresh PDF while the original stays untouched.
-          </Text>
-          <AppButton title="Open a PDF to start" onPress={openPdf} style={styles.landingButton} />
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Choose a PDF to edit"
+            onPress={openPdf}
+            style={({ pressed }) => [styles.openPdfCard, pressed && styles.toolCardPressed]}
+          >
+            <View style={styles.openPdfIcon}>
+              <Text style={styles.openPdfIconText}>PDF</Text>
+            </View>
+            <View style={styles.openPdfCopy}>
+              <Text style={styles.openPdfTitle}>अपनी PDF खोलें</Text>
+              <Text style={styles.openPdfSubtitle}>Edit, OCR और Translate शुरू करें</Text>
+            </View>
+            <Text style={styles.openPdfArrow}>›</Text>
+          </Pressable>
 
           <View style={styles.featureHeadingRow}>
             <Text style={styles.featureHeading}>Tools · टूल्स</Text>
-            <Text style={styles.featureHeadingMeta}>Built for Hindi documents</Text>
+            <Text style={styles.featureHeadingMeta}>PDF चुनकर शुरू करें</Text>
           </View>
-          <View style={[styles.featureGrid, isWideLayout && styles.featureGridWide]}>
-            <FeatureCard
+          <View style={styles.toolGrid}>
+            <ToolCard
               icon="✎"
-              title="Edit PDF"
-              subtitle="Tap text, type in place, move and resize"
+              title="Edit"
+              hindiTitle="एडिट करें"
               tint="#DCE8FF"
               accent={colors.primary}
+              onPress={openPdf}
             />
-            <FeatureCard
-              icon="▣"
-              title="Hindi + English OCR"
-              subtitle="Reads scanned pages offline on your device"
-              tint="#FFF0C7"
-              accent="#9A6A00"
-            />
-            <FeatureCard
+            <ToolCard
               icon="文"
               title="Translate"
-              subtitle="Replace detected Hindi lines with English"
+              hindiTitle="अनुवाद"
               tint="#DDF5E7"
               accent={colors.success}
+              onPress={openPdf}
+            />
+            <ToolCard
+              icon="▣"
+              title="OCR"
+              hindiTitle="स्कैन पढ़ें"
+              tint="#FFF0C7"
+              accent="#9A6A00"
+              onPress={openPdf}
             />
           </View>
-          <View style={styles.safetyCard}>
-            <Text style={styles.safetyTitle}>✓ Your original PDF always stays untouched</Text>
-            <Text style={styles.safetyBody}>
-              Export creates a new, validated file. Cloud OCR and translation run only when you
-              explicitly choose them.
-            </Text>
+
+          <View style={styles.homePromise}>
+            <View style={styles.homePromiseIcon}>
+              <Text style={styles.homePromiseIconText}>✦</Text>
+            </View>
+            <View style={styles.homePromiseCopy}>
+              <Text style={styles.homePromiseTitle}>आपकी PDF, आपके नियंत्रण में</Text>
+              <Text style={styles.homePromiseBody}>
+                Original file नहीं बदलती। हर export एक नई, validated PDF बनाता है।
+              </Text>
+            </View>
           </View>
           {status.state === 'error' && (
             <View style={[styles.statusCard, styles.errorCard]}>
@@ -1362,27 +1383,34 @@ export default function App() {
   );
 }
 
-function FeatureCard({
+function ToolCard({
   icon,
   title,
-  subtitle,
+  hindiTitle,
   tint,
   accent,
+  onPress,
 }: {
   icon: string;
   title: string;
-  subtitle: string;
+  hindiTitle: string;
   tint: string;
   accent: string;
+  onPress: () => void;
 }) {
   return (
-    <View style={styles.featureCard}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}: ${hindiTitle}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.toolCard, pressed && styles.toolCardPressed]}
+    >
       <View style={[styles.featureIcon, { backgroundColor: tint }]}>
         <Text style={[styles.featureIconText, { color: accent }]}>{icon}</Text>
       </View>
       <Text style={styles.featureTitle}>{title}</Text>
-      <Text style={styles.featureSubtitle}>{subtitle}</Text>
-    </View>
+      <Text style={styles.toolHindiTitle}>{hindiTitle}</Text>
+    </Pressable>
   );
 }
 
@@ -1450,58 +1478,78 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   landing: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: 42,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
     paddingBottom: 48,
   },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#B8CAFF',
-    backgroundColor: '#EFF4FF',
+  homeGreeting: {
+    paddingHorizontal: spacing.xs,
   },
-  onlineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#16B364',
-  },
-  heroBadgeText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: colors.primaryDark,
-  },
-  landingTitle: {
-    marginTop: spacing.xl,
-    fontSize: 31,
-    lineHeight: 43,
+  homeGreetingTitle: {
+    fontSize: 28,
+    lineHeight: 38,
     fontWeight: '800',
     color: colors.textPrimary,
-    textAlign: 'center',
   },
-  landingBody: {
-    marginTop: spacing.lg,
-    fontSize: 15,
-    lineHeight: 23,
+  homeGreetingBody: {
+    marginTop: spacing.xs,
+    fontSize: 14,
+    lineHeight: 21,
     color: colors.textSecondary,
-    textAlign: 'center',
-    maxWidth: 560,
   },
-  landingButton: {
+  openPdfCard: {
+    minHeight: 106,
     marginTop: spacing.xl,
-    alignSelf: 'center',
-    width: 292,
+    padding: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primaryDark,
+    shadowOpacity: 0.24,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  openPdfIcon: {
+    width: 56,
+    height: 62,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  openPdfIconText: {
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+    color: '#E34C4C',
+  },
+  openPdfCopy: {
+    flex: 1,
+  },
+  openPdfTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: colors.textOnPrimary,
+  },
+  openPdfSubtitle: {
+    marginTop: 3,
+    fontSize: 13,
+    color: '#D9E5FF',
+  },
+  openPdfArrow: {
+    fontSize: 36,
+    fontWeight: '300',
+    color: colors.textOnPrimary,
   },
   featureHeadingRow: {
     width: '100%',
-    maxWidth: 900,
-    marginTop: 40,
+    marginTop: 36,
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
@@ -1516,19 +1564,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
   },
-  featureGrid: {
+  toolGrid: {
     width: '100%',
-    maxWidth: 900,
-    gap: spacing.md,
+    flexDirection: 'row',
+    gap: 10,
     marginTop: spacing.md,
   },
-  featureGridWide: {
-    flexDirection: 'row',
-  },
-  featureCard: {
+  toolCard: {
     flex: 1,
-    minHeight: 132,
-    padding: spacing.lg,
+    minHeight: 142,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -1538,6 +1585,10 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 2,
+  },
+  toolCardPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.98 }],
   },
   featureIcon: {
     width: 42,
@@ -1552,34 +1603,54 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   featureTitle: {
+    textAlign: 'center',
     fontSize: 16,
     fontWeight: '800',
     color: colors.textPrimary,
   },
-  featureSubtitle: {
+  toolHindiTitle: {
     marginTop: spacing.xs,
-    fontSize: 12.5,
-    lineHeight: 18,
+    textAlign: 'center',
+    fontSize: 12,
+    lineHeight: 17,
     color: colors.textSecondary,
   },
-  safetyCard: {
+  homePromise: {
     width: '100%',
-    maxWidth: 900,
     marginTop: spacing.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
     borderRadius: radius.lg,
-    backgroundColor: colors.successSoft,
+    backgroundColor: '#EFF4FF',
     borderWidth: 1,
-    borderColor: '#B9DFC6',
+    borderColor: '#C9D9FF',
   },
-  safetyTitle: {
-    fontSize: 14,
+  homePromiseIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 17,
+    backgroundColor: '#D5E4FF',
+  },
+  homePromiseIconText: {
+    color: colors.primary,
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  homePromiseCopy: {
+    flex: 1,
+  },
+  homePromiseTitle: {
+    fontSize: 13.5,
     fontWeight: '800',
-    color: colors.success,
+    color: colors.primaryDark,
   },
-  safetyBody: {
+  homePromiseBody: {
     marginTop: spacing.xs,
-    fontSize: 12.5,
+    fontSize: 12,
     lineHeight: 18,
     color: colors.textSecondary,
   },
