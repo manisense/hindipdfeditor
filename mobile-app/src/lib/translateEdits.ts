@@ -1,8 +1,7 @@
 import type { OcrLine } from '../state/editStore';
+import { fontSizeForOcrLine } from './textEditGeometry';
 
 const MASK_EXPAND_PT = 3;
-const OCR_FONT_SIZE_RATIO = 0.82;
-const MIN_OCR_FONT_SIZE_PT = 6;
 const OCR_MASK_PAD_TOP_RATIO = 0.35;
 const OCR_TEXT_WIDTH_SLACK_RATIO = 1.25;
 const OCR_TEXT_BASELINE_NUDGE_RATIO = 0.06;
@@ -31,7 +30,7 @@ export function geometryForTranslatedLine(
   pageWidthPt: number,
   pageHeightPt: number,
 ): TranslationGeometry {
-  const fontSizePt = Math.max(MIN_OCR_FONT_SIZE_PT, line.hPt * OCR_FONT_SIZE_RATIO);
+  const fontSizePt = fontSizeForOcrLine(line.hPt);
   const padTop = line.hPt * OCR_MASK_PAD_TOP_RATIO;
   const textY = line.yPt + line.hPt * OCR_TEXT_BASELINE_NUDGE_RATIO;
 

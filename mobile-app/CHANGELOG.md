@@ -4,6 +4,16 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Changed — Phase 4.6 stable editor viewport and asset-led UI
+
+- Rebuilt the mobile landing/editor layout from the supplied phone and tablet references: branded header, feature cards, blue active tools, soft-gray document workspace, compact page/undo/zoom controls, top-level export, and a wide-screen text-properties panel. Existing Edit, OCR, AI OCR, Translate, paging, undo, legacy-font blocking, and validated export features remain accessible.
+- Fixed the keyboard covering/disorienting the editor by removing the page-length outer editor scroll. The page now stays in a fixed viewport, nonessential chrome collapses while typing, and the selected edit is revealed above the resized Android keyboard without re-running on each keystroke.
+- Fixed zoomed horizontal navigation by composing horizontal and vertical native scroll surfaces around the same zoomed page; pinch anchoring now clamps against actual page and viewport dimensions.
+- Fixed the per-letter jump toward the top-right by assigning every new/replacement `TextInput` a stable PDF-point width, disabling internal input scrolling/font scaling, and keeping page scroll state independent of controlled text updates.
+- Increased OCR-derived replacement size from the older undersized ratio to `1.08 ×` the visible OCR box height (6pt floor), with pure unit coverage in `textEditGeometry.test.ts`.
+- Added a focused **Move** handle for text overlays. The drag previews locally, stays inside page bounds, creates one undo checkpoint, and commits canonical PDF-point coordinates only at gesture end.
+- Local verification is complete for TypeScript, ESLint, Prettier, unit tests, and Metro bundling. Physical-device keyboard/pan/drag validation and the required visual check of an actual exported PDF remain pending because no Android device was attached in this session.
+
 ### Changed — Official brand logo
 
 - Adopted the official ह / blue-circle mark across web (`app-icon.png`, nav/footer/tool shell), Android (`icon.png`, adaptive icons, splash `#1843DD`), and Play Store listing icon + feature graphic.

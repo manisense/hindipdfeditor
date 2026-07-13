@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Keyboard,
   Modal,
   ScrollView,
@@ -9,6 +10,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 // expo-file-system's top-level `readAsStringAsync` is a stub that unconditionally throws in
@@ -35,7 +37,13 @@ import { containsDevanagari, translateHindiLinesToEnglish } from './src/lib/gemi
 import { detectLegacyFonts } from './src/lib/legacyFontDetector';
 import { detectTextLines, detectTextLinesWithGemini } from './src/lib/ocr';
 import { findOcrTargetAt, findTextEditAt } from './src/lib/ocrHitTest';
-import { getPageCount, renderPage, sampleAverageColor, sampleTextColor } from './src/lib/pdfToImages';
+import {
+  getPageCount,
+  renderPage,
+  sampleAverageColor,
+  sampleTextColor,
+} from './src/lib/pdfToImages';
+import { fontSizeForOcrLine, textBoxGeometry } from './src/lib/textEditGeometry';
 import { geometryForTranslatedLine } from './src/lib/translateEdits';
 import {
   useEditStore,
@@ -94,8 +102,8 @@ async function detectLegacyFontWarnings(
  * image + live overlays," not a live `react-native-pdf` render - the whole Render & Print
  * architecture depends on the edit canvas being the exact same rasterized image the export
  * pipeline uses, not a second, independent PDF renderer that could disagree with it
- * pixel-for-pixel. `expo-document-picker` covers "open from device storage"; `react-native-pdf`
- * stays installed even though this screen doesn't use its rendering.
+ * pixel-for-pixel. `expo-document-picker` covers "open from device storage"; the unused
+ * `react-native-pdf` dependency was removed later as recorded in ADR 0006.
  *
  * All pages are rasterized up front at open time, not lazily per navigation - per AGENTS.md's
  * performance guidance, don't pre-optimize for large documents until a real device actually
@@ -120,14 +128,6 @@ const MASK_SAMPLE_MARGIN_PX = 16;
 // replacement TextEdit is still anchored at the un-expanded drag point, so this only grows mask
 // coverage, not the text's apparent position.
 const MASK_EXPAND_PT = 3;
-// Replacement font size as a fraction of an OCR-detected line's box height. The box spans
-// ascender to descender (for Devanagari: shirorekha-topping matras down to below-base
-// conjunct forms), while a font's nominal size sits a bit smaller than that full span - 0.75
-// visually matches typical scanned body text without the replacement overflowing the mask.
-const OCR_FONT_SIZE_RATIO = 0.82;
-// Floor for the OCR-derived font size, in PDF points - below this, a detection-box hiccup
-// (e.g. a squashed box on a noisy scan) would produce unreadably tiny replacement text.
-const MIN_OCR_FONT_SIZE_PT = 6;
 // Extra mask padding ABOVE an OCR-detected line, as a fraction of the line's height, on top
 // of the flat MASK_EXPAND_PT. ML Kit's Devanagari line boxes hug the shirorekha band and cut
 // through tall upper matras (ॉ, ें) - confirmed on-device with the scanned leave form, where a
@@ -164,7 +164,18 @@ type Status =
   | { state: 'saved'; uri: string }
   | { state: 'error'; message: string };
 
+function filenameFromUri(uri: string): string {
+  const encodedName = uri.split('/').pop() ?? 'Document.pdf';
+  try {
+    return decodeURIComponent(encodedName);
+  } catch {
+    return encodedName;
+  }
+}
+
 export default function App() {
+  const { width: windowWidth } = useWindowDimensions();
+  const isWideLayout = windowWidth >= 840;
   const [fontsLoaded] = useFonts({
     NotoSansDevanagari: require('./assets/fonts/NotoSansDevanagari-Variable.ttf'),
     NotoSerifDevanagari: require('./assets/fonts/NotoSerifDevanagari-Variable.ttf'),
@@ -195,7 +206,21 @@ export default function App() {
   const [aboutVisible, setAboutVisible] = useState(false);
   const [editMode, setEditMode] = useState<EditMode>('edit');
   const [pageZoom, setPageZoom] = useState(1);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const editPinchStartRef = useRef<{ fontSizePt: number; widthPt?: number } | null>(null);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () =>
+      setKeyboardVisible(true),
+    );
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () =>
+      setKeyboardVisible(false),
+    );
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const document = useEditStore((s) => s.document);
   const loadDocument = useEditStore((s) => s.loadDocument);
@@ -353,6 +378,10 @@ export default function App() {
 
   const handleEditPinchEnd = () => {
     editPinchStartRef.current = null;
+  };
+
+  const handleEditMoveStart = () => {
+    checkpoint();
   };
 
   const selectEditMode = (mode: EditMode) => {
@@ -653,15 +682,16 @@ export default function App() {
       color,
     });
 
+    const textGeometry = textBoxGeometry(page.widthPt, text.xPt, text.widthPt);
     const textEdit = addTextEdit(currentPageIndex, {
-      xPt: text.xPt,
+      xPt: textGeometry.xPt,
       yPt: text.yPt,
       fontSizePt: text.fontSizePt,
       text: text.prefill,
       color: text.color ?? '#111111',
       fontFamily: text.fontFamily ?? 'NotoSansDevanagari',
       ...(text.fontWeight ? { fontWeight: text.fontWeight } : {}),
-      ...(text.widthPt !== undefined ? { widthPt: text.widthPt } : {}),
+      widthPt: textGeometry.widthPt,
     });
     editPairingsRef.current.set(textEdit.id, {
       maskId: maskEdit.id,
@@ -723,7 +753,7 @@ export default function App() {
         currentPageIndex,
         page.ocrLines.filter((l) => l.id !== hitLine.id),
       );
-      const fontSizePt = Math.max(MIN_OCR_FONT_SIZE_PT, hitLine.hPt * OCR_FONT_SIZE_RATIO);
+      const fontSizePt = fontSizeForOcrLine(hitLine.hPt);
       const textY = hitLine.yPt + hitLine.hPt * OCR_TEXT_BASELINE_NUDGE_RATIO;
       const { x: sampleXPx, y: sampleYPx } = ptToImagePx(
         hitLine.xPt,
@@ -786,13 +816,15 @@ export default function App() {
     }
 
     checkpoint();
+    const geometry = textBoxGeometry(page.widthPt, xPt);
     const edit = addTextEdit(currentPageIndex, {
-      xPt,
+      xPt: geometry.xPt,
       yPt,
       fontSizePt: DEFAULT_FONT_SIZE_PT,
       text: '',
       color: '#111111',
       fontFamily: 'NotoSansDevanagari',
+      widthPt: geometry.widthPt,
     });
     setFocusedEditId(edit.id);
   };
@@ -820,11 +852,13 @@ export default function App() {
   const handleMaskDrawn = async (rect: DrawnMaskRect) => {
     if (!page || editingBlocked || editMode !== 'erase') return;
     checkpoint();
+    const geometry = textBoxGeometry(page.widthPt, rect.xPt, Math.max(72, rect.wPt * 1.25));
     await maskAndReplaceRegion(rect, {
-      xPt: rect.xPt,
+      xPt: geometry.xPt,
       yPt: rect.yPt,
       prefill: '',
       fontSizePt: DEFAULT_FONT_SIZE_PT,
+      widthPt: geometry.widthPt,
     });
   };
 
@@ -872,9 +906,7 @@ export default function App() {
     pageZoom > 1.01
       ? ` One finger to pan (${Math.round(pageZoom * 100)}% zoom). Pinch to zoom.`
       : ' Pinch to zoom in. One finger to pan when zoomed.';
-  const editStretchHint = focusedEdit
-    ? ' Pinch with 2 fingers on selected text to resize.'
-    : '';
+  const editStretchHint = focusedEdit ? ' Pinch with 2 fingers on selected text to resize.' : '';
   const hintText = editingBlocked
     ? 'Editing is disabled on this page — see the warning above.'
     : editMode === 'erase'
@@ -888,250 +920,401 @@ export default function App() {
           : ocrStatus === 'failed'
             ? `Edit text — tap a line to change it.${zoomHint}${editStretchHint}`
             : `Edit text — tap any detected line to change it.${zoomHint}${editStretchHint}`;
+  const documentName = document ? filenameFromUri(document.sourceUri) : '';
+  const compactEditing = keyboardVisible && focusedEdit !== null;
 
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
 
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Hindi PDF Editor</Text>
-          {document && (
-            <Text style={styles.headerSubtitle} numberOfLines={1}>
-              {document.pages.length} page{document.pages.length === 1 ? '' : 's'} loaded
-            </Text>
-          )}
+      {!document && (
+        <View style={styles.header}>
+          <View style={styles.brandIdentity}>
+            <Image source={require('./assets/icon.png')} style={styles.brandLogo} />
+            <View>
+              <Text style={styles.headerTitle}>Hindi PDF Editor</Text>
+              <Text style={styles.headerSubtitle}>हिंदी दस्तावेज़, सही आकार में</Text>
+            </View>
+          </View>
+          <View style={styles.headerActions}>
+            <AppButton title="About" small variant="ghost" onPress={() => setAboutVisible(true)} />
+            <AppButton
+              title="Open PDF"
+              small
+              onPress={openPdf}
+              disabled={status.state === 'opening'}
+            />
+          </View>
         </View>
-        <View style={styles.headerActions}>
-          <AppButton title="About" small variant="ghost" onPress={() => setAboutVisible(true)} />
-          <AppButton
-            title={document ? 'Open another' : 'Open PDF'}
-            small
-            variant={document ? 'secondary' : 'primary'}
-            onPress={openPdf}
-            disabled={status.state === 'opening' || status.state === 'saving'}
-          />
-        </View>
-      </View>
+      )}
 
       {status.state === 'opening' && (
-        <View style={[styles.centered, styles.fill]}>
+        <View style={[styles.centered, styles.fill, styles.openingSurface]}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.progressText}>Opening PDF…</Text>
-          <Text style={styles.progressSubText}>Rendering pages and detecting text</Text>
+          <Text style={styles.progressSubText}>
+            Preparing crisp pages and finding editable text
+          </Text>
         </View>
       )}
 
       {status.state !== 'opening' && !document && (
-        <View style={[styles.centered, styles.fill, styles.landing]}>
-          <View style={styles.landingBadge}>
-            <Text style={styles.landingBadgeText}>अ</Text>
+        <ScrollView contentContainerStyle={styles.landing} showsVerticalScrollIndicator={false}>
+          <View style={styles.heroBadge}>
+            <View style={styles.onlineDot} />
+            <Text style={styles.heroBadgeText}>Free · No account · On-device OCR</Text>
           </View>
-          <Text style={styles.landingTitle}>Edit Hindi text in any PDF</Text>
+          <Text style={styles.landingTitle}>हर हिंदी PDF के लिए,{`\n`}एक ही एडिटर।</Text>
           <Text style={styles.landingBody}>
-            Open a scanned PDF and tap text to edit it — Hindi or English. Use Erase box mode to
-            cover text OCR missed. Pinch to zoom, one finger to pan.
+            Edit Hindi and English in place, read scanned pages with OCR, translate with Gemini, and
+            export a fresh PDF while the original stays untouched.
           </Text>
-          <AppButton title="Open a PDF" onPress={openPdf} style={styles.landingButton} />
-          {status.state === 'error' && (
-            <View style={[styles.statusCard, styles.errorCard]}>
-              <Text style={styles.errorText}>{status.message}</Text>
-            </View>
-          )}
-        </View>
-      )}
+          <AppButton title="Open a PDF to start" onPress={openPdf} style={styles.landingButton} />
 
-      {status.state !== 'opening' && document && page && (
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.toolbarCard}>
-            <View style={styles.toolbarRow}>
-              {document.pages.length > 1 ? (
-                <View style={styles.pagerGroup}>
-                  <AppButton
-                    title="◀"
-                    small
-                    variant="secondary"
-                    onPress={() => goToPage(currentPageIndex - 1)}
-                    disabled={currentPageIndex === 0}
-                  />
-                  <Text style={styles.pagerLabel}>
-                    {currentPageIndex + 1} / {document.pages.length}
-                  </Text>
-                  <AppButton
-                    title="▶"
-                    small
-                    variant="secondary"
-                    onPress={() => goToPage(currentPageIndex + 1)}
-                    disabled={currentPageIndex === document.pages.length - 1}
-                  />
-                </View>
-              ) : (
-                <Text style={styles.pagerLabel}>1 page</Text>
-              )}
-              <AppButton
-                title="↩ Undo"
-                small
-                variant="ghost"
-                onPress={handleUndo}
-                disabled={!canUndo}
-              />
-            </View>
-            <View style={styles.toolbarRow}>
-              <AppButton
-                title={enhancingPage === currentPageIndex ? 'Enhancing…' : '✨ Enhance with AI'}
-                small
-                variant="secondary"
-                onPress={handleEnhancePressed}
-                disabled={
-                  editingBlocked ||
-                  enhancingPage !== null ||
-                  translating ||
-                  ocrStatus === 'running'
-                }
-              />
-              <AppButton
-                title={translating ? 'Translating…' : 'Translate to EN'}
-                small
-                variant="secondary"
-                onPress={handleTranslatePressed}
-                disabled={
-                  enhancingPage !== null || translating || status.state === 'saving'
-                }
-              />
-            </View>
-            <View style={styles.toolbarRow}>
-              <AppButton
-                title="Edit text"
-                small
-                variant={editMode === 'edit' ? 'primary' : 'secondary'}
-                onPress={() => selectEditMode('edit')}
-                disabled={editingBlocked}
-              />
-              <AppButton
-                title="+ Add text"
-                small
-                variant={editMode === 'addText' ? 'primary' : 'secondary'}
-                onPress={() => selectEditMode('addText')}
-                disabled={editingBlocked}
-              />
-              <AppButton
-                title="Erase box"
-                small
-                variant={editMode === 'erase' ? 'primary' : 'secondary'}
-                onPress={() => selectEditMode('erase')}
-                disabled={editingBlocked}
-              />
-            </View>
-            <Text style={styles.hint}>{hintText}</Text>
+          <View style={styles.featureHeadingRow}>
+            <Text style={styles.featureHeading}>Tools · टूल्स</Text>
+            <Text style={styles.featureHeadingMeta}>Built for Hindi documents</Text>
           </View>
-
-          {editingBlocked && <LegacyFontWarning fontNames={currentPageLegacyFontNames} />}
-
-          {focusedEdit && (
-            <EditToolbar
-              fontSizePt={focusedEdit.fontSizePt}
-              fontFamily={
-                focusedEdit.fontFamily === 'NotoSerifDevanagari'
-                  ? 'NotoSerifDevanagari'
-                  : 'NotoSansDevanagari'
-              }
-              color={focusedEdit.color}
-              fontWeight={focusedEdit.fontWeight === 'bold' ? 'bold' : 'normal'}
-              onFontSizeChange={(fontSizePt) =>
-                updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
-              }
-              onFontFamilyChange={(fontFamily) =>
-                updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily })
-              }
-              onColorChange={(color) => updateTextEdit(currentPageIndex, focusedEdit.id, { color })}
-              onFontWeightChange={(fontWeight) =>
-                updateTextEdit(currentPageIndex, focusedEdit.id, { fontWeight })
-              }
-              onDelete={() => removeEditGroup(focusedEdit.id)}
-              onDone={handleEditDone}
+          <View style={[styles.featureGrid, isWideLayout && styles.featureGridWide]}>
+            <FeatureCard
+              icon="✎"
+              title="Edit PDF"
+              subtitle="Tap text, type in place, move and resize"
+              tint="#DCE8FF"
+              accent={colors.primary}
             />
-          )}
-
-          <View style={styles.pageCard}>
-            <PdfPageViewer
-              key={page.pageIndex}
-              page={page}
-              onTap={handleTap}
-              disablePress={editingBlocked || editMode === 'erase'}
-              focusedEditId={editMode === 'erase' ? null : focusedEditId}
-              onEditPinchStart={handleEditPinchStart}
-              onEditPinchResize={handleEditPinchResize}
-              onEditPinchEnd={handleEditPinchEnd}
-              onZoomChange={setPageZoom}
-              renderOverlays={(viewWidthDp) => (
-                <>
-                  {editMode === 'edit' && (
-                    <OcrHighlightLayer
-                      lines={page.ocrLines}
-                      viewWidthDp={viewWidthDp}
-                      pageWidthPt={page.widthPt}
-                    />
-                  )}
-                  <MaskOverlay
-                    masks={page.edits.filter((e): e is MaskEdit => e.type === 'mask')}
-                    viewWidthDp={viewWidthDp}
-                    pageWidthPt={page.widthPt}
-                    active={editMode === 'erase' && !editingBlocked}
-                    onMaskDrawn={handleMaskDrawn}
-                  />
-                  {page.edits
-                    .filter((e): e is TextEdit => e.type === 'text')
-                    .map((edit) => (
-                      <EditableTextOverlay
-                        key={edit.id}
-                        edit={edit}
-                        viewWidthDp={viewWidthDp}
-                        pageWidthPt={page.widthPt}
-                        autoFocus={edit.id === focusedEditId}
-                        focused={edit.id === focusedEditId}
-                        selectAllOnFocus={edit.id === selectAllEditId}
-                        onFocus={() => {
-                          if (focusedEditId && focusedEditId !== edit.id) {
-                            Keyboard.dismiss();
-                            setFocusedEditId(null);
-                            return false;
-                          }
-                          setFocusedEditId(edit.id);
-                          if (edit.id === selectAllEditId) setSelectAllEditId(null);
-                          return true;
-                        }}
-                        onChangeText={(text) => updateTextEdit(currentPageIndex, edit.id, { text })}
-                        onBlur={() => handleBlur(edit.id, edit.text)}
-                      />
-                    ))}
-                </>
-              )}
+            <FeatureCard
+              icon="▣"
+              title="Hindi + English OCR"
+              subtitle="Reads scanned pages offline on your device"
+              tint="#FFF0C7"
+              accent="#9A6A00"
+            />
+            <FeatureCard
+              icon="文"
+              title="Translate"
+              subtitle="Replace detected Hindi lines with English"
+              tint="#DDF5E7"
+              accent={colors.success}
             />
           </View>
-
-          <AppButton
-            title={status.state === 'saving' ? 'Exporting…' : 'Export PDF'}
-            onPress={saveAndExport}
-            disabled={status.state === 'saving'}
-          />
-          {status.state === 'saving' && (
-            <ActivityIndicator color={colors.primary} style={styles.savingSpinner} />
-          )}
-          {status.state === 'saved' && (
-            <View style={[styles.statusCard, styles.successCard]}>
-              <Text style={styles.successTitle}>Exported successfully</Text>
-              <Text style={styles.successPath} numberOfLines={1}>
-                {status.uri.split('/').pop()}
-              </Text>
-              <AppButton title="Share / open in a PDF viewer" small onPress={shareResult} />
-            </View>
-          )}
+          <View style={styles.safetyCard}>
+            <Text style={styles.safetyTitle}>✓ Your original PDF always stays untouched</Text>
+            <Text style={styles.safetyBody}>
+              Export creates a new, validated file. Cloud OCR and translation run only when you
+              explicitly choose them.
+            </Text>
+          </View>
           {status.state === 'error' && (
             <View style={[styles.statusCard, styles.errorCard]}>
               <Text style={styles.errorText}>{status.message}</Text>
             </View>
           )}
         </ScrollView>
+      )}
+
+      {status.state !== 'opening' && document && page && (
+        <View style={styles.editorShell}>
+          <View style={[styles.editorHeader, compactEditing && styles.editorHeaderCompact]}>
+            <View style={styles.documentIdentity}>
+              <Image source={require('./assets/icon.png')} style={styles.editorLogo} />
+              <View style={styles.documentTitleGroup}>
+                <Text style={styles.documentTitle} numberOfLines={1}>
+                  {documentName}
+                </Text>
+                <Text style={styles.documentSubtitle} numberOfLines={1}>
+                  Editing · page {currentPageIndex + 1} of {document.pages.length}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.editorHeaderActions}>
+              {!compactEditing && (
+                <>
+                  <AppButton
+                    title="⋯"
+                    small
+                    variant="ghost"
+                    onPress={() => setAboutVisible(true)}
+                  />
+                  <AppButton
+                    title="New"
+                    small
+                    variant="ghost"
+                    onPress={openPdf}
+                    disabled={status.state === 'saving'}
+                  />
+                </>
+              )}
+              <AppButton
+                title={status.state === 'saving' ? 'Exporting…' : '✓ Export'}
+                small
+                onPress={saveAndExport}
+                disabled={status.state === 'saving'}
+              />
+            </View>
+          </View>
+
+          {!compactEditing && (
+            <View style={styles.commandSurface}>
+              <View style={styles.commandRow}>
+                {document.pages.length > 1 ? (
+                  <View style={styles.pagerGroup}>
+                    <AppButton
+                      title="◀"
+                      small
+                      variant="secondary"
+                      onPress={() => goToPage(currentPageIndex - 1)}
+                      disabled={currentPageIndex === 0}
+                    />
+                    <Text style={styles.pagerLabel}>
+                      {currentPageIndex + 1} / {document.pages.length}
+                    </Text>
+                    <AppButton
+                      title="▶"
+                      small
+                      variant="secondary"
+                      onPress={() => goToPage(currentPageIndex + 1)}
+                      disabled={currentPageIndex === document.pages.length - 1}
+                    />
+                  </View>
+                ) : (
+                  <Text style={styles.pagerLabel}>1 page</Text>
+                )}
+                <View style={styles.commandActions}>
+                  <View style={styles.zoomPill}>
+                    <Text style={styles.zoomPillText}>{Math.round(pageZoom * 100)}%</Text>
+                  </View>
+                  <AppButton
+                    title="↩ Undo"
+                    small
+                    variant="ghost"
+                    onPress={handleUndo}
+                    disabled={!canUndo}
+                  />
+                </View>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.modeStrip}
+                keyboardShouldPersistTaps="always"
+              >
+                <AppButton
+                  title="✎ Edit text"
+                  small
+                  variant={editMode === 'edit' ? 'primary' : 'secondary'}
+                  onPress={() => selectEditMode('edit')}
+                  disabled={editingBlocked}
+                />
+                <AppButton
+                  title="＋ Add text"
+                  small
+                  variant={editMode === 'addText' ? 'primary' : 'secondary'}
+                  onPress={() => selectEditMode('addText')}
+                  disabled={editingBlocked}
+                />
+                <AppButton
+                  title="⌫ Erase & replace"
+                  small
+                  variant={editMode === 'erase' ? 'primary' : 'secondary'}
+                  onPress={() => selectEditMode('erase')}
+                  disabled={editingBlocked}
+                />
+                <AppButton
+                  title={enhancingPage === currentPageIndex ? 'Enhancing…' : '✨ AI OCR'}
+                  small
+                  variant="secondary"
+                  onPress={handleEnhancePressed}
+                  disabled={
+                    editingBlocked ||
+                    enhancingPage !== null ||
+                    translating ||
+                    ocrStatus === 'running'
+                  }
+                />
+                <AppButton
+                  title={translating ? 'Translating…' : '文 Translate to EN'}
+                  small
+                  variant="secondary"
+                  onPress={handleTranslatePressed}
+                  disabled={enhancingPage !== null || translating || status.state === 'saving'}
+                />
+              </ScrollView>
+              <View style={styles.hintStrip}>
+                <View style={styles.hintDot} />
+                <Text style={styles.hint} numberOfLines={isWideLayout ? 1 : 2}>
+                  {hintText}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {editingBlocked && <LegacyFontWarning fontNames={currentPageLegacyFontNames} />}
+
+          {!isWideLayout && focusedEdit && (
+            <View style={styles.mobilePropertiesBar}>
+              <EditToolbar
+                fontSizePt={focusedEdit.fontSizePt}
+                fontFamily={
+                  focusedEdit.fontFamily === 'NotoSerifDevanagari'
+                    ? 'NotoSerifDevanagari'
+                    : 'NotoSansDevanagari'
+                }
+                color={focusedEdit.color}
+                fontWeight={focusedEdit.fontWeight === 'bold' ? 'bold' : 'normal'}
+                onFontSizeChange={(fontSizePt) =>
+                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
+                }
+                onFontFamilyChange={(fontFamily) =>
+                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily })
+                }
+                onColorChange={(color) =>
+                  updateTextEdit(currentPageIndex, focusedEdit.id, { color })
+                }
+                onFontWeightChange={(fontWeight) =>
+                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontWeight })
+                }
+                onDelete={() => removeEditGroup(focusedEdit.id)}
+                onDone={handleEditDone}
+              />
+            </View>
+          )}
+
+          <View style={[styles.editorBody, isWideLayout && styles.editorBodyWide]}>
+            <View style={styles.pageWorkspace}>
+              <View style={styles.pageCard}>
+                <PdfPageViewer
+                  key={page.pageIndex}
+                  page={page}
+                  onTap={handleTap}
+                  disablePress={editingBlocked || editMode === 'erase'}
+                  focusedEditId={editMode === 'erase' ? null : focusedEditId}
+                  onEditPinchStart={handleEditPinchStart}
+                  onEditPinchResize={handleEditPinchResize}
+                  onEditPinchEnd={handleEditPinchEnd}
+                  onZoomChange={setPageZoom}
+                  renderOverlays={(viewWidthDp) => (
+                    <>
+                      {editMode === 'edit' && (
+                        <OcrHighlightLayer
+                          lines={page.ocrLines}
+                          viewWidthDp={viewWidthDp}
+                          pageWidthPt={page.widthPt}
+                        />
+                      )}
+                      <MaskOverlay
+                        masks={page.edits.filter((e): e is MaskEdit => e.type === 'mask')}
+                        viewWidthDp={viewWidthDp}
+                        pageWidthPt={page.widthPt}
+                        active={editMode === 'erase' && !editingBlocked}
+                        onMaskDrawn={handleMaskDrawn}
+                      />
+                      {page.edits
+                        .filter((e): e is TextEdit => e.type === 'text')
+                        .map((edit) => (
+                          <EditableTextOverlay
+                            key={edit.id}
+                            edit={edit}
+                            viewWidthDp={viewWidthDp}
+                            pageWidthPt={page.widthPt}
+                            pageHeightPt={page.heightPt}
+                            zoom={pageZoom}
+                            autoFocus={edit.id === focusedEditId}
+                            focused={edit.id === focusedEditId}
+                            selectAllOnFocus={edit.id === selectAllEditId}
+                            onFocus={() => {
+                              if (focusedEditId && focusedEditId !== edit.id) {
+                                Keyboard.dismiss();
+                                setFocusedEditId(null);
+                                return false;
+                              }
+                              setFocusedEditId(edit.id);
+                              if (edit.id === selectAllEditId) setSelectAllEditId(null);
+                              return true;
+                            }}
+                            onChangeText={(text) =>
+                              updateTextEdit(currentPageIndex, edit.id, { text })
+                            }
+                            onMoveStart={handleEditMoveStart}
+                            onMove={(xPt, yPt) =>
+                              updateTextEdit(currentPageIndex, edit.id, { xPt, yPt })
+                            }
+                            onBlur={() => handleBlur(edit.id, edit.text)}
+                          />
+                        ))}
+                    </>
+                  )}
+                />
+              </View>
+            </View>
+
+            {isWideLayout && (
+              <View style={styles.propertiesPanel}>
+                <Text style={styles.propertiesTitle}>Text properties</Text>
+                {focusedEdit ? (
+                  <EditToolbar
+                    fontSizePt={focusedEdit.fontSizePt}
+                    fontFamily={
+                      focusedEdit.fontFamily === 'NotoSerifDevanagari'
+                        ? 'NotoSerifDevanagari'
+                        : 'NotoSansDevanagari'
+                    }
+                    color={focusedEdit.color}
+                    fontWeight={focusedEdit.fontWeight === 'bold' ? 'bold' : 'normal'}
+                    onFontSizeChange={(fontSizePt) =>
+                      updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
+                    }
+                    onFontFamilyChange={(fontFamily) =>
+                      updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily })
+                    }
+                    onColorChange={(color) =>
+                      updateTextEdit(currentPageIndex, focusedEdit.id, { color })
+                    }
+                    onFontWeightChange={(fontWeight) =>
+                      updateTextEdit(currentPageIndex, focusedEdit.id, { fontWeight })
+                    }
+                    onDelete={() => removeEditGroup(focusedEdit.id)}
+                    onDone={handleEditDone}
+                  />
+                ) : (
+                  <View style={styles.noSelectionCard}>
+                    <Text style={styles.noSelectionTitle}>Select text on the page</Text>
+                    <Text style={styles.noSelectionBody}>
+                      Tap a highlighted line or choose Add text. Formatting controls appear here.
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.shapingCard}>
+                  <Text style={styles.shapingTitle}>✓ Devanagari shaping protected</Text>
+                  <Text style={styles.shapingBody}>मात्रा, संयुक्ताक्षर और रेफ सही रहते हैं</Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {!compactEditing && status.state === 'saving' && (
+            <View style={styles.inlineStatus}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={styles.inlineStatusText}>Creating and validating your new PDF…</Text>
+            </View>
+          )}
+          {!compactEditing && status.state === 'saved' && (
+            <View style={[styles.inlineStatus, styles.successCard]}>
+              <View style={styles.inlineStatusCopy}>
+                <Text style={styles.successTitle}>✓ Exported as a new PDF</Text>
+                <Text style={styles.successPath} numberOfLines={1}>
+                  {status.uri.split('/').pop()}
+                </Text>
+              </View>
+              <AppButton title="Share / open" small onPress={shareResult} />
+            </View>
+          )}
+          {!compactEditing && status.state === 'error' && (
+            <View style={[styles.inlineStatus, styles.errorCard]}>
+              <Text style={styles.errorText}>{status.message}</Text>
+            </View>
+          )}
+        </View>
       )}
 
       <AboutModal visible={aboutVisible} onClose={() => setAboutVisible(false)} />
@@ -1179,6 +1362,30 @@ export default function App() {
   );
 }
 
+function FeatureCard({
+  icon,
+  title,
+  subtitle,
+  tint,
+  accent,
+}: {
+  icon: string;
+  title: string;
+  subtitle: string;
+  tint: string;
+  accent: string;
+}) {
+  return (
+    <View style={styles.featureCard}>
+      <View style={[styles.featureIcon, { backgroundColor: tint }]}>
+        <Text style={[styles.featureIconText, { color: accent }]}>{icon}</Text>
+      </View>
+      <Text style={styles.featureTitle}>{title}</Text>
+      <Text style={styles.featureSubtitle}>{subtitle}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1196,26 +1403,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.surface,
-    paddingTop: 56,
-    paddingBottom: spacing.md,
+    paddingTop: 52,
+    paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  brandIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexShrink: 1,
+  },
+  brandLogo: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+  },
   headerTitle: {
-    fontSize: 19,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: colors.textPrimary,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: colors.textSecondary,
-    marginTop: 1,
+    marginTop: 2,
+  },
+  openingSurface: {
+    backgroundColor: colors.surface,
   },
   progressText: {
     marginTop: spacing.lg,
@@ -1229,58 +1450,208 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   landing: {
-    padding: spacing.xl,
-  },
-  landingBadge: {
-    width: 84,
-    height: 84,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 42,
+    paddingBottom: 48,
   },
-  landingBadgeText: {
-    fontSize: 44,
-    color: colors.textOnPrimary,
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#B8CAFF',
+    backgroundColor: '#EFF4FF',
+  },
+  onlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#16B364',
+  },
+  heroBadgeText: {
+    fontSize: 12.5,
     fontWeight: '700',
+    color: colors.primaryDark,
   },
   landingTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    marginTop: spacing.xl,
+    fontSize: 31,
+    lineHeight: 43,
+    fontWeight: '800',
     color: colors.textPrimary,
     textAlign: 'center',
   },
   landingBody: {
-    marginTop: spacing.md,
-    fontSize: 14,
-    lineHeight: 21,
+    marginTop: spacing.lg,
+    fontSize: 15,
+    lineHeight: 23,
     color: colors.textSecondary,
     textAlign: 'center',
-    maxWidth: 320,
+    maxWidth: 560,
   },
   landingButton: {
     marginTop: spacing.xl,
     alignSelf: 'center',
-    width: 280,
+    width: 292,
   },
-  content: {
-    padding: spacing.lg,
+  featureHeadingRow: {
+    width: '100%',
+    maxWidth: 900,
+    marginTop: 40,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
     gap: spacing.md,
   },
-  toolbarCard: {
+  featureHeading: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  featureHeadingMeta: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  featureGrid: {
+    width: '100%',
+    maxWidth: 900,
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  featureGridWide: {
+    flexDirection: 'row',
+  },
+  featureCard: {
+    flex: 1,
+    minHeight: 132,
+    padding: spacing.lg,
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.md,
+    shadowColor: '#151B30',
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
+  },
+  featureIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  featureIconText: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  featureSubtitle: {
+    marginTop: spacing.xs,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: colors.textSecondary,
+  },
+  safetyCard: {
+    width: '100%',
+    maxWidth: 900,
+    marginTop: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.successSoft,
+    borderWidth: 1,
+    borderColor: '#B9DFC6',
+  },
+  safetyTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.success,
+  },
+  safetyBody: {
+    marginTop: spacing.xs,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: colors.textSecondary,
+  },
+  editorShell: {
+    flex: 1,
+    minHeight: 0,
+    backgroundColor: colors.background,
+  },
+  editorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingTop: 48,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  editorHeaderCompact: {
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+  },
+  documentIdentity: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
-  toolbarRow: {
+  editorLogo: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+  },
+  documentTitleGroup: {
+    flex: 1,
+    minWidth: 0,
+  },
+  documentTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  documentSubtitle: {
+    marginTop: 1,
+    fontSize: 11.5,
+    color: colors.textSecondary,
+  },
+  editorHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  commandSurface: {
+    backgroundColor: colors.surface,
+    paddingTop: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  commandRow: {
+    paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
+  },
+  commandActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   pagerGroup: {
     flexDirection: 'row',
@@ -1288,28 +1659,158 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   pagerLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: colors.textPrimary,
     minWidth: 48,
     textAlign: 'center',
   },
+  zoomPill: {
+    borderRadius: 999,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: '#F0F2F7',
+  },
+  zoomPillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  modeStrip: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  hintStrip: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    backgroundColor: '#F4F7FF',
+  },
+  hintDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+    marginTop: 5,
+  },
   hint: {
+    flex: 1,
     fontSize: 12.5,
     color: colors.textSecondary,
     lineHeight: 18,
   },
-  pageCard: {
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
+  mobilePropertiesBar: {
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.sm,
     backgroundColor: colors.surface,
   },
-  savingSpinner: {
-    marginTop: spacing.sm,
+  editorBody: {
+    flex: 1,
+    minHeight: 0,
+  },
+  editorBodyWide: {
+    flexDirection: 'row',
+  },
+  pageWorkspace: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 0,
+    padding: spacing.md,
+    backgroundColor: '#ECEEF4',
+    alignItems: 'center',
+  },
+  pageCard: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 980,
+    minHeight: 220,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#D5D8E2',
+    backgroundColor: colors.surface,
+    shadowColor: '#111827',
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 4,
+  },
+  propertiesPanel: {
+    width: 320,
+    padding: spacing.lg,
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+  },
+  propertiesTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  noSelectionCard: {
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: '#F6F7FA',
+  },
+  noSelectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  noSelectionBody: {
+    marginTop: spacing.xs,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: colors.textSecondary,
+  },
+  shapingCard: {
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.successSoft,
+    borderWidth: 1,
+    borderColor: '#B9DFC6',
+  },
+  shapingTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: colors.success,
+  },
+  shapingBody: {
+    marginTop: 2,
+    fontSize: 11.5,
+    lineHeight: 17,
+    color: colors.success,
+  },
+  inlineStatus: {
+    minHeight: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  inlineStatusCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  inlineStatusText: {
+    flex: 1,
+    fontSize: 12.5,
+    color: colors.textSecondary,
   },
   statusCard: {
+    width: '100%',
+    maxWidth: 900,
     borderRadius: radius.md,
     padding: spacing.lg,
     gap: spacing.sm,
@@ -1328,7 +1829,6 @@ const styles = StyleSheet.create({
   },
   errorCard: {
     backgroundColor: colors.dangerSoft,
-    marginTop: spacing.lg,
   },
   errorText: {
     color: colors.danger,

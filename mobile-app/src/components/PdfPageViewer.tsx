@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 
 import { dpToPt } from '../lib/coordinateMath';
-import type { PageState } from '../state/editStore';
+import { clampPageScroll } from '../lib/pageViewportMath';
+import type { PageState, TextEdit } from '../state/editStore';
 
 type Props = {
   page: PageState;
@@ -44,6 +45,8 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 /** Ignore drags shorter than this when distinguishing tap from pan, in dp. */
 const TAP_SLOP_DP = 8;
+/** Keep the selected text comfortably inside the viewport above the software keyboard, in dp. */
+const FOCUS_REVEAL_MARGIN_DP = 56;
 
 function pinchDistance(touches: readonly NativeTouchEvent[]): number {
   if (touches.length < 2) return 0;
@@ -58,21 +61,6 @@ function clamp(value: number, min: number, max: number): number {
 function pinchCenter(touches: readonly NativeTouchEvent[]): { pageX: number; pageY: number } {
   const [a, b] = touches;
   return { pageX: (a.pageX + b.pageX) / 2, pageY: (a.pageY + b.pageY) / 2 };
-}
-
-function clampScroll(
-  scrollX: number,
-  scrollY: number,
-  zoom: number,
-  viewportW: number,
-  viewportH: number,
-): { x: number; y: number } {
-  const maxX = Math.max(0, viewportW * zoom - viewportW);
-  const maxY = Math.max(0, viewportH * zoom - viewportH);
-  return {
-    x: clamp(scrollX, 0, maxX),
-    y: clamp(scrollY, 0, maxY),
-  };
 }
 
 /**
@@ -93,13 +81,16 @@ export function PdfPageViewer({
   onZoomChange,
 }: Props) {
   const [baseViewWidthDp, setBaseViewWidthDp] = useState(0);
+  const [viewportHeightDp, setViewportHeightDp] = useState(0);
   const [zoom, setZoom] = useState(1);
 
-  const scrollRef = useRef<ScrollView>(null);
+  const horizontalScrollRef = useRef<ScrollView>(null);
+  const verticalScrollRef = useRef<ScrollView>(null);
   const scrollOffsetRef = useRef({ x: 0, y: 0 });
   const containerOriginRef = useRef({ x: 0, y: 0 });
   const containerRef = useRef<View>(null);
 
+  const pageRef = useRef(page);
   const zoomRef = useRef(zoom);
   const focusedEditIdRef = useRef(focusedEditId);
   const viewportSizeRef = useRef({ width: 0, height: 0 });
@@ -114,6 +105,10 @@ export function PdfPageViewer({
   const touchMovedRef = useRef(false);
 
   useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+
+  useEffect(() => {
     zoomRef.current = zoom;
     onZoomChange?.(zoom);
   }, [zoom, onZoomChange]);
@@ -125,24 +120,72 @@ export function PdfPageViewer({
   useLayoutEffect(() => {
     if (pendingScrollRef.current === null) return;
     const { x, y } = pendingScrollRef.current;
-    scrollRef.current?.scrollTo({ x, y, animated: false });
+    horizontalScrollRef.current?.scrollTo({ x, animated: false });
+    verticalScrollRef.current?.scrollTo({ y, animated: false });
     scrollOffsetRef.current = { x, y };
     pendingScrollRef.current = null;
-  }, [zoom]);
+  }, [zoom, baseViewWidthDp, viewportHeightDp]);
+
+  useEffect(() => {
+    if (!focusedEditId || baseViewWidthDp <= 0 || viewportHeightDp <= 0) return;
+    const currentPage = pageRef.current;
+    const edit = currentPage.edits.find(
+      (candidate): candidate is TextEdit =>
+        candidate.type === 'text' && candidate.id === focusedEditId,
+    );
+    if (!edit) return;
+
+    const scaleDpPerPt = baseViewWidthDp / currentPage.widthPt;
+    const editLeft = edit.xPt * scaleDpPerPt * zoomRef.current;
+    const editTop = edit.yPt * scaleDpPerPt * zoomRef.current;
+    const editWidth =
+      (edit.widthPt ?? Math.max(96, edit.fontSizePt * 8)) * scaleDpPerPt * zoomRef.current;
+    const editHeight = edit.fontSizePt * 1.8 * scaleDpPerPt * zoomRef.current;
+    const { x: currentX, y: currentY } = scrollOffsetRef.current;
+
+    let nextX = currentX;
+    let nextY = currentY;
+    if (editLeft < currentX + FOCUS_REVEAL_MARGIN_DP) {
+      nextX = editLeft - FOCUS_REVEAL_MARGIN_DP;
+    } else if (editLeft + editWidth > currentX + baseViewWidthDp - FOCUS_REVEAL_MARGIN_DP) {
+      nextX = editLeft + editWidth - baseViewWidthDp + FOCUS_REVEAL_MARGIN_DP;
+    }
+    if (editTop < currentY + FOCUS_REVEAL_MARGIN_DP) {
+      nextY = editTop - FOCUS_REVEAL_MARGIN_DP;
+    } else if (editTop + editHeight > currentY + viewportHeightDp - FOCUS_REVEAL_MARGIN_DP) {
+      nextY = editTop + editHeight - viewportHeightDp + FOCUS_REVEAL_MARGIN_DP;
+    }
+
+    const pageHeightDp = baseViewWidthDp * (currentPage.imagePxHeight / currentPage.imagePxWidth);
+    const nextScroll = clampPageScroll(
+      nextX,
+      nextY,
+      zoomRef.current,
+      baseViewWidthDp,
+      viewportHeightDp,
+      baseViewWidthDp,
+      pageHeightDp,
+    );
+    horizontalScrollRef.current?.scrollTo({ x: nextScroll.x, animated: true });
+    verticalScrollRef.current?.scrollTo({ y: nextScroll.y, animated: true });
+    scrollOffsetRef.current = nextScroll;
+  }, [focusedEditId, baseViewWidthDp, viewportHeightDp]);
 
   const handleLayout = (event: LayoutChangeEvent) => {
-    const { width } = event.nativeEvent.layout;
+    const { width, height } = event.nativeEvent.layout;
     setBaseViewWidthDp(width);
+    setViewportHeightDp(height);
     viewportSizeRef.current = {
       width,
-      height: width * (page.imagePxHeight / page.imagePxWidth),
+      height,
     };
     containerRef.current?.measureInWindow((x, y) => {
       containerOriginRef.current = { x, y };
     });
   };
 
-  const heightDp = baseViewWidthDp > 0 ? baseViewWidthDp * (page.imagePxHeight / page.imagePxWidth) : 0;
+  const pageHeightDp =
+    baseViewWidthDp > 0 ? baseViewWidthDp * (page.imagePxHeight / page.imagePxWidth) : 0;
 
   const pageCoordsFromTouch = (pageX: number, pageY: number) => {
     const { x: originX, y: originY } = containerOriginRef.current;
@@ -186,12 +229,14 @@ export function PdfPageViewer({
       const ratio = newZoom / prevZoom;
       const { x: scrollX, y: scrollY } = scrollOffsetRef.current;
       const { width: viewportW, height: viewportH } = viewportSizeRef.current;
-      const nextScroll = clampScroll(
+      const nextScroll = clampPageScroll(
         scrollX * ratio + focalViewX * (ratio - 1),
         scrollY * ratio + focalViewY * (ratio - 1),
         newZoom,
         viewportW,
         viewportH,
+        baseViewWidthDp,
+        pageHeightDp,
       );
       pendingScrollRef.current = nextScroll;
       setZoom(newZoom);
@@ -265,13 +310,12 @@ export function PdfPageViewer({
     }
   };
 
-  const captureMultiTouch = (event: GestureResponderEvent) =>
-    event.nativeEvent.touches.length >= 2;
+  const captureMultiTouch = (event: GestureResponderEvent) => event.nativeEvent.touches.length >= 2;
 
   return (
     <View
       ref={containerRef}
-      style={[styles.container, heightDp > 0 && { height: heightDp }]}
+      style={styles.container}
       onLayout={handleLayout}
       onStartShouldSetResponderCapture={captureMultiTouch}
       onMoveShouldSetResponderCapture={captureMultiTouch}
@@ -287,44 +331,64 @@ export function PdfPageViewer({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {baseViewWidthDp > 0 && (
+      {baseViewWidthDp > 0 && viewportHeightDp > 0 && (
         <ScrollView
-          ref={scrollRef}
-          style={{ width: baseViewWidthDp, height: heightDp }}
+          ref={horizontalScrollRef}
+          horizontal
+          style={styles.scrollViewport}
           contentContainerStyle={{
             width: baseViewWidthDp * zoom,
-            height: heightDp * zoom,
+            height: viewportHeightDp,
           }}
           scrollEnabled
           showsHorizontalScrollIndicator={false}
-          showsVerticalScrollIndicator={false}
           bounces={false}
           nestedScrollEnabled
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
           onScroll={(event) => {
-            scrollOffsetRef.current = event.nativeEvent.contentOffset;
+            scrollOffsetRef.current.x = event.nativeEvent.contentOffset.x;
           }}
           scrollEventThrottle={16}
         >
-          <View style={{ width: baseViewWidthDp * zoom, height: heightDp * zoom }}>
-            <View
-              style={{
-                width: baseViewWidthDp,
-                height: heightDp,
-                transform: [{ scale: zoom }],
-                transformOrigin: 'top left',
-              }}
-            >
-              <Image
-                source={{ uri: page.backgroundImageUri }}
-                style={StyleSheet.absoluteFill}
-                resizeMode="stretch"
-              />
-              <View style={[styles.overlayLayer, { width: baseViewWidthDp, height: heightDp }]}>
-                {renderOverlays?.(baseViewWidthDp)}
+          <ScrollView
+            ref={verticalScrollRef}
+            style={{ width: baseViewWidthDp * zoom, height: viewportHeightDp }}
+            contentContainerStyle={{
+              width: baseViewWidthDp * zoom,
+              height: Math.max(pageHeightDp * zoom, viewportHeightDp),
+            }}
+            scrollEnabled
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="always"
+            onScroll={(event) => {
+              scrollOffsetRef.current.y = event.nativeEvent.contentOffset.y;
+            }}
+            scrollEventThrottle={16}
+          >
+            <View style={{ width: baseViewWidthDp * zoom, height: pageHeightDp * zoom }}>
+              <View
+                style={{
+                  width: baseViewWidthDp,
+                  height: pageHeightDp,
+                  transform: [{ scale: zoom }],
+                  transformOrigin: 'top left',
+                }}
+              >
+                <Image
+                  source={{ uri: page.backgroundImageUri }}
+                  style={StyleSheet.absoluteFill}
+                  resizeMode="stretch"
+                />
+                <View
+                  style={[styles.overlayLayer, { width: baseViewWidthDp, height: pageHeightDp }]}
+                >
+                  {renderOverlays?.(baseViewWidthDp)}
+                </View>
               </View>
             </View>
-          </View>
+          </ScrollView>
         </ScrollView>
       )}
     </View>
@@ -333,7 +397,13 @@ export function PdfPageViewer({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     width: '100%',
+    minHeight: 220,
+    overflow: 'hidden',
+  },
+  scrollViewport: {
+    flex: 1,
   },
   overlayLayer: {
     position: 'relative',
