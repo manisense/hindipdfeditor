@@ -1,6 +1,8 @@
 import * as Crypto from 'expo-crypto';
 import { create } from 'zustand';
 
+import type { DevanagariFontFamily } from '../lib/fontAsset';
+
 /**
  * Canonical data model (spec Section 7). Every position/size field is in **PDF points**
  * (the page's real, resolution-independent size from `@cantoo/pdf-lib`'s `getSize()`) -
@@ -22,7 +24,7 @@ export type TextEdit = {
   text: string;
   /** Hex color, e.g. `#111111`. */
   color: string;
-  fontFamily: 'NotoSansDevanagari' | 'NotoSerifDevanagari' | string;
+  fontFamily: DevanagariFontFamily;
   /** When set, applied in the live overlay and at export (variable-font weight axis). */
   fontWeight?: 'normal' | 'bold';
   /**
@@ -33,6 +35,12 @@ export type TextEdit = {
    * the original Phase 1 behavior for freely-placed new text.
    */
   widthPt?: number;
+  /**
+   * Replacement metadata kept inside the undoable document snapshot. This used to live in an
+   * `App.tsx` ref, which meant undo could restore a text box without restoring the knowledge
+   * that its mask and consumed OCR line belonged to the same user action.
+   */
+  replacement?: { maskId?: string; ocrLine?: OcrLine };
 };
 
 export type MaskEdit = {
@@ -94,6 +102,8 @@ export type PageState = {
   /** OCR-detected text lines on this page, populated lazily (see `App.tsx`) - empty until OCR
    * has actually run for this page, not necessarily empty because the page has no text. */
   ocrLines: OcrLine[];
+  /** True only for a page created inside the editor rather than rasterized from the source. */
+  isBlank?: boolean;
 };
 
 export type DocumentState = {
@@ -117,6 +127,8 @@ export type EditStoreState = {
    * from another document is meaningless.
    */
   history: DocumentState[];
+  /** Documents undone from `history`, newest redo target last. */
+  future: DocumentState[];
   /**
    * Pushes the current document onto the undo history. Callers invoke this once before each
    * *user-visible* group of mutations (e.g. a tap-to-replace commits a mask + a text edit +
@@ -126,10 +138,14 @@ export type EditStoreState = {
   checkpoint: () => void;
   /** Restores the most recent checkpoint, if any. No-op when history is empty. */
   undo: () => void;
+  /** Re-applies the most recently undone document snapshot. No-op when `future` is empty. */
+  redo: () => void;
   /** Replaces the whole in-memory document, e.g. after opening a file and rasterizing its pages. */
   loadDocument: (document: DocumentState) => void;
   /** Clears the in-memory document, e.g. before opening a different file. */
   closeDocument: () => void;
+  /** Inserts a page at a zero-based index and reindexes later pages, edits, and warnings. */
+  insertPage: (index: number, page: Omit<PageState, 'pageIndex'>) => void;
   /** Commits a new `TextEdit` to the given page. Throws if `page` is out of range. */
   addTextEdit: (page: number, edit: NewTextEditInput) => TextEdit;
   /** Commits a new `MaskEdit` to the given page. Throws if `page` is out of range. */
@@ -177,28 +193,74 @@ export function createEditStore(generateId: () => string = Crypto.randomUUID) {
   return create<EditStoreState>((set, get) => ({
     document: null,
     history: [],
+    future: [],
 
     checkpoint: () => {
       const { document, history } = get();
       if (!document) return;
-      set({ history: [...history, document].slice(-HISTORY_LIMIT) });
+      set({ history: [...history, document].slice(-HISTORY_LIMIT), future: [] });
     },
 
     undo: () => {
-      const { history } = get();
-      if (history.length === 0) return;
-      set({ document: history[history.length - 1], history: history.slice(0, -1) });
+      const { document, history, future } = get();
+      if (!document || history.length === 0) return;
+      set({
+        document: history[history.length - 1],
+        history: history.slice(0, -1),
+        future: [...future, document].slice(-HISTORY_LIMIT),
+      });
     },
 
-    loadDocument: (document) => set({ document, history: [] }),
+    redo: () => {
+      const { document, history, future } = get();
+      if (!document || future.length === 0) return;
+      set({
+        document: future[future.length - 1],
+        history: [...history, document].slice(-HISTORY_LIMIT),
+        future: future.slice(0, -1),
+      });
+    },
 
-    closeDocument: () => set({ document: null, history: [] }),
+    loadDocument: (document) => set({ document, history: [], future: [] }),
+
+    closeDocument: () => set({ document: null, history: [], future: [] }),
+
+    insertPage: (index, page) => {
+      const document = get().document;
+      if (!document || index < 0 || index > document.pages.length) {
+        throw new Error(`editStore: cannot insert page at index ${index}`);
+      }
+      const inserted: PageState = { ...page, pageIndex: index };
+      const pages = [
+        ...document.pages.slice(0, index),
+        inserted,
+        ...document.pages.slice(index),
+      ].map((pageState, pageIndex) => ({
+        ...pageState,
+        pageIndex,
+        edits: pageState.edits.map((edit) => ({ ...edit, page: pageIndex })),
+      }));
+      set({
+        document: {
+          ...document,
+          pageCount: pages.length,
+          pages,
+          legacyFontWarnings: document.legacyFontWarnings.map((warning) =>
+            warning.page >= index ? { ...warning, page: warning.page + 1 } : warning,
+          ),
+        },
+        future: [],
+      });
+    },
 
     addTextEdit: (page, edit) => {
       const document = get().document;
       const pageState = requirePage(document, page);
       const newEdit: TextEdit = { ...edit, type: 'text', id: generateId(), page };
-      set({ document: withUpdatedPage(document!, page, [...pageState.edits, newEdit]) });
+      set({
+        document: withUpdatedPage(document!, page, [...pageState.edits, newEdit]),
+        future: [],
+      });
       return newEdit;
     },
 
@@ -206,7 +268,10 @@ export function createEditStore(generateId: () => string = Crypto.randomUUID) {
       const document = get().document;
       const pageState = requirePage(document, page);
       const newEdit: MaskEdit = { ...edit, type: 'mask', id: generateId(), page };
-      set({ document: withUpdatedPage(document!, page, [...pageState.edits, newEdit]) });
+      set({
+        document: withUpdatedPage(document!, page, [...pageState.edits, newEdit]),
+        future: [],
+      });
       return newEdit;
     },
 
@@ -218,7 +283,7 @@ export function createEditStore(generateId: () => string = Crypto.randomUUID) {
         throw new Error(`editStore: no TextEdit with id ${id} on page ${page}`);
       }
       const edits = pageState.edits.map((e) => (e.id === id ? { ...e, ...changes } : e));
-      set({ document: withUpdatedPage(document!, page, edits) });
+      set({ document: withUpdatedPage(document!, page, edits), future: [] });
     },
 
     updateMaskEdit: (page, id, changes) => {
@@ -229,14 +294,14 @@ export function createEditStore(generateId: () => string = Crypto.randomUUID) {
         throw new Error(`editStore: no MaskEdit with id ${id} on page ${page}`);
       }
       const edits = pageState.edits.map((e) => (e.id === id ? { ...e, ...changes } : e));
-      set({ document: withUpdatedPage(document!, page, edits) });
+      set({ document: withUpdatedPage(document!, page, edits), future: [] });
     },
 
     removeEdit: (page, id) => {
       const document = get().document;
       const pageState = requirePage(document, page);
       const edits = pageState.edits.filter((e) => e.id !== id);
-      set({ document: withUpdatedPage(document!, page, edits) });
+      set({ document: withUpdatedPage(document!, page, edits), future: [] });
     },
 
     setLegacyFontWarnings: (warnings) => {

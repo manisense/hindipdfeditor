@@ -21,7 +21,7 @@ Read `mobile-app/hindi-pdf-editor-spec.md` first before touching the mobile app 
 
 - **Escape all user-typed text before interpolating it into the HTML compositor.** `htmlCompositor.ts` builds an HTML string that gets rendered inside a WebView; unescaped text containing `<script>`, `<img onerror=...>`, or similar is a real injection surface even though this is a single-user local app — the WebView will execute it. Every `TextEdit.text` value must pass through an `escapeHtml()` step before it reaches the template.
 - **Never overwrite or mutate the original source PDF.** Every export produces a new output file. Silent data loss on a user's real document is the worst failure mode this app has — worse than any crash, because the person may not notice until much later.
-- **Font/encoding inspection fails closed.** If `legacyFontDetector.ts` throws or is inconclusive when reading embedded font names, treat the page as unknown-encoding and warn the user — never default to "assume Unicode, proceed."
+- **Font/encoding inspection fails closed.** If `legacyFontDetector.ts` throws or is inconclusive when reading embedded font names, treat the page as unknown-encoding and warn the user — never default to "assume Unicode, proceed." A page with a positively identified legacy font may enter explicit **raster-only Unicode replacement mode** after a warning and confirmation: the original page stays flattened and immutable, and every new edit uses a verified Unicode font. This does not decode, reinterpret, or download the legacy font, and unknown-encoding pages remain blocked without a bypass.
 - **Validate before reporting success.** After export, confirm the output file is non-empty and re-openable (a basic parse-back check) before telling the user it worked. A silently corrupt export is worse than a visible error.
 - **Vet new native dependencies before adding them.** Check current maintenance status and Expo SDK compatibility — the mobile native-module ecosystem's compatibility windows are short, and a package that worked six months ago may not build today. Don't add one without checking.
 
@@ -37,6 +37,7 @@ Standard pyramid, mapped to this project:
 
 - **Unit tests**: `coordinateMath.ts`'s three conversion functions are pure, have no native dependencies, and are the easiest place for an unnoticed sign/scale error to hide. There is no excuse for these being untested.
 - **Visual/fixture-based checks**: maintain one fixed test-PDF fixture in the repo containing known conjuncts, matras, and a reph. Use the same fixture for every Phase 0/1/3 verification pass so results are comparable run to run, instead of eyeballing different ad hoc text each time.
+- **Downloadable-font checks**: pin fonts to immutable official sources, validate file type and byte size before loading, and render a Devanagari fixture through at least two independent PDF rasterizers before adding a family to the user-facing catalog.
 - Don't report "tests pass" or "this works" without having actually run them in the current session. If something can't be verified in this environment (e.g., needs a physical device), say so explicitly rather than assuming it's fine.
 
 ## Iteration process, per phase

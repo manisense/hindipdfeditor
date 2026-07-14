@@ -64,20 +64,20 @@ describe('escapeHtml', () => {
 });
 
 describe('pageHtml', () => {
-  it('inlines the given background data URI with the page pixel dimensions', () => {
+  it('inlines the background at canonical PDF-point dimensions while retaining the high-resolution image source', () => {
     const html = pageHtml(makePage(), 'data:image/jpeg;base64,ZmFrZS1qcGVn');
-    expect(html).toContain("background-image:url('data:image/jpeg;base64,ZmFrZS1qcGVn')");
+    expect(html).toContain('src="data:image/jpeg;base64,ZmFrZS1qcGVn"');
     expect(html).not.toContain('file:///fake/page-0.png');
-    expect(html).toContain('width:1190px');
-    expect(html).toContain('height:1684px');
+    expect(html).toContain('width:595pt');
+    expect(html).toContain('height:842pt');
+    expect(html).toContain('object-fit:fill');
   });
 
-  it('positions a text edit using ptToImagePx-derived pixel coordinates', () => {
-    // scale = 1190 / 595 = 2 -> xPt 10 -> 20px, yPt 20 -> 40px, fontSizePt 14 -> 28px
+  it('positions a text edit directly in canonical PDF points', () => {
     const html = pageHtml(makePage({ edits: [makeTextEdit()] }), 'data:image/jpeg;base64,Zm9udA==');
-    expect(html).toContain('left:20px');
-    expect(html).toContain('top:40px');
-    expect(html).toContain('font-size:28px');
+    expect(html).toContain('left:10pt');
+    expect(html).toContain('top:20pt');
+    expect(html).toContain('font-size:14pt');
     expect(html).toContain('धर्म');
   });
 
@@ -88,13 +88,15 @@ describe('pageHtml', () => {
   });
 
   it('renders a width-constrained text edit as a wrapping fixed-width box', () => {
-    // scale = 2 -> widthPt 120 -> 240px
     const html = pageHtml(
       makePage({ edits: [makeTextEdit({ widthPt: 120 })] }),
       'data:image/jpeg;base64,Zm9udA==',
     );
-    expect(html).toContain('width:240px');
+    expect(html).toContain('width:120pt');
     expect(html).toContain('white-space:pre-wrap');
+    expect(html).toContain('writing-mode:horizontal-tb');
+    expect(html).toContain('overflow-wrap:normal');
+    expect(html).not.toContain('overflow-wrap:break-word');
   });
 
   it('escapes a text edit body before interpolating it', () => {
@@ -107,12 +109,11 @@ describe('pageHtml', () => {
   });
 
   it('renders a mask edit as a filled div at its scaled position and size', () => {
-    // scale = 2 -> xPt 5 -> 10px, yPt 5 -> 10px, wPt 50 -> 100px, hPt 10 -> 20px
     const html = pageHtml(makePage({ edits: [makeMaskEdit()] }), 'data:image/jpeg;base64,Zm9udA==');
-    expect(html).toContain('left:10px');
-    expect(html).toContain('top:10px');
-    expect(html).toContain('width:100px');
-    expect(html).toContain('height:20px');
+    expect(html).toContain('left:5pt');
+    expect(html).toContain('top:5pt');
+    expect(html).toContain('width:50pt');
+    expect(html).toContain('height:10pt');
     expect(html).toContain('background:#ffffff');
   });
 
@@ -138,8 +139,11 @@ describe('pageHtml', () => {
 
 describe('documentHtml', () => {
   const mockFonts = {
-    NotoSansDevanagari: 'ZmFrZS1mb250LWJhc2U2NA==',
-    NotoSerifDevanagari: 'ZmFrZS1zZXJpZi1mb250',
+    NotoSansDevanagari: {
+      base64: 'ZmFrZS1mb250LWJhc2U2NA==',
+      cssFontWeight: '100 900' as const,
+    },
+    Mukta: { base64: 'ZmFrZS1kb2N1bWVudC1mb250', cssFontWeight: '400' as const },
   };
 
   function makeDocument(pages: PageState[]): DocumentState {
@@ -157,8 +161,9 @@ describe('documentHtml', () => {
     ]);
     expect(html).toContain('@font-face');
     expect(html).toContain('data:font/ttf;base64,ZmFrZS1mb250LWJhc2U2NA==');
-    expect(html).toContain('data:font/ttf;base64,ZmFrZS1zZXJpZi1mb250');
+    expect(html).toContain('data:font/ttf;base64,ZmFrZS1kb2N1bWVudC1mb250');
     expect(html).toContain('font-weight: 100 900');
+    expect(html).toContain('font-weight: 400');
   });
 
   it('renders bold text edits with font-weight 700', () => {
@@ -178,13 +183,15 @@ describe('documentHtml', () => {
     expect(html).toContain('data:image/jpeg;base64,cGFnZS0x');
   });
 
-  it('inserts a page-break before every page except the first', () => {
+  it('defines sibling-only page breaks without wrapping full-height pages in break containers', () => {
     const html = documentHtml(makeDocument([makePage(), makePage(), makePage()]), mockFonts, [
       'data:image/jpeg;base64,Zm9udA==',
       'data:image/jpeg;base64,Zm9udA==',
       'data:image/jpeg;base64,Zm9udA==',
     ]);
-    expect(html.match(/page-break-before:always/g)).toHaveLength(2);
+    expect(html).toContain('.pdf-page + .pdf-page');
+    expect(html).toContain('page-break-before: always');
+    expect(html).not.toContain('style="page-break-before');
   });
 
   it('produces well-formed html/head/body structure', () => {

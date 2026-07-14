@@ -21,6 +21,7 @@
     "pdf-page-image": "file:./modules/pdf-page-image",
     "react": "19.2.3",
     "react-native": "0.85.3",
+    "react-native-safe-area-context": "~5.7.0",
     "text-recognition": "file:./modules/text-recognition",
     "zustand": "^5.0.14"
   },

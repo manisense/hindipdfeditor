@@ -4,6 +4,20 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Changed — Phase 4.7 reliable export and complete authoring flow
+
+- Raised Android `versionCode` to `3` after confirming production build `2` already finished on EAS; kept dynamic Expo config and checked-in Gradle metadata aligned.
+- Kept Export and editor commands clear of Android system navigation using real safe-area insets and wrapping command rows; added Redo with branch-aware history.
+- Rebuilt export around exact PDF-point page canvases and one isolated native print per page. Each print is checked for page count/size, merged with `@cantoo/pdf-lib` page copying, and the final output is parsed back. This removes alternating blank sheets without drawing Devanagari through a PDF library.
+- Changed the native page rasterizer to 3× scale, `PdfRenderer` print mode, and JPEG quality 97. HTML uses a base64 `<img>` content layer, while masks/text stay in resolution-independent CSS points.
+- Forced exported edit text to horizontal writing mode with normal Devanagari word breaking, preventing narrow OCR boxes from stacking shaped clusters vertically.
+- Added Android File Manager folder selection and a validated persistent copy; Share/Open remains separate, and the source PDF is never moved or overwritten.
+- Added insertion of blank pages and direct typing on confirmed-empty pages. New pages are reindexed together with edit and legacy-warning state.
+- Kept unknown font inspection blocked. Positively identified legacy-font pages can now enter explicit raster-only Unicode replacement after warning/confirmation; the app does not decode or reinterpret legacy bytes.
+- Added a curated font picker. Noto Sans remains bundled; Mukta downloads from a pinned official Google Fonts commit and must match its expected size/OpenType signature before it is loaded or embedded. Export records the file's real weight shape (`100 900` for variable Noto Sans, `400` for static Mukta) and embeds only fonts used on each isolated page. The fixture caught that mixing an unused variable face with the static face can render black transparency regions in Cairo-based viewers even when Poppler's other renderer looks correct.
+- Added focused tests for export page isolation/mixed sizes, save validation, redo branching, blank pages, legacy policy, font validation, HTML escaping, and horizontal export CSS. Desktop Chromium plus independent Poppler renderers visually verified the real Devanagari compositor fixture; physical Android verification remains required for the native raster/print, safe-area, font-download, and Storage Access Framework paths.
+- Recorded the architectural amendment and rejected font candidates in ADR 0007; Phase 5 remains deferred.
+
 ### Changed — Phase 4.6 stable editor viewport and asset-led UI
 
 - Reworked the home screen to follow the supplied app graphics: a concise Hindi greeting, a high-contrast "open PDF" entry card, and three tappable Edit, Translate, and OCR tool cards. Each tool opens the system PDF picker and leads into the existing editor, rather than advertising unsupported actions with static placeholders.

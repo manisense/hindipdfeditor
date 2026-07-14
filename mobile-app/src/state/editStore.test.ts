@@ -298,6 +298,55 @@ describe('editStore', () => {
     expect(store.getState().document!.pages[0].edits).toEqual([]);
     expect(store.getState().document!.pages[0].ocrLines).toEqual([line]);
     expect(store.getState().history).toHaveLength(0);
+    expect(store.getState().future).toHaveLength(1);
+  });
+
+  it('redo reapplies the exact document snapshot removed by undo', () => {
+    const store = makeStore();
+    store.getState().loadDocument(makeDocument());
+    store.getState().checkpoint();
+    store.getState().addTextEdit(0, {
+      xPt: 10,
+      yPt: 20,
+      fontSizePt: 12,
+      text: 'फिर से',
+      color: '#000',
+      fontFamily: 'NotoSansDevanagari',
+    });
+
+    store.getState().undo();
+    expect(store.getState().document!.pages[0].edits).toHaveLength(0);
+    store.getState().redo();
+    expect(store.getState().document!.pages[0].edits).toHaveLength(1);
+    expect(store.getState().future).toHaveLength(0);
+  });
+
+  it('a new checkpoint after undo clears the redo branch', () => {
+    const store = makeStore();
+    store.getState().loadDocument(makeDocument());
+    store.getState().checkpoint();
+    store.getState().addTextEdit(0, {
+      xPt: 10,
+      yPt: 20,
+      fontSizePt: 12,
+      text: 'पहला',
+      color: '#000',
+      fontFamily: 'NotoSansDevanagari',
+    });
+    store.getState().undo();
+    store.getState().checkpoint();
+    store.getState().addTextEdit(0, {
+      xPt: 10,
+      yPt: 20,
+      fontSizePt: 12,
+      text: 'दूसरा',
+      color: '#000',
+      fontFamily: 'NotoSansDevanagari',
+    });
+
+    expect(store.getState().future).toHaveLength(0);
+    store.getState().redo();
+    expect(store.getState().document!.pages[0].edits[0]).toMatchObject({ text: 'दूसरा' });
   });
 
   it('undo is a no-op with no checkpoints', () => {
@@ -319,6 +368,40 @@ describe('editStore', () => {
     store.getState().checkpoint();
     store.getState().loadDocument(makeDocument());
     expect(store.getState().history).toHaveLength(0);
+    expect(store.getState().future).toHaveLength(0);
+  });
+
+  it('insertPage reindexes later page content and legacy warnings', () => {
+    const store = makeStore();
+    const document = makeDocument(2);
+    document.legacyFontWarnings = [{ page: 1, fontName: 'KrutiDev010' }];
+    store.getState().loadDocument(document);
+    store.getState().addTextEdit(1, {
+      xPt: 10,
+      yPt: 20,
+      fontSizePt: 12,
+      text: 'दूसरा पृष्ठ',
+      color: '#000',
+      fontFamily: 'NotoSansDevanagari',
+    });
+
+    store.getState().insertPage(1, {
+      widthPt: 595,
+      heightPt: 842,
+      backgroundImageUri: 'file:///blank.png',
+      imagePxWidth: 1785,
+      imagePxHeight: 2526,
+      edits: [],
+      ocrLines: [],
+      isBlank: true,
+    });
+
+    const next = store.getState().document!;
+    expect(next.pageCount).toBe(3);
+    expect(next.pages.map((page) => page.pageIndex)).toEqual([0, 1, 2]);
+    expect(next.pages[1].isBlank).toBe(true);
+    expect(next.pages[2].edits[0]).toMatchObject({ page: 2, text: 'दूसरा पृष्ठ' });
+    expect(next.legacyFontWarnings).toEqual([{ page: 2, fontName: 'KrutiDev010' }]);
   });
 
   it('history is capped and drops the oldest checkpoints', () => {

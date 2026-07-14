@@ -2,7 +2,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from './AppButton';
 import { colors, radius, spacing } from '../theme';
-import type { DevanagariFontFamily } from '../lib/fontAsset';
+import { fontLabel, type DevanagariFontFamily } from '../lib/fontAsset';
 
 /** Preset ink colors matching common Hindi textbook / form styling. */
 export const TEXT_COLOR_PRESETS = [
@@ -19,6 +19,7 @@ type Props = {
   fontWeight: 'normal' | 'bold';
   onFontSizeChange: (fontSizePt: number) => void;
   onFontFamilyChange: (fontFamily: DevanagariFontFamily) => void;
+  onOpenFontPicker: () => void;
   onColorChange: (color: string) => void;
   onFontWeightChange: (fontWeight: 'normal' | 'bold') => void;
   onDelete: () => void;
@@ -41,6 +42,7 @@ export function EditToolbar({
   fontWeight,
   onFontSizeChange,
   onFontFamilyChange,
+  onOpenFontPicker,
   onColorChange,
   onFontWeightChange,
   onDelete,
@@ -60,10 +62,11 @@ export function EditToolbar({
             active={fontFamily === 'NotoSansDevanagari'}
             onPress={() => onFontFamilyChange('NotoSansDevanagari')}
           />
-          <Chip
-            label="Serif"
-            active={fontFamily === 'NotoSerifDevanagari'}
-            onPress={() => onFontFamilyChange('NotoSerifDevanagari')}
+          <AppButton
+            title={`Fonts · ${fontLabel(fontFamily)}`}
+            small
+            variant="secondary"
+            onPress={onOpenFontPicker}
           />
         </View>
 
@@ -139,7 +142,9 @@ function Chip({
       style={[styles.chip, active && styles.chipActive]}
       android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
     >
-      <Text style={[styles.chipLabel, bold && styles.chipLabelBold, active && styles.chipLabelActive]}>
+      <Text
+        style={[styles.chipLabel, bold && styles.chipLabelBold, active && styles.chipLabelActive]}
+      >
         {label}
       </Text>
     </Pressable>

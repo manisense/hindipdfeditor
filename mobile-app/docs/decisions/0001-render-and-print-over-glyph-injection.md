@@ -1,17 +1,18 @@
 # 0001 — "Render & Print" over direct glyph injection
 
-**Status:** Accepted. Committed for Phases 0–4; not to be re-litigated mid-build (see spec Section 3).
+**Status:** Accepted. Committed for Phases 0–4; export mechanics amended by ADR 0007 without changing the Render & Print decision.
 
 ## Context
 
-PDF stores text as absolute-positioned glyph paint instructions, not semantic content. Devanagari is an abugida — conjuncts, matras, and reph require real OpenType (GSUB/GPOS) shaping, which is exactly what naive PDF-generation libraries get wrong, producing disconnected base characters instead of joined conjuncts. We need a way to edit an *existing* PDF and guarantee correct Devanagari shaping at every stage, on zero budget.
+PDF stores text as absolute-positioned glyph paint instructions, not semantic content. Devanagari is an abugida — conjuncts, matras, and reph require real OpenType (GSUB/GPOS) shaping, which is exactly what naive PDF-generation libraries get wrong, producing disconnected base characters instead of joined conjuncts. We need a way to edit an _existing_ PDF and guarantee correct Devanagari shaping at every stage, on zero budget.
 
 ## Decision
 
 Never compute PDF glyph coordinates ourselves. Instead:
-1. Rasterize the specific page being edited to a high-res PNG via the OS's native PDF renderer.
+
+1. Rasterize the specific page being edited to a high-resolution opaque image via the OS's native PDF renderer.
 2. Track edits as positioned data (text/mask), never as PDF drawing instructions.
-3. At export time, assemble one HTML `<div>` per page (PNG as `background-image`, edits as absolutely-positioned `<span>`/`<div>` layers with an embedded Devanagari font).
+3. At export time, assemble exact point-sized HTML pages (base64 image content layer, edits as absolutely-positioned `<span>`/`<div>` layers with embedded Devanagari fonts).
 4. Load that HTML into a WebView and export via Android's native print pipeline (`WebView.createPrintDocumentAdapter()` / `expo-print`).
 5. Chromium's own HarfBuzz-backed renderer does all Devanagari shaping — the same shaping engine Android already trusts system-wide.
 
@@ -26,6 +27,6 @@ Full detail: spec Section 3–5.
 ## Consequences
 
 - 100% of Devanagari shaping is delegated to production-grade code (Chromium/HarfBuzz) instead of hand-rolled or third-party glyph math — this is the single decision the whole project's correctness depends on.
-- Live editing (native `<TextInput>`, HarfBuzz-backed since Android O) and export (Chromium/HarfBuzz) use *different* renderers, but both are HarfBuzz-based, which is what keeps "what you see while editing" consistent with "what you get in the file."
+- Live editing (native `<TextInput>`, HarfBuzz-backed since Android O) and export (Chromium/HarfBuzz) use _different_ renderers, but both are HarfBuzz-based, which is what keeps "what you see while editing" consistent with "what you get in the file."
 - Text selectability of the exported PDF is not guaranteed (varies by `expo-print` version/platform) — this is an accepted tradeoff, not a defect, since selectability was never a hard requirement (spec Section 12).
 - A vector-preserving alternative (`harfbuzzjs` + low-level `pdf-lib` glyph placement) remains available as Phase 5, deferred, only after Phases 0–4 are working and validated in real use.

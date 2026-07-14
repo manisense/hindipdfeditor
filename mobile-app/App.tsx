@@ -21,21 +21,31 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useFonts } from 'expo-font';
 import * as Sharing from 'expo-sharing';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AboutModal } from './src/components/AboutModal';
 import { AppButton } from './src/components/AppButton';
 import { EditableTextOverlay } from './src/components/EditableTextOverlay';
 import { EditToolbar } from './src/components/EditToolbar';
+import { FontPickerModal } from './src/components/FontPickerModal';
 import { LegacyFontWarning } from './src/components/LegacyFontWarning';
 import { MaskOverlay, type DrawnMaskRect } from './src/components/MaskOverlay';
 import { OcrHighlightLayer } from './src/components/OcrHighlightLayer';
 import { PdfPageViewer } from './src/components/PdfPageViewer';
 import { clearGeminiApiKey, getGeminiApiKey, setGeminiApiKey } from './src/lib/apiKeyStore';
+import { createBlankPage } from './src/lib/blankPage';
 import { ptSizeToImagePx, ptToImagePx } from './src/lib/coordinateMath';
 import { exportPdf } from './src/lib/exportPdf';
-import { getFontBase64, type DevanagariFontFamily } from './src/lib/fontAsset';
+import {
+  fontFaceWeight,
+  getFontBase64,
+  installFontFamily,
+  isFontFamilyLoaded,
+  type DevanagariFontFamily,
+} from './src/lib/fontAsset';
 import { containsDevanagari, translateHindiLinesToEnglish } from './src/lib/geminiTranslate';
 import { detectLegacyFonts } from './src/lib/legacyFontDetector';
+import { legacyEditingPolicy, UNKNOWN_ENCODING_FONT_NAME } from './src/lib/legacyEditingPolicy';
 import { detectTextLines, detectTextLinesWithGemini } from './src/lib/ocr';
 import { findOcrTargetAt, findTextEditAt } from './src/lib/ocrHitTest';
 import {
@@ -44,6 +54,7 @@ import {
   sampleAverageColor,
   sampleTextColor,
 } from './src/lib/pdfToImages';
+import { savePdfToPickedDirectory } from './src/lib/savePdf';
 import { fontSizeForOcrLine, textBoxGeometry } from './src/lib/textEditGeometry';
 import { geometryForTranslatedLine } from './src/lib/translateEdits';
 import {
@@ -55,9 +66,6 @@ import {
   type TextEdit,
 } from './src/state/editStore';
 import { colors, radius, spacing } from './src/theme';
-
-/** Sentinel font name used when detection itself fails - see `detectLegacyFontWarnings` below. */
-const UNKNOWN_ENCODING_FONT_NAME = 'unknown (font inspection failed)';
 
 /**
  * Runs `legacyFontDetector.ts` against a freshly-picked document, in the fail-closed shape
@@ -117,7 +125,7 @@ async function detectLegacyFontWarnings(
 const DEFAULT_FONT_SIZE_PT = 14;
 // Output px per PDF point when rasterizing the page background - see spec Section 4.1/AGENTS.md's
 // "2-3x, not arbitrarily higher" performance constraint.
-const RASTER_SCALE = 2;
+const RASTER_SCALE = 3;
 // Width, in background-image px, of the band sampled just outside a drawn mask rectangle to
 // pick its fill color (Phase 3, spec Section 8) - a few points' worth at RASTER_SCALE, enough
 // to average past a little JPEG noise without reaching into an unrelated neighboring text line.
@@ -151,18 +159,11 @@ type EditMode = 'edit' | 'addText' | 'erase';
 /** Per-page on-device OCR progress, keyed by page index - absent means not yet attempted. */
 type OcrStatusByPage = Record<number, 'running' | 'done' | 'failed'>;
 
-/**
- * What a replacement `TextEdit` was created together with, so removing it can undo the whole
- * group: its paired `MaskEdit`, and - for OCR-assisted replacements - the consumed `OcrLine`
- * to restore, which brings the original scanned text's highlight (and tappability) back.
- */
-type EditPairing = { maskId?: string; ocrLine?: OcrLine };
-
 type Status =
   | { state: 'idle' }
   | { state: 'opening' }
   | { state: 'saving' }
-  | { state: 'saved'; uri: string }
+  | { state: 'saved'; uri: string; savedUri?: string }
   | { state: 'error'; message: string };
 
 function filenameFromUri(uri: string): string {
@@ -176,10 +177,10 @@ function filenameFromUri(uri: string): string {
 
 export default function App() {
   const { width: windowWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isWideLayout = windowWidth >= 840;
   const [fontsLoaded] = useFonts({
     NotoSansDevanagari: require('./assets/fonts/NotoSansDevanagari-Variable.ttf'),
-    NotoSerifDevanagari: require('./assets/fonts/NotoSerifDevanagari-Variable.ttf'),
   });
   const [status, setStatus] = useState<Status>({ state: 'idle' });
   const [focusedEditId, setFocusedEditId] = useState<string | null>(null);
@@ -194,9 +195,6 @@ export default function App() {
   // Pages OCR has already been kicked off for, so navigating back and forth doesn't re-run
   // detection. A ref (not state): this is bookkeeping for the trigger, never rendered.
   const ocrAttemptedPagesRef = useRef(new Set<number>());
-  // TextEdit id -> what it was created with (mask + consumed OCR line), so delete/clear can
-  // remove the whole group and restore the original text. A ref for the same reason as above.
-  const editPairingsRef = useRef(new Map<string, EditPairing>());
   // "Enhance with AI" (opt-in Gemini cloud OCR): which page a cloud pass is currently running
   // for (null = none), and whether the one-time API key prompt is showing.
   const [enhancingPage, setEnhancingPage] = useState<number | null>(null);
@@ -205,6 +203,14 @@ export default function App() {
   const [apiKeyPurpose, setApiKeyPurpose] = useState<'enhance' | 'translate'>('enhance');
   const [apiKeyDraft, setApiKeyDraft] = useState('');
   const [aboutVisible, setAboutVisible] = useState(false);
+  const [fontPickerVisible, setFontPickerVisible] = useState(false);
+  const [downloadingFont, setDownloadingFont] = useState<DevanagariFontFamily | null>(null);
+  const [loadedFontFamilies, setLoadedFontFamilies] = useState<Set<DevanagariFontFamily>>(
+    () => new Set(['NotoSansDevanagari']),
+  );
+  const [defaultFontFamily, setDefaultFontFamily] =
+    useState<DevanagariFontFamily>('NotoSansDevanagari');
+  const [legacySafeModePages, setLegacySafeModePages] = useState<Set<number>>(() => new Set());
   const [editMode, setEditMode] = useState<EditMode>('edit');
   const [pageZoom, setPageZoom] = useState(1);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -227,12 +233,15 @@ export default function App() {
   const loadDocument = useEditStore((s) => s.loadDocument);
   const addTextEdit = useEditStore((s) => s.addTextEdit);
   const addMaskEdit = useEditStore((s) => s.addMaskEdit);
+  const insertPage = useEditStore((s) => s.insertPage);
   const updateTextEdit = useEditStore((s) => s.updateTextEdit);
   const removeEdit = useEditStore((s) => s.removeEdit);
   const setOcrLines = useEditStore((s) => s.setOcrLines);
   const checkpoint = useEditStore((s) => s.checkpoint);
   const undo = useEditStore((s) => s.undo);
+  const redo = useEditStore((s) => s.redo);
   const canUndo = useEditStore((s) => s.history.length > 0);
+  const canRedo = useEditStore((s) => s.future.length > 0);
 
   const openPdf = async () => {
     setStatus({ state: 'opening' });
@@ -270,9 +279,9 @@ export default function App() {
       setFocusedEditId(null);
       setSelectAllEditId(null);
       ocrAttemptedPagesRef.current.clear();
-      editPairingsRef.current.clear();
       setOcrStatusByPage({});
       setEditMode('edit');
+      setLegacySafeModePages(new Set());
       ensureOcrForAllPages(newDocument);
       setStatus({ state: 'idle' });
     } catch (error) {
@@ -288,9 +297,9 @@ export default function App() {
     page?.edits.find((e): e is TextEdit => e.type === 'text' && e.id === focusedEditId) ?? null;
 
   // Phase 4 (spec Section 9): distinct legacy font names flagged on the page currently being
-  // viewed. A non-empty array - including the `UNKNOWN_ENCODING_FONT_NAME` sentinel when
-  // detection itself failed - blocks both edit paths on this page; per-page, not document-wide,
-  // since only some pages of a document may actually use a legacy font.
+  // viewed. Unknown inspection always blocks; a known legacy match blocks until explicit
+  // raster-only Unicode replacement is enabled for this page. This stays per-page because only
+  // some pages of a document may use legacy fonts.
   const currentPageLegacyFontNames = useMemo(
     () => [
       ...new Set(
@@ -301,14 +310,25 @@ export default function App() {
     ],
     [document?.legacyFontWarnings, currentPageIndex],
   );
-  const editingBlocked = currentPageLegacyFontNames.length > 0;
+  const safeLegacyReplacementEnabled = legacySafeModePages.has(currentPageIndex);
+  const {
+    inspectionFailed: fontInspectionFailed,
+    knownLegacyFontNames,
+    editingBlocked,
+  } = legacyEditingPolicy(currentPageLegacyFontNames, safeLegacyReplacementEnabled);
 
-  const ensureOcrForPage = (doc: DocumentState, pageIndex: number) => {
+  const ensureOcrForPage = (
+    doc: DocumentState,
+    pageIndex: number,
+    allowKnownLegacyReplacement = false,
+  ) => {
     const pageState = doc.pages[pageIndex];
     if (!pageState) return;
     // Same fail-closed rule as every edit path: a legacy/unknown-encoding page blocks editing,
     // so detecting tappable text on it would only advertise an interaction that's disabled.
-    if (doc.legacyFontWarnings.some((w) => w.page === pageIndex)) return;
+    const warnings = doc.legacyFontWarnings.filter((warning) => warning.page === pageIndex);
+    if (warnings.some((warning) => warning.fontName === UNKNOWN_ENCODING_FONT_NAME)) return;
+    if (warnings.length > 0 && !allowKnownLegacyReplacement) return;
     if (ocrAttemptedPagesRef.current.has(pageIndex)) return;
     ocrAttemptedPagesRef.current.add(pageIndex);
 
@@ -342,7 +362,7 @@ export default function App() {
     if (!document || index < 0 || index >= document.pages.length) return;
     setCurrentPageIndex(index);
     setFocusedEditId(null);
-    ensureOcrForPage(document, index);
+    ensureOcrForPage(document, index, legacySafeModePages.has(index));
   };
 
   const handleUndo = () => {
@@ -351,6 +371,96 @@ export default function App() {
     setFocusedEditId(null);
     Keyboard.dismiss();
     undo();
+  };
+
+  const handleRedo = () => {
+    setFocusedEditId(null);
+    Keyboard.dismiss();
+    redo();
+  };
+
+  const enableLegacyUnicodeReplacement = () => {
+    if (!document || knownLegacyFontNames.length === 0 || fontInspectionFailed) return;
+    setLegacySafeModePages((current) => new Set(current).add(currentPageIndex));
+    setEditMode('edit');
+    ensureOcrForPage(document, currentPageIndex, true);
+  };
+
+  const confirmLegacyUnicodeReplacement = () => {
+    Alert.alert(
+      'Enable Unicode replacement mode?',
+      'The original PDF remains untouched. This page will be edited as a raster background with real Unicode text overlays; the app will not treat the legacy-encoded text layer as Unicode.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Enable', onPress: enableLegacyUnicodeReplacement },
+      ],
+    );
+  };
+
+  const applyFontFamily = (family: DevanagariFontFamily) => {
+    setDefaultFontFamily(family);
+    if (focusedEdit) {
+      checkpoint();
+      updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily: family });
+    }
+  };
+
+  const chooseFontFamily = async (family: DevanagariFontFamily) => {
+    try {
+      if (!isFontFamilyLoaded(family)) {
+        setDownloadingFont(family);
+        await installFontFamily(family);
+        setLoadedFontFamilies((current) => new Set(current).add(family));
+      }
+      applyFontFamily(family);
+      setFontPickerVisible(false);
+    } catch (error) {
+      Alert.alert('Font download failed', error instanceof Error ? error.message : String(error));
+    } finally {
+      setDownloadingFont(null);
+    }
+  };
+
+  const addBlankPageAfterCurrent = async () => {
+    if (!page || Object.values(ocrStatusByPage).some((state) => state === 'running')) return;
+    const insertIndex = currentPageIndex + 1;
+    try {
+      const blankPage = await createBlankPage(page.widthPt, page.heightPt, RASTER_SCALE);
+      checkpoint();
+      insertPage(insertIndex, blankPage);
+
+      const shiftedAttempts = new Set<number>();
+      for (const pageIndex of ocrAttemptedPagesRef.current) {
+        shiftedAttempts.add(pageIndex >= insertIndex ? pageIndex + 1 : pageIndex);
+      }
+      shiftedAttempts.add(insertIndex);
+      ocrAttemptedPagesRef.current = shiftedAttempts;
+      setLegacySafeModePages((current) => {
+        const shifted = new Set<number>();
+        for (const pageIndex of current) {
+          shifted.add(pageIndex >= insertIndex ? pageIndex + 1 : pageIndex);
+        }
+        return shifted;
+      });
+      setOcrStatusByPage((current) => {
+        const shifted: OcrStatusByPage = { [insertIndex]: 'done' };
+        for (const [rawIndex, state] of Object.entries(current)) {
+          const pageIndex = Number(rawIndex);
+          shifted[pageIndex >= insertIndex ? pageIndex + 1 : pageIndex] = state;
+        }
+        return shifted;
+      });
+
+      setCurrentPageIndex(insertIndex);
+      setFocusedEditId(null);
+      setEditMode('addText');
+      setStatus({ state: 'idle' });
+    } catch (error) {
+      setStatus({
+        state: 'error',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
   };
 
   const handleEditDone = () => {
@@ -543,17 +653,17 @@ export default function App() {
             hPt: geo.mask.hPt,
             color: maskColor,
           });
-          const textEdit = addTextEdit(pageIndex, {
+          addTextEdit(pageIndex, {
             xPt: geo.text.xPt,
             yPt: geo.text.yPt,
             fontSizePt: geo.text.fontSizePt,
             text: translated,
             color: textColor,
-            fontFamily: 'NotoSansDevanagari',
+            fontFamily: defaultFontFamily,
             fontWeight: geo.text.fontWeight,
             widthPt: geo.text.widthPt,
+            replacement: { maskId: maskEdit.id, ocrLine: line },
           });
-          editPairingsRef.current.set(textEdit.id, { maskId: maskEdit.id, ocrLine: line });
           translatedCount += 1;
         }
       }
@@ -614,7 +724,7 @@ export default function App() {
    * the OCR path pads the mask taller than the detected line (see OCR_MASK_PAD_TOP_RATIO)
    * while anchoring the text at the line's own origin; the manual path passes the same origin
    * for both. All `text` fields are in PDF points except the text itself. `consumedOcrLine`
-   * is recorded in the pairing map so deleting the replacement restores the original.
+   * is stored on the TextEdit so undo/redo and delete restore the whole replacement group.
    */
   const maskAndReplaceRegion = async (
     rect: { xPt: number; yPt: number; wPt: number; hPt: number },
@@ -690,13 +800,10 @@ export default function App() {
       fontSizePt: text.fontSizePt,
       text: text.prefill,
       color: text.color ?? '#111111',
-      fontFamily: text.fontFamily ?? 'NotoSansDevanagari',
+      fontFamily: text.fontFamily ?? defaultFontFamily,
       ...(text.fontWeight ? { fontWeight: text.fontWeight } : {}),
       widthPt: textGeometry.widthPt,
-    });
-    editPairingsRef.current.set(textEdit.id, {
-      maskId: maskEdit.id,
-      ocrLine: consumedOcrLine,
+      replacement: { maskId: maskEdit.id, ocrLine: consumedOcrLine },
     });
     setFocusedEditId(textEdit.id);
     if (consumedOcrLine) {
@@ -711,14 +818,15 @@ export default function App() {
    * by blurring an OCR replacement empty.
    */
   const removeEditGroup = (id: string) => {
-    const pairing = editPairingsRef.current.get(id);
+    const replacement = page?.edits.find(
+      (edit): edit is TextEdit => edit.type === 'text' && edit.id === id,
+    )?.replacement;
     checkpoint();
     removeEdit(currentPageIndex, id);
-    if (pairing?.maskId) removeEdit(currentPageIndex, pairing.maskId);
-    if (pairing?.ocrLine && page) {
-      setOcrLines(currentPageIndex, [...page.ocrLines, pairing.ocrLine]);
+    if (replacement?.maskId) removeEdit(currentPageIndex, replacement.maskId);
+    if (replacement?.ocrLine && page) {
+      setOcrLines(currentPageIndex, [...page.ocrLines, replacement.ocrLine]);
     }
-    editPairingsRef.current.delete(id);
     if (focusedEditId === id) setFocusedEditId(null);
   };
 
@@ -805,8 +913,14 @@ export default function App() {
       return;
     }
 
-    // Brand-new overlay text is only placed when Add Text mode is active.
-    if (editMode !== 'addText') {
+    const pageLooksEmpty =
+      page.isBlank === true ||
+      (ocrStatusByPage[currentPageIndex] === 'done' && page.ocrLines.length === 0);
+
+    // A confirmed-empty page accepts typing directly in Edit mode too; requiring the user to
+    // discover a separate Add Text toggle when there is literally nothing to select made empty
+    // pages appear non-editable. Non-empty pages retain the explicit Add Text behavior.
+    if (editMode !== 'addText' && !(editMode === 'edit' && pageLooksEmpty)) {
       return;
     }
 
@@ -824,7 +938,7 @@ export default function App() {
       fontSizePt: DEFAULT_FONT_SIZE_PT,
       text: '',
       color: '#111111',
-      fontFamily: 'NotoSansDevanagari',
+      fontFamily: defaultFontFamily,
       widthPt: geometry.widthPt,
     });
     setFocusedEditId(edit.id);
@@ -832,8 +946,10 @@ export default function App() {
 
   const handleBlur = (id: string, text: string) => {
     if (text.trim().length === 0) {
-      const pairing = editPairingsRef.current.get(id);
-      if (pairing?.ocrLine) {
+      const replacement = page?.edits.find(
+        (edit): edit is TextEdit => edit.type === 'text' && edit.id === id,
+      )?.replacement;
+      if (replacement?.ocrLine) {
         // Blurring an OCR replacement empty means "never mind" - removing just the text would
         // leave its mask silently hiding the original, so the whole group goes and the
         // original text comes back.
@@ -867,11 +983,28 @@ export default function App() {
     if (!document) return;
     setStatus({ state: 'saving' });
     try {
-      const fontBase64ByFamily = {
-        NotoSansDevanagari: await getFontBase64('NotoSansDevanagari'),
-        NotoSerifDevanagari: await getFontBase64('NotoSerifDevanagari'),
-      };
-      const uri = await exportPdf(document, fontBase64ByFamily);
+      const usedFamilies = new Set<DevanagariFontFamily>();
+      for (const page of document.pages) {
+        for (const edit of page.edits) {
+          if (edit.type === 'text') usedFamilies.add(edit.fontFamily);
+        }
+      }
+      if (usedFamilies.size === 0) usedFamilies.add(defaultFontFamily);
+      const embeddedFonts = Object.fromEntries(
+        await Promise.all(
+          [...usedFamilies].map(
+            async (family) =>
+              [
+                family,
+                {
+                  base64: await getFontBase64(family),
+                  cssFontWeight: fontFaceWeight(family),
+                },
+              ] as const,
+          ),
+        ),
+      );
+      const uri = await exportPdf(document, embeddedFonts);
       setStatus({ state: 'saved', uri });
     } catch (error) {
       setStatus({
@@ -890,6 +1023,19 @@ export default function App() {
     await Sharing.shareAsync(status.uri, { UTI: '.pdf', mimeType: 'application/pdf' });
   };
 
+  const saveResultToFolder = async () => {
+    if (status.state !== 'saved') return;
+    try {
+      const savedUri = await savePdfToPickedDirectory(status.uri, documentName);
+      if (savedUri) setStatus({ ...status, savedUri });
+    } catch (error) {
+      setStatus({
+        state: 'error',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
   if (!fontsLoaded) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -903,6 +1049,10 @@ export default function App() {
   const ocrReadyCount = document
     ? Object.values(ocrStatusByPage).filter((s) => s === 'done').length
     : 0;
+  const hasRunningOcr = Object.values(ocrStatusByPage).some((state) => state === 'running');
+  const pageLooksEmpty =
+    page?.isBlank === true ||
+    (ocrStatus === 'done' && page?.ocrLines.length === 0 && page.edits.length === 0);
   const zoomHint =
     pageZoom > 1.01
       ? ` One finger to pan (${Math.round(pageZoom * 100)}% zoom). Pinch to zoom.`
@@ -916,11 +1066,13 @@ export default function App() {
         ? ocrStatus === 'running'
           ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
           : `Add Text — tap anywhere to place new text.${zoomHint}${editStretchHint}`
-        : ocrStatus === 'running'
-          ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
-          : ocrStatus === 'failed'
-            ? `Edit text — tap a line to change it.${zoomHint}${editStretchHint}`
-            : `Edit text — tap any detected line to change it.${zoomHint}${editStretchHint}`;
+        : pageLooksEmpty
+          ? `This page is empty — tap anywhere to start writing.${zoomHint}`
+          : ocrStatus === 'running'
+            ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
+            : ocrStatus === 'failed'
+              ? `Edit text — tap a line to change it.${zoomHint}${editStretchHint}`
+              : `Edit text — tap any detected line to change it.${zoomHint}${editStretchHint}`;
   const documentName = document ? filenameFromUri(document.sourceUri) : '';
   const compactEditing = keyboardVisible && focusedEdit !== null;
 
@@ -929,7 +1081,7 @@ export default function App() {
       <StatusBar style="dark" />
 
       {!document && (
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
           <View style={styles.brandIdentity}>
             <Image source={require('./assets/icon.png')} style={styles.brandLogo} />
             <View>
@@ -960,7 +1112,10 @@ export default function App() {
       )}
 
       {status.state !== 'opening' && !document && (
-        <ScrollView contentContainerStyle={styles.landing} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[styles.landing, { paddingBottom: 48 + insets.bottom }]}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.homeGreeting}>
             <Text style={styles.homeGreetingTitle}>नमस्ते 👋</Text>
             <Text style={styles.homeGreetingBody}>
@@ -1035,8 +1190,14 @@ export default function App() {
       )}
 
       {status.state !== 'opening' && document && page && (
-        <View style={styles.editorShell}>
-          <View style={[styles.editorHeader, compactEditing && styles.editorHeaderCompact]}>
+        <View style={[styles.editorShell, { paddingBottom: insets.bottom }]}>
+          <View
+            style={[
+              styles.editorHeader,
+              compactEditing && styles.editorHeaderCompact,
+              { paddingTop: insets.top + spacing.sm },
+            ]}
+          >
             <View style={styles.documentIdentity}>
               <Image source={require('./assets/icon.png')} style={styles.editorLogo} />
               <View style={styles.documentTitleGroup}>
@@ -1112,6 +1273,13 @@ export default function App() {
                     onPress={handleUndo}
                     disabled={!canUndo}
                   />
+                  <AppButton
+                    title="↪ Redo"
+                    small
+                    variant="ghost"
+                    onPress={handleRedo}
+                    disabled={!canRedo}
+                  />
                 </View>
               </View>
               <ScrollView
@@ -1133,6 +1301,13 @@ export default function App() {
                   variant={editMode === 'addText' ? 'primary' : 'secondary'}
                   onPress={() => selectEditMode('addText')}
                   disabled={editingBlocked}
+                />
+                <AppButton
+                  title="＋ Blank page"
+                  small
+                  variant="secondary"
+                  onPress={addBlankPageAfterCurrent}
+                  disabled={hasRunningOcr || status.state === 'saving'}
                 />
                 <AppButton
                   title="⌫ Erase & replace"
@@ -1170,25 +1345,28 @@ export default function App() {
             </View>
           )}
 
-          {editingBlocked && <LegacyFontWarning fontNames={currentPageLegacyFontNames} />}
+          {(editingBlocked || knownLegacyFontNames.length > 0) && (
+            <LegacyFontWarning
+              fontNames={knownLegacyFontNames}
+              inspectionFailed={fontInspectionFailed}
+              safeReplacementEnabled={safeLegacyReplacementEnabled}
+              onEnableSafeReplacement={confirmLegacyUnicodeReplacement}
+              onChooseUnicodeFont={() => setFontPickerVisible(true)}
+            />
+          )}
 
           {!isWideLayout && focusedEdit && (
             <View style={styles.mobilePropertiesBar}>
               <EditToolbar
                 fontSizePt={focusedEdit.fontSizePt}
-                fontFamily={
-                  focusedEdit.fontFamily === 'NotoSerifDevanagari'
-                    ? 'NotoSerifDevanagari'
-                    : 'NotoSansDevanagari'
-                }
+                fontFamily={focusedEdit.fontFamily}
                 color={focusedEdit.color}
                 fontWeight={focusedEdit.fontWeight === 'bold' ? 'bold' : 'normal'}
                 onFontSizeChange={(fontSizePt) =>
                   updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
                 }
-                onFontFamilyChange={(fontFamily) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily })
-                }
+                onFontFamilyChange={applyFontFamily}
+                onOpenFontPicker={() => setFontPickerVisible(true)}
                 onColorChange={(color) =>
                   updateTextEdit(currentPageIndex, focusedEdit.id, { color })
                 }
@@ -1275,19 +1453,14 @@ export default function App() {
                 {focusedEdit ? (
                   <EditToolbar
                     fontSizePt={focusedEdit.fontSizePt}
-                    fontFamily={
-                      focusedEdit.fontFamily === 'NotoSerifDevanagari'
-                        ? 'NotoSerifDevanagari'
-                        : 'NotoSansDevanagari'
-                    }
+                    fontFamily={focusedEdit.fontFamily}
                     color={focusedEdit.color}
                     fontWeight={focusedEdit.fontWeight === 'bold' ? 'bold' : 'normal'}
                     onFontSizeChange={(fontSizePt) =>
                       updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
                     }
-                    onFontFamilyChange={(fontFamily) =>
-                      updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily })
-                    }
+                    onFontFamilyChange={applyFontFamily}
+                    onOpenFontPicker={() => setFontPickerVisible(true)}
                     onColorChange={(color) =>
                       updateTextEdit(currentPageIndex, focusedEdit.id, { color })
                     }
@@ -1322,12 +1495,17 @@ export default function App() {
           {!compactEditing && status.state === 'saved' && (
             <View style={[styles.inlineStatus, styles.successCard]}>
               <View style={styles.inlineStatusCopy}>
-                <Text style={styles.successTitle}>✓ Exported as a new PDF</Text>
+                <Text style={styles.successTitle}>
+                  {status.savedUri ? '✓ Saved in the selected folder' : '✓ Exported as a new PDF'}
+                </Text>
                 <Text style={styles.successPath} numberOfLines={1}>
                   {status.uri.split('/').pop()}
                 </Text>
               </View>
-              <AppButton title="Share / open" small onPress={shareResult} />
+              <View style={styles.inlineStatusActions}>
+                <AppButton title="Save to folder" small onPress={saveResultToFolder} />
+                <AppButton title="Share / open" small variant="secondary" onPress={shareResult} />
+              </View>
             </View>
           )}
           {!compactEditing && status.state === 'error' && (
@@ -1339,6 +1517,14 @@ export default function App() {
       )}
 
       <AboutModal visible={aboutVisible} onClose={() => setAboutVisible(false)} />
+      <FontPickerModal
+        visible={fontPickerVisible}
+        selectedFamily={focusedEdit?.fontFamily ?? defaultFontFamily}
+        loadedFamilies={loadedFontFamilies}
+        downloadingFamily={downloadingFont}
+        onChoose={chooseFontFamily}
+        onClose={() => setFontPickerVisible(false)}
+      />
 
       <Modal
         visible={apiKeyPromptVisible}
@@ -1431,7 +1617,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.surface,
-    paddingTop: 52,
     paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
@@ -1483,7 +1668,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
-    paddingBottom: 48,
   },
   homeGreeting: {
     paddingHorizontal: spacing.xs,
@@ -1664,7 +1848,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
-    paddingTop: 48,
     paddingBottom: spacing.md,
     paddingHorizontal: spacing.lg,
     backgroundColor: colors.surface,
@@ -1672,7 +1855,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   editorHeaderCompact: {
-    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
   documentIdentity: {
@@ -1715,6 +1897,7 @@ const styles = StyleSheet.create({
   commandRow: {
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
@@ -1873,6 +2056,12 @@ const styles = StyleSheet.create({
   inlineStatusCopy: {
     flex: 1,
     minWidth: 0,
+  },
+  inlineStatusActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: spacing.xs,
   },
   inlineStatusText: {
     flex: 1,

@@ -1,6 +1,6 @@
 # 0004 — In-house `PdfRenderer` Expo Module over `react-native-pdf-page-image`
 
-**Status:** Accepted. Supersedes the "primary" choice in spec Section 4.1; the risk and fallback plan were pre-documented in Section 4.2 before this decision was made.
+**Status:** Accepted. Supersedes the "primary" choice in spec Section 4.1; render quality/encoding amended by ADR 0007.
 
 ## Context
 
@@ -28,7 +28,7 @@ Build the in-house fallback: `modules/pdf-page-image`, a local Expo Module (Kotl
 - Full control over the render scale matrix (the spec's 2–3× point-dimensions requirement) lives in code this project owns and can read line-by-line, not in a third-party package.
 - One more native module (Kotlin) this project is now responsible for maintaining directly — a fair trade against a dependency that didn't build at all.
 - `pdfToImages.ts`'s public shape (`getPageCount`, `renderPage` returning `{ uri, pxWidth, pxHeight }`) is unchanged from what the spec originally described, so every consumer above that layer required zero changes.
-- Still only rasterizes an existing PDF page to a background PNG — does not draw any text, so this does not touch the non-negotiable rendering rule in AGENTS.md or ADR 0001.
-- **Not yet verified:** actually rasterizing a real PDF page correctly at runtime on a physical or emulated Android device. This session confirmed the module *builds*; it did not confirm it *works*, because no Android device or emulator was available in this environment. That verification remains an open Phase 0 checklist item (spec Section 10) and must happen before Phase 1 is considered started.
+- Still only rasterizes an existing PDF page to an opaque background image — does not draw any text, so this does not touch the non-negotiable rendering rule in AGENTS.md or ADR 0001.
+- **Not yet verified:** actually rasterizing a real PDF page correctly at runtime on a physical or emulated Android device. This session confirmed the module _builds_; it did not confirm it _works_, because no Android device or emulator was available in this environment. That verification remains an open Phase 0 checklist item (spec Section 10) and must happen before Phase 1 is considered started.
 
 **Date:** 2026-07.

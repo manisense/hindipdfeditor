@@ -116,7 +116,7 @@ class PdfPageImageModule : Module() {
         val matrix = Matrix().apply {
           setScale(pxWidth / page.width.toFloat(), pxHeight / page.height.toFloat())
         }
-        page.render(bitmap, null, matrix, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+        page.render(bitmap, null, matrix, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
 
         // JPEG, not PNG: confirmed on a real device that Android's print WebView hangs
         // indefinitely (not just "slow") when a page background this size is base64-inlined as
@@ -125,11 +125,12 @@ class PdfPageImageModule : Module() {
         // no overlay text, and small ASCII overlay text, both exported fine, isolating the
         // combination rather than either factor alone (see CHANGELOG). This bitmap already has
         // no meaningful alpha (erased to opaque white above for transparent PDF regions), so
-        // JPEG's lack of an alpha channel loses nothing. Quality 92 keeps text edges visibly
-        // sharp while cutting the encoded size well below whatever internal limit was being hit.
+        // JPEG's lack of an alpha channel loses nothing. Quality 97 plus the caller's 3x render
+        // scale keeps fine source text materially closer to the original while per-page WebView
+        // export prevents the larger image from accumulating into one multi-page HTML payload.
         val outputFile = File(appContext.cacheDirectory, "pdf-page-image-${UUID.randomUUID()}.jpg")
         FileOutputStream(outputFile).use { out ->
-          bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+          bitmap.compress(Bitmap.CompressFormat.JPEG, 97, out)
         }
         bitmap.recycle()
 
