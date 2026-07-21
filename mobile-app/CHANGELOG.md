@@ -4,6 +4,19 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Added — Phase 4.8 production translation foundation
+
+- Added a dependency-free `@hindipdfeditor/translation-contract` package shared by Android, web,
+  and the planned Cloudflare Worker. Runtime validation now defines the two directions, stable line
+  IDs, request/response limits, result states, capabilities, OCR boxes, and public error codes in
+  one place.
+- Added a deterministic twelve-case semantic translation corpus plus a two-page bilingual PDF
+  fixture covering formal Hindi/English, tables, proper names, identifiers, dates, amounts, URLs,
+  conjuncts, and a reph. The PDF was generated through headless Chrome, parsed as a two-page Letter
+  document, text-extracted with Poppler, and visually inspected from independent PNG renders.
+- Added Android and web resolution/validation tests for the shared contract. Hardware verification
+  remains explicitly deferred at the user's request; no device-only behavior is marked passed.
+
 ### Changed — Phase 4.7 reliable export and complete authoring flow
 
 - Raised Android `versionCode` to `3` after confirming production build `2` already finished on EAS; kept dynamic Expo config and checked-in Gradle metadata aligned.

@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "description": "Deterministic bilingual translation acceptance cases. Exact prose may vary, but protected fragments and required meaning must survive.",
+  "cases": [
+    {
+      "id": "hi-government-heading",
+      "direction": "hi-en",
+      "source": "भारत सरकार",
+      "requiredTerms": ["Government", "India"],
+      "protectedFragments": []
+    },
+    {
+      "id": "hi-form-label-and-name",
+      "direction": "hi-en",
+      "source": "कर्मचारी का नाम: Seema Sharma",
+      "requiredTerms": ["Employee", "Name", "Seema Sharma"],
+      "protectedFragments": ["Seema Sharma"]
+    },
+    {
+      "id": "hi-reference-url",
+      "direction": "hi-en",
+      "source": "संदर्भ संख्या REF-2026/07 देखें: https://hindipdfeditor.com/support/",
+      "requiredTerms": ["Reference"],
+      "protectedFragments": ["REF-2026/07", "https://hindipdfeditor.com/support/"]
+    },
+    {
+      "id": "hi-amount-date",
+      "direction": "hi-en",
+      "source": "कुल राशि ₹1,250.50 दिनांक 22/07/2026 को देय है।",
+      "requiredTerms": ["amount", "due"],
+      "protectedFragments": ["₹1,250.50", "22/07/2026"]
+    },
+    {
+      "id": "hi-shaping",
+      "direction": "hi-en",
+      "source": "धर्म और क्षेत्र में गुरुजी ने ज्ञान दिया।",
+      "requiredTerms": ["knowledge"],
+      "protectedFragments": []
+    },
+    {
+      "id": "hi-bilingual-technical",
+      "direction": "hi-en",
+      "source": "PDF export सफल होने के बाद checksum SHA-256 सत्यापित करें।",
+      "requiredTerms": ["PDF export", "checksum", "SHA-256"],
+      "protectedFragments": ["PDF export", "SHA-256"]
+    },
+    {
+      "id": "en-government-heading",
+      "direction": "en-hi",
+      "source": "Government of India",
+      "requiredTerms": ["भारत", "सरकार"],
+      "protectedFragments": []
+    },
+    {
+      "id": "en-form-label-and-name",
+      "direction": "en-hi",
+      "source": "Employee Name: Seema Sharma",
+      "requiredTerms": ["कर्मचारी", "नाम", "Seema Sharma"],
+      "protectedFragments": ["Seema Sharma"]
+    },
+    {
+      "id": "en-reference-email",
+      "direction": "en-hi",
+      "source": "Send reference REF-2026/07 to support@hindipdfeditor.com.",
+      "requiredTerms": ["भेजें"],
+      "protectedFragments": ["REF-2026/07", "support@hindipdfeditor.com"]
+    },
+    {
+      "id": "en-amount-date",
+      "direction": "en-hi",
+      "source": "The total amount of ₹1,250.50 is due on 22/07/2026.",
+      "requiredTerms": ["कुल", "राशि", "देय"],
+      "protectedFragments": ["₹1,250.50", "22/07/2026"]
+    },
+    {
+      "id": "en-formal-request",
+      "direction": "en-hi",
+      "source": "Please approve the application after verifying all supporting documents.",
+      "requiredTerms": ["कृपया", "आवेदन", "दस्तावेज"],
+      "protectedFragments": []
+    },
+    {
+      "id": "en-technical",
+      "direction": "en-hi",
+      "source": "Keep the PDF filename report-2026.pdf unchanged.",
+      "requiredTerms": ["PDF"],
+      "protectedFragments": ["report-2026.pdf"]
+    }
+  ]
+}

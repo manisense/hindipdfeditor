@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@cantoo/pdf-lib": "^2.7.1",
+    "@hindipdfeditor/translation-contract": "file:../../packages/translation-contract",
     "@huggingface/transformers": "^3.8.1",
     "clsx": "^2.1.1",
     "html2canvas": "^1.4.1",

@@ -5,6 +5,7 @@
   "main": "index.ts",
   "dependencies": {
     "@cantoo/pdf-lib": "^2.7.1",
+    "@hindipdfeditor/translation-contract": "file:../packages/translation-contract",
     "expo": "~56.0.15",
     "expo-asset": "~56.0.19",
     "expo-build-properties": "~56.0.22",

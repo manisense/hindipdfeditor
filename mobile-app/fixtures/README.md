@@ -44,3 +44,14 @@ Extracted text round-trips correctly (real Unicode Devanagari, not garbled) and 
 ## `multipage-fixture.pdf`
 
 A separate, minimal 3-page fixture (`multipage-fixture.html` → `multipage-fixture.pdf`, same generation process as above) used only for Phase 2's page-navigation/persistence/multi-page-export verification. Each page has distinct identifying text ("पहला पृष्ठ" / "दूसरा पृष्ठ" / "तीसरा पृष्ठ") so a navigation bug (wrong page rendered, edits leaking across pages) is visually obvious. Kept separate from `devanagari-fixture.pdf` rather than making that one multi-page, since AGENTS.md requires the _same_ fixture across every Phase 0/1/3 verification pass for comparable results — this fixture isn't part of that set.
+
+## Translation fixtures
+
+`translation-quality.json` is the deterministic semantic acceptance corpus for Hindi → English
+and English → Hindi. It records required meaning and fragments that must survive byte-for-byte,
+without requiring one exact model phrasing.
+
+`translation-bilingual-fixture.html` and its generated PDF contain separate Hindi and English
+source pages with tables, formal prose, names, dates, amounts, URLs, identifiers, conjuncts, and a
+reph. Generate and validate the PDF with the same headless-Chrome and Poppler commands documented
+above; this is an additional translation fixture and does not replace the canonical shaping fixture.
