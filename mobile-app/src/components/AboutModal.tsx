@@ -42,10 +42,10 @@ export function AboutModal({ visible, onClose }: Props) {
           </Text>
           <Text style={styles.sectionTitle}>Your data</Text>
           <Text style={styles.body}>
-            • PDFs you open stay on your device{'\n'}• On-device OCR uses Google ML Kit bundled
-            in the app (offline){'\n'}• Enhance with AI (optional) sends one page image to
-            Google&apos;s Gemini API using your own API key{'\n'}• Translate to EN (optional)
-            sends detected Hindi line text to Gemini using your own API key
+            • PDFs you open stay on your device{'\n'}• On-device OCR uses Google ML Kit bundled in
+            the app (offline){'\n'}• Enhance with AI (optional) sends one page image to
+            Google&apos;s Gemini API using your own API key{'\n'}• Translate to EN (optional) sends
+            detected Hindi line text to Gemini using your own API key
           </Text>
           <AppButton title="Privacy policy" small variant="secondary" onPress={openPrivacy} />
           <AppButton title="Close" small variant="ghost" onPress={onClose} />

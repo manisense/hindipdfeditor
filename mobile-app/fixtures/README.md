@@ -1,19 +1,19 @@
 # Test fixtures
 
-`devanagari-fixture.pdf` is the one fixed test fixture required by `AGENTS.md`'s testing section — use the *same* file for every Phase 0/1/3 verification pass instead of eyeballing different ad hoc text each time.
+`devanagari-fixture.pdf` is the one fixed test fixture required by `AGENTS.md`'s testing section — use the _same_ file for every Phase 0/1/3 verification pass instead of eyeballing different ad hoc text each time.
 
 ## What it contains
 
 Two sentences chosen to hit every shape category called out in spec Section 10 (Phase 0) and `AGENTS.md`:
 
-| Feature | Word | Detail |
-|---|---|---|
-| Conjunct | क्षेत्र | क्ष (क + ् + ष) |
-| Conjunct | ज्ञान | ज्ञ (ज + ् + ञ) |
-| Conjunct (bonus) | क्षेत्र, विद्यालय | त्र, द्य |
-| Reph | धर्म, सूर्य | र् |
-| Matra above baseline | क्षेत्र, में, रोशनी | े, ो |
-| Matra below baseline | गुरुजी, सूर्य | ु, ू |
+| Feature              | Word                | Detail          |
+| -------------------- | ------------------- | --------------- |
+| Conjunct             | क्षेत्र             | क्ष (क + ् + ष) |
+| Conjunct             | ज्ञान               | ज्ञ (ज + ् + ञ) |
+| Conjunct (bonus)     | क्षेत्र, विद्यालय   | त्र, द्य        |
+| Reph                 | धर्म, सूर्य         | र्              |
+| Matra above baseline | क्षेत्र, में, रोशनी | े, ो            |
+| Matra below baseline | गुरुजी, सूर्य       | ु, ू            |
 
 ## How it was generated
 
@@ -43,4 +43,4 @@ Extracted text round-trips correctly (real Unicode Devanagari, not garbled) and 
 
 ## `multipage-fixture.pdf`
 
-A separate, minimal 3-page fixture (`multipage-fixture.html` → `multipage-fixture.pdf`, same generation process as above) used only for Phase 2's page-navigation/persistence/multi-page-export verification. Each page has distinct identifying text ("पहला पृष्ठ" / "दूसरा पृष्ठ" / "तीसरा पृष्ठ") so a navigation bug (wrong page rendered, edits leaking across pages) is visually obvious. Kept separate from `devanagari-fixture.pdf` rather than making that one multi-page, since AGENTS.md requires the *same* fixture across every Phase 0/1/3 verification pass for comparable results — this fixture isn't part of that set.
+A separate, minimal 3-page fixture (`multipage-fixture.html` → `multipage-fixture.pdf`, same generation process as above) used only for Phase 2's page-navigation/persistence/multi-page-export verification. Each page has distinct identifying text ("पहला पृष्ठ" / "दूसरा पृष्ठ" / "तीसरा पृष्ठ") so a navigation bug (wrong page rendered, edits leaking across pages) is visually obvious. Kept separate from `devanagari-fixture.pdf` rather than making that one multi-page, since AGENTS.md requires the _same_ fixture across every Phase 0/1/3 verification pass for comparable results — this fixture isn't part of that set.

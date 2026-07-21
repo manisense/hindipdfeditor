@@ -1,7 +1,4 @@
-import {
-  containsDevanagari,
-  parseGeminiTranslateResponse,
-} from './geminiTranslate';
+import { containsDevanagari, parseGeminiTranslateResponse } from './geminiTranslate';
 
 describe('containsDevanagari', () => {
   it('detects Devanagari code points', () => {
