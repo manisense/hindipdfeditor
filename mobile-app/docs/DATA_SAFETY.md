@@ -14,19 +14,19 @@ Use these answers when filling out **Play Console → App content → Data safet
 
 | Field      | Value                                                         |
 | ---------- | ------------------------------------------------------------- |
-| Collected? | Only if user explicitly uses AI OCR                            |
-| Shared?    | Processed by our API and Google Gemini                         |
+| Collected? | Only if user explicitly uses AI OCR                           |
+| Shared?    | Processed by our API and Google Gemini                        |
 | Purpose    | App functionality (OCR)                                       |
 | Required?  | No — optional feature                                         |
 | Ephemeral? | Processed by Google per their policy; not stored by developer |
 
 ### Optional — Detected text lines
 
-| Field      | Value                                                    |
-| ---------- | -------------------------------------------------------- |
-| Collected? | Only if user explicitly uses Translate                    |
-| Shared?    | Processed by our API and Google Gemini                    |
-| Purpose    | Hindi ↔ English translation                              |
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Collected? | Only if user explicitly uses Translate |
+| Shared?    | Processed by our API and Google Gemini |
+| Purpose    | Hindi ↔ English translation            |
 
 ## Data NOT collected by developer
 

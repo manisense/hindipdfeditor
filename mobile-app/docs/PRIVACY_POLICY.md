@@ -39,10 +39,10 @@ You can use the full app without this feature; on-device OCR (ML Kit) works offl
 
 ## Permissions
 
-| Permission   | Why                                                   |
-| ------------ | ----------------------------------------------------- |
+| Permission   | Why                                                    |
+| ------------ | ------------------------------------------------------ |
 | **Internet** | Optional AI OCR/Translate and user-requested downloads |
-| **Vibrate**  | Standard system feedback (if used by the OS/keyboard) |
+| **Vibrate**  | Standard system feedback (if used by the OS/keyboard)  |
 
 The app uses the system document picker to open PDFs — it does **not** request broad storage access on modern Android.
 
