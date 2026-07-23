@@ -4,9 +4,9 @@ Use these answers when filling out **Play Console → App content → Data safet
 
 ## Overview
 
-- **Does your app collect or share user data?** Yes (only when user opts into Enhance with AI — data goes to Google, not to developer servers)
-- **Is all data encrypted in transit?** Yes (HTTPS to Gemini when AI feature is used)
-- **Can users request data deletion?** N/A for developer — no developer-hosted data; users delete local data by uninstalling
+- **Does your app collect or share user data?** Yes, only for user-triggered AI OCR or Translate.
+- **Is all data encrypted in transit?** Yes (HTTPS to the production API and Google Gemini).
+- **Can users request data deletion?** Content is processed transiently; users can contact support about anonymous quota metadata.
 
 ## Data types
 
@@ -14,19 +14,19 @@ Use these answers when filling out **Play Console → App content → Data safet
 
 | Field      | Value                                                         |
 | ---------- | ------------------------------------------------------------- |
-| Collected? | Only if user taps Enhance with AI                             |
-| Shared?    | Yes — with Google (Gemini API)                                |
+| Collected? | Only if user explicitly uses AI OCR                            |
+| Shared?    | Processed by our API and Google Gemini                         |
 | Purpose    | App functionality (OCR)                                       |
 | Required?  | No — optional feature                                         |
 | Ephemeral? | Processed by Google per their policy; not stored by developer |
 
-### Optional — Other (API key)
+### Optional — Detected text lines
 
 | Field      | Value                                                    |
 | ---------- | -------------------------------------------------------- |
-| Collected? | Stored locally on device only                            |
-| Shared?    | No (sent to Google only as auth header by user's action) |
-| Purpose    | App functionality                                        |
+| Collected? | Only if user explicitly uses Translate                    |
+| Shared?    | Processed by our API and Google Gemini                    |
+| Purpose    | Hindi ↔ English translation                              |
 
 ## Data NOT collected by developer
 
@@ -39,9 +39,9 @@ Use these answers when filling out **Play Console → App content → Data safet
 
 ## Security practices
 
-- Data encrypted in transit (TLS for Gemini)
+- Data encrypted in transit (TLS)
 - Users can use app fully offline without AI feature
-- No developer backend
+- AI credential is server-side only; content is not written to quota storage or content logs
 
 ## Public URLs
 

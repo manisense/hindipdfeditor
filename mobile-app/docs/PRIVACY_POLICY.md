@@ -1,17 +1,17 @@
 # Privacy Policy — Hindi PDF Editor
 
-**Last updated:** 7 July 2026
+**Last updated:** 23 July 2026
 **App:** Hindi PDF Editor (`com.hindipdfeditor.app`)
 **Developer:** Manisense
 **Public URL:** `https://hindipdfeditor.com/privacy/`
 
 ## Summary
 
-Hindi PDF Editor is a local-first Android app. You pick PDFs from your device, edit text, and export a new PDF. **We do not operate servers that receive your documents.** Everything below describes what happens on your phone and what optional third-party services you may choose to use.
+Hindi PDF Editor is a local-first Android app. You pick PDFs from your device, edit text, and export a new PDF. Core editing stays on your phone. Only content you explicitly submit to AI OCR or Translate is sent through our secured API to Google Gemini.
 
 ## Data we collect
 
-**We do not collect, store, or sell your personal data on our own servers.** The app has no analytics SDK, no advertising SDK, and no account system.
+We do not sell personal data. The app has no analytics SDK, advertising SDK, or account system. Our AI API processes submitted page images or detected lines transiently, and stores only an anonymous client hash plus daily document/page quota records. It does not log document content.
 
 ## Website analytics
 
@@ -24,16 +24,16 @@ When you use the app, the following stays on your device unless you explicitly e
 - PDF files you open (read-only; exports are new files)
 - Edits you make (text, masks, positions)
 - Rasterized page images used for editing and on-device OCR
-- Your Gemini API key (if you use Enhance with AI), stored in Android encrypted storage (`expo-secure-store`)
 
-## Optional: Enhance with AI
+## Optional AI OCR and Translate
 
-If you tap **Enhance with AI** and provide a Google Gemini API key:
+If you explicitly use **AI OCR** or **Translate**:
 
-- The **current page image** is sent to **Google's Gemini API** for text detection
-- This uses **your** API key and **your** Google account terms
-- We do not see or store your API key on any server we operate — it remains on your device
-- You can clear the key by reinstalling the app or removing it when prompted after an invalid key
+- AI OCR sends the current page image through `api.hindipdfeditor.com` to Google's Gemini API.
+- Translate sends detected source-language lines, not the whole PDF, through the same service.
+- The Gemini API credential is held only as a server secret and is never shipped in the app.
+- Gemini requests are made with response storage disabled. Google still processes submitted content under its applicable API terms and privacy practices.
+- Anonymous daily quota records expire after operational retention; document content is not stored in our quota database or content logs.
 
 You can use the full app without this feature; on-device OCR (ML Kit) works offline with no network call.
 
@@ -41,7 +41,7 @@ You can use the full app without this feature; on-device OCR (ML Kit) works offl
 
 | Permission   | Why                                                   |
 | ------------ | ----------------------------------------------------- |
-| **Internet** | Only for optional Enhance with AI (Gemini API)        |
+| **Internet** | Optional AI OCR/Translate and user-requested downloads |
 | **Vibrate**  | Standard system feedback (if used by the OS/keyboard) |
 
 The app uses the system document picker to open PDFs — it does **not** request broad storage access on modern Android.

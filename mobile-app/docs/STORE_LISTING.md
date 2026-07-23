@@ -22,7 +22,7 @@ Open, edit, mask, and export PDFs without internet. Your documents stay on your 
 Proper live shaping for Hindi text while you type. Exported PDFs use embedded Noto Devanagari fonts.
 
 **Optional AI enhancement**  
-For difficult scans, optionally use Enhance with AI (your own free Google Gemini API key) for higher-accuracy text detection. This is opt-in only — nothing is sent unless you enable it.
+For difficult scans, optionally use AI OCR through our secure service. Translate detected text from Hindi to English or English to Hindi without entering an API key. Both are opt-in only.
 
 **Export & share**  
 Save a new PDF with your changes and share it to WhatsApp, email, or any PDF viewer. Your original file is never overwritten.

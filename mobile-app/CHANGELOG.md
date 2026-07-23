@@ -12,6 +12,12 @@ All notable changes to this project are documented here, grouped by phase (see `
 - Added consent-gated proxy OCR plus Hindi → English and English → Hindi translation for either
   the current page or the whole document. Long OCR pages batch at the shared line limit and results
   remain tied to stable line IDs before becoming mask + Unicode overlays in Render & Print.
+- Replaced the web editor's API-key modal and in-browser Opus-MT download with the same secured API,
+  added Cloudflare Turnstile session verification, and exposed both translation directions. Removed
+  the unused Transformers.js dependency and its large runtime model path.
+- Updated in-app, website, privacy, terms, data-safety, store-listing, and machine-readable product
+  copy to disclose transient proxy/Gemini processing and anonymous quota metadata. ADR 0008 records
+  the credential, abuse-control, privacy, and Render & Print boundaries.
 - Added the production Cloudflare Worker API for anonymous Android/web sessions, both translation
   directions, consent-gated AI OCR, strict CORS, HMAC session tokens, per-minute rate limiting,
   D1 daily document/page quotas, kill switches, content-free metrics, and structured public errors.

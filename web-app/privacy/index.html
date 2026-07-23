@@ -60,7 +60,7 @@
           <p class="eyebrow">Legal</p>
           <h1>Privacy Policy</h1>
           <p>
-            Last updated: 12 July 2026. This policy explains what Hindi PDF
+            Last updated: 23 July 2026. This policy explains what Hindi PDF
             Editor processes on your phone, on the website, and what happens when
             you choose optional AI enhancement or web Translate.
           </p>
@@ -71,15 +71,17 @@
         <h2>Summary</h2>
         <p>
           Hindi PDF Editor is a local-first Android app. You pick PDFs from your
-          device, edit text, and export a new PDF. We do not operate developer
-          servers that receive or store your documents.
+          device, edit text, and export a new PDF. Core editing stays local.
+          Only content you explicitly submit to AI OCR or Translate is sent
+          through our secured API to Google Gemini.
         </p>
 
         <h2>Data We Collect</h2>
         <p>
-          We do not collect, store, sell, or use personal data on our own
-          servers. The app has no advertising SDK, no analytics SDK, and no
-          account system.
+          We do not sell personal data. The app has no advertising SDK,
+          analytics SDK, or account system. Our AI API transiently processes
+          content submitted by the user and stores only anonymous daily quota
+          records; it does not log document content.
         </p>
 
         <h2>Website Analytics</h2>
@@ -107,34 +109,29 @@
             Rasterized page images used for preview, editing, export, and
             on-device OCR.
           </li>
-          <li>
-            Your Gemini API key, if you use Enhance with AI, stored in Android
-            encrypted storage.
-          </li>
         </ul>
 
-        <h2>Optional Enhance With AI</h2>
+        <h2>Optional AI OCR and Translate</h2>
         <p>
-          If you tap Enhance with AI and provide a Google Gemini API key, the
-          current page image is sent to Google's Gemini API for text detection.
-          This is optional. You can use the core app without it.
+          AI OCR sends the selected page image, and Translate sends detected
+          source-language lines, through api.hindipdfeditor.com to Google's
+          Gemini API. Both actions are optional and require explicit user input.
         </p>
         <div class="content-card">
           <p>
-            When AI enhancement is used, processing is governed by Google's
-            applicable API terms and privacy practices. Hindi PDF Editor does
-            not receive or store your API key or documents on any
-            developer-operated server.
+            The Gemini credential is held only as a server secret and is never
+            shipped in the app or requested from users. Gemini response storage
+            is disabled. Submitted content is not written to our quota database
+            or content logs; Google processes it under applicable API terms and
+            privacy practices.
           </p>
         </div>
 
-        <h2>Web Translate (Hindi → English)</h2>
+        <h2>Web Translate (Hindi ↔ English)</h2>
         <p>
-          The browser Translate tool runs Helsinki-NLP Opus-MT entirely on your
-          device. Your PDF and detected text stay in the browser. The first use
-          may download a free translation model from Hugging Face; that download
-          is model weights only, not your document. The model is cached locally
-          afterward. No API key is required.
+          The browser tool supports both directions. It sends detected lines,
+          not the whole source PDF, through the secured AI API. No API key entry
+          or account is required. Export creates a new PDF.
         </p>
 
         <h2>Permissions</h2>
@@ -150,8 +147,7 @@
               <tr>
                 <td>Internet</td>
                 <td>
-                  Only for optional Enhance with AI requests to Gemini when you
-                  choose it.
+                  Optional AI OCR/Translate and user-requested downloads.
                 </td>
               </tr>
               <tr>

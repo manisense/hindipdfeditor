@@ -80,13 +80,12 @@
             traffic only — not for PDFs you open in the tools.
           </li>
           <li>
-            Optional AI enhancement sends the current page image to Google
-            Gemini only by user action.
+            Optional AI OCR sends the current page image through our secured API
+            to Google Gemini only by user action.
           </li>
           <li>
-            Web Translate runs Opus-MT in your browser; PDF content is not
-            uploaded. A translation model may be downloaded once from Hugging
-            Face.
+            Web and Android Translate send detected text lines through the same
+            secured API; both Hindi → English and English → Hindi are supported.
           </li>
         </ul>
 
@@ -104,17 +103,14 @@
             <tbody>
               <tr>
                 <td>PDF page image</td>
-                <td>Shared with Google only if Enhance with AI is used.</td>
+                <td>Processed by our API and Google only if AI OCR is used.</td>
                 <td>Text detection for difficult scans.</td>
                 <td>No.</td>
               </tr>
               <tr>
-                <td>Gemini API key</td>
-                <td>
-                  Stored locally on device; sent to Google as part of the API
-                  request.
-                </td>
-                <td>Authenticate optional AI enhancement.</td>
+                <td>Detected text lines</td>
+                <td>Processed by our API and Google only if Translate is used.</td>
+                <td>Hindi ↔ English translation.</td>
                 <td>No.</td>
               </tr>
               <tr>
@@ -124,13 +120,10 @@
                 <td>Yes for app functionality.</td>
               </tr>
               <tr>
-                <td>Opus-MT model weights (web Translate)</td>
-                <td>
-                  Downloaded once from Hugging Face to your browser cache; not
-                  your PDF.
-                </td>
-                <td>Free offline Hindi→English translation in the browser.</td>
-                <td>No — only if you use Translate on the website.</td>
+                <td>Anonymous usage metadata</td>
+                <td>Stored as a client hash plus daily document/page counts.</td>
+                <td>Abuse prevention and free quota enforcement.</td>
+                <td>No — only when an AI feature is used.</td>
               </tr>
             </tbody>
           </table>
@@ -139,10 +132,8 @@
         <h2>Security Practices</h2>
         <ul>
           <li>Network requests for optional AI use HTTPS.</li>
-          <li>
-            Gemini API key storage uses Android encrypted storage through Expo
-            SecureStore.
-          </li>
+          <li>The Gemini API credential is stored only as a server secret.</li>
+          <li>Document content is not written to quota storage or content logs.</li>
           <li>
             The original PDF is not overwritten; exports create a new file.
           </li>
