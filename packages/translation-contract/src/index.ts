@@ -47,6 +47,7 @@ export type TranslationLine = {
 export type TranslationRequest = {
   version: typeof AI_API_VERSION;
   requestId: string;
+  jobId: string;
   direction: TranslationDirection;
   lines: TranslationLine[];
 };
@@ -68,6 +69,18 @@ export type TranslationResponse = {
 export type OcrLineResult = {
   text: string;
   box_2d: [number, number, number, number];
+};
+
+export type OcrRequest = {
+  version: typeof AI_API_VERSION;
+  requestId: string;
+  jobId: string;
+  page: number;
+  consent: true;
+  imageBase64: string;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+  imagePxWidth: number;
+  imagePxHeight: number;
 };
 
 export type OcrResponse = {
@@ -98,6 +111,21 @@ export type AiErrorResponse = {
     message: string;
     retryable: boolean;
   };
+};
+
+export type AiClientPlatform = "android" | "web";
+
+export type SessionRequest = {
+  version: typeof AI_API_VERSION;
+  clientId: string;
+  platform: AiClientPlatform;
+  turnstileToken?: string;
+};
+
+export type SessionResponse = {
+  version: typeof AI_API_VERSION;
+  token: string;
+  expiresAt: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -149,6 +177,7 @@ export function parseTranslationRequest(value: unknown): TranslationRequest {
   if (value.version !== AI_API_VERSION)
     throw new Error("unsupported API version");
   const requestId = requiredString(value, "requestId");
+  const jobId = requiredString(value, "jobId");
   if (!isTranslationDirection(value.direction)) {
     throw new Error("direction must be hi-en or en-hi");
   }
@@ -199,6 +228,7 @@ export function parseTranslationRequest(value: unknown): TranslationRequest {
   return {
     version: AI_API_VERSION,
     requestId,
+    jobId,
     direction: value.direction,
     lines,
   };

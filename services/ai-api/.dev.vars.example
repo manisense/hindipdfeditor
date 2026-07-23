@@ -1,0 +1,3 @@
+GEMINI_API_KEY=replace-with-a-staging-auth-key
+SESSION_SIGNING_SECRET=replace-with-at-least-32-random-bytes
+TURNSTILE_SECRET_KEY=replace-with-a-turnstile-test-secret

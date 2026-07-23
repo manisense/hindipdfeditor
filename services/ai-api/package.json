@@ -1,0 +1,21 @@
+{
+  "name": "@hindipdfeditor/ai-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run test && npm run typecheck && wrangler deploy --dry-run --outdir .wrangler-dist"
+  },
+  "dependencies": {
+    "@hindipdfeditor/translation-contract": "file:../../packages/translation-contract"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "typescript": "latest",
+    "vitest": "latest",
+    "wrangler": "^4.110.0"
+  }
+}

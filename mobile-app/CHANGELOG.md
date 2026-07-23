@@ -6,6 +6,14 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ### Added — Phase 4.8 production translation foundation
 
+- Added the production Cloudflare Worker API for anonymous Android/web sessions, both translation
+  directions, consent-gated AI OCR, strict CORS, HMAC session tokens, per-minute rate limiting,
+  D1 daily document/page quotas, kill switches, content-free metrics, and structured public errors.
+- Kept the Gemini credential exclusively in a Worker secret and set Gemini interactions to
+  `store: false`. Translation output is matched by stable line ID, protected document fragments are
+  restored byte-for-byte, target-script output is validated, and malformed output fails closed.
+- Verified the Worker with 19 unit/integration tests, strict TypeScript, a local D1 migration, a
+  Wrangler production bundle dry-run, and a production-dependency audit with zero vulnerabilities.
 - Added a dependency-free `@hindipdfeditor/translation-contract` package shared by Android, web,
   and the planned Cloudflare Worker. Runtime validation now defines the two directions, stable line
   IDs, request/response limits, result states, capabilities, OCR boxes, and public error codes in

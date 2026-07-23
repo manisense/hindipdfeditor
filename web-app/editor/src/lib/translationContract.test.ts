@@ -13,6 +13,7 @@ describe("shared translation contract", () => {
       parseTranslationRequest({
         version: AI_API_VERSION,
         requestId: "web-request",
+        jobId: "web-job",
         direction: "en-hi",
         lines: [{ id: "line-1", page: 0, text: "Government of India" }],
       }).direction,

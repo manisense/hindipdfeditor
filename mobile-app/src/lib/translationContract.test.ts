@@ -11,6 +11,7 @@ import {
 const request: TranslationRequest = {
   version: AI_API_VERSION,
   requestId: 'request-1',
+  jobId: 'job-1',
   direction: 'hi-en',
   lines: [
     { id: 'page-0-line-1', page: 0, text: 'भारत सरकार' },
