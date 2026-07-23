@@ -18,6 +18,9 @@ All notable changes to this project are documented here, grouped by phase (see `
 - Updated in-app, website, privacy, terms, data-safety, store-listing, and machine-readable product
   copy to disclose transient proxy/Gemini processing and anonymous quota metadata. ADR 0008 records
   the credential, abuse-control, privacy, and Render & Print boundaries.
+- Upgraded web jsPDF to the patched 4.2.1 line, removed the vulnerable in-browser model dependency
+  tree, and scoped Expo's build-time `xcode` package to a patched UUID implementation. Production
+  dependency audits for the Worker, web editor, and Android app now report zero vulnerabilities.
 - Added the production Cloudflare Worker API for anonymous Android/web sessions, both translation
   directions, consent-gated AI OCR, strict CORS, HMAC session tokens, per-minute rate limiting,
   D1 daily document/page quotas, kill switches, content-free metrics, and structured public errors.
