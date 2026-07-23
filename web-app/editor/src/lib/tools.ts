@@ -1,4 +1,4 @@
-export type ToolId = 'edit' | 'merge' | 'split' | 'compress' | 'translate';
+export type ToolId = "edit" | "merge" | "split" | "compress" | "translate";
 
 export type ToolMeta = {
   id: ToolId;
@@ -6,51 +6,53 @@ export type ToolMeta = {
   shortTitle: string;
   description: string;
   accent: string;
-  category: 'edit' | 'organize' | 'optimize' | 'convert';
+  category: "edit" | "organize" | "optimize" | "convert";
 };
 
 export const TOOLS: ToolMeta[] = [
   {
-    id: 'edit',
-    title: 'Edit Hindi PDF',
-    shortTitle: 'Edit PDF',
+    id: "edit",
+    title: "Edit Hindi PDF",
+    shortTitle: "Edit PDF",
     description:
-      'Tap detected Hindi or English text to replace it, add new overlays, or erase burned-in text — then export a new PDF.',
-    accent: '#1843dd',
-    category: 'edit',
+      "Tap detected Hindi or English text to replace it, add new overlays, or erase burned-in text — then export a new PDF.",
+    accent: "#1843dd",
+    category: "edit",
   },
   {
-    id: 'translate',
-    title: 'Translate Hindi to English',
-    shortTitle: 'Translate',
+    id: "translate",
+    title: "Translate Hindi ↔ English",
+    shortTitle: "Translate",
     description:
-      'Detect Hindi text and translate it to English free in your browser (Opus-MT) — no API key — then download a new PDF.',
-    accent: '#01873e',
-    category: 'convert',
+      "Translate detected Hindi or English text securely in either direction, then download a new PDF.",
+    accent: "#01873e",
+    category: "convert",
   },
   {
-    id: 'merge',
-    title: 'Merge PDF',
-    shortTitle: 'Merge',
-    description: 'Combine multiple PDFs into one file. Runs entirely in your browser.',
-    accent: '#5b4bd6',
-    category: 'organize',
+    id: "merge",
+    title: "Merge PDF",
+    shortTitle: "Merge",
+    description:
+      "Combine multiple PDFs into one file. Runs entirely in your browser.",
+    accent: "#5b4bd6",
+    category: "organize",
   },
   {
-    id: 'split',
-    title: 'Split PDF',
-    shortTitle: 'Split',
-    description: 'Extract page ranges into a new PDF without uploading to a server.',
-    accent: '#12a551',
-    category: 'organize',
+    id: "split",
+    title: "Split PDF",
+    shortTitle: "Split",
+    description:
+      "Extract page ranges into a new PDF without uploading to a server.",
+    accent: "#12a551",
+    category: "organize",
   },
   {
-    id: 'compress',
-    title: 'Compress PDF',
-    shortTitle: 'Compress',
-    description: 'Shrink a PDF by re-encoding page images at a lower quality.',
-    accent: '#b58400',
-    category: 'optimize',
+    id: "compress",
+    title: "Compress PDF",
+    shortTitle: "Compress",
+    description: "Shrink a PDF by re-encoding page images at a lower quality.",
+    accent: "#b58400",
+    category: "optimize",
   },
 ];
 
@@ -65,22 +67,22 @@ export function toolHref(id: ToolId): string {
 
 export function readToolIdFromLocation(): ToolId | null {
   const params = new URLSearchParams(window.location.search);
-  const raw = params.get('tool');
+  const raw = params.get("tool");
   if (
-    raw === 'edit' ||
-    raw === 'merge' ||
-    raw === 'split' ||
-    raw === 'compress' ||
-    raw === 'translate'
+    raw === "edit" ||
+    raw === "merge" ||
+    raw === "split" ||
+    raw === "compress" ||
+    raw === "translate"
   ) {
     return raw;
   }
   return null;
 }
 
-export function readEditModeFromLocation(): 'edit' | 'addText' | 'erase' {
+export function readEditModeFromLocation(): "edit" | "addText" | "erase" {
   const params = new URLSearchParams(window.location.search);
-  const mode = params.get('mode');
-  if (mode === 'addText' || mode === 'erase' || mode === 'edit') return mode;
-  return 'edit';
+  const mode = params.get("mode");
+  if (mode === "addText" || mode === "erase" || mode === "edit") return mode;
+  return "edit";
 }

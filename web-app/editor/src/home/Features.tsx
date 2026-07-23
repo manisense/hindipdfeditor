@@ -141,9 +141,9 @@ export function Features() {
 
           <Card className="md:col-span-2" href={toolHref('translate')}>
             <Ico icon={Languages} tone="bg-accent-tint text-accent" />
-            <h3 className="text-xl font-bold text-ink">Translate to English</h3>
+            <h3 className="text-xl font-bold text-ink">Hindi ↔ English</h3>
             <p className="mt-2 text-[15px] text-muted">
-              Turn Hindi passages into English free in your browser — no account or API key.
+              Translate detected Hindi or English through our secure AI service — no API key entry.
             </p>
             <TranslateVisual />
           </Card>

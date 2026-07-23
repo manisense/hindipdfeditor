@@ -18,7 +18,7 @@ const tools = [
   },
   {
     icon: Languages,
-    name: 'Translate to English',
+    name: 'Hindi ↔ English',
     detail: 'Free in your browser',
     tone: 'bg-accent-tint text-accent',
     href: toolHref('translate'),

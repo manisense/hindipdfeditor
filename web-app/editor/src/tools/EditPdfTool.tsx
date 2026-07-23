@@ -1,21 +1,26 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { AppButton } from '../components/AppButton';
-import { DropZone } from '../components/DropZone';
-import { EditableTextOverlay } from '../components/EditableTextOverlay';
-import { EditToolbar } from '../components/EditToolbar';
-import { LegacyFontWarning } from '../components/LegacyFontWarning';
-import { MaskOverlay, type DrawnMaskRect } from '../components/MaskOverlay';
-import { OcrHighlightLayer } from '../components/OcrHighlightLayer';
-import { PdfPageViewer } from '../components/PdfPageViewer';
-import { ToolShell } from '../components/ToolShell';
-import { clearGeminiApiKey, getGeminiApiKey, setGeminiApiKey } from '../lib/apiKeyStore';
-import { ptSizeToImagePx, ptToImagePx } from '../lib/coordinateMath';
-import { downloadPdfBlob, exportPdf } from '../lib/exportPdf';
-import { ensureFontsLoaded, getFontBase64, type DevanagariFontFamily } from '../lib/fontAsset';
-import { detectLegacyFonts } from '../lib/legacyFontDetector';
-import { detectTextLines, detectTextLinesWithGemini } from '../lib/ocr';
-import { findOcrTargetAt, findTextEditAt } from '../lib/ocrHitTest';
+import { AppButton } from "../components/AppButton";
+import { DropZone } from "../components/DropZone";
+import { EditableTextOverlay } from "../components/EditableTextOverlay";
+import { EditToolbar } from "../components/EditToolbar";
+import { LegacyFontWarning } from "../components/LegacyFontWarning";
+import { MaskOverlay, type DrawnMaskRect } from "../components/MaskOverlay";
+import { OcrHighlightLayer } from "../components/OcrHighlightLayer";
+import { PdfPageViewer } from "../components/PdfPageViewer";
+import { ToolShell } from "../components/ToolShell";
+import { TurnstileWidget } from "../components/TurnstileWidget";
+import { aiApiClient } from "../lib/aiApiClient";
+import { ptSizeToImagePx, ptToImagePx } from "../lib/coordinateMath";
+import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
+import {
+  ensureFontsLoaded,
+  getFontBase64,
+  type DevanagariFontFamily,
+} from "../lib/fontAsset";
+import { detectLegacyFonts } from "../lib/legacyFontDetector";
+import { detectTextLines, detectTextLinesWithGemini } from "../lib/ocr";
+import { findOcrTargetAt, findTextEditAt } from "../lib/ocrHitTest";
 import {
   getPageCount,
   getPdfBase64,
@@ -23,8 +28,8 @@ import {
   sampleAverageColor,
   sampleTextColor,
   setPdfBytes,
-} from '../lib/pdfToImages';
-import { getTool, readEditModeFromLocation } from '../lib/tools';
+} from "../lib/pdfToImages";
+import { getTool, readEditModeFromLocation } from "../lib/tools";
 import {
   useEditStore,
   type DocumentState,
@@ -32,12 +37,12 @@ import {
   type OcrLine,
   type PageState,
   type TextEdit,
-} from '../state/editStore';
-import './EditPdfTool.css';
+} from "../state/editStore";
+import "./EditPdfTool.css";
 
-const tool = getTool('edit')!;
+const tool = getTool("edit")!;
 
-const UNKNOWN_ENCODING_FONT_NAME = 'unknown (font inspection failed)';
+const UNKNOWN_ENCODING_FONT_NAME = "unknown (font inspection failed)";
 const DEFAULT_FONT_SIZE_PT = 14;
 const RASTER_SCALE = 2;
 const MASK_SAMPLE_MARGIN_PX = 16;
@@ -48,16 +53,16 @@ const OCR_MASK_PAD_TOP_RATIO = 0.35;
 const OCR_TEXT_WIDTH_SLACK_RATIO = 1.25;
 const OCR_TEXT_BASELINE_NUDGE_RATIO = 0.06;
 
-type EditMode = 'edit' | 'addText' | 'erase';
-type OcrStatusByPage = Record<number, 'running' | 'done' | 'failed'>;
+type EditMode = "edit" | "addText" | "erase";
+type OcrStatusByPage = Record<number, "running" | "done" | "failed">;
 type EditPairing = { maskId?: string; ocrLine?: OcrLine };
 
 type Status =
-  | { state: 'idle' }
-  | { state: 'opening' }
-  | { state: 'saving' }
-  | { state: 'saved'; filename: string }
-  | { state: 'error'; message: string };
+  | { state: "idle" }
+  | { state: "opening" }
+  | { state: "saving" }
+  | { state: "saved"; filename: string }
+  | { state: "error"; message: string };
 
 async function detectLegacyFontWarnings(
   pageCount: number,
@@ -67,7 +72,7 @@ async function detectLegacyFontWarnings(
     return await detectLegacyFonts(base64);
   } catch (error) {
     console.warn(
-      'legacyFontDetector failed; treating every page as unknown-encoding (fail closed)',
+      "legacyFontDetector failed; treating every page as unknown-encoding (fail closed)",
       error,
     );
     return Array.from({ length: pageCount }, (_, page) => ({
@@ -78,7 +83,7 @@ async function detectLegacyFontWarnings(
 }
 
 export function EditPdfTool() {
-  const [status, setStatus] = useState<Status>({ state: 'idle' });
+  const [status, setStatus] = useState<Status>({ state: "idle" });
   const [focusedEditId, setFocusedEditId] = useState<string | null>(null);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [selectAllEditId, setSelectAllEditId] = useState<string | null>(null);
@@ -86,11 +91,17 @@ export function EditPdfTool() {
   const ocrAttemptedPagesRef = useRef(new Set<number>());
   const editPairingsRef = useRef(new Map<string, EditPairing>());
   const [enhancingPage, setEnhancingPage] = useState<number | null>(null);
-  const [apiKeyPromptVisible, setApiKeyPromptVisible] = useState(false);
-  const [apiKeyDraft, setApiKeyDraft] = useState('');
-  const [editMode, setEditMode] = useState<EditMode>(() => readEditModeFromLocation());
+  const [aiConsentVisible, setAiConsentVisible] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const aiJobIdRef = useRef(`document-${crypto.randomUUID()}`);
+  const [editMode, setEditMode] = useState<EditMode>(() =>
+    readEditModeFromLocation(),
+  );
   const [pageZoom, setPageZoom] = useState(1);
-  const editPinchStartRef = useRef<{ fontSizePt: number; widthPt?: number } | null>(null);
+  const editPinchStartRef = useRef<{
+    fontSizePt: number;
+    widthPt?: number;
+  } | null>(null);
   const closeDocument = useEditStore((s) => s.closeDocument);
 
   const document = useEditStore((s) => s.document);
@@ -110,21 +121,21 @@ export function EditPdfTool() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
+      if (event.key !== "Escape") return;
       setFocusedEditId(null);
-      setEditMode('edit');
+      setEditMode("edit");
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
   const exitToolMode = () => {
     setFocusedEditId(null);
-    setEditMode('edit');
+    setEditMode("edit");
   };
 
   const openPdfFile = async (file: File) => {
-    setStatus({ state: 'opening' });
+    setStatus({ state: "opening" });
     try {
       const buffer = await file.arrayBuffer();
       const bytes = new Uint8Array(buffer);
@@ -158,14 +169,15 @@ export function EditPdfTool() {
       setFocusedEditId(null);
       setSelectAllEditId(null);
       ocrAttemptedPagesRef.current.clear();
+      aiJobIdRef.current = `document-${crypto.randomUUID()}`;
       editPairingsRef.current.clear();
       setOcrStatusByPage({});
-      setEditMode('edit');
+      setEditMode("edit");
       ensureOcrForAllPages(newDocument);
-      setStatus({ state: 'idle' });
+      setStatus({ state: "idle" });
     } catch (error) {
       setStatus({
-        state: 'error',
+        state: "error",
         message: error instanceof Error ? error.message : String(error),
       });
     }
@@ -173,7 +185,9 @@ export function EditPdfTool() {
 
   const page = document?.pages[currentPageIndex];
   const focusedEdit =
-    page?.edits.find((e): e is TextEdit => e.type === 'text' && e.id === focusedEditId) ?? null;
+    page?.edits.find(
+      (e): e is TextEdit => e.type === "text" && e.id === focusedEditId,
+    ) ?? null;
 
   const currentPageLegacyFontNames = useMemo(
     () => [
@@ -194,17 +208,19 @@ export function EditPdfTool() {
     if (ocrAttemptedPagesRef.current.has(pageIndex)) return;
     ocrAttemptedPagesRef.current.add(pageIndex);
 
-    setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'running' }));
+    setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "running" }));
     detectTextLines(pageState)
       .then((lines) => {
-        if (useEditStore.getState().document?.sourceName !== doc.sourceName) return;
+        if (useEditStore.getState().document?.sourceName !== doc.sourceName)
+          return;
         setOcrLines(pageIndex, lines);
-        setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'done' }));
+        setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "done" }));
       })
       .catch((error) => {
         console.warn(`OCR failed on page ${pageIndex}`, error);
-        if (useEditStore.getState().document?.sourceName !== doc.sourceName) return;
-        setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'failed' }));
+        if (useEditStore.getState().document?.sourceName !== doc.sourceName)
+          return;
+        setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "failed" }));
       });
   };
 
@@ -229,10 +245,15 @@ export function EditPdfTool() {
   const handleEditDone = () => setFocusedEditId(null);
 
   const handleEditPinchStart = (editId: string) => {
-    const edit = page?.edits.find((e): e is TextEdit => e.type === 'text' && e.id === editId);
+    const edit = page?.edits.find(
+      (e): e is TextEdit => e.type === "text" && e.id === editId,
+    );
     if (!edit) return;
     checkpoint();
-    editPinchStartRef.current = { fontSizePt: edit.fontSizePt, widthPt: edit.widthPt };
+    editPinchStartRef.current = {
+      fontSizePt: edit.fontSizePt,
+      widthPt: edit.widthPt,
+    };
   };
 
   const handleEditPinchResize = (editId: string, scale: number) => {
@@ -241,7 +262,9 @@ export function EditPdfTool() {
     const fontSizePt = Math.min(72, Math.max(6, start.fontSizePt * scale));
     updateTextEdit(currentPageIndex, editId, {
       fontSizePt,
-      ...(start.widthPt !== undefined ? { widthPt: start.widthPt * scale } : {}),
+      ...(start.widthPt !== undefined
+        ? { widthPt: start.widthPt * scale }
+        : {}),
     });
   };
 
@@ -254,45 +277,38 @@ export function EditPdfTool() {
     setFocusedEditId(null);
   };
 
-  const runEnhanceWithAi = async (apiKey: string) => {
+  const runEnhanceWithAi = async () => {
     if (!document || !page || editingBlocked || enhancingPage !== null) return;
     const pageIndex = currentPageIndex;
     const sourceName = document.sourceName;
     setEnhancingPage(pageIndex);
     try {
-      const lines = await detectTextLinesWithGemini(page, apiKey);
+      const lines = await detectTextLinesWithGemini(
+        page,
+        aiJobIdRef.current,
+        pageIndex,
+      );
       if (useEditStore.getState().document?.sourceName !== sourceName) return;
       setOcrLines(pageIndex, lines);
-      setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'done' }));
+      setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "done" }));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      if (/api key/i.test(message)) {
-        await clearGeminiApiKey().catch(() => {});
-      }
       window.alert(`Enhance with AI failed: ${message}`);
     } finally {
       setEnhancingPage(null);
     }
   };
 
-  const handleEnhancePressed = async () => {
-    const storedKey = await getGeminiApiKey().catch(() => null);
-    if (storedKey) {
-      await runEnhanceWithAi(storedKey);
-    } else {
-      setApiKeyDraft('');
-      setApiKeyPromptVisible(true);
-    }
+  const handleEnhancePressed = () => {
+    setTurnstileToken(null);
+    setAiConsentVisible(true);
   };
 
-  const handleApiKeySubmitted = async () => {
-    const key = apiKeyDraft.trim();
-    if (key === '') return;
-    setApiKeyPromptVisible(false);
-    await setGeminiApiKey(key).catch((error) => {
-      console.warn('Failed to persist Gemini API key', error);
-    });
-    await runEnhanceWithAi(key);
+  const confirmAiOcr = () => {
+    if (!turnstileToken) return;
+    aiApiClient.setTurnstileTokenProvider(() => turnstileToken);
+    setAiConsentVisible(false);
+    void runEnhanceWithAi();
   };
 
   const maskAndReplaceRegion = async (
@@ -305,7 +321,7 @@ export function EditPdfTool() {
       widthPt?: number;
       color?: string;
       fontFamily?: DevanagariFontFamily;
-      fontWeight?: 'normal' | 'bold';
+      fontWeight?: "normal" | "bold";
     },
     consumedOcrLine?: OcrLine,
   ) => {
@@ -335,7 +351,7 @@ export function EditPdfTool() {
       page.widthPt,
     );
 
-    let color = '#ffffff';
+    let color = "#ffffff";
     try {
       color = await sampleAverageColor(
         page.backgroundImageUri,
@@ -346,7 +362,7 @@ export function EditPdfTool() {
         MASK_SAMPLE_MARGIN_PX,
       );
     } catch (error) {
-      console.warn('sampleAverageColor failed, falling back to white', error);
+      console.warn("sampleAverageColor failed, falling back to white", error);
     }
 
     const maskEdit = addMaskEdit(currentPageIndex, {
@@ -362,8 +378,8 @@ export function EditPdfTool() {
       yPt: text.yPt,
       fontSizePt: text.fontSizePt,
       text: text.prefill,
-      color: text.color ?? '#111111',
-      fontFamily: text.fontFamily ?? 'NotoSansDevanagari',
+      color: text.color ?? "#111111",
+      fontFamily: text.fontFamily ?? "NotoSansDevanagari",
       ...(text.fontWeight ? { fontWeight: text.fontWeight } : {}),
       ...(text.widthPt !== undefined ? { widthPt: text.widthPt } : {}),
     });
@@ -388,10 +404,12 @@ export function EditPdfTool() {
   };
 
   const handleTap = async (xPt: number, yPt: number) => {
-    if (editingBlocked || editMode === 'erase') return;
+    if (editingBlocked || editMode === "erase") return;
     if (!page) return;
 
-    const textEdits = page.edits.filter((e): e is TextEdit => e.type === 'text');
+    const textEdits = page.edits.filter(
+      (e): e is TextEdit => e.type === "text",
+    );
     const hitEdit = findTextEditAt(textEdits, xPt, yPt);
 
     if (focusedEditId) {
@@ -412,7 +430,10 @@ export function EditPdfTool() {
         currentPageIndex,
         page.ocrLines.filter((l) => l.id !== hitLine.id),
       );
-      const fontSizePt = Math.max(MIN_OCR_FONT_SIZE_PT, hitLine.hPt * OCR_FONT_SIZE_RATIO);
+      const fontSizePt = Math.max(
+        MIN_OCR_FONT_SIZE_PT,
+        hitLine.hPt * OCR_FONT_SIZE_RATIO,
+      );
       const textY = hitLine.yPt + hitLine.hPt * OCR_TEXT_BASELINE_NUDGE_RATIO;
       const { x: sampleXPx, y: sampleYPx } = ptToImagePx(
         hitLine.xPt,
@@ -426,7 +447,7 @@ export function EditPdfTool() {
         page.imagePxWidth,
         page.widthPt,
       );
-      let textColor = '#111111';
+      let textColor = "#111111";
       try {
         textColor = await sampleTextColor(
           page.backgroundImageUri,
@@ -436,9 +457,10 @@ export function EditPdfTool() {
           Math.round(sampleHPx),
         );
       } catch (error) {
-        console.warn('sampleTextColor failed, falling back to black', error);
+        console.warn("sampleTextColor failed, falling back to black", error);
       }
-      const fontWeight: 'normal' | 'bold' = fontSizePt >= 13 ? 'bold' : 'normal';
+      const fontWeight: "normal" | "bold" =
+        fontSizePt >= 13 ? "bold" : "normal";
       const padTop = hitLine.hPt * OCR_MASK_PAD_TOP_RATIO;
       await maskAndReplaceRegion(
         {
@@ -461,21 +483,21 @@ export function EditPdfTool() {
       return;
     }
 
-    if (editMode !== 'addText') {
+    if (editMode !== "addText") {
       // Empty click in Edit mode exits any transient tool state.
-      if (editMode !== 'edit') setEditMode('edit');
+      if (editMode !== "edit") setEditMode("edit");
       return;
     }
-    if (ocrStatusByPage[currentPageIndex] === 'running') return;
+    if (ocrStatusByPage[currentPageIndex] === "running") return;
 
     checkpoint();
     const edit = addTextEdit(currentPageIndex, {
       xPt,
       yPt,
       fontSizePt: DEFAULT_FONT_SIZE_PT,
-      text: '',
-      color: '#111111',
-      fontFamily: 'NotoSansDevanagari',
+      text: "",
+      color: "#111111",
+      fontFamily: "NotoSansDevanagari",
     });
     setFocusedEditId(edit.id);
   };
@@ -493,32 +515,32 @@ export function EditPdfTool() {
   };
 
   const handleMaskDrawn = async (rect: DrawnMaskRect) => {
-    if (!page || editingBlocked || editMode !== 'erase') return;
+    if (!page || editingBlocked || editMode !== "erase") return;
     checkpoint();
     await maskAndReplaceRegion(rect, {
       xPt: rect.xPt,
       yPt: rect.yPt,
-      prefill: '',
+      prefill: "",
       fontSizePt: DEFAULT_FONT_SIZE_PT,
     });
   };
 
   const saveAndExport = async () => {
     if (!document) return;
-    setStatus({ state: 'saving' });
+    setStatus({ state: "saving" });
     try {
       const fontBase64ByFamily = {
-        NotoSansDevanagari: await getFontBase64('NotoSansDevanagari'),
-        NotoSerifDevanagari: await getFontBase64('NotoSerifDevanagari'),
+        NotoSansDevanagari: await getFontBase64("NotoSansDevanagari"),
+        NotoSerifDevanagari: await getFontBase64("NotoSerifDevanagari"),
       };
       const blob = await exportPdf(document, fontBase64ByFamily);
-      const baseName = document.sourceName.replace(/\.pdf$/i, '') || 'edited';
+      const baseName = document.sourceName.replace(/\.pdf$/i, "") || "edited";
       const filename = `${baseName}-edited.pdf`;
       downloadPdfBlob(blob, filename);
-      setStatus({ state: 'saved', filename });
+      setStatus({ state: "saved", filename });
     } catch (error) {
       setStatus({
-        state: 'error',
+        state: "error",
         message: error instanceof Error ? error.message : String(error),
       });
     }
@@ -526,29 +548,29 @@ export function EditPdfTool() {
 
   const ocrStatus = ocrStatusByPage[currentPageIndex];
   const ocrReadyCount = document
-    ? Object.values(ocrStatusByPage).filter((s) => s === 'done').length
+    ? Object.values(ocrStatusByPage).filter((s) => s === "done").length
     : 0;
   const zoomHint =
     pageZoom > 1.01
       ? ` Ctrl+scroll or pinch to zoom (${Math.round(pageZoom * 100)}%).`
-      : ' Pinch or Ctrl+scroll to zoom.';
+      : " Pinch or Ctrl+scroll to zoom.";
   const hintText = editingBlocked
-    ? 'Editing is disabled on this page — see the warning above.'
-    : editMode === 'erase'
+    ? "Editing is disabled on this page — see the warning above."
+    : editMode === "erase"
       ? `Erase mode — drag a box over text to replace. Click without dragging, click outside the page, or press Esc to cancel.${zoomHint}`
-      : editMode === 'addText'
-        ? ocrStatus === 'running'
+      : editMode === "addText"
+        ? ocrStatus === "running"
           ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
           : `Add Text — click the page to place text. Click outside the page or press Esc to cancel.${zoomHint}`
-        : ocrStatus === 'running'
+        : ocrStatus === "running"
           ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
-            : ocrStatus === 'failed'
-              ? `Could not detect text automatically — use Erase box or Add text. Press Esc to clear selection.${zoomHint}`
-              : (page?.ocrLines.length ?? 0) === 0
-                ? `No tappable text found yet — try Enhance with AI, Erase box, or Add text.${zoomHint}`
-                : `Edit text — click a highlighted line to change it. Press Esc to finish.${zoomHint}`;
+          : ocrStatus === "failed"
+            ? `Could not detect text automatically — use Erase box or Add text. Press Esc to clear selection.${zoomHint}`
+            : (page?.ocrLines.length ?? 0) === 0
+              ? `No tappable text found yet — try Enhance with AI, Erase box, or Add text.${zoomHint}`
+              : `Edit text — click a highlighted line to change it. Press Esc to finish.${zoomHint}`;
 
-  const step = status.state === 'saved' ? 3 : document ? 2 : 1;
+  const step = status.state === "saved" ? 3 : document ? 2 : 1;
 
   const handleCloseDocument = () => {
     closeDocument();
@@ -557,16 +579,20 @@ export function EditPdfTool() {
     ocrAttemptedPagesRef.current.clear();
     editPairingsRef.current.clear();
     setOcrStatusByPage({});
-    setStatus({ state: 'idle' });
+    setStatus({ state: "idle" });
   };
 
   return (
     <ToolShell
       tool={tool}
       steps={[
-        { label: 'Select PDF', active: step === 1, done: step > 1 },
-        { label: 'Edit', active: step === 2, done: step > 2 },
-        { label: 'Download', active: step === 3, done: status.state === 'saved' },
+        { label: "Select PDF", active: step === 1, done: step > 1 },
+        { label: "Edit", active: step === 2, done: step > 2 },
+        {
+          label: "Download",
+          active: step === 3,
+          done: status.state === "saved",
+        },
       ]}
       actions={
         document ? (
@@ -575,20 +601,22 @@ export function EditPdfTool() {
             small
             variant="secondary"
             onClick={handleCloseDocument}
-            disabled={status.state === 'opening' || status.state === 'saving'}
+            disabled={status.state === "opening" || status.state === "saving"}
           />
         ) : null
       }
     >
-      {status.state === 'opening' && (
+      {status.state === "opening" && (
         <div className="app__centered app__fill">
           <div className="app__spinner" />
           <p className="app__progress">Opening PDF…</p>
-          <p className="app__progress-sub">Rendering pages and detecting text</p>
+          <p className="app__progress-sub">
+            Rendering pages and detecting text
+          </p>
         </div>
       )}
 
-      {status.state !== 'opening' && !document && (
+      {status.state !== "opening" && !document && (
         <div className="app__centered app__fill app__landing">
           <DropZone
             accent={tool.accent}
@@ -596,23 +624,29 @@ export function EditPdfTool() {
             subtitle="Open a PDF in your browser. Tap detected text to edit, add overlays, or erase burned-in text. Your file stays on this device."
             buttonLabel="Select PDF"
             onFiles={(files) => void openPdfFile(files[0])}
-            disabled={status.state === 'saving'}
+            disabled={status.state === "saving"}
           />
-          {status.state === 'error' && (
-            <div className="app__status app__status--error">{status.message}</div>
+          {status.state === "error" && (
+            <div className="app__status app__status--error">
+              {status.message}
+            </div>
           )}
         </div>
       )}
 
-      {status.state !== 'opening' && document && page && (
+      {status.state !== "opening" && document && page && (
         <main
           className="app__content"
           onMouseDown={(event) => {
             const target = event.target as HTMLElement;
-            if (target.closest('.app__page-card, .app__toolbar-card, .edit-toolbar, .app__modal')) {
+            if (
+              target.closest(
+                ".app__page-card, .app__toolbar-card, .edit-toolbar, .app__modal",
+              )
+            ) {
               return;
             }
-            if (editMode !== 'edit' || focusedEditId) {
+            if (editMode !== "edit" || focusedEditId) {
               exitToolMode();
             }
           }}
@@ -643,62 +677,80 @@ export function EditPdfTool() {
                 <span>1 page</span>
               )}
               <span className="app__filename">{document.sourceName}</span>
-              <AppButton title="↩ Undo" small variant="ghost" onClick={handleUndo} disabled={!canUndo} />
+              <AppButton
+                title="↩ Undo"
+                small
+                variant="ghost"
+                onClick={handleUndo}
+                disabled={!canUndo}
+              />
             </div>
             <div className="app__toolbar-row">
               <AppButton
-                title={enhancingPage === currentPageIndex ? 'Enhancing…' : '✨ Enhance with AI'}
+                title={
+                  enhancingPage === currentPageIndex
+                    ? "Enhancing…"
+                    : "✨ Enhance with AI"
+                }
                 small
                 variant="secondary"
                 onClick={() => void handleEnhancePressed()}
-                disabled={editingBlocked || enhancingPage !== null || ocrStatus === 'running'}
+                disabled={
+                  editingBlocked ||
+                  enhancingPage !== null ||
+                  ocrStatus === "running"
+                }
               />
             </div>
             <div className="app__toolbar-row">
               <AppButton
                 title="Edit text"
                 small
-                variant={editMode === 'edit' ? 'primary' : 'secondary'}
-                onClick={() => selectEditMode('edit')}
+                variant={editMode === "edit" ? "primary" : "secondary"}
+                onClick={() => selectEditMode("edit")}
                 disabled={editingBlocked}
               />
               <AppButton
                 title="+ Add text"
                 small
-                variant={editMode === 'addText' ? 'primary' : 'secondary'}
-                onClick={() => selectEditMode('addText')}
+                variant={editMode === "addText" ? "primary" : "secondary"}
+                onClick={() => selectEditMode("addText")}
                 disabled={editingBlocked}
               />
               <AppButton
                 title="Erase box"
                 small
-                variant={editMode === 'erase' ? 'primary' : 'secondary'}
-                onClick={() => selectEditMode('erase')}
+                variant={editMode === "erase" ? "primary" : "secondary"}
+                onClick={() => selectEditMode("erase")}
                 disabled={editingBlocked}
               />
             </div>
             <p className="app__hint">{hintText}</p>
           </section>
 
-          {editingBlocked && <LegacyFontWarning fontNames={currentPageLegacyFontNames} />}
+          {editingBlocked && (
+            <LegacyFontWarning fontNames={currentPageLegacyFontNames} />
+          )}
 
           {focusedEdit && (
             <EditToolbar
               fontSizePt={focusedEdit.fontSizePt}
               fontFamily={
-                focusedEdit.fontFamily === 'NotoSerifDevanagari'
-                  ? 'NotoSerifDevanagari'
-                  : 'NotoSansDevanagari'
+                focusedEdit.fontFamily === "NotoSerifDevanagari"
+                  ? "NotoSerifDevanagari"
+                  : "NotoSansDevanagari"
               }
               color={focusedEdit.color}
-              fontWeight={focusedEdit.fontWeight === 'bold' ? 'bold' : 'normal'}
+              fontWeight={focusedEdit.fontWeight === "bold" ? "bold" : "normal"}
               onFontSizeChange={(fontSizePt) =>
                 updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
               }
               onFontFamilyChange={(fontFamily) =>
                 updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily })
               }
-              onColorChange={(color) => updateTextEdit(currentPageIndex, focusedEdit.id, { color })}
+              onColorChange={(color) =>
+                updateTextEdit(currentPageIndex, focusedEdit.id, { color })
+              }
               onFontWeightChange={(fontWeight) =>
                 updateTextEdit(currentPageIndex, focusedEdit.id, { fontWeight })
               }
@@ -712,8 +764,8 @@ export function EditPdfTool() {
               key={page.pageIndex}
               page={page}
               onTap={(xPt, yPt) => void handleTap(xPt, yPt)}
-              disablePress={editingBlocked || editMode === 'erase'}
-              focusedEditId={editMode === 'erase' ? null : focusedEditId}
+              disablePress={editingBlocked || editMode === "erase"}
+              focusedEditId={editMode === "erase" ? null : focusedEditId}
               onEditPinchStart={handleEditPinchStart}
               onEditPinchResize={handleEditPinchResize}
               onEditPinchEnd={handleEditPinchEnd}
@@ -726,21 +778,23 @@ export function EditPdfTool() {
                     pageWidthPt={page.widthPt}
                     visible={
                       !editingBlocked &&
-                      editMode !== 'erase' &&
+                      editMode !== "erase" &&
                       !focusedEditId &&
-                      ocrStatus === 'done'
+                      ocrStatus === "done"
                     }
                   />
                   <MaskOverlay
-                    masks={page.edits.filter((e): e is MaskEdit => e.type === 'mask')}
+                    masks={page.edits.filter(
+                      (e): e is MaskEdit => e.type === "mask",
+                    )}
                     viewWidthPx={viewWidthPx}
                     pageWidthPt={page.widthPt}
-                    active={editMode === 'erase' && !editingBlocked}
+                    active={editMode === "erase" && !editingBlocked}
                     onMaskDrawn={(rect) => void handleMaskDrawn(rect)}
                     onCancel={exitToolMode}
                   />
                   {page.edits
-                    .filter((e): e is TextEdit => e.type === 'text')
+                    .filter((e): e is TextEdit => e.type === "text")
                     .map((edit) => (
                       <EditableTextOverlay
                         key={edit.id}
@@ -756,10 +810,13 @@ export function EditPdfTool() {
                             return false;
                           }
                           setFocusedEditId(edit.id);
-                          if (edit.id === selectAllEditId) setSelectAllEditId(null);
+                          if (edit.id === selectAllEditId)
+                            setSelectAllEditId(null);
                           return true;
                         }}
-                        onChangeText={(text) => updateTextEdit(currentPageIndex, edit.id, { text })}
+                        onChangeText={(text) =>
+                          updateTextEdit(currentPageIndex, edit.id, { text })
+                        }
                         onBlur={() => handleBlur(edit.id, edit.text)}
                       />
                     ))}
@@ -769,46 +826,51 @@ export function EditPdfTool() {
           </section>
 
           <AppButton
-            title={status.state === 'saving' ? 'Exporting…' : 'Download edited PDF'}
+            title={
+              status.state === "saving" ? "Exporting…" : "Download edited PDF"
+            }
             onClick={() => void saveAndExport()}
-            disabled={status.state === 'saving'}
+            disabled={status.state === "saving"}
           />
-          {status.state === 'saved' && (
+          {status.state === "saved" && (
             <div className="app__status app__status--success">
               Exported successfully as {status.filename}
             </div>
           )}
-          {status.state === 'error' && (
-            <div className="app__status app__status--error">{status.message}</div>
+          {status.state === "error" && (
+            <div className="app__status app__status--error">
+              {status.message}
+            </div>
           )}
         </main>
       )}
 
-      {apiKeyPromptVisible && (
+      {aiConsentVisible && (
         <div className="app__modal-backdrop">
-          <div className="app__modal" role="dialog" aria-labelledby="api-key-title">
-            <h2 id="api-key-title">Gemini API key needed</h2>
+          <div
+            className="app__modal"
+            role="dialog"
+            aria-labelledby="ai-ocr-title"
+          >
+            <h2 id="ai-ocr-title">Enhance with AI OCR</h2>
             <p>
-              Enhance with AI sends this page&apos;s image to Google&apos;s Gemini API for
-              higher-accuracy text detection. It needs your own free API key — create one at{' '}
-              <a href="https://aistudio.google.com" target="_blank" rel="noreferrer">
-                aistudio.google.com
-              </a>
-              , then paste it here. The key is stored only in this browser.
+              This page image will be sent securely through our service to
+              Google&apos;s Gemini API for higher-accuracy text detection. The
+              original PDF is never changed.
             </p>
-            <input
-              value={apiKeyDraft}
-              onChange={(e) => setApiKeyDraft(e.target.value)}
-              placeholder="Paste API key"
-              className="app__modal-input"
-            />
+            <TurnstileWidget onToken={setTurnstileToken} />
             <div className="app__modal-actions">
-              <AppButton title="Cancel" small variant="ghost" onClick={() => setApiKeyPromptVisible(false)} />
               <AppButton
-                title="Save & run"
+                title="Cancel"
                 small
-                onClick={() => void handleApiKeySubmitted()}
-                disabled={apiKeyDraft.trim() === ''}
+                variant="ghost"
+                onClick={() => setAiConsentVisible(false)}
+              />
+              <AppButton
+                title="Continue"
+                small
+                onClick={confirmAiOcr}
+                disabled={!turnstileToken}
               />
             </div>
           </div>

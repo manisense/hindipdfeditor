@@ -6,7 +6,7 @@ const cols = [
     title: 'Edit & OCR',
     links: [
       { label: 'Edit Hindi PDF', href: toolHref('edit') },
-      { label: 'Translate to English', href: toolHref('translate') },
+      { label: 'Hindi ↔ English', href: toolHref('translate') },
       { label: 'Replace text', href: `${toolHref('edit')}&mode=erase` },
       { label: 'Add text', href: `${toolHref('edit')}&mode=addText` },
     ],

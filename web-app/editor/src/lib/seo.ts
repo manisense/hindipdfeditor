@@ -16,7 +16,7 @@ export type SeoPayload = {
 const HOME: SeoPayload = {
   title: 'Hindi PDF Editor — Edit, Translate & Manage Hindi PDFs Online',
   description:
-    'Free local-first Hindi PDF tools: edit Devanagari with correct shaping, translate Hindi to English, merge, split, compress, and OCR. No account. No uploads.',
+    'Local-first Hindi PDF tools: edit Devanagari with correct shaping, translate Hindi and English in either direction, merge, split, compress, and OCR. No account.',
   canonicalPath: '/edit/',
   robots: 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
 };

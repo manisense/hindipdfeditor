@@ -1,26 +1,30 @@
-import { createWorker, type Worker, type Page as TesseractPage } from 'tesseract.js';
+import {
+  createWorker,
+  type Worker,
+  type Page as TesseractPage,
+} from "tesseract.js";
 
-import { imagePxSizeToPt, imagePxToPt } from './coordinateMath';
-import { recognizeTextWithGemini } from './geminiOcr';
-import { mergeOcrLines } from './mergeOcrLines';
-import { extractEmbeddedTextLines } from './pdfTextExtract';
-import { getPdfBytes } from './pdfToImages';
-import type { RecognizedLine } from './recognizedLine';
-import type { OcrLine, PageState } from '../state/editStore';
+import { imagePxSizeToPt, imagePxToPt } from "./coordinateMath";
+import { aiApiClient } from "./aiApiClient";
+import { mergeOcrLines } from "./mergeOcrLines";
+import { extractEmbeddedTextLines } from "./pdfTextExtract";
+import { getPdfBytes } from "./pdfToImages";
+import type { RecognizedLine } from "./recognizedLine";
+import type { OcrLine, PageState } from "../state/editStore";
 
 let hinWorker: Worker | null = null;
 let engWorker: Worker | null = null;
 
 async function getHinWorker(): Promise<Worker> {
   if (!hinWorker) {
-    hinWorker = await createWorker('hin');
+    hinWorker = await createWorker("hin");
   }
   return hinWorker;
 }
 
 async function getEngWorker(): Promise<Worker> {
   if (!engWorker) {
-    engWorker = await createWorker('eng');
+    engWorker = await createWorker("eng");
   }
   return engWorker;
 }
@@ -28,7 +32,10 @@ async function getEngWorker(): Promise<Worker> {
 function tesseractPageToRecognized(page: TesseractPage): RecognizedLine[] {
   const lines: RecognizedLine[] = [];
 
-  const pushLine = (text: string, bbox: { x0: number; y0: number; x1: number; y1: number }) => {
+  const pushLine = (
+    text: string,
+    bbox: { x0: number; y0: number; x1: number; y1: number },
+  ) => {
     const trimmed = text.trim();
     if (trimmed.length === 0) return;
     lines.push({
@@ -51,8 +58,14 @@ function tesseractPageToRecognized(page: TesseractPage): RecognizedLine[] {
   // tesseract.js sometimes omits nested blocks but still fills top-level lines/words.
   if (lines.length === 0) {
     const pageExtra = page as TesseractPage & {
-      lines?: { text: string; bbox: { x0: number; y0: number; x1: number; y1: number } }[];
-      words?: { text: string; bbox: { x0: number; y0: number; x1: number; y1: number } }[];
+      lines?: {
+        text: string;
+        bbox: { x0: number; y0: number; x1: number; y1: number };
+      }[];
+      words?: {
+        text: string;
+        bbox: { x0: number; y0: number; x1: number; y1: number };
+      }[];
     };
     for (const line of pageExtra.lines ?? []) {
       pushLine(line.text, line.bbox);
@@ -72,7 +85,12 @@ function toOcrLines(lines: RecognizedLine[], page: PageState): OcrLine[] {
     .slice()
     .sort((a, b) => a.y - b.y || a.x - b.x)
     .map((line) => {
-      const { xPt, yPt } = imagePxToPt(line.x, line.y, page.imagePxWidth, page.widthPt);
+      const { xPt, yPt } = imagePxToPt(
+        line.x,
+        line.y,
+        page.imagePxWidth,
+        page.widthPt,
+      );
       const { wPt, hPt } = imagePxSizeToPt(
         line.width,
         line.height,
@@ -85,9 +103,10 @@ function toOcrLines(lines: RecognizedLine[], page: PageState): OcrLine[] {
 
 async function recognizeWithLanguage(
   imageUri: string,
-  language: 'hin' | 'eng',
+  language: "hin" | "eng",
 ): Promise<RecognizedLine[]> {
-  const worker = language === 'hin' ? await getHinWorker() : await getEngWorker();
+  const worker =
+    language === "hin" ? await getHinWorker() : await getEngWorker();
   const { data } = await worker.recognize(imageUri);
   return tesseractPageToRecognized(data);
 }
@@ -110,13 +129,16 @@ export async function detectTextLines(
       const embedded = await extractEmbeddedTextLines(pdfBytes, page.pageIndex);
       if (embedded.length > 0) return embedded;
     } catch (error) {
-      console.warn('Embedded PDF text extraction failed; falling back to Tesseract', error);
+      console.warn(
+        "Embedded PDF text extraction failed; falling back to Tesseract",
+        error,
+      );
     }
   }
 
   const [devanagariLines, latinLines] = await Promise.all([
-    recognizeWithLanguage(page.backgroundImageUri, 'hin'),
-    recognizeWithLanguage(page.backgroundImageUri, 'eng'),
+    recognizeWithLanguage(page.backgroundImageUri, "hin"),
+    recognizeWithLanguage(page.backgroundImageUri, "eng"),
   ]);
   return toOcrLines(mergeOcrLines(devanagariLines, latinLines), page);
 }
@@ -125,18 +147,37 @@ export async function detectTextLines(
  * Opt-in Gemini cloud OCR for difficult scans.
  *
  * @param page The page whose background image to scan.
- * @param apiKey User's Gemini API key.
+ * @param jobId Anonymous quota job identifier for this document.
+ * @param pageIndex Zero-based PDF page index.
  */
 export async function detectTextLinesWithGemini(
   page: PageState,
-  apiKey: string,
+  jobId: string,
+  pageIndex: number,
 ): Promise<OcrLine[]> {
-  const imageBase64 = page.backgroundImageUri.replace(/^data:image\/\w+;base64,/, '');
-  const lines = await recognizeTextWithGemini(
-    imageBase64,
-    page.imagePxWidth,
-    page.imagePxHeight,
-    apiKey,
+  const imageBase64 = page.backgroundImageUri.replace(
+    /^data:image\/\w+;base64,/,
+    "",
   );
+  const response = await aiApiClient.ocr({
+    jobId,
+    page: pageIndex,
+    imageBase64,
+    mimeType: page.backgroundImageUri.startsWith("data:image/png")
+      ? "image/png"
+      : "image/jpeg",
+    imagePxWidth: page.imagePxWidth,
+    imagePxHeight: page.imagePxHeight,
+  });
+  const lines: RecognizedLine[] = response.lines.map(({ text, box_2d }) => {
+    const [yMin, xMin, yMax, xMax] = box_2d;
+    return {
+      text,
+      x: (xMin / 1000) * page.imagePxWidth,
+      y: (yMin / 1000) * page.imagePxHeight,
+      width: ((xMax - xMin) / 1000) * page.imagePxWidth,
+      height: ((yMax - yMin) / 1000) * page.imagePxHeight,
+    };
+  });
   return toOcrLines(lines, page);
 }
