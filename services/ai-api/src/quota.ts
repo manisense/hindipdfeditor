@@ -17,6 +17,18 @@ function changes(result: D1Result): number {
   return typeof result.meta?.changes === "number" ? result.meta.changes : 0;
 }
 
+function asQuotaError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/quota_(documents|pages)_exhausted/u.test(message)) {
+    throw new ApiError(
+      "QUOTA_EXHAUSTED",
+      "The free daily AI limit has been reached.",
+      429,
+    );
+  }
+  throw error;
+}
+
 export class D1QuotaStore implements QuotaStore {
   constructor(private readonly db: D1Database) {}
 
@@ -32,7 +44,8 @@ export class D1QuotaStore implements QuotaStore {
         "INSERT OR IGNORE INTO quota_jobs (actor_id, usage_day, job_id) VALUES (?, ?, ?)",
       )
       .bind(actorId, usageDay, jobId)
-      .run();
+      .run()
+      .catch(asQuotaError);
     const newJob = changes(jobInsert) > 0;
     for (const page of [...new Set(pages)]) {
       const result = await this.db
@@ -40,7 +53,8 @@ export class D1QuotaStore implements QuotaStore {
           "INSERT OR IGNORE INTO quota_pages (actor_id, usage_day, job_id, page_number) VALUES (?, ?, ?, ?)",
         )
         .bind(actorId, usageDay, jobId, page)
-        .run();
+        .run()
+        .catch(asQuotaError);
       if (changes(result) > 0) newPages.push(page);
     }
 
@@ -88,6 +102,17 @@ export class D1QuotaStore implements QuotaStore {
     }
     return snapshot;
   }
+}
+
+export async function deleteExpiredQuotaRows(db: D1Database): Promise<void> {
+  await db.batch([
+    db.prepare(
+      "DELETE FROM quota_pages WHERE usage_day < date('now', '-8 days')",
+    ),
+    db.prepare(
+      "DELETE FROM quota_jobs WHERE usage_day < date('now', '-8 days')",
+    ),
+  ]);
 }
 
 export class MemoryQuotaStore implements QuotaStore {

@@ -13,7 +13,7 @@ import {
 import type { Env } from "./env";
 import { ApiError, asApiError } from "./errors";
 import { ocrWithGemini, translateWithGemini } from "./gemini";
-import { D1QuotaStore, type QuotaStore } from "./quota";
+import { deleteExpiredQuotaRows, D1QuotaStore, type QuotaStore } from "./quota";
 import { createSession, verifySession } from "./session";
 import { verifyTurnstile } from "./turnstile";
 
@@ -348,4 +348,9 @@ export async function handleRequest(
   }
 }
 
-export default { fetch: handleRequest } satisfies ExportedHandler<Env>;
+export default {
+  fetch: handleRequest,
+  async scheduled(_controller, env): Promise<void> {
+    await deleteExpiredQuotaRows(env.AI_DB);
+  },
+} satisfies ExportedHandler<Env>;

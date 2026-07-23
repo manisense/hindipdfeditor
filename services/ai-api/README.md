@@ -11,6 +11,8 @@ Shared Cloudflare Worker for Android and web translation plus explicitly consent
 - No source text, translated text, PDF, or image is written to logs, D1, or Analytics Engine.
 - Turnstile is validated server-side for web sessions.
 - Anonymous burst limits use a Worker Rate Limiting binding; daily documents/pages use D1.
+- D1 triggers enforce hard daily ceilings under concurrent requests; a daily cron removes quota
+  rows older than eight days.
 
 Do not put real secrets in `.dev.vars.example`, Wrangler `vars`, source control, Expo config, or web
 environment variables.
