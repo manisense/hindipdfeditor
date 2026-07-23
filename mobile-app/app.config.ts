@@ -47,7 +47,6 @@ const config: ExpoConfig = {
     'expo-asset',
     'expo-sharing',
     'expo-font',
-    'expo-secure-store',
     [
       'expo-build-properties',
       {

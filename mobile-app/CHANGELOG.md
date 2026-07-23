@@ -6,6 +6,12 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ### Added — Phase 4.8 production translation foundation
 
+- Replaced Android's bring-your-own-key flow with anonymous signed sessions to the production AI
+  API. Removed `expo-secure-store`, the API-key prompt/storage modules, and every direct Gemini
+  request from the app bundle.
+- Added consent-gated proxy OCR plus Hindi → English and English → Hindi translation for either
+  the current page or the whole document. Long OCR pages batch at the shared line limit and results
+  remain tied to stable line IDs before becoming mask + Unicode overlays in Render & Print.
 - Added the production Cloudflare Worker API for anonymous Android/web sessions, both translation
   directions, consent-gated AI OCR, strict CORS, HMAC session tokens, per-minute rate limiting,
   D1 daily document/page quotas, kill switches, content-free metrics, and structured public errors.

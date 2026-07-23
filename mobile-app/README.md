@@ -9,7 +9,8 @@ Edit Hindi and English text in scanned or digital PDFs on Android — tap to cha
 - Mask-and-replace for text OCR misses (hold and drag)
 - Multi-page PDF support
 - Export via print pipeline (no corrupting the original file)
-- Optional Enhance with AI (your Gemini API key)
+- Optional consent-gated AI OCR through the production service
+- Hindi → English and English → Hindi translation; no API key entry
 
 ## Development
 

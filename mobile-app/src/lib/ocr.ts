@@ -6,13 +6,13 @@ import * as FileSystem from 'expo-file-system/legacy';
 import TextRecognition, { type RecognizedLine } from 'text-recognition';
 
 import { imagePxSizeToPt, imagePxToPt } from './coordinateMath';
-import { recognizeTextWithGemini } from './geminiOcr';
+import { aiApiClient } from './aiApiClient';
 import { mergeOcrLines } from './mergeOcrLines';
 import type { OcrLine, PageState } from '../state/editStore';
 
 /**
  * App-side entry point for OCR (spec: OCR-assisted tap-to-edit). This is the only file that
- * should ever import from the `text-recognition` native module or `geminiOcr.ts` directly -
+ * should ever import from the `text-recognition` native module or cloud API directly -
  * same isolation rule as `pdfToImages.ts` for `pdf-page-image`, so OCR engines can be swapped
  * or added by editing only this file. Both engines return the same px-space line contract and
  * funnel through the same px-to-pt conversion below, so callers never know which engine ran.
@@ -59,25 +59,39 @@ export async function detectTextLines(page: PageState): Promise<OcrLine[]> {
 
 /**
  * The opt-in "Enhance with AI" engine: sends the page's background image to the Gemini API
- * (free tier, user's own key) for higher-accuracy OCR on scans where ML Kit struggles. The
+ * through the production proxy for higher-accuracy OCR on scans where ML Kit struggles. The
  * caller is responsible for having made the privacy tradeoff explicit to the user first -
  * this is the one code path in the app where document content leaves the device.
  *
  * @param page The page whose `backgroundImageUri` (JPEG) to scan.
- * @param apiKey The user's Gemini API key (from `apiKeyStore.ts`).
+ * @param jobId Anonymous quota job identifier for this document.
+ * @param pageIndex Zero-based PDF page index.
  */
 export async function detectTextLinesWithGemini(
   page: PageState,
-  apiKey: string,
+  jobId: string,
+  pageIndex: number,
 ): Promise<OcrLine[]> {
   const imageBase64 = await FileSystem.readAsStringAsync(page.backgroundImageUri, {
     encoding: FileSystem.EncodingType.Base64,
   });
-  const lines = await recognizeTextWithGemini(
+  const response = await aiApiClient.ocr({
+    jobId,
+    page: pageIndex,
     imageBase64,
-    page.imagePxWidth,
-    page.imagePxHeight,
-    apiKey,
-  );
+    mimeType: 'image/jpeg',
+    imagePxWidth: page.imagePxWidth,
+    imagePxHeight: page.imagePxHeight,
+  });
+  const lines: RecognizedLine[] = response.lines.map(({ text, box_2d }) => {
+    const [yMin, xMin, yMax, xMax] = box_2d;
+    return {
+      text,
+      x: (xMin / 1000) * page.imagePxWidth,
+      y: (yMin / 1000) * page.imagePxHeight,
+      width: ((xMax - xMin) / 1000) * page.imagePxWidth,
+      height: ((yMax - yMin) / 1000) * page.imagePxHeight,
+    };
+  });
   return toOcrLines(lines, page);
 }

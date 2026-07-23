@@ -9,11 +9,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import * as Crypto from 'expo-crypto';
 // expo-file-system's top-level `readAsStringAsync` is a stub that unconditionally throws in
 // this SDK version (confirmed on a real device - see CHANGELOG); the actual implementation now
 // lives under the `/legacy` subpath, same as `exportPdf.ts`'s own use of this API.
@@ -32,7 +32,6 @@ import { LegacyFontWarning } from './src/components/LegacyFontWarning';
 import { MaskOverlay, type DrawnMaskRect } from './src/components/MaskOverlay';
 import { OcrHighlightLayer } from './src/components/OcrHighlightLayer';
 import { PdfPageViewer } from './src/components/PdfPageViewer';
-import { clearGeminiApiKey, getGeminiApiKey, setGeminiApiKey } from './src/lib/apiKeyStore';
 import { createBlankPage } from './src/lib/blankPage';
 import { ptSizeToImagePx, ptToImagePx } from './src/lib/coordinateMath';
 import { exportPdf } from './src/lib/exportPdf';
@@ -43,7 +42,8 @@ import {
   isFontFamilyLoaded,
   type DevanagariFontFamily,
 } from './src/lib/fontAsset';
-import { containsDevanagari, translateHindiLinesToEnglish } from './src/lib/geminiTranslate';
+import { containsDevanagari, containsLatin, translateOcrLines } from './src/lib/geminiTranslate';
+import type { TranslationDirection } from '@hindipdfeditor/translation-contract';
 import { detectLegacyFonts } from './src/lib/legacyFontDetector';
 import { legacyEditingPolicy, UNKNOWN_ENCODING_FONT_NAME } from './src/lib/legacyEditingPolicy';
 import { detectTextLines, detectTextLinesWithGemini } from './src/lib/ocr';
@@ -195,13 +195,11 @@ export default function App() {
   // Pages OCR has already been kicked off for, so navigating back and forth doesn't re-run
   // detection. A ref (not state): this is bookkeeping for the trigger, never rendered.
   const ocrAttemptedPagesRef = useRef(new Set<number>());
-  // "Enhance with AI" (opt-in Gemini cloud OCR): which page a cloud pass is currently running
-  // for (null = none), and whether the one-time API key prompt is showing.
+  // "Enhance with AI" is explicit, consent-gated cloud OCR through the production proxy.
   const [enhancingPage, setEnhancingPage] = useState<number | null>(null);
   const [translating, setTranslating] = useState(false);
-  const [apiKeyPromptVisible, setApiKeyPromptVisible] = useState(false);
-  const [apiKeyPurpose, setApiKeyPurpose] = useState<'enhance' | 'translate'>('enhance');
-  const [apiKeyDraft, setApiKeyDraft] = useState('');
+  const [translationOptionsVisible, setTranslationOptionsVisible] = useState(false);
+  const aiJobIdRef = useRef(`document-${Crypto.randomUUID()}`);
   const [aboutVisible, setAboutVisible] = useState(false);
   const [fontPickerVisible, setFontPickerVisible] = useState(false);
   const [downloadingFont, setDownloadingFont] = useState<DevanagariFontFamily | null>(null);
@@ -279,6 +277,7 @@ export default function App() {
       setFocusedEditId(null);
       setSelectAllEditId(null);
       ocrAttemptedPagesRef.current.clear();
+      aiJobIdRef.current = `document-${Crypto.randomUUID()}`;
       setOcrStatusByPage({});
       setEditMode('edit');
       setLegacySafeModePages(new Set());
@@ -505,48 +504,42 @@ export default function App() {
    * Runs the opt-in Gemini cloud OCR pass over the current page and replaces its detected
    * lines with the (usually more accurate) cloud result. This is the only action in the app
    * that sends document content off-device, which is why it only ever runs from an explicit
-   * button press - never automatically - and why the API key prompt below spells that out.
+   * button press and an explicit consent confirmation - never automatically.
    */
-  const runEnhanceWithAi = async (apiKey: string) => {
+  const runEnhanceWithAi = async () => {
     if (!document || !page || editingBlocked || enhancingPage !== null) return;
     const pageIndex = currentPageIndex;
     const sourceUri = document.sourceUri;
     setEnhancingPage(pageIndex);
     try {
-      const lines = await detectTextLinesWithGemini(page, apiKey);
+      const lines = await detectTextLinesWithGemini(page, aiJobIdRef.current, pageIndex);
       if (useEditStore.getState().document?.sourceUri !== sourceUri) return;
       setOcrLines(pageIndex, lines);
       setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'done' }));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      // A rejected key is the one failure the user can only fix by re-entering it, so clear
-      // the stored key and let the next button press re-prompt instead of failing forever.
-      if (/api key/i.test(message)) {
-        await clearGeminiApiKey().catch(() => {});
-      }
       Alert.alert('Enhance with AI failed', message);
     } finally {
       setEnhancingPage(null);
     }
   };
 
-  const handleEnhancePressed = async () => {
-    const storedKey = await getGeminiApiKey().catch(() => null);
-    if (storedKey) {
-      await runEnhanceWithAi(storedKey);
-    } else {
-      setApiKeyPurpose('enhance');
-      setApiKeyDraft('');
-      setApiKeyPromptVisible(true);
-    }
+  const handleEnhancePressed = () => {
+    Alert.alert(
+      'Send this page for AI OCR?',
+      "This page image will be sent securely to Google's Gemini service for text recognition. The source PDF is never changed.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Continue', onPress: () => void runEnhanceWithAi() },
+      ],
+    );
   };
 
   /**
-   * Detects Hindi lines across the open document, translates them to English via Gemini, and
-   * applies mask + English text overlays (same Plan A export path as tap-to-edit). Opt-in only:
-   * sends line text (not page images) to Google using the user's API key.
+   * Detects source-language lines, translates them through the production proxy, and applies
+   * mask + Unicode text overlays through the existing Plan A export path.
    */
-  const runTranslateToEnglish = async (apiKey: string) => {
+  const runTranslation = async (direction: TranslationDirection, scope: 'page' | 'document') => {
     const doc = useEditStore.getState().document;
     if (!doc || translating || enhancingPage !== null) return;
     setTranslating(true);
@@ -555,7 +548,11 @@ export default function App() {
       let translatedCount = 0;
       const legacyPages = new Set(doc.legacyFontWarnings.map((w) => w.page));
 
-      for (let pageIndex = 0; pageIndex < doc.pages.length; pageIndex++) {
+      const pageIndexes =
+        scope === 'page'
+          ? [currentPageIndex]
+          : Array.from({ length: doc.pages.length }, (_, index) => index);
+      for (const pageIndex of pageIndexes) {
         if (legacyPages.has(pageIndex)) continue;
         const page = useEditStore.getState().document?.pages[pageIndex];
         if (!page) continue;
@@ -574,24 +571,29 @@ export default function App() {
           }
         }
 
-        const hindiLines = lines.filter((l) => containsDevanagari(l.text));
-        if (hindiLines.length === 0) continue;
-
-        const english = await translateHindiLinesToEnglish(
-          hindiLines.map((l) => l.text),
-          apiKey,
+        const sourceLines = lines.filter((line) =>
+          direction === 'hi-en' ? containsDevanagari(line.text) : containsLatin(line.text),
+        );
+        if (sourceLines.length === 0) continue;
+        const translatedById = await translateOcrLines(
+          aiJobIdRef.current,
+          direction,
+          sourceLines.map((line) => ({
+            id: line.id,
+            page: pageIndex,
+            text: line.text,
+          })),
         );
         if (useEditStore.getState().document?.sourceUri !== doc.sourceUri) return;
 
-        const hindiIds = new Set(hindiLines.map((l) => l.id));
+        const sourceIds = new Set(sourceLines.map((line) => line.id));
         setOcrLines(
           pageIndex,
-          lines.filter((l) => !hindiIds.has(l.id)),
+          lines.filter((line) => !sourceIds.has(line.id)),
         );
 
-        for (let j = 0; j < hindiLines.length; j++) {
-          const line = hindiLines[j];
-          const translated = english[j]?.trim();
+        for (const line of sourceLines) {
+          const translated = translatedById.get(line.id)?.trim();
           if (!translated) continue;
 
           const geo = geometryForTranslatedLine(line, page.widthPt, page.heightPt);
@@ -669,51 +671,29 @@ export default function App() {
       }
 
       if (translatedCount === 0) {
+        const sourceLanguage = direction === 'hi-en' ? 'Hindi (Devanagari)' : 'English';
         Alert.alert(
           'Nothing to translate',
-          'No Hindi (Devanagari) text was found. Try Enhance with AI on scanned pages, then translate again.',
+          `No ${sourceLanguage} text was found. Try AI OCR on scanned pages, then translate again.`,
         );
       } else {
+        const targetLanguage = direction === 'hi-en' ? 'English' : 'Hindi';
         Alert.alert(
           'Translation ready',
-          `Replaced ${translatedCount} Hindi line${translatedCount === 1 ? '' : 's'} with English. Review the overlays, then tap Export PDF.`,
+          `Replaced ${translatedCount} line${translatedCount === 1 ? '' : 's'} with ${targetLanguage}. Review the overlays, then tap Export PDF.`,
         );
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      if (/api key/i.test(message)) {
-        await clearGeminiApiKey().catch(() => {});
-      }
       Alert.alert('Translate failed', message);
     } finally {
       setTranslating(false);
     }
   };
 
-  const handleTranslatePressed = async () => {
-    const storedKey = await getGeminiApiKey().catch(() => null);
-    if (storedKey) {
-      await runTranslateToEnglish(storedKey);
-    } else {
-      setApiKeyPurpose('translate');
-      setApiKeyDraft('');
-      setApiKeyPromptVisible(true);
-    }
-  };
-
-  const handleApiKeySubmitted = async () => {
-    const key = apiKeyDraft.trim();
-    if (key === '') return;
-    setApiKeyPromptVisible(false);
-    await setGeminiApiKey(key).catch((error) => {
-      // Key storage failing shouldn't block this one run - it just means re-entry next time.
-      console.warn('Failed to persist Gemini API key', error);
-    });
-    if (apiKeyPurpose === 'translate') {
-      await runTranslateToEnglish(key);
-    } else {
-      await runEnhanceWithAi(key);
-    }
+  const startTranslation = (direction: TranslationDirection, scope: 'page' | 'document') => {
+    setTranslationOptionsVisible(false);
+    void runTranslation(direction, scope);
   };
 
   /**
@@ -1329,10 +1309,10 @@ export default function App() {
                   }
                 />
                 <AppButton
-                  title={translating ? 'Translating…' : '文 Translate to EN'}
+                  title={translating ? 'Translating…' : '文 Translate'}
                   small
                   variant="secondary"
-                  onPress={handleTranslatePressed}
+                  onPress={() => setTranslationOptionsVisible(true)}
                   disabled={enhancingPage !== null || translating || status.state === 'saving'}
                 />
               </ScrollView>
@@ -1527,39 +1507,51 @@ export default function App() {
       />
 
       <Modal
-        visible={apiKeyPromptVisible}
+        visible={translationOptionsVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setApiKeyPromptVisible(false)}
+        onRequestClose={() => setTranslationOptionsVisible(false)}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Gemini API key needed</Text>
+            <Text style={styles.modalTitle}>Translate PDF</Text>
             <Text style={styles.modalBody}>
-              {apiKeyPurpose === 'translate'
-                ? "Translate to English sends detected Hindi line text to Google's Gemini API. It needs your own free API key (no credit card) - create one at aistudio.google.com, then paste it here. The key is stored only on this device."
-                : "Enhance with AI sends this page's image to Google's Gemini API for higher-accuracy text detection. It needs your own free API key (no credit card) - create one at aistudio.google.com, then paste it here. The key is stored only on this device, in encrypted storage."}
+              Detected line text will be sent securely to Google&apos;s Gemini service. Choose a
+              direction and whether to translate this page or the whole document. Your original PDF
+              is never overwritten.
             </Text>
-            <TextInput
-              value={apiKeyDraft}
-              onChangeText={setApiKeyDraft}
-              placeholder="Paste API key"
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={styles.modalInput}
-            />
             <View style={styles.modalButtons}>
               <AppButton
                 title="Cancel"
                 small
                 variant="ghost"
-                onPress={() => setApiKeyPromptVisible(false)}
+                onPress={() => setTranslationOptionsVisible(false)}
+              />
+            </View>
+            <Text style={styles.modalBody}>Hindi → English</Text>
+            <View style={styles.modalButtons}>
+              <AppButton
+                title="This page"
+                small
+                onPress={() => startTranslation('hi-en', 'page')}
               />
               <AppButton
-                title="Save & run"
+                title="Whole PDF"
                 small
-                onPress={handleApiKeySubmitted}
-                disabled={apiKeyDraft.trim() === ''}
+                onPress={() => startTranslation('hi-en', 'document')}
+              />
+            </View>
+            <Text style={styles.modalBody}>English → Hindi</Text>
+            <View style={styles.modalButtons}>
+              <AppButton
+                title="This page"
+                small
+                onPress={() => startTranslation('en-hi', 'page')}
+              />
+              <AppButton
+                title="Whole PDF"
+                small
+                onPress={() => startTranslation('en-hi', 'document')}
               />
             </View>
           </View>
