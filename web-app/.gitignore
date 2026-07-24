@@ -1,0 +1,4 @@
+
+editor/.env
+editor/.env.*
+!editor/.env.example

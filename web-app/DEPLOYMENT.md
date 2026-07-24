@@ -27,16 +27,28 @@ Do **not** use bare `npx wrangler deploy` against the Pages project without an
 
 Deploy this from the Cloudflare account for `localcode.ai@gmail.com`.
 
+See `PRODUCTION_CHECKLIST.md` for the live production verification checklist.
+
 ## AI production prerequisites
 
-Before building Pages, create a Cloudflare Turnstile widget for `hindipdfeditor.com` and
+Before building the site, create a Cloudflare Turnstile widget for `hindipdfeditor.com` and
 `www.hindipdfeditor.com`, then expose its **public site key** to the editor build as
-`VITE_TURNSTILE_SITE_KEY`. Never place the Turnstile secret or Gemini key in Pages variables.
+`VITE_TURNSTILE_SITE_KEY` in `web-app/editor/.env` (gitignored). Never place the Turnstile
+secret or Gemini key in the web bundle.
 
-Deploy `services/ai-api` first, complete its D1 migration/secrets/custom-domain checklist, and
+Deploy `services/ai-api` first (D1 + secrets + custom domain `api.hindipdfeditor.com`), then
 confirm `https://api.hindipdfeditor.com/v1/capabilities` before publishing the updated client.
-Then smoke-test both translation directions and AI OCR through the production hostname. Keep the
-Worker translation/OCR flags off until that smoke test is ready if the site deploy must happen first.
+
+Put the Gemini key yourself (never commit it):
+
+```bash
+cd services/ai-api
+npx wrangler secret put GEMINI_API_KEY
+```
+
+Then smoke-test Hindi → English and English → Hindi from `/edit/?tool=translate` and the
+Edit PDF **Translate** button. Keep Worker translation/OCR flags off until that smoke test is
+ready if the site deploy must happen first.
 
 ## First / manual deploy
 

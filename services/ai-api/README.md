@@ -26,9 +26,27 @@ environment variables.
 
 ## Production prerequisites
 
-- Replace the zero D1 ID in `wrangler.jsonc` with the production database ID.
+- D1 database `hindipdfeditor-ai` is provisioned; `wrangler.jsonc` must use its real
+  `database_id` (not the zero placeholder).
 - Configure a stable Gemini Auth key on an actively billed project.
 - Add `GEMINI_API_KEY`, `SESSION_SIGNING_SECRET`, and `TURNSTILE_SECRET_KEY` with
   `wrangler secret put`; never pass their values as command-line arguments.
-- Configure `api.hindipdfeditor.com`, production Turnstile hostnames, billing alerts, and the
-  emergency feature flags before deployment.
+- Custom domain: `api.hindipdfeditor.com` (Workers custom domain on this Worker).
+- Build the web editor with `VITE_TURNSTILE_SITE_KEY` set to the production Turnstile
+  site key before deploy. Never place the Turnstile secret or Gemini key in the web
+  bundle.
+- Configure production Turnstile hostnames (`hindipdfeditor.com`, `www.hindipdfeditor.com`),
+  billing alerts, and the emergency feature flags before relying on live traffic.
+
+### Put / rotate the Gemini key
+
+```bash
+cd services/ai-api
+npx wrangler secret put GEMINI_API_KEY
+```
+
+Paste the key when prompted (stdin). Then confirm:
+
+```bash
+curl -s https://api.hindipdfeditor.com/v1/capabilities
+```

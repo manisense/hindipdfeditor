@@ -18,6 +18,9 @@ import {
   getFontBase64,
   type DevanagariFontFamily,
 } from "../lib/fontAsset";
+import type { TranslationDirection } from "@hindipdfeditor/translation-contract";
+
+import { translateOcrLines } from "../lib/geminiTranslate";
 import { detectLegacyFonts } from "../lib/legacyFontDetector";
 import { detectTextLines, detectTextLinesWithGemini } from "../lib/ocr";
 import { findOcrTargetAt, findTextEditAt } from "../lib/ocrHitTest";
@@ -26,10 +29,16 @@ import {
   getPdfBase64,
   renderPage,
   sampleAverageColor,
+  samplePagePaperColor,
   sampleTextColor,
   setPdfBytes,
 } from "../lib/pdfToImages";
 import { getTool, readEditModeFromLocation } from "../lib/tools";
+import {
+  containsLatin,
+  isTranslatableHindiLine,
+} from "../lib/translationSource";
+import { geometryForTranslatedLine } from "../lib/translateEdits";
 import {
   useEditStore,
   type DocumentState,
@@ -91,8 +100,16 @@ export function EditPdfTool() {
   const ocrAttemptedPagesRef = useRef(new Set<number>());
   const editPairingsRef = useRef(new Map<string, EditPairing>());
   const [enhancingPage, setEnhancingPage] = useState<number | null>(null);
+  const [translating, setTranslating] = useState(false);
   const [aiConsentVisible, setAiConsentVisible] = useState(false);
+  const [translationOptionsVisible, setTranslationOptionsVisible] =
+    useState(false);
+  const [pendingTranslation, setPendingTranslation] = useState<{
+    direction: TranslationDirection;
+    scope: "page" | "document";
+  } | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [aiGateMode, setAiGateMode] = useState<"ocr" | "translate">("ocr");
   const aiJobIdRef = useRef(`document-${crypto.randomUUID()}`);
   const [editMode, setEditMode] = useState<EditMode>(() =>
     readEditModeFromLocation(),
@@ -300,14 +317,193 @@ export function EditPdfTool() {
   };
 
   const handleEnhancePressed = () => {
+    setAiGateMode("ocr");
+    setPendingTranslation(null);
     setTurnstileToken(null);
     setAiConsentVisible(true);
+  };
+
+  const handleTranslatePressed = () => {
+    setTranslationOptionsVisible(true);
+  };
+
+  const queueTranslation = (
+    direction: TranslationDirection,
+    scope: "page" | "document",
+  ) => {
+    setTranslationOptionsVisible(false);
+    setPendingTranslation({ direction, scope });
+    setAiGateMode("translate");
+    setTurnstileToken(null);
+    setAiConsentVisible(true);
+  };
+
+  const runTranslation = async (
+    direction: TranslationDirection,
+    scope: "page" | "document",
+  ) => {
+    const doc = useEditStore.getState().document;
+    if (!doc || translating || enhancingPage !== null) return;
+    setTranslating(true);
+    try {
+      checkpoint();
+      let translatedCount = 0;
+      const legacyPages = new Set(
+        doc.legacyFontWarnings.map((warning) => warning.page),
+      );
+      const pageIndexes =
+        scope === "page"
+          ? [currentPageIndex]
+          : Array.from({ length: doc.pages.length }, (_, index) => index);
+
+      for (const pageIndex of pageIndexes) {
+        const pageState = useEditStore.getState().document?.pages[pageIndex];
+        if (!pageState) continue;
+        const forceOcr = legacyPages.has(pageIndex);
+
+        let lines = pageState.ocrLines;
+        if (lines.length === 0 || forceOcr) {
+          try {
+            lines = await detectTextLines(pageState, { forceOcr });
+            if (
+              useEditStore.getState().document?.sourceName !== doc.sourceName
+            ) {
+              return;
+            }
+            setOcrLines(pageIndex, lines);
+            setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "done" }));
+          } catch (error) {
+            console.warn(
+              `Text detection failed on page ${pageIndex} during translate`,
+              error,
+            );
+            setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "failed" }));
+            continue;
+          }
+        }
+
+        const sourceLines = lines.filter((line) =>
+          direction === "hi-en"
+            ? isTranslatableHindiLine(line.text)
+            : containsLatin(line.text),
+        );
+        if (sourceLines.length === 0) continue;
+
+        const translatedById = await translateOcrLines(
+          aiJobIdRef.current,
+          direction,
+          sourceLines.map((line) => ({
+            id: line.id,
+            page: pageIndex,
+            text: line.text,
+          })),
+        );
+        if (useEditStore.getState().document?.sourceName !== doc.sourceName) {
+          return;
+        }
+
+        const sourceIds = new Set(sourceLines.map((line) => line.id));
+        setOcrLines(
+          pageIndex,
+          lines.filter((line) => !sourceIds.has(line.id)),
+        );
+
+        let paperColor = "#ffffff";
+        try {
+          paperColor = await samplePagePaperColor(
+            pageState.backgroundImageUri,
+            pageState.imagePxWidth,
+            pageState.imagePxHeight,
+          );
+        } catch {
+          /* keep white */
+        }
+
+        for (const line of sourceLines) {
+          const translated = translatedById.get(line.id)?.trim();
+          if (!translated) continue;
+          const geo = geometryForTranslatedLine(
+            line,
+            pageState.widthPt,
+            pageState.heightPt,
+          );
+          const { x: sampleXPx, y: sampleYPx } = ptToImagePx(
+            line.xPt,
+            line.yPt,
+            pageState.imagePxWidth,
+            pageState.widthPt,
+          );
+          const { wPx: sampleWPx, hPx: sampleHPx } = ptSizeToImagePx(
+            line.wPt,
+            line.hPt,
+            pageState.imagePxWidth,
+            pageState.widthPt,
+          );
+          let textColor = "#111111";
+          try {
+            textColor = await sampleTextColor(
+              pageState.backgroundImageUri,
+              Math.round(sampleXPx),
+              Math.round(sampleYPx),
+              Math.round(sampleWPx),
+              Math.round(sampleHPx),
+            );
+          } catch {
+            /* keep black */
+          }
+
+          const maskEdit = addMaskEdit(pageIndex, {
+            ...geo.mask,
+            color: paperColor,
+          });
+          const textEdit = addTextEdit(pageIndex, {
+            xPt: geo.text.xPt,
+            yPt: geo.text.yPt,
+            fontSizePt: geo.text.fontSizePt,
+            text: translated,
+            color: textColor,
+            fontFamily: "NotoSansDevanagari",
+            fontWeight: geo.text.fontWeight,
+            widthPt: geo.text.widthPt,
+          });
+          editPairingsRef.current.set(textEdit.id, {
+            maskId: maskEdit.id,
+            ocrLine: line,
+          });
+          translatedCount += 1;
+        }
+      }
+
+      if (translatedCount === 0) {
+        const sourceLabel =
+          direction === "hi-en" ? "Hindi (Devanagari)" : "English";
+        window.alert(
+          `No ${sourceLabel} text was found to translate. Try Enhance with AI on scanned pages, then translate again.`,
+        );
+        return;
+      }
+      const targetLabel = direction === "hi-en" ? "English" : "Hindi";
+      window.alert(
+        `Replaced ${translatedCount} line${translatedCount === 1 ? "" : "s"} with ${targetLabel}. Review the overlays, then download the edited PDF.`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      window.alert(`Translation failed: ${message}`);
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const confirmAiOcr = () => {
     if (!turnstileToken) return;
     aiApiClient.setTurnstileTokenProvider(() => turnstileToken);
     setAiConsentVisible(false);
+    if (aiGateMode === "translate" && pendingTranslation) {
+      const { direction, scope } = pendingTranslation;
+      setPendingTranslation(null);
+      void runTranslation(direction, scope);
+      return;
+    }
     void runEnhanceWithAi();
   };
 
@@ -698,6 +894,19 @@ export function EditPdfTool() {
                 disabled={
                   editingBlocked ||
                   enhancingPage !== null ||
+                  translating ||
+                  ocrStatus === "running"
+                }
+              />
+              <AppButton
+                title={translating ? "Translating…" : "🌐 Translate"}
+                small
+                variant="secondary"
+                onClick={() => void handleTranslatePressed()}
+                disabled={
+                  editingBlocked ||
+                  enhancingPage !== null ||
+                  translating ||
                   ocrStatus === "running"
                 }
               />
@@ -845,6 +1054,61 @@ export function EditPdfTool() {
         </main>
       )}
 
+      {translationOptionsVisible && (
+        <div className="app__modal-backdrop">
+          <div
+            className="app__modal"
+            role="dialog"
+            aria-labelledby="translate-title"
+          >
+            <h2 id="translate-title">Translate PDF</h2>
+            <p>
+              Detected line text is sent securely through our service to
+              Google&apos;s Gemini API. Choose a direction and scope. The
+              original PDF is never overwritten.
+            </p>
+            <p>
+              <strong>Hindi → English</strong>
+            </p>
+            <div className="app__modal-actions">
+              <AppButton
+                title="This page"
+                small
+                onClick={() => queueTranslation("hi-en", "page")}
+              />
+              <AppButton
+                title="Whole PDF"
+                small
+                onClick={() => queueTranslation("hi-en", "document")}
+              />
+            </div>
+            <p>
+              <strong>English → Hindi</strong>
+            </p>
+            <div className="app__modal-actions">
+              <AppButton
+                title="This page"
+                small
+                onClick={() => queueTranslation("en-hi", "page")}
+              />
+              <AppButton
+                title="Whole PDF"
+                small
+                onClick={() => queueTranslation("en-hi", "document")}
+              />
+            </div>
+            <div className="app__modal-actions">
+              <AppButton
+                title="Cancel"
+                small
+                variant="ghost"
+                onClick={() => setTranslationOptionsVisible(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {aiConsentVisible && (
         <div className="app__modal-backdrop">
           <div
@@ -852,11 +1116,15 @@ export function EditPdfTool() {
             role="dialog"
             aria-labelledby="ai-ocr-title"
           >
-            <h2 id="ai-ocr-title">Enhance with AI OCR</h2>
+            <h2 id="ai-ocr-title">
+              {aiGateMode === "translate"
+                ? "Security check for translation"
+                : "Enhance with AI OCR"}
+            </h2>
             <p>
-              This page image will be sent securely through our service to
-              Google&apos;s Gemini API for higher-accuracy text detection. The
-              original PDF is never changed.
+              {aiGateMode === "translate"
+                ? "Complete the security check, then detected source-language lines will be translated through our Gemini proxy. The original PDF is never changed."
+                : "This page image will be sent securely through our service to Google's Gemini API for higher-accuracy text detection. The original PDF is never changed."}
             </p>
             <TurnstileWidget onToken={setTurnstileToken} />
             <div className="app__modal-actions">
@@ -864,7 +1132,10 @@ export function EditPdfTool() {
                 title="Cancel"
                 small
                 variant="ghost"
-                onClick={() => setAiConsentVisible(false)}
+                onClick={() => {
+                  setAiConsentVisible(false);
+                  setPendingTranslation(null);
+                }}
               />
               <AppButton
                 title="Continue"

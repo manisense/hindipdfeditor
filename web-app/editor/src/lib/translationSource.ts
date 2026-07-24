@@ -1,9 +1,15 @@
 const DEVANAGARI_RE = /[\u0900-\u097f]/u;
+const LATIN_RE = /[A-Za-z]/u;
 const LATIN_GLOBAL_RE = /[A-Za-z]/gu;
 const DEVANAGARI_GLOBAL_RE = /[\u0900-\u097f]/gu;
 
 export function containsDevanagari(text: string): boolean {
   return DEVANAGARI_RE.test(text);
+}
+
+/** True when `text` contains at least one Latin letter. */
+export function containsLatin(text: string): boolean {
+  return LATIN_RE.test(text);
 }
 
 /** Rejects short/Latin-heavy OCR noise before Hindi-to-English translation. */

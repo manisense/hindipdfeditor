@@ -6,6 +6,11 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ### Added — Phase 4.8 production translation foundation
 
+- Deployed the production AI API Worker on the `localcode.ai@gmail.com` Cloudflare account with D1
+  (`hindipdfeditor-ai`), Turnstile, HMAC session secrets, observability logs, and custom domain
+  `api.hindipdfeditor.com`. Live smoke tests confirmed Hindi → English and English → Hindi.
+- Added **Translate** inside the web Edit PDF tool (page or whole document, both directions) behind
+  the same Turnstile + Gemini proxy path used by `/edit/?tool=translate`.
 - Replaced Android's bring-your-own-key flow with anonymous signed sessions to the production AI
   API. Removed `expo-secure-store`, the API-key prompt/storage modules, and every direct Gemini
   request from the app bundle.

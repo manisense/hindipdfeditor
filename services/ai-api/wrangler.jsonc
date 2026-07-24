@@ -22,7 +22,7 @@
     {
       "binding": "AI_DB",
       "database_name": "hindipdfeditor-ai",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "ff58c3b6-b2be-4fe5-ade7-a9e25a0ee9b7",
       "migrations_dir": "migrations",
     },
   ],
@@ -36,14 +36,26 @@
       },
     },
   ],
-  "analytics_engine_datasets": [
+  "routes": [
     {
-      "binding": "AI_ANALYTICS",
-      "dataset": "hindipdfeditor_ai_api",
+      "pattern": "api.hindipdfeditor.com",
+      "custom_domain": true,
     },
   ],
   "observability": {
-    "enabled": true,
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true,
+    },
+    "traces": {
+      "enabled": false,
+      "persist": true,
+      "head_sampling_rate": 1,
+    },
   },
   "triggers": {
     "crons": ["17 2 * * *"],
