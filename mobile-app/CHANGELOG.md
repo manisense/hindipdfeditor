@@ -11,6 +11,8 @@ All notable changes to this project are documented here, grouped by phase (see `
   `api.hindipdfeditor.com`. Live smoke tests confirmed Hindi → English and English → Hindi.
 - Added **Translate** inside the web Edit PDF tool (page or whole document, both directions) behind
   the same Turnstile + Gemini proxy path used by `/edit/?tool=translate`.
+- Auto-detects Hindi vs English source text and enables only the matching translation direction.
+  Clicking outside an active edit line dismisses it without selecting a nearby line.
 - Replaced Android's bring-your-own-key flow with anonymous signed sessions to the production AI
   API. Removed `expo-secure-store`, the API-key prompt/storage modules, and every direct Gemini
   request from the app bundle.

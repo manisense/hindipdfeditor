@@ -15,10 +15,13 @@ import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
 import { getFontBase64 } from "../lib/fontAsset";
 import {
   containsDevanagari,
+  detectTranslationDirection,
+  isTranslatableEnglishLine,
   isTranslatableHindiLine,
 } from "../lib/translationSource";
 import { detectLegacyFonts } from "../lib/legacyFontDetector";
 import { detectTextLines } from "../lib/ocr";
+import { extractEmbeddedTextLines } from "../lib/pdfTextExtract";
 import {
   getPageCount,
   getPdfBase64,
@@ -44,6 +47,7 @@ const UNKNOWN_ENCODING_FONT_NAME = "unknown (font inspection failed)";
 /** Soft caps so a phone/tab browser does not OOM on huge scans. */
 const MAX_FILE_BYTES = 40 * 1024 * 1024;
 const MAX_PAGES = 40;
+const DETECT_PAGES = 5;
 const LATIN_RE = /[A-Za-z]/u;
 
 type Progress = {
@@ -63,6 +67,23 @@ function throwIfAborted(signal: AbortSignal): void {
   if (signal.aborted) {
     throw new DOMException("Translation cancelled", "AbortError");
   }
+}
+
+async function detectDirectionFromPdf(
+  bytes: Uint8Array,
+): Promise<TranslationDirection | null> {
+  setPdfBytes(bytes);
+  const pageCount = Math.min(await getPageCount(), DETECT_PAGES);
+  const texts: string[] = [];
+  for (let page = 0; page < pageCount; page += 1) {
+    try {
+      const lines = await extractEmbeddedTextLines(bytes, page);
+      for (const line of lines) texts.push(line.text);
+    } catch {
+      /* ignore page extract failures during language probe */
+    }
+  }
+  return detectTranslationDirection(texts);
 }
 
 async function detectLegacyFontWarnings(
@@ -158,12 +179,14 @@ async function buildTranslatedDocument(
     const sourceLines = lines.filter((line) =>
       direction === "hi-en"
         ? isTranslatableHindiLine(line.text)
-        : LATIN_RE.test(line.text),
+        : isTranslatableEnglishLine(line.text),
     );
     if (sourceLines.length === 0) {
       // Count source-script lines that were filtered as OCR noise for the UX summary.
       skippedLines += lines.filter((line) =>
-        direction === "hi-en" ? containsDevanagari(line.text) : LATIN_RE.test(line.text),
+        direction === "hi-en"
+          ? containsDevanagari(line.text)
+          : LATIN_RE.test(line.text),
       ).length;
       pages.push({ ...page, ocrLines: lines });
       continue;
@@ -291,10 +314,11 @@ async function buildTranslatedDocument(
 export function TranslatePdfTool() {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [detectingLanguage, setDetectingLanguage] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
-  const [direction, setDirection] = useState<TranslationDirection>("hi-en");
+  const [direction, setDirection] = useState<TranslationDirection | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -304,8 +328,31 @@ export function TranslatePdfTool() {
     abortRef.current?.abort();
   };
 
+  const selectFile = async (next: File) => {
+    setFile(next);
+    setResult(null);
+    setError(null);
+    setDirection(null);
+    setDetectingLanguage(true);
+    try {
+      const bytes = new Uint8Array(await next.arrayBuffer());
+      const detected = await detectDirectionFromPdf(bytes);
+      setDirection(detected);
+      if (!detected) {
+        setError(
+          "Could not detect clear Hindi or English text in this PDF. Try a digital (text-layer) file, or use Edit PDF → Enhance with AI first.",
+        );
+      }
+    } catch (err) {
+      setDirection(null);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDetectingLanguage(false);
+    }
+  };
+
   const runTranslate = async () => {
-    if (!file || busy) return;
+    if (!file || busy || !direction) return;
     const controller = new AbortController();
     abortRef.current = controller;
     setBusy(true);
@@ -385,12 +432,10 @@ export function TranslatePdfTool() {
           <DropZone
             accent={tool.accent}
             title="Translate Hindi ↔ English PDF"
-            subtitle="Secure AI translation in either direction. No API key entry; the original file is never overwritten."
+            subtitle="Language is detected automatically. No API key entry; the original file is never overwritten."
             buttonLabel="Select PDF"
             onFiles={(files) => {
-              setFile(files[0]);
-              setResult(null);
-              setError(null);
+              void selectFile(files[0]);
             }}
           />
         ) : (
@@ -405,26 +450,25 @@ export function TranslatePdfTool() {
               Google&apos;s Gemini API. Output is a new file; the source PDF is
               never modified.
             </p>
-            <fieldset disabled={busy}>
+            <fieldset disabled={busy || detectingLanguage}>
               <legend>Translation direction</legend>
-              <label>
-                <input
-                  type="radio"
-                  name="translation-direction"
-                  checked={direction === "hi-en"}
-                  onChange={() => setDirection("hi-en")}
-                />{" "}
-                Hindi → English
-              </label>{" "}
-              <label>
-                <input
-                  type="radio"
-                  name="translation-direction"
-                  checked={direction === "en-hi"}
-                  onChange={() => setDirection("en-hi")}
-                />{" "}
-                English → Hindi
-              </label>
+              {detectingLanguage ? (
+                <p className="utility-tool__note">Detecting language…</p>
+              ) : direction ? (
+                <p>
+                  <strong>
+                    {direction === "hi-en"
+                      ? "Hindi → English"
+                      : "English → Hindi"}
+                  </strong>{" "}
+                  (auto-detected; the other direction is disabled for this
+                  file)
+                </p>
+              ) : (
+                <p className="utility-tool__note">
+                  No clear Hindi or English source text detected.
+                </p>
+              )}
             </fieldset>
             <TurnstileWidget onToken={setTurnstileToken} />
             <div className="utility-tool__actions">
@@ -432,11 +476,12 @@ export function TranslatePdfTool() {
                 title="Choose another"
                 variant="ghost"
                 small
-                disabled={busy}
+                disabled={busy || detectingLanguage}
                 onClick={() => {
                   setFile(null);
                   setResult(null);
                   setError(null);
+                  setDirection(null);
                 }}
               />
               {busy ? (
@@ -449,7 +494,7 @@ export function TranslatePdfTool() {
                 <AppButton
                   title="Translate & download"
                   onClick={() => void runTranslate()}
-                  disabled={!turnstileToken}
+                  disabled={!turnstileToken || !direction || detectingLanguage}
                 />
               )}
             </div>

@@ -1,6 +1,8 @@
 import {
   containsDevanagari,
   containsLatin,
+  detectTranslationDirection,
+  isTranslatableEnglishLine,
   isTranslatableHindiLine,
 } from "./translationSource";
 
@@ -21,5 +23,29 @@ describe("translation source filtering", () => {
     expect(isTranslatableHindiLine("FORM OF APPLICATION पत्र FOR LEAVE")).toBe(
       false,
     );
+  });
+
+  it("accepts English lines and rejects Devanagari mixed into English filter", () => {
+    expect(isTranslatableEnglishLine("Employee name and date")).toBe(true);
+    expect(isTranslatableEnglishLine("नमस्ते")).toBe(false);
+    expect(isTranslatableEnglishLine("Hello नमस्ते")).toBe(false);
+  });
+
+  it("picks one translation direction from detected lines", () => {
+    expect(
+      detectTranslationDirection([
+        "आवेदन पत्र का प्रपत्र",
+        "कर्मचारी का नाम",
+        "FORM",
+      ]),
+    ).toBe("hi-en");
+    expect(
+      detectTranslationDirection([
+        "PROGRAMME: Bachelor of Technology",
+        "DISCIPLINE: Electronics and Communication Engineering",
+        "CE 101",
+      ]),
+    ).toBe("en-hi");
+    expect(detectTranslationDirection(["...", "123"])).toBeNull();
   });
 });

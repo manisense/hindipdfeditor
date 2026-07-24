@@ -35,7 +35,8 @@ import {
 } from "../lib/pdfToImages";
 import { getTool, readEditModeFromLocation } from "../lib/tools";
 import {
-  containsLatin,
+  detectTranslationDirection,
+  isTranslatableEnglishLine,
   isTranslatableHindiLine,
 } from "../lib/translationSource";
 import { geometryForTranslatedLine } from "../lib/translateEdits";
@@ -104,6 +105,8 @@ export function EditPdfTool() {
   const [aiConsentVisible, setAiConsentVisible] = useState(false);
   const [translationOptionsVisible, setTranslationOptionsVisible] =
     useState(false);
+  const [detectedDirection, setDetectedDirection] =
+    useState<TranslationDirection | null>(null);
   const [pendingTranslation, setPendingTranslation] = useState<{
     direction: TranslationDirection;
     scope: "page" | "document";
@@ -324,15 +327,25 @@ export function EditPdfTool() {
   };
 
   const handleTranslatePressed = () => {
+    const doc = useEditStore.getState().document;
+    if (!doc) return;
+    const pageTexts = doc.pages.flatMap((pageState) =>
+      pageState.ocrLines.map((line) => line.text),
+    );
+    // Prefer the current page when it already has detections; otherwise use the whole doc.
+    const currentTexts =
+      doc.pages[currentPageIndex]?.ocrLines.map((line) => line.text) ?? [];
+    const direction =
+      detectTranslationDirection(currentTexts) ??
+      detectTranslationDirection(pageTexts);
+    setDetectedDirection(direction);
     setTranslationOptionsVisible(true);
   };
 
-  const queueTranslation = (
-    direction: TranslationDirection,
-    scope: "page" | "document",
-  ) => {
+  const queueTranslation = (scope: "page" | "document") => {
+    if (!detectedDirection) return;
     setTranslationOptionsVisible(false);
-    setPendingTranslation({ direction, scope });
+    setPendingTranslation({ direction: detectedDirection, scope });
     setAiGateMode("translate");
     setTurnstileToken(null);
     setAiConsentVisible(true);
@@ -385,7 +398,7 @@ export function EditPdfTool() {
         const sourceLines = lines.filter((line) =>
           direction === "hi-en"
             ? isTranslatableHindiLine(line.text)
-            : containsLatin(line.text),
+            : isTranslatableEnglishLine(line.text),
         );
         if (sourceLines.length === 0) continue;
 
@@ -610,8 +623,10 @@ export function EditPdfTool() {
 
     if (focusedEditId) {
       if (hitEdit?.id === focusedEditId) return;
+      // Clicking outside the active line only exits edit mode for that line.
+      // Do not start editing a nearby OCR/text hit on the same click.
       setFocusedEditId(null);
-      // Fall through so the same click can select another line / place text.
+      return;
     }
 
     if (hitEdit) {
@@ -1014,8 +1029,9 @@ export function EditPdfTool() {
                         focused={edit.id === focusedEditId}
                         selectAllOnFocus={edit.id === selectAllEditId}
                         onFocus={() => {
+                          // While another line is focused, refuse focus transfer so an
+                          // outside/nearby click only dismisses the active editor.
                           if (focusedEditId && focusedEditId !== edit.id) {
-                            setFocusedEditId(null);
                             return false;
                           }
                           setFocusedEditId(edit.id);
@@ -1062,41 +1078,38 @@ export function EditPdfTool() {
             aria-labelledby="translate-title"
           >
             <h2 id="translate-title">Translate PDF</h2>
-            <p>
-              Detected line text is sent securely through our service to
-              Google&apos;s Gemini API. Choose a direction and scope. The
-              original PDF is never overwritten.
-            </p>
-            <p>
-              <strong>Hindi → English</strong>
-            </p>
-            <div className="app__modal-actions">
-              <AppButton
-                title="This page"
-                small
-                onClick={() => queueTranslation("hi-en", "page")}
-              />
-              <AppButton
-                title="Whole PDF"
-                small
-                onClick={() => queueTranslation("hi-en", "document")}
-              />
-            </div>
-            <p>
-              <strong>English → Hindi</strong>
-            </p>
-            <div className="app__modal-actions">
-              <AppButton
-                title="This page"
-                small
-                onClick={() => queueTranslation("en-hi", "page")}
-              />
-              <AppButton
-                title="Whole PDF"
-                small
-                onClick={() => queueTranslation("en-hi", "document")}
-              />
-            </div>
+            {detectedDirection ? (
+              <>
+                <p>
+                  Detected{" "}
+                  <strong>
+                    {detectedDirection === "hi-en"
+                      ? "Hindi → English"
+                      : "English → Hindi"}
+                  </strong>
+                  . Source-language lines are sent securely through our Gemini
+                  proxy. The original PDF is never overwritten.
+                </p>
+                <div className="app__modal-actions">
+                  <AppButton
+                    title="This page"
+                    small
+                    onClick={() => queueTranslation("page")}
+                  />
+                  <AppButton
+                    title="Whole PDF"
+                    small
+                    onClick={() => queueTranslation("document")}
+                  />
+                </div>
+              </>
+            ) : (
+              <p>
+                No clear Hindi or English source text was detected yet. Run{" "}
+                <strong>Enhance with AI</strong> or wait for text detection,
+                then try Translate again.
+              </p>
+            )}
             <div className="app__modal-actions">
               <AppButton
                 title="Cancel"
