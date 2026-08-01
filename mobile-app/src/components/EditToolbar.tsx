@@ -83,6 +83,7 @@ export function EditToolbar({
         <View style={styles.sizeGroup}>
           <AppButton
             title="A−"
+            accessibilityLabel="Decrease font size"
             small
             variant="secondary"
             disabled={fontSizePt <= MIN_FONT_SIZE_PT}
@@ -93,6 +94,7 @@ export function EditToolbar({
           <Text style={styles.sizeLabel}>{Math.round(fontSizePt)}pt</Text>
           <AppButton
             title="A+"
+            accessibilityLabel="Increase font size"
             small
             variant="secondary"
             disabled={fontSizePt >= MAX_FONT_SIZE_PT}
@@ -110,6 +112,7 @@ export function EditToolbar({
               accessibilityLabel={preset.label}
               accessibilityState={{ selected: color.toLowerCase() === preset.value }}
               onPress={() => onColorChange(preset.value)}
+              hitSlop={8}
               style={[
                 styles.colorSwatch,
                 { backgroundColor: preset.value },
@@ -187,6 +190,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     minWidth: 36,
+    minHeight: 40,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   chipActive: {
@@ -217,8 +222,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   colorSwatch: {
-    width: 26,
-    height: 26,
+    width: 32,
+    height: 32,
     borderRadius: 13,
     borderWidth: 2,
     borderColor: colors.border,

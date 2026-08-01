@@ -161,10 +161,12 @@ type OcrStatusByPage = Record<number, 'running' | 'done' | 'failed'>;
 
 type Status =
   | { state: 'idle' }
-  | { state: 'opening' }
-  | { state: 'saving' }
+  | { state: 'opening'; completedPages?: number; totalPages?: number }
+  | { state: 'saving'; completedPages: number; totalPages: number }
   | { state: 'saved'; uri: string; savedUri?: string }
   | { state: 'error'; message: string };
+
+type ResultAction = 'folder' | 'share' | null;
 
 function filenameFromUri(uri: string): string {
   const encodedName = uri.split('/').pop() ?? 'Document.pdf';
@@ -211,9 +213,12 @@ export default function App() {
   const [legacySafeModePages, setLegacySafeModePages] = useState<Set<number>>(() => new Set());
   const [editMode, setEditMode] = useState<EditMode>('edit');
   const [pageZoom, setPageZoom] = useState(1);
+  const [resetZoomSignal, setResetZoomSignal] = useState(0);
+  const [editingRegion, setEditingRegion] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const editPinchStartRef = useRef<{ fontSizePt: number; widthPt?: number } | null>(null);
   const [lastExportedDocument, setLastExportedDocument] = useState<DocumentState | null>(null);
+  const [resultAction, setResultAction] = useState<ResultAction>(null);
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () =>
@@ -243,16 +248,26 @@ export default function App() {
   const canRedo = useEditStore((s) => s.future.length > 0);
 
   const openPdf = async () => {
+    const previousStatus = status;
     setStatus({ state: 'opening' });
     try {
-      const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
       if (result.canceled) {
-        setStatus({ state: 'idle' });
+        setStatus(previousStatus);
         return;
       }
-      const sourceUri = result.assets[0].uri;
+      const sourceAsset = result.assets[0];
+      const sourceUri = sourceAsset.uri;
 
       const pageCount = await getPageCount(sourceUri);
+      if (!Number.isInteger(pageCount) || pageCount <= 0) {
+        throw new Error('This PDF does not contain any readable pages.');
+      }
+      setStatus({ state: 'opening', completedPages: 0, totalPages: pageCount });
       const pages: PageState[] = [];
       for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
         const image = await renderPage(sourceUri, pageIndex, RASTER_SCALE);
@@ -270,9 +285,16 @@ export default function App() {
           edits: [],
           ocrLines: [],
         });
+        setStatus({ state: 'opening', completedPages: pageIndex + 1, totalPages: pageCount });
       }
       const legacyFontWarnings = await detectLegacyFontWarnings(sourceUri, pageCount);
-      const newDocument: DocumentState = { sourceUri, pageCount, pages, legacyFontWarnings };
+      const newDocument: DocumentState = {
+        sourceUri,
+        displayName: sourceAsset.name || filenameFromUri(sourceUri),
+        pageCount,
+        pages,
+        legacyFontWarnings,
+      };
       loadDocument(newDocument);
       setCurrentPageIndex(0);
       setFocusedEditId(null);
@@ -396,10 +418,23 @@ export default function App() {
 
   const applyFontFamily = (family: DevanagariFontFamily) => {
     setDefaultFontFamily(family);
-    if (focusedEdit) {
+    if (focusedEdit && focusedEdit.fontFamily !== family) {
       checkpoint();
       updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily: family });
     }
+  };
+
+  const updateFocusedTextEdit = (
+    changes: Partial<Pick<TextEdit, 'fontSizePt' | 'color' | 'fontWeight'>>,
+  ) => {
+    if (!focusedEdit) return;
+    const changed =
+      (changes.fontSizePt !== undefined && changes.fontSizePt !== focusedEdit.fontSizePt) ||
+      (changes.color !== undefined && changes.color !== focusedEdit.color) ||
+      (changes.fontWeight !== undefined && changes.fontWeight !== focusedEdit.fontWeight);
+    if (!changed) return;
+    checkpoint();
+    updateTextEdit(currentPageIndex, focusedEdit.id, changes);
   };
 
   const chooseFontFamily = async (family: DevanagariFontFamily) => {
@@ -545,8 +580,8 @@ export default function App() {
     setFocusedEditId(null);
     Keyboard.dismiss();
     setTranslating(true);
+    let translatedCount = 0;
     try {
-      let translatedCount = 0;
       let checkpointed = false;
       const legacyPages = new Set(doc.legacyFontWarnings.map((w) => w.page));
 
@@ -690,7 +725,12 @@ export default function App() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      Alert.alert('Translate failed', message);
+      Alert.alert(
+        translatedCount > 0 ? 'Translation partially completed' : 'Translate failed',
+        translatedCount > 0
+          ? `${translatedCount} line${translatedCount === 1 ? ' was' : 's were'} applied before the service stopped. Review the document or tap Undo once to revert this translation.\n\n${message}`
+          : message,
+      );
     } finally {
       setTranslating(false);
     }
@@ -816,7 +856,7 @@ export default function App() {
   };
 
   const handleTap = async (xPt: number, yPt: number) => {
-    if (editingBlocked || editMode === 'erase') return;
+    if (editingBlocked || editingRegion || editMode === 'erase') return;
     if (!page) return;
 
     const textEdits = page.edits.filter((e): e is TextEdit => e.type === 'text');
@@ -840,61 +880,66 @@ export default function App() {
 
     const hitLine = findOcrTargetAt(page.ocrLines, xPt, yPt);
     if (hitLine) {
-      // One checkpoint for the whole group (consume line + mask + text) = one undo step.
-      checkpoint();
-      // Consume the line so its highlight disappears and a second tap can't double-mask it.
-      setOcrLines(
-        currentPageIndex,
-        page.ocrLines.filter((l) => l.id !== hitLine.id),
-      );
-      const fontSizePt = fontSizeForOcrLine(hitLine.hPt);
-      const textY = hitLine.yPt + hitLine.hPt * OCR_TEXT_BASELINE_NUDGE_RATIO;
-      const { x: sampleXPx, y: sampleYPx } = ptToImagePx(
-        hitLine.xPt,
-        hitLine.yPt,
-        page.imagePxWidth,
-        page.widthPt,
-      );
-      const { wPx: sampleWPx, hPx: sampleHPx } = ptSizeToImagePx(
-        hitLine.wPt,
-        hitLine.hPt,
-        page.imagePxWidth,
-        page.widthPt,
-      );
-      let textColor = '#111111';
+      setEditingRegion(true);
       try {
-        textColor = await sampleTextColor(
-          page.backgroundImageUri,
-          Math.round(sampleXPx),
-          Math.round(sampleYPx),
-          Math.round(sampleWPx),
-          Math.round(sampleHPx),
+        // One checkpoint for the whole group (consume line + mask + text) = one undo step.
+        checkpoint();
+        // Consume the line so its highlight disappears and a second tap can't double-mask it.
+        setOcrLines(
+          currentPageIndex,
+          page.ocrLines.filter((l) => l.id !== hitLine.id),
         );
-      } catch (error) {
-        console.warn('sampleTextColor failed, falling back to black', error);
+        const fontSizePt = fontSizeForOcrLine(hitLine.hPt);
+        const textY = hitLine.yPt + hitLine.hPt * OCR_TEXT_BASELINE_NUDGE_RATIO;
+        const { x: sampleXPx, y: sampleYPx } = ptToImagePx(
+          hitLine.xPt,
+          hitLine.yPt,
+          page.imagePxWidth,
+          page.widthPt,
+        );
+        const { wPx: sampleWPx, hPx: sampleHPx } = ptSizeToImagePx(
+          hitLine.wPt,
+          hitLine.hPt,
+          page.imagePxWidth,
+          page.widthPt,
+        );
+        let textColor = '#111111';
+        try {
+          textColor = await sampleTextColor(
+            page.backgroundImageUri,
+            Math.round(sampleXPx),
+            Math.round(sampleYPx),
+            Math.round(sampleWPx),
+            Math.round(sampleHPx),
+          );
+        } catch (error) {
+          console.warn('sampleTextColor failed, falling back to black', error);
+        }
+        const fontWeight: 'normal' | 'bold' = fontSizePt >= 13 ? 'bold' : 'normal';
+        // Mask taller than the detected box, upward only (see OCR_MASK_PAD_TOP_RATIO's
+        // docstring), but keep the replacement text anchored at the detected line's own origin.
+        const padTop = hitLine.hPt * OCR_MASK_PAD_TOP_RATIO;
+        await maskAndReplaceRegion(
+          {
+            xPt: hitLine.xPt,
+            yPt: hitLine.yPt - padTop,
+            wPt: hitLine.wPt,
+            hPt: hitLine.hPt + padTop,
+          },
+          {
+            xPt: hitLine.xPt,
+            yPt: textY,
+            prefill: hitLine.text,
+            fontSizePt,
+            widthPt: hitLine.wPt * OCR_TEXT_WIDTH_SLACK_RATIO,
+            color: textColor,
+            fontWeight,
+          },
+          hitLine,
+        );
+      } finally {
+        setEditingRegion(false);
       }
-      const fontWeight: 'normal' | 'bold' = fontSizePt >= 13 ? 'bold' : 'normal';
-      // Mask taller than the detected box, upward only (see OCR_MASK_PAD_TOP_RATIO's
-      // docstring), but keep the replacement text anchored at the detected line's own origin.
-      const padTop = hitLine.hPt * OCR_MASK_PAD_TOP_RATIO;
-      await maskAndReplaceRegion(
-        {
-          xPt: hitLine.xPt,
-          yPt: hitLine.yPt - padTop,
-          wPt: hitLine.wPt,
-          hPt: hitLine.hPt + padTop,
-        },
-        {
-          xPt: hitLine.xPt,
-          yPt: textY,
-          prefill: hitLine.text,
-          fontSizePt,
-          widthPt: hitLine.wPt * OCR_TEXT_WIDTH_SLACK_RATIO,
-          color: textColor,
-          fontWeight,
-        },
-        hitLine,
-      );
       return;
     }
 
@@ -952,21 +997,28 @@ export default function App() {
   };
 
   const handleMaskDrawn = async (rect: DrawnMaskRect) => {
-    if (!page || editingBlocked || editMode !== 'erase') return;
-    checkpoint();
-    const geometry = textBoxGeometry(page.widthPt, rect.xPt, Math.max(72, rect.wPt * 1.25));
-    await maskAndReplaceRegion(rect, {
-      xPt: geometry.xPt,
-      yPt: rect.yPt,
-      prefill: '',
-      fontSizePt: DEFAULT_FONT_SIZE_PT,
-      widthPt: geometry.widthPt,
-    });
+    if (!page || editingBlocked || editingRegion || editMode !== 'erase') return;
+    setEditingRegion(true);
+    try {
+      checkpoint();
+      const geometry = textBoxGeometry(page.widthPt, rect.xPt, Math.max(72, rect.wPt * 1.25));
+      await maskAndReplaceRegion(rect, {
+        xPt: geometry.xPt,
+        yPt: rect.yPt,
+        prefill: '',
+        fontSizePt: DEFAULT_FONT_SIZE_PT,
+        widthPt: geometry.widthPt,
+      });
+    } finally {
+      setEditingRegion(false);
+    }
   };
 
   const saveAndExport = async () => {
     if (!document || translating || enhancingPage !== null) return;
-    setStatus({ state: 'saving' });
+    setFocusedEditId(null);
+    Keyboard.dismiss();
+    setStatus({ state: 'saving', completedPages: 0, totalPages: document.pages.length });
     try {
       const usedFamilies = new Set<DevanagariFontFamily>();
       for (const page of document.pages) {
@@ -989,7 +1041,9 @@ export default function App() {
           ),
         ),
       );
-      const uri = await exportPdf(document, embeddedFonts);
+      const uri = await exportPdf(document, embeddedFonts, (progress) =>
+        setStatus({ state: 'saving', ...progress }),
+      );
       setLastExportedDocument(document);
       setStatus({ state: 'saved', uri });
     } catch (error) {
@@ -1002,23 +1056,30 @@ export default function App() {
 
   const shareResult = async () => {
     if (status.state !== 'saved') return;
-    if (!(await Sharing.isAvailableAsync())) {
-      setStatus({ state: 'error', message: 'Sharing is not available on this device.' });
-      return;
+    setResultAction('share');
+    try {
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert('Sharing unavailable', 'Sharing is not available on this device.');
+        return;
+      }
+      await Sharing.shareAsync(status.uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+    } catch (error) {
+      Alert.alert('Could not share PDF', error instanceof Error ? error.message : String(error));
+    } finally {
+      setResultAction(null);
     }
-    await Sharing.shareAsync(status.uri, { UTI: '.pdf', mimeType: 'application/pdf' });
   };
 
   const saveResultToFolder = async () => {
     if (status.state !== 'saved') return;
+    setResultAction('folder');
     try {
       const savedUri = await savePdfToPickedDirectory(status.uri, documentName);
       if (savedUri) setStatus({ ...status, savedUri });
     } catch (error) {
-      setStatus({
-        state: 'error',
-        message: error instanceof Error ? error.message : String(error),
-      });
+      Alert.alert('Could not save PDF', error instanceof Error ? error.message : String(error));
+    } finally {
+      setResultAction(null);
     }
   };
 
@@ -1068,7 +1129,8 @@ export default function App() {
 
   const ocrStatus = ocrStatusByPage[currentPageIndex];
   const hasRunningOcr = Object.values(ocrStatusByPage).some((state) => state === 'running');
-  const documentBusy = displayStatus.state === 'saving' || translating || enhancingPage !== null;
+  const documentBusy =
+    displayStatus.state === 'saving' || translating || enhancingPage !== null || editingRegion;
   const interactionBlocked = editingBlocked || documentBusy;
   const pageLooksEmpty =
     page?.isBlank === true ||
@@ -1078,22 +1140,24 @@ export default function App() {
       ? ` One finger to pan (${Math.round(pageZoom * 100)}% zoom). Pinch to zoom.`
       : ' Pinch to zoom in. One finger to pan when zoomed.';
   const editStretchHint = focusedEdit ? ' Pinch with 2 fingers on selected text to resize.' : '';
-  const hintText = editingBlocked
-    ? 'Editing is disabled on this page — see the warning above.'
-    : editMode === 'erase'
-      ? `Erase mode — drag a box over text OCR missed, then type replacement text.${zoomHint}`
-      : editMode === 'addText'
-        ? ocrStatus === 'running'
-          ? 'Finding text on this page…'
-          : `Add Text — tap anywhere to place new text.${zoomHint}${editStretchHint}`
-        : pageLooksEmpty
-          ? `This page is empty — tap anywhere to start writing.${zoomHint}`
-          : ocrStatus === 'running'
+  const hintText = editingRegion
+    ? 'Preparing the replacement area and matching its colors…'
+    : editingBlocked
+      ? 'Editing is disabled on this page — see the warning above.'
+      : editMode === 'erase'
+        ? `Erase mode — drag a box over text OCR missed, then type replacement text.${zoomHint}`
+        : editMode === 'addText'
+          ? ocrStatus === 'running'
             ? 'Finding text on this page…'
-            : ocrStatus === 'failed'
-              ? `Edit text — tap a line to change it.${zoomHint}${editStretchHint}`
-              : `Edit text — tap any detected line to change it.${zoomHint}${editStretchHint}`;
-  const documentName = document ? filenameFromUri(document.sourceUri) : '';
+            : `Add Text — tap anywhere to place new text.${zoomHint}${editStretchHint}`
+          : pageLooksEmpty
+            ? `This page is empty — tap anywhere to start writing.${zoomHint}`
+            : ocrStatus === 'running'
+              ? 'Finding text on this page…'
+              : ocrStatus === 'failed'
+                ? `Edit text — tap a line to change it.${zoomHint}${editStretchHint}`
+                : `Edit text — tap any detected line to change it.${zoomHint}${editStretchHint}`;
+  const documentName = document ? document.displayName || filenameFromUri(document.sourceUri) : '';
   const compactEditing = keyboardVisible && focusedEdit !== null;
 
   return (
@@ -1122,10 +1186,25 @@ export default function App() {
       )}
 
       {displayStatus.state === 'opening' && (
-        <View style={[styles.centered, styles.fill, styles.openingSurface]}>
+        <View
+          style={[styles.centered, styles.fill, styles.openingSurface]}
+          accessibilityLiveRegion="polite"
+        >
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.progressText}>Opening PDF…</Text>
-          <Text style={styles.progressSubText}>Preparing a crisp, editable document view</Text>
+          <Text style={styles.progressText}>
+            {displayStatus.totalPages
+              ? (displayStatus.completedPages ?? 0) >= displayStatus.totalPages
+                ? `Prepared ${displayStatus.totalPages} of ${displayStatus.totalPages} pages`
+                : `Preparing page ${(displayStatus.completedPages ?? 0) + 1} of ${
+                    displayStatus.totalPages
+                  }`
+              : 'Opening PDF…'}
+          </Text>
+          <Text style={styles.progressSubText}>
+            {displayStatus.totalPages && displayStatus.completedPages === displayStatus.totalPages
+              ? 'Checking fonts and document safety…'
+              : 'Building a crisp, editable document view'}
+          </Text>
         </View>
       )}
 
@@ -1248,11 +1327,16 @@ export default function App() {
                 </>
               )}
               <AppButton
-                title={displayStatus.state === 'saving' ? 'Exporting…' : '✓ Export'}
+                title={
+                  displayStatus.state === 'saving'
+                    ? `Export ${displayStatus.completedPages}/${displayStatus.totalPages}`
+                    : '✓ Export'
+                }
                 accessibilityLabel="Export PDF"
                 small
                 onPress={saveAndExport}
                 disabled={documentBusy}
+                busy={displayStatus.state === 'saving'}
               />
             </View>
           </View>
@@ -1286,9 +1370,18 @@ export default function App() {
                   <Text style={styles.pagerLabel}>1 page</Text>
                 )}
                 <View style={styles.commandActions}>
-                  <View style={styles.zoomPill}>
-                    <Text style={styles.zoomPillText}>{Math.round(pageZoom * 100)}%</Text>
-                  </View>
+                  <AppButton
+                    title={`${Math.round(pageZoom * 100)}%`}
+                    accessibilityLabel="Reset page zoom to fit width"
+                    small
+                    variant="ghost"
+                    onPress={() => {
+                      setFocusedEditId(null);
+                      Keyboard.dismiss();
+                      setResetZoomSignal((value) => value + 1);
+                    }}
+                    disabled={pageZoom <= 1.01 || documentBusy}
+                  />
                   <AppButton
                     title="↩ Undo"
                     accessibilityLabel="Undo"
@@ -1317,6 +1410,7 @@ export default function App() {
                   title="✎ Edit text"
                   small
                   variant={editMode === 'edit' ? 'primary' : 'secondary'}
+                  selected={editMode === 'edit'}
                   onPress={() => selectEditMode('edit')}
                   disabled={interactionBlocked}
                 />
@@ -1324,6 +1418,7 @@ export default function App() {
                   title="＋ Add text"
                   small
                   variant={editMode === 'addText' ? 'primary' : 'secondary'}
+                  selected={editMode === 'addText'}
                   onPress={() => selectEditMode('addText')}
                   disabled={interactionBlocked}
                 />
@@ -1338,6 +1433,7 @@ export default function App() {
                   title="⌫ Erase & replace"
                   small
                   variant={editMode === 'erase' ? 'primary' : 'secondary'}
+                  selected={editMode === 'erase'}
                   onPress={() => selectEditMode('erase')}
                   disabled={interactionBlocked}
                 />
@@ -1346,6 +1442,7 @@ export default function App() {
                   small
                   variant="secondary"
                   onPress={handleEnhancePressed}
+                  busy={enhancingPage !== null}
                   disabled={
                     interactionBlocked ||
                     enhancingPage !== null ||
@@ -1359,6 +1456,7 @@ export default function App() {
                   variant="secondary"
                   onPress={() => setTranslationOptionsVisible(true)}
                   disabled={documentBusy}
+                  busy={translating}
                 />
               </ScrollView>
               <View style={styles.hintStrip}>
@@ -1387,17 +1485,11 @@ export default function App() {
                 fontFamily={focusedEdit.fontFamily}
                 color={focusedEdit.color}
                 fontWeight={focusedEdit.fontWeight === 'bold' ? 'bold' : 'normal'}
-                onFontSizeChange={(fontSizePt) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
-                }
+                onFontSizeChange={(fontSizePt) => updateFocusedTextEdit({ fontSizePt })}
                 onFontFamilyChange={applyFontFamily}
                 onOpenFontPicker={() => setFontPickerVisible(true)}
-                onColorChange={(color) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { color })
-                }
-                onFontWeightChange={(fontWeight) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontWeight })
-                }
+                onColorChange={(color) => updateFocusedTextEdit({ color })}
+                onFontWeightChange={(fontWeight) => updateFocusedTextEdit({ fontWeight })}
                 onDelete={() => removeEditGroup(focusedEdit.id)}
                 onDone={handleEditDone}
               />
@@ -1408,7 +1500,7 @@ export default function App() {
             <View style={styles.pageWorkspace}>
               <View style={styles.pageCard}>
                 <PdfPageViewer
-                  key={page.pageIndex}
+                  key={`${page.pageIndex}-${resetZoomSignal}`}
                   page={page}
                   onTap={handleTap}
                   disablePress={interactionBlocked || editMode === 'erase'}
@@ -1483,17 +1575,11 @@ export default function App() {
                     fontFamily={focusedEdit.fontFamily}
                     color={focusedEdit.color}
                     fontWeight={focusedEdit.fontWeight === 'bold' ? 'bold' : 'normal'}
-                    onFontSizeChange={(fontSizePt) =>
-                      updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
-                    }
+                    onFontSizeChange={(fontSizePt) => updateFocusedTextEdit({ fontSizePt })}
                     onFontFamilyChange={applyFontFamily}
                     onOpenFontPicker={() => setFontPickerVisible(true)}
-                    onColorChange={(color) =>
-                      updateTextEdit(currentPageIndex, focusedEdit.id, { color })
-                    }
-                    onFontWeightChange={(fontWeight) =>
-                      updateTextEdit(currentPageIndex, focusedEdit.id, { fontWeight })
-                    }
+                    onColorChange={(color) => updateFocusedTextEdit({ color })}
+                    onFontWeightChange={(fontWeight) => updateFocusedTextEdit({ fontWeight })}
                     onDelete={() => removeEditGroup(focusedEdit.id)}
                     onDone={handleEditDone}
                   />
@@ -1514,13 +1600,22 @@ export default function App() {
           </View>
 
           {!compactEditing && displayStatus.state === 'saving' && (
-            <View style={styles.inlineStatus}>
+            <View style={styles.inlineStatus} accessibilityLiveRegion="polite">
               <ActivityIndicator color={colors.primary} />
-              <Text style={styles.inlineStatusText}>Creating and validating your new PDF…</Text>
+              <Text style={styles.inlineStatusText}>
+                {displayStatus.completedPages === 0
+                  ? 'Preparing fonts and export…'
+                  : displayStatus.completedPages < displayStatus.totalPages
+                    ? `Printed and validated ${displayStatus.completedPages} of ${displayStatus.totalPages} pages…`
+                    : 'All pages validated. Finishing the new PDF…'}
+              </Text>
             </View>
           )}
           {!compactEditing && displayStatus.state === 'saved' && (
-            <View style={[styles.inlineStatus, styles.successCard]}>
+            <View
+              style={[styles.inlineStatus, styles.successCard]}
+              accessibilityLiveRegion="polite"
+            >
               <View style={styles.inlineStatusCopy}>
                 <Text style={styles.successTitle}>
                   {displayStatus.savedUri
@@ -1532,13 +1627,29 @@ export default function App() {
                 </Text>
               </View>
               <View style={styles.inlineStatusActions}>
-                <AppButton title="Save to folder" small onPress={saveResultToFolder} />
-                <AppButton title="Share / open" small variant="secondary" onPress={shareResult} />
+                <AppButton
+                  title={resultAction === 'folder' ? 'Saving…' : 'Save to folder'}
+                  small
+                  onPress={saveResultToFolder}
+                  disabled={resultAction !== null}
+                  busy={resultAction === 'folder'}
+                />
+                <AppButton
+                  title={resultAction === 'share' ? 'Opening…' : 'Share / open'}
+                  small
+                  variant="secondary"
+                  onPress={shareResult}
+                  disabled={resultAction !== null}
+                  busy={resultAction === 'share'}
+                />
               </View>
             </View>
           )}
           {!compactEditing && displayStatus.state === 'error' && (
-            <View style={[styles.inlineStatus, styles.errorCard]}>
+            <View
+              style={[styles.inlineStatus, styles.errorCard]}
+              accessibilityLiveRegion="assertive"
+            >
               <Text style={styles.errorText}>{displayStatus.message}</Text>
             </View>
           )}
@@ -1987,17 +2098,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     minWidth: 48,
     textAlign: 'center',
-  },
-  zoomPill: {
-    borderRadius: 999,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    backgroundColor: '#F0F2F7',
-  },
-  zoomPillText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: colors.textSecondary,
   },
   modeStrip: {
     gap: spacing.sm,

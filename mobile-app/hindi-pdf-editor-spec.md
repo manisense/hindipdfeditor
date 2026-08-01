@@ -221,6 +221,7 @@ type PageState = {
 
 type DocumentState = {
   sourceUri: string;
+  displayName?: string; // original picker filename; sourceUri may be an opaque Android cache URI
   pageCount: number;
   pages: PageState[];
   legacyFontWarnings: { page: number; fontName: string }[];

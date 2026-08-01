@@ -12,6 +12,10 @@ type Props = {
   /** Visual weight: `primary` filled, `secondary` tinted, `danger` destructive, `ghost` text-only. */
   variant?: Variant;
   disabled?: boolean;
+  /** Announces a persistent toggle/mode selection to accessibility services. */
+  selected?: boolean;
+  /** Announces that the action is currently processing. */
+  busy?: boolean;
   /** Compact height/padding for toolbar placement. */
   small?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -28,6 +32,8 @@ export function AppButton({
   accessibilityLabel,
   variant = 'primary',
   disabled,
+  selected,
+  busy,
   small,
   style,
 }: Props) {
@@ -35,7 +41,11 @@ export function AppButton({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
-      accessibilityState={{ disabled: disabled === true }}
+      accessibilityState={{
+        disabled: disabled === true,
+        selected: selected === true,
+        busy: busy === true,
+      }}
       onPress={onPress}
       disabled={disabled}
       hitSlop={small ? 4 : undefined}

@@ -9,6 +9,13 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { documentHtml, type EmbeddedFontData } from './htmlCompositor';
 import type { DocumentState, PageState } from '../state/editStore';
 
+export type ExportProgress = {
+  /** Number of isolated pages already printed and parse-back validated (unitless count). */
+  completedPages: number;
+  /** Total number of pages that will be printed (unitless count). */
+  totalPages: number;
+};
+
 /**
  * Exports the full edited document to a new PDF file via Android's native print pipeline
  * (spec Section 8). Never overwrites `doc.sourceUri` (AGENTS.md: every export produces a new
@@ -19,11 +26,14 @@ import type { DocumentState, PageState } from '../state/editStore';
  *   that isolated print. The validated pages are then copied into one final PDF.
  * @param embeddedFonts Validated base64 font data and exact CSS weight descriptors, keyed by
  *   family name and passed straight through to `documentHtml`.
+ * @param onProgress Optional callback after each isolated page has been printed and validated.
+ *   Both values are unitless page counts. It is never called before that page passes validation.
  * @returns `file://` URI of the newly written PDF.
  */
 export async function exportPdf(
   doc: DocumentState,
   embeddedFonts: Record<string, EmbeddedFontData>,
+  onProgress?: (progress: ExportProgress) => void,
 ): Promise<string> {
   const firstPage = doc.pages[0];
   if (!firstPage) {
@@ -38,7 +48,7 @@ export async function exportPdf(
     // page per print has neither failure mode, supports mixed page sizes, and still delegates
     // all text shaping to Chromium/HarfBuzz. @cantoo/pdf-lib only copies the finished pages;
     // it never draws or reshapes text.
-    for (const page of doc.pages) {
+    for (const [pageIndex, page] of doc.pages.entries()) {
       const backgroundImageDataUrl = await readBackgroundImageDataUrl(page);
       const pageFontFamilies = new Set(
         page.edits.filter((edit) => edit.type === 'text').map((edit) => edit.fontFamily),
@@ -69,6 +79,7 @@ export async function exportPdf(
       });
       printedPageUris.push(uri);
       await assertNonEmptyAndReopenable(uri, [page]);
+      onProgress?.({ completedPages: pageIndex + 1, totalPages: doc.pages.length });
     }
 
     if (printedPageUris.length === 1) {

@@ -6,6 +6,23 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ### Fixed — production readiness audit
 
+- Added honest page-by-page progress while opening and exporting long PDFs. Export progress only
+  advances after each isolated page passes the existing parse-back validation, and the UI explains
+  when the final merge/validation step is running instead of appearing frozen.
+- Preserved the picker-provided document filename rather than showing an opaque Android cache name,
+  added a one-tap fit-width zoom reset, and made text size/color/weight changes consistently
+  checkpointed so each formatting action can be undone.
+- Kept a successful export available when Share/Open or File Manager saving fails or is unavailable;
+  both follow-up actions now prevent duplicate taps, catch platform errors, and present a retryable
+  alert instead of replacing the valid export with an error state.
+- Locked navigation, replacement gestures, export, and document replacement while asynchronous
+  text-region color sampling is completing, preventing a delayed replacement from being applied to
+  a different page or newly opened document.
+- Improved accessibility state for selected editing modes and busy actions, enlarged formatting
+  targets, labeled font-size controls, added live progress/error announcements, and made whole-PDF
+  translation explicitly report when some lines were applied before a later service failure.
+- Raised Android `versionCode` to `5` for the next EAS/Play production bundle.
+
 - Restored the documented lazy per-page OCR policy. Opening a long PDF now starts the two bundled
   ML Kit recognizers only for the visible page instead of launching both recognizers for every
   page concurrently; navigation and whole-document translation request later pages as needed.

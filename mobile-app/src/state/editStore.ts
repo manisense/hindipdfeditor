@@ -108,6 +108,8 @@ export type PageState = {
 
 export type DocumentState = {
   sourceUri: string;
+  /** Human-readable picker filename; sourceUri may be an opaque cache name on Android. */
+  displayName?: string;
   pageCount: number;
   pages: PageState[];
   legacyFontWarnings: { page: number; fontName: string }[];

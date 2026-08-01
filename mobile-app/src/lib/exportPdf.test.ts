@@ -186,6 +186,39 @@ describe('exportPdf', () => {
     expect(mockDeleteAsync).toHaveBeenCalledTimes(2);
   });
 
+  it('reports progress only after each isolated page passes parse-back validation', async () => {
+    const page0 = makeDocument().pages[0];
+    const page1 = {
+      ...page0,
+      pageIndex: 1,
+      backgroundImageUri: 'file:///fake/page-1.jpg',
+    };
+    const printed = await makeFixturePdfBase64(400, 600);
+    let mergedBase64 = '';
+    const onProgress = jest.fn();
+
+    mockPrintToFileAsync
+      .mockResolvedValueOnce({ uri: 'file:///cache/printed-0.pdf' })
+      .mockResolvedValueOnce({ uri: 'file:///cache/printed-1.pdf' });
+    mockGetInfoAsync.mockResolvedValue({ exists: true, size: 1234 });
+    mockWriteAsStringAsync.mockImplementation(async (_uri: string, value: string) => {
+      mergedBase64 = value;
+    });
+    mockReadAsStringAsync.mockImplementation(async (uri: string) => {
+      if (uri.endsWith('.jpg')) return 'ZmFrZS1qcGVn';
+      if (uri.includes('printed-')) return printed;
+      if (uri.endsWith('hindi-pdf-editor-merged-id.pdf')) return mergedBase64;
+      throw new Error(`Unexpected read: ${uri}`);
+    });
+
+    await exportPdf(makeDocument({ pageCount: 2, pages: [page0, page1] }), mockFonts, onProgress);
+
+    expect(onProgress.mock.calls.map(([progress]) => progress)).toEqual([
+      { completedPages: 1, totalPages: 2 },
+      { completedPages: 2, totalPages: 2 },
+    ]);
+  });
+
   it('rejects a page print that contains an unexpected extra blank sheet', async () => {
     const printed = await PDFDocument.create();
     printed.addPage([400, 600]);
