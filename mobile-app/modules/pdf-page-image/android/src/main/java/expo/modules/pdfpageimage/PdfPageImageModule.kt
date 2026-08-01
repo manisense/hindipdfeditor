@@ -109,30 +109,38 @@ class PdfPageImageModule : Module() {
         val pxHeight = Math.round(page.height * scale).toInt().coerceAtLeast(1)
 
         val bitmap = Bitmap.createBitmap(pxWidth, pxHeight, Bitmap.Config.ARGB_8888)
-        // PDF pages with transparent regions would otherwise composite onto a black
-        // bitmap by default; white matches what every PDF viewer shows for those regions.
-        bitmap.eraseColor(Color.WHITE)
-
-        val matrix = Matrix().apply {
-          setScale(pxWidth / page.width.toFloat(), pxHeight / page.height.toFloat())
-        }
-        page.render(bitmap, null, matrix, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
-
-        // JPEG, not PNG: confirmed on a real device that Android's print WebView hangs
-        // indefinitely (not just "slow") when a page background this size is base64-inlined as
-        // a PNG `background-image` data URI *and* the overlay text needs real Devanagari shaping
-        // through the same embedded variable font - PNG-only text/whitespace-heavy content with
-        // no overlay text, and small ASCII overlay text, both exported fine, isolating the
-        // combination rather than either factor alone (see CHANGELOG). This bitmap already has
-        // no meaningful alpha (erased to opaque white above for transparent PDF regions), so
-        // JPEG's lack of an alpha channel loses nothing. Quality 97 plus the caller's 3x render
-        // scale keeps fine source text materially closer to the original while per-page WebView
-        // export prevents the larger image from accumulating into one multi-page HTML payload.
         val outputFile = File(appContext.cacheDirectory, "pdf-page-image-${UUID.randomUUID()}.jpg")
-        FileOutputStream(outputFile).use { out ->
-          bitmap.compress(Bitmap.CompressFormat.JPEG, 97, out)
+        try {
+          // PDF pages with transparent regions would otherwise composite onto a black
+          // bitmap by default; white matches what every PDF viewer shows for those regions.
+          bitmap.eraseColor(Color.WHITE)
+
+          val matrix = Matrix().apply {
+            setScale(pxWidth / page.width.toFloat(), pxHeight / page.height.toFloat())
+          }
+          page.render(bitmap, null, matrix, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
+
+          // JPEG, not PNG: confirmed on a real device that Android's print WebView hangs
+          // indefinitely (not just "slow") when a page background this size is base64-inlined as
+          // a PNG `background-image` data URI *and* the overlay text needs real Devanagari shaping
+          // through the same embedded variable font - PNG-only text/whitespace-heavy content with
+          // no overlay text, and small ASCII overlay text, both exported fine, isolating the
+          // combination rather than either factor alone (see CHANGELOG). This bitmap already has
+          // no meaningful alpha (erased to opaque white above for transparent PDF regions), so
+          // JPEG's lack of an alpha channel loses nothing. Quality 97 plus the caller's 3x render
+          // scale keeps fine source text materially closer to the original while per-page WebView
+          // export prevents the larger image from accumulating into one multi-page HTML payload.
+          FileOutputStream(outputFile).use { out ->
+            check(bitmap.compress(Bitmap.CompressFormat.JPEG, 97, out)) {
+              "Bitmap.compress returned false"
+            }
+          }
+        } catch (e: Exception) {
+          outputFile.delete()
+          throw e
+        } finally {
+          bitmap.recycle()
         }
-        bitmap.recycle()
 
         return PageImageResult(
           uri = Uri.fromFile(outputFile).toString(),
@@ -270,21 +278,47 @@ class PdfPageImageModule : Module() {
       val bottom = (yPx + hPx - insetY).coerceIn(0, bitmap.height)
       if (right <= left || bottom <= top) return "#111111"
 
-      val luminances = ArrayList<Pair<Double, Int>>()
+      // Keep one fixed-size histogram instead of one boxed Pair per pixel. An unusually large
+      // OCR box can cover most of a 3x page; retaining millions of Pair objects here previously
+      // risked an avoidable OOM even though only one percentile bucket is needed.
+      val counts = LongArray(256)
+      val redSums = LongArray(256)
+      val greenSums = LongArray(256)
+      val blueSums = LongArray(256)
+      var pixelCount = 0L
       for (y in top until bottom) {
         for (x in left until right) {
           val pixel = bitmap.getPixel(x, y)
-          val lum =
-            Color.red(pixel) * 0.299 + Color.green(pixel) * 0.587 + Color.blue(pixel) * 0.114
-          luminances.add(lum to pixel)
+          val red = Color.red(pixel)
+          val green = Color.green(pixel)
+          val blue = Color.blue(pixel)
+          val luminance = (red * 299 + green * 587 + blue * 114) / 1000
+          counts[luminance]++
+          redSums[luminance] += red.toLong()
+          greenSums[luminance] += green.toLong()
+          blueSums[luminance] += blue.toLong()
+          pixelCount++
         }
       }
-      if (luminances.isEmpty()) return "#111111"
+      if (pixelCount == 0L) return "#111111"
 
-      luminances.sortBy { it.first }
-      val idx = (luminances.size * 0.12).toInt().coerceIn(0, luminances.size - 1)
-      val pixel = luminances[idx].second
-      return String.format("#%02x%02x%02x", Color.red(pixel), Color.green(pixel), Color.blue(pixel))
+      val target = (pixelCount * 12 / 100).coerceAtMost(pixelCount - 1)
+      var cumulative = 0L
+      var bucket = 0
+      for (value in 0..255) {
+        cumulative += counts[value]
+        if (cumulative > target) {
+          bucket = value
+          break
+        }
+      }
+      val bucketCount = counts[bucket].coerceAtLeast(1)
+      return String.format(
+        "#%02x%02x%02x",
+        (redSums[bucket] / bucketCount).toInt(),
+        (greenSums[bucket] / bucketCount).toInt(),
+        (blueSums[bucket] / bucketCount).toInt()
+      )
     } finally {
       bitmap.recycle()
     }

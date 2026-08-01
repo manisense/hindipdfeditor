@@ -14,7 +14,8 @@ const config: ExpoConfig = {
   scheme: 'hindipdfeditor',
   android: {
     package: 'com.hindipdfeditor.app',
-    versionCode: 3,
+    versionCode: 4,
+    allowBackup: false,
     adaptiveIcon: {
       backgroundColor: '#1843DD',
       foregroundImage: './assets/android-icon-foreground.png',
@@ -23,11 +24,12 @@ const config: ExpoConfig = {
     },
     // Play Store: only declare what we need. Document picker uses the system SAF on Android 13+
     // and does not require broad storage permissions. Block permissions added by transitive deps.
-    permissions: ['INTERNET', 'VIBRATE'],
+    permissions: ['INTERNET'],
     blockedPermissions: [
       'android.permission.SYSTEM_ALERT_WINDOW',
       'android.permission.READ_EXTERNAL_STORAGE',
       'android.permission.WRITE_EXTERNAL_STORAGE',
+      'android.permission.VIBRATE',
       'android.permission.RECORD_AUDIO',
       'android.permission.CAMERA',
     ],
@@ -44,6 +46,7 @@ const config: ExpoConfig = {
       },
     ],
     'expo-status-bar',
+    'expo-system-ui',
     'expo-asset',
     'expo-sharing',
     'expo-font',

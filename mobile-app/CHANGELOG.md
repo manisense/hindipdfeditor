@@ -4,6 +4,37 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Fixed — production readiness audit
+
+- Restored the documented lazy per-page OCR policy. Opening a long PDF now starts the two bundled
+  ML Kit recognizers only for the visible page instead of launching both recognizers for every
+  page concurrently; navigation and whole-document translation request later pages as needed.
+- Added unsaved-change protection when replacing the current document, invalidated stale export
+  success UI after any later edit/undo/redo, and blocked editing, navigation, export, and document
+  replacement while AI OCR or translation owns a document snapshot.
+- Hardened the production AI client against empty/non-JSON error bodies and now validates session,
+  translation, and OCR responses (version, request ID, text limits, and normalized bounding boxes)
+  before any remote result can become an edit.
+- Reworked native text-color sampling to fixed-size histograms instead of retaining one boxed
+  object per sampled pixel, preventing unusually large OCR boxes from creating an avoidable OOM.
+  Page rasterization now always recycles its bitmap, checks JPEG compression success, and removes
+  partial output files on failure.
+- Added explicit font-load failure UI, scroll-safe legal/font/translation dialogs, accessible
+  button roles and states, larger touch targets, descriptive labels for symbol-only controls, and
+  an unsaved-state indicator in the editor header.
+- Added the SDK-matched first-party `expo-system-ui` config plugin so Android actually honors the
+  app's light interface style instead of allowing dark device chrome to clash with light surfaces.
+- Updated all Expo SDK 56 packages to their required compatible patch levels, resolved the two
+  high-severity dependency advisories, and added repeatable `typecheck`/`check` scripts. Fresh Expo
+  Doctor and full npm audit runs report clean.
+- Updated Worker and web-editor lockfiles past the vulnerable Wrangler/Miniflare/sharp toolchain.
+  The web editor now lazy-loads each PDF tool, reducing its initial JavaScript from about 2.1 MB to
+  about 393 KB and deferring the heavy PDF export engine until an editing tool is opened.
+- Raised Android `versionCode` to `4` because EAS production bundles already exist for codes 1–3.
+  Removed the unused VIBRATE permission, explicitly disabled Android app backup, and retained only
+  the normal network permissions required by Expo while blocking overlay, broad storage, camera,
+  microphone, and vibration permissions.
+
 ### Added — Phase 4.8 production translation foundation
 
 - Deployed the production AI API Worker on the `localcode.ai@gmail.com` Cloudflare account with D1

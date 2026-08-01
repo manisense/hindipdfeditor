@@ -56,7 +56,7 @@ import {
 } from './src/lib/pdfToImages';
 import { savePdfToPickedDirectory } from './src/lib/savePdf';
 import { fontSizeForOcrLine, textBoxGeometry } from './src/lib/textEditGeometry';
-import { geometryForTranslatedLine } from './src/lib/translateEdits';
+import { geometryForTranslatedLine, successfulTranslations } from './src/lib/translateEdits';
 import {
   useEditStore,
   type DocumentState,
@@ -176,10 +176,10 @@ function filenameFromUri(uri: string): string {
 }
 
 export default function App() {
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isWideLayout = windowWidth >= 840;
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontLoadError] = useFonts({
     NotoSansDevanagari: require('./assets/fonts/NotoSansDevanagari-Variable.ttf'),
   });
   const [status, setStatus] = useState<Status>({ state: 'idle' });
@@ -213,6 +213,7 @@ export default function App() {
   const [pageZoom, setPageZoom] = useState(1);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const editPinchStartRef = useRef<{ fontSizePt: number; widthPt?: number } | null>(null);
+  const [lastExportedDocument, setLastExportedDocument] = useState<DocumentState | null>(null);
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () =>
@@ -281,7 +282,11 @@ export default function App() {
       setOcrStatusByPage({});
       setEditMode('edit');
       setLegacySafeModePages(new Set());
-      ensureOcrForAllPages(newDocument);
+      // OCR is intentionally lazy. Running two ML Kit recognizers for every page at once can
+      // create a large native memory spike on long documents; scan only the page the user is
+      // viewing and let navigation/whole-document translation request later pages as needed.
+      ensureOcrForPage(newDocument, 0);
+      setLastExportedDocument(null);
       setStatus({ state: 'idle' });
     } catch (error) {
       setStatus({
@@ -348,13 +353,6 @@ export default function App() {
         if (useEditStore.getState().document?.sourceUri !== doc.sourceUri) return;
         setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'failed' }));
       });
-  };
-
-  /** Runs on-device OCR for every page in the background so text is tappable as soon as ready. */
-  const ensureOcrForAllPages = (doc: DocumentState) => {
-    for (let pageIndex = 0; pageIndex < doc.pages.length; pageIndex++) {
-      ensureOcrForPage(doc, pageIndex);
-    }
   };
 
   const goToPage = (index: number) => {
@@ -510,6 +508,8 @@ export default function App() {
     if (!document || !page || editingBlocked || enhancingPage !== null) return;
     const pageIndex = currentPageIndex;
     const sourceUri = document.sourceUri;
+    setFocusedEditId(null);
+    Keyboard.dismiss();
     setEnhancingPage(pageIndex);
     try {
       const lines = await detectTextLinesWithGemini(page, aiJobIdRef.current, pageIndex);
@@ -542,10 +542,12 @@ export default function App() {
   const runTranslation = async (direction: TranslationDirection, scope: 'page' | 'document') => {
     const doc = useEditStore.getState().document;
     if (!doc || translating || enhancingPage !== null) return;
+    setFocusedEditId(null);
+    Keyboard.dismiss();
     setTranslating(true);
     try {
-      checkpoint();
       let translatedCount = 0;
+      let checkpointed = false;
       const legacyPages = new Set(doc.legacyFontWarnings.map((w) => w.page));
 
       const pageIndexes =
@@ -586,16 +588,19 @@ export default function App() {
         );
         if (useEditStore.getState().document?.sourceUri !== doc.sourceUri) return;
 
-        const sourceIds = new Set(sourceLines.map((line) => line.id));
+        const translatedLines = successfulTranslations(sourceLines, translatedById);
+        if (translatedLines.length === 0) continue;
+        if (!checkpointed) {
+          checkpoint();
+          checkpointed = true;
+        }
+        const translatedIds = new Set(translatedLines.map(({ line }) => line.id));
         setOcrLines(
           pageIndex,
-          lines.filter((line) => !sourceIds.has(line.id)),
+          lines.filter((line) => !translatedIds.has(line.id)),
         );
 
-        for (const line of sourceLines) {
-          const translated = translatedById.get(line.id)?.trim();
-          if (!translated) continue;
-
+        for (const { line, translated } of translatedLines) {
           const geo = geometryForTranslatedLine(line, page.widthPt, page.heightPt);
           const { x: sampleXPx, y: sampleYPx } = ptToImagePx(
             line.xPt,
@@ -960,7 +965,7 @@ export default function App() {
   };
 
   const saveAndExport = async () => {
-    if (!document) return;
+    if (!document || translating || enhancingPage !== null) return;
     setStatus({ state: 'saving' });
     try {
       const usedFamilies = new Set<DevanagariFontFamily>();
@@ -985,6 +990,7 @@ export default function App() {
         ),
       );
       const uri = await exportPdf(document, embeddedFonts);
+      setLastExportedDocument(document);
       setStatus({ state: 'saved', uri });
     } catch (error) {
       setStatus({
@@ -1016,6 +1022,41 @@ export default function App() {
     }
   };
 
+  const hasUnsavedChanges = document !== null && canUndo && document !== lastExportedDocument;
+
+  // A successful export describes one immutable document snapshot. Any later edit, undo, redo,
+  // or inserted page must hide that success card so the UI never claims the current state was
+  // saved when the shown URI actually points to an older PDF.
+  const displayStatus: Status =
+    status.state === 'saved' && lastExportedDocument !== document ? { state: 'idle' } : status;
+
+  const requestOpenPdf = () => {
+    if (!hasUnsavedChanges) {
+      void openPdf();
+      return;
+    }
+    Alert.alert(
+      'Discard unsaved changes?',
+      'Your current edits have not been exported. Opening another PDF will discard them.',
+      [
+        { text: 'Keep editing', style: 'cancel' },
+        { text: 'Discard and open', style: 'destructive', onPress: () => void openPdf() },
+      ],
+    );
+  };
+
+  if (fontLoadError) {
+    return (
+      <View style={[styles.container, styles.centered, styles.fatalErrorSurface]}>
+        <StatusBar style="dark" />
+        <Text style={styles.fatalErrorTitle}>Hindi font could not be loaded</Text>
+        <Text style={styles.fatalErrorBody}>
+          Close and reopen the app. If this continues, reinstall it before editing a document.
+        </Text>
+      </View>
+    );
+  }
+
   if (!fontsLoaded) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -1026,10 +1067,9 @@ export default function App() {
   }
 
   const ocrStatus = ocrStatusByPage[currentPageIndex];
-  const ocrReadyCount = document
-    ? Object.values(ocrStatusByPage).filter((s) => s === 'done').length
-    : 0;
   const hasRunningOcr = Object.values(ocrStatusByPage).some((state) => state === 'running');
+  const documentBusy = displayStatus.state === 'saving' || translating || enhancingPage !== null;
+  const interactionBlocked = editingBlocked || documentBusy;
   const pageLooksEmpty =
     page?.isBlank === true ||
     (ocrStatus === 'done' && page?.ocrLines.length === 0 && page.edits.length === 0);
@@ -1044,12 +1084,12 @@ export default function App() {
       ? `Erase mode — drag a box over text OCR missed, then type replacement text.${zoomHint}`
       : editMode === 'addText'
         ? ocrStatus === 'running'
-          ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
+          ? 'Finding text on this page…'
           : `Add Text — tap anywhere to place new text.${zoomHint}${editStretchHint}`
         : pageLooksEmpty
           ? `This page is empty — tap anywhere to start writing.${zoomHint}`
           : ocrStatus === 'running'
-            ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
+            ? 'Finding text on this page…'
             : ocrStatus === 'failed'
               ? `Edit text — tap a line to change it.${zoomHint}${editStretchHint}`
               : `Edit text — tap any detected line to change it.${zoomHint}${editStretchHint}`;
@@ -1081,17 +1121,15 @@ export default function App() {
         </View>
       )}
 
-      {status.state === 'opening' && (
+      {displayStatus.state === 'opening' && (
         <View style={[styles.centered, styles.fill, styles.openingSurface]}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.progressText}>Opening PDF…</Text>
-          <Text style={styles.progressSubText}>
-            Preparing crisp pages and finding editable text
-          </Text>
+          <Text style={styles.progressSubText}>Preparing a crisp, editable document view</Text>
         </View>
       )}
 
-      {status.state !== 'opening' && !document && (
+      {displayStatus.state !== 'opening' && !document && (
         <ScrollView
           contentContainerStyle={[styles.landing, { paddingBottom: 48 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
@@ -1161,15 +1199,15 @@ export default function App() {
               </Text>
             </View>
           </View>
-          {status.state === 'error' && (
+          {displayStatus.state === 'error' && (
             <View style={[styles.statusCard, styles.errorCard]}>
-              <Text style={styles.errorText}>{status.message}</Text>
+              <Text style={styles.errorText}>{displayStatus.message}</Text>
             </View>
           )}
         </ScrollView>
       )}
 
-      {status.state !== 'opening' && document && page && (
+      {displayStatus.state !== 'opening' && document && page && (
         <View style={[styles.editorShell, { paddingBottom: insets.bottom }]}>
           <View
             style={[
@@ -1185,7 +1223,8 @@ export default function App() {
                   {documentName}
                 </Text>
                 <Text style={styles.documentSubtitle} numberOfLines={1}>
-                  Editing · page {currentPageIndex + 1} of {document.pages.length}
+                  {hasUnsavedChanges ? 'Unsaved changes' : 'Editing'} · page {currentPageIndex + 1}{' '}
+                  of {document.pages.length}
                 </Text>
               </View>
             </View>
@@ -1194,6 +1233,7 @@ export default function App() {
                 <>
                   <AppButton
                     title="⋯"
+                    accessibilityLabel="About and privacy"
                     small
                     variant="ghost"
                     onPress={() => setAboutVisible(true)}
@@ -1202,16 +1242,17 @@ export default function App() {
                     title="New"
                     small
                     variant="ghost"
-                    onPress={openPdf}
-                    disabled={status.state === 'saving'}
+                    onPress={requestOpenPdf}
+                    disabled={documentBusy}
                   />
                 </>
               )}
               <AppButton
-                title={status.state === 'saving' ? 'Exporting…' : '✓ Export'}
+                title={displayStatus.state === 'saving' ? 'Exporting…' : '✓ Export'}
+                accessibilityLabel="Export PDF"
                 small
                 onPress={saveAndExport}
-                disabled={status.state === 'saving'}
+                disabled={documentBusy}
               />
             </View>
           </View>
@@ -1223,20 +1264,22 @@ export default function App() {
                   <View style={styles.pagerGroup}>
                     <AppButton
                       title="◀"
+                      accessibilityLabel="Previous page"
                       small
                       variant="secondary"
                       onPress={() => goToPage(currentPageIndex - 1)}
-                      disabled={currentPageIndex === 0}
+                      disabled={currentPageIndex === 0 || documentBusy}
                     />
                     <Text style={styles.pagerLabel}>
                       {currentPageIndex + 1} / {document.pages.length}
                     </Text>
                     <AppButton
                       title="▶"
+                      accessibilityLabel="Next page"
                       small
                       variant="secondary"
                       onPress={() => goToPage(currentPageIndex + 1)}
-                      disabled={currentPageIndex === document.pages.length - 1}
+                      disabled={currentPageIndex === document.pages.length - 1 || documentBusy}
                     />
                   </View>
                 ) : (
@@ -1248,17 +1291,19 @@ export default function App() {
                   </View>
                   <AppButton
                     title="↩ Undo"
+                    accessibilityLabel="Undo"
                     small
                     variant="ghost"
                     onPress={handleUndo}
-                    disabled={!canUndo}
+                    disabled={!canUndo || documentBusy}
                   />
                   <AppButton
                     title="↪ Redo"
+                    accessibilityLabel="Redo"
                     small
                     variant="ghost"
                     onPress={handleRedo}
-                    disabled={!canRedo}
+                    disabled={!canRedo || documentBusy}
                   />
                 </View>
               </View>
@@ -1273,28 +1318,28 @@ export default function App() {
                   small
                   variant={editMode === 'edit' ? 'primary' : 'secondary'}
                   onPress={() => selectEditMode('edit')}
-                  disabled={editingBlocked}
+                  disabled={interactionBlocked}
                 />
                 <AppButton
                   title="＋ Add text"
                   small
                   variant={editMode === 'addText' ? 'primary' : 'secondary'}
                   onPress={() => selectEditMode('addText')}
-                  disabled={editingBlocked}
+                  disabled={interactionBlocked}
                 />
                 <AppButton
                   title="＋ Blank page"
                   small
                   variant="secondary"
                   onPress={addBlankPageAfterCurrent}
-                  disabled={hasRunningOcr || status.state === 'saving'}
+                  disabled={hasRunningOcr || documentBusy}
                 />
                 <AppButton
                   title="⌫ Erase & replace"
                   small
                   variant={editMode === 'erase' ? 'primary' : 'secondary'}
                   onPress={() => selectEditMode('erase')}
-                  disabled={editingBlocked}
+                  disabled={interactionBlocked}
                 />
                 <AppButton
                   title={enhancingPage === currentPageIndex ? 'Enhancing…' : '✨ AI OCR'}
@@ -1302,7 +1347,7 @@ export default function App() {
                   variant="secondary"
                   onPress={handleEnhancePressed}
                   disabled={
-                    editingBlocked ||
+                    interactionBlocked ||
                     enhancingPage !== null ||
                     translating ||
                     ocrStatus === 'running'
@@ -1313,7 +1358,7 @@ export default function App() {
                   small
                   variant="secondary"
                   onPress={() => setTranslationOptionsVisible(true)}
-                  disabled={enhancingPage !== null || translating || status.state === 'saving'}
+                  disabled={documentBusy}
                 />
               </ScrollView>
               <View style={styles.hintStrip}>
@@ -1366,7 +1411,7 @@ export default function App() {
                   key={page.pageIndex}
                   page={page}
                   onTap={handleTap}
-                  disablePress={editingBlocked || editMode === 'erase'}
+                  disablePress={interactionBlocked || editMode === 'erase'}
                   focusedEditId={editMode === 'erase' ? null : focusedEditId}
                   onEditPinchStart={handleEditPinchStart}
                   onEditPinchResize={handleEditPinchResize}
@@ -1385,7 +1430,7 @@ export default function App() {
                         masks={page.edits.filter((e): e is MaskEdit => e.type === 'mask')}
                         viewWidthDp={viewWidthDp}
                         pageWidthPt={page.widthPt}
-                        active={editMode === 'erase' && !editingBlocked}
+                        active={editMode === 'erase' && !interactionBlocked}
                         onMaskDrawn={handleMaskDrawn}
                       />
                       {page.edits
@@ -1400,8 +1445,10 @@ export default function App() {
                             zoom={pageZoom}
                             autoFocus={edit.id === focusedEditId}
                             focused={edit.id === focusedEditId}
+                            interactive={!interactionBlocked}
                             selectAllOnFocus={edit.id === selectAllEditId}
                             onFocus={() => {
+                              if (interactionBlocked) return false;
                               if (focusedEditId && focusedEditId !== edit.id) {
                                 Keyboard.dismiss();
                                 setFocusedEditId(null);
@@ -1466,20 +1513,22 @@ export default function App() {
             )}
           </View>
 
-          {!compactEditing && status.state === 'saving' && (
+          {!compactEditing && displayStatus.state === 'saving' && (
             <View style={styles.inlineStatus}>
               <ActivityIndicator color={colors.primary} />
               <Text style={styles.inlineStatusText}>Creating and validating your new PDF…</Text>
             </View>
           )}
-          {!compactEditing && status.state === 'saved' && (
+          {!compactEditing && displayStatus.state === 'saved' && (
             <View style={[styles.inlineStatus, styles.successCard]}>
               <View style={styles.inlineStatusCopy}>
                 <Text style={styles.successTitle}>
-                  {status.savedUri ? '✓ Saved in the selected folder' : '✓ Exported as a new PDF'}
+                  {displayStatus.savedUri
+                    ? '✓ Saved in the selected folder'
+                    : '✓ Exported as a new PDF'}
                 </Text>
                 <Text style={styles.successPath} numberOfLines={1}>
-                  {status.uri.split('/').pop()}
+                  {displayStatus.uri.split('/').pop()}
                 </Text>
               </View>
               <View style={styles.inlineStatusActions}>
@@ -1488,9 +1537,9 @@ export default function App() {
               </View>
             </View>
           )}
-          {!compactEditing && status.state === 'error' && (
+          {!compactEditing && displayStatus.state === 'error' && (
             <View style={[styles.inlineStatus, styles.errorCard]}>
-              <Text style={styles.errorText}>{status.message}</Text>
+              <Text style={styles.errorText}>{displayStatus.message}</Text>
             </View>
           )}
         </View>
@@ -1513,47 +1562,58 @@ export default function App() {
         onRequestClose={() => setTranslationOptionsVisible(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Translate PDF</Text>
-            <Text style={styles.modalBody}>
-              Detected line text will be sent securely to Google&apos;s Gemini service. Choose a
-              direction and whether to translate this page or the whole document. Your original PDF
-              is never overwritten.
-            </Text>
-            <View style={styles.modalButtons}>
-              <AppButton
-                title="Cancel"
-                small
-                variant="ghost"
-                onPress={() => setTranslationOptionsVisible(false)}
-              />
-            </View>
-            <Text style={styles.modalBody}>Hindi → English</Text>
-            <View style={styles.modalButtons}>
-              <AppButton
-                title="This page"
-                small
-                onPress={() => startTranslation('hi-en', 'page')}
-              />
-              <AppButton
-                title="Whole PDF"
-                small
-                onPress={() => startTranslation('hi-en', 'document')}
-              />
-            </View>
-            <Text style={styles.modalBody}>English → Hindi</Text>
-            <View style={styles.modalButtons}>
-              <AppButton
-                title="This page"
-                small
-                onPress={() => startTranslation('en-hi', 'page')}
-              />
-              <AppButton
-                title="Whole PDF"
-                small
-                onPress={() => startTranslation('en-hi', 'document')}
-              />
-            </View>
+          <View
+            style={[
+              styles.modalCard,
+              { maxHeight: Math.max(280, windowHeight - insets.top - insets.bottom - 32) },
+            ]}
+            accessibilityViewIsModal
+          >
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.modalScrollContent}
+            >
+              <Text style={styles.modalTitle}>Translate PDF</Text>
+              <Text style={styles.modalBody}>
+                Detected line text will be sent securely to Google&apos;s Gemini service. Choose a
+                direction and whether to translate this page or the whole document. Your original
+                PDF is never overwritten.
+              </Text>
+              <View style={styles.modalButtons}>
+                <AppButton
+                  title="Cancel"
+                  small
+                  variant="ghost"
+                  onPress={() => setTranslationOptionsVisible(false)}
+                />
+              </View>
+              <Text style={styles.modalBody}>Hindi → English</Text>
+              <View style={styles.modalButtons}>
+                <AppButton
+                  title="This page"
+                  small
+                  onPress={() => startTranslation('hi-en', 'page')}
+                />
+                <AppButton
+                  title="Whole PDF"
+                  small
+                  onPress={() => startTranslation('hi-en', 'document')}
+                />
+              </View>
+              <Text style={styles.modalBody}>English → Hindi</Text>
+              <View style={styles.modalButtons}>
+                <AppButton
+                  title="This page"
+                  small
+                  onPress={() => startTranslation('en-hi', 'page')}
+                />
+                <AppButton
+                  title="Whole PDF"
+                  small
+                  onPress={() => startTranslation('en-hi', 'document')}
+                />
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1600,6 +1660,23 @@ const styles = StyleSheet.create({
   centered: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  fatalErrorSurface: {
+    padding: spacing.xl,
+  },
+  fatalErrorTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    textAlign: 'center',
+    color: colors.textPrimary,
+  },
+  fatalErrorBody: {
+    maxWidth: 420,
+    marginTop: spacing.sm,
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center',
+    color: colors.textSecondary,
   },
   fill: {
     flex: 1,
@@ -2097,6 +2174,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.xl,
+    gap: spacing.md,
+  },
+  modalScrollContent: {
     gap: spacing.md,
   },
   modalTitle: {

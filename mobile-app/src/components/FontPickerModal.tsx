@@ -1,4 +1,13 @@
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
 import { AppButton } from './AppButton';
 import { DEVANAGARI_FONT_CATALOG, type DevanagariFontFamily } from '../lib/fontAsset';
@@ -22,10 +31,16 @@ export function FontPickerModal({
   onChoose,
   onClose,
 }: Props) {
+  const { height } = useWindowDimensions();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={styles.card}>
+        <ScrollView
+          style={[styles.card, { maxHeight: Math.max(280, height - spacing.xl * 2) }]}
+          contentContainerStyle={styles.cardContent}
+          showsVerticalScrollIndicator={false}
+          accessibilityViewIsModal
+        >
           <Text style={styles.title}>Choose a Unicode Hindi font</Text>
           <Text style={styles.body}>
             Downloaded fonts come from a pinned, official Google Fonts file and are embedded in the
@@ -41,6 +56,9 @@ export function FontPickerModal({
               return (
                 <Pressable
                   key={font.family}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${font.label}. ${loaded ? 'Installed' : 'Download font'}`}
+                  accessibilityState={{ selected, disabled: downloadingFamily !== null }}
                   disabled={downloadingFamily !== null}
                   onPress={() => onChoose(font.family)}
                   style={[styles.row, selected && styles.rowSelected]}
@@ -66,7 +84,7 @@ export function FontPickerModal({
           <View style={styles.actions}>
             <AppButton title="Close" small variant="ghost" onPress={onClose} />
           </View>
-        </View>
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -80,10 +98,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   card: {
-    padding: spacing.xl,
-    gap: spacing.md,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
+  },
+  cardContent: {
+    padding: spacing.xl,
+    gap: spacing.md,
   },
   title: {
     fontSize: 18,

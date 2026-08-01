@@ -69,6 +69,12 @@ export async function sampleAverageColor(
 /**
  * Estimates the dominant ink color inside a text region on the page background image -
  * used to pre-fill replacement text with a color closer to the original burned-in text.
+ *
+ * @param uri The page's `PageState.backgroundImageUri`.
+ * @param xPx Left edge of the text region, in background-image px.
+ * @param yPx Top edge of the text region, in background-image px.
+ * @param wPx Width of the text region, in background-image px.
+ * @param hPx Height of the text region, in background-image px.
  */
 export async function sampleTextColor(
   uri: string,

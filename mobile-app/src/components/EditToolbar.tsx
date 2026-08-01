@@ -73,6 +73,7 @@ export function EditToolbar({
         <View style={styles.chipGroup}>
           <Chip
             label="B"
+            accessibilityLabel="Bold"
             active={fontWeight === 'bold'}
             bold
             onPress={() => onFontWeightChange(fontWeight === 'bold' ? 'normal' : 'bold')}
@@ -105,7 +106,9 @@ export function EditToolbar({
           {TEXT_COLOR_PRESETS.map((preset) => (
             <Pressable
               key={preset.value}
+              accessibilityRole="button"
               accessibilityLabel={preset.label}
+              accessibilityState={{ selected: color.toLowerCase() === preset.value }}
               onPress={() => onColorChange(preset.value)}
               style={[
                 styles.colorSwatch,
@@ -127,17 +130,22 @@ export function EditToolbar({
 
 function Chip({
   label,
+  accessibilityLabel,
   active,
   bold,
   onPress,
 }: {
   label: string;
+  accessibilityLabel?: string;
   active: boolean;
   bold?: boolean;
   onPress: () => void;
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ selected: active }}
       onPress={onPress}
       style={[styles.chip, active && styles.chipActive]}
       android_ripple={{ color: 'rgba(0,0,0,0.08)' }}

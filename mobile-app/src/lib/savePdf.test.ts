@@ -58,7 +58,7 @@ it('writes and parses back a new PDF in the selected directory', async () => {
   );
   expect(mockCreateFileAsync).toHaveBeenCalledWith(
     'content://picked-folder',
-    'My- unsafe-.pdf',
+    'My- unsafe--edited.pdf',
     'application/pdf',
   );
   expect(mockWriteAsStringAsync).toHaveBeenCalledWith('content://picked-folder/edited.pdf', pdf, {

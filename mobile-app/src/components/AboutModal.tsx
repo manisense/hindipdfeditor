@@ -1,4 +1,13 @@
-import { Image, Linking, Modal, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  Linking,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
 import { AppButton } from './AppButton';
 import { APP_VERSION, PRIVACY_POLICY_URL } from '../constants/legal';
@@ -14,6 +23,7 @@ type Props = {
  * and a plain-language summary of what data leaves the device (only the opt-in AI feature).
  */
 export function AboutModal({ visible, onClose }: Props) {
+  const { height } = useWindowDimensions();
   const openPrivacy = () => {
     Linking.openURL(PRIVACY_POLICY_URL).catch(() => {
       // No network or no handler — user can try again later.
@@ -23,7 +33,12 @@ export function AboutModal({ visible, onClose }: Props) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={styles.card}>
+        <ScrollView
+          style={[styles.card, { maxHeight: Math.max(280, height - spacing.xl * 2) }]}
+          contentContainerStyle={styles.cardContent}
+          showsVerticalScrollIndicator={false}
+          accessibilityViewIsModal
+        >
           <View style={styles.brandRow}>
             <Image
               source={require('../../assets/icon.png')}
@@ -50,7 +65,7 @@ export function AboutModal({ visible, onClose }: Props) {
           </Text>
           <AppButton title="Privacy policy" small variant="secondary" onPress={openPrivacy} />
           <AppButton title="Close" small variant="ghost" onPress={onClose} />
-        </View>
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -66,6 +81,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
+  },
+  cardContent: {
     padding: spacing.xl,
     gap: spacing.md,
   },

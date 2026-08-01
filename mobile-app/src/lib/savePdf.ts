@@ -23,7 +23,7 @@ export async function savePdfToPickedDirectory(
 
   const destinationUri = await FileSystem.StorageAccessFramework.createFileAsync(
     permission.directoryUri,
-    `${safeBaseName(suggestedFilename)}.pdf`,
+    `${safeBaseName(suggestedFilename)}-edited.pdf`,
     PDF_MIME_TYPE,
   );
   try {

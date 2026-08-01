@@ -2,6 +2,8 @@ import { AI_API_VERSION } from '@hindipdfeditor/translation-contract';
 
 import { createAiApiClient } from './aiApiClient';
 
+jest.mock('expo-crypto', () => ({ randomUUID: () => 'request-id' }));
+
 const response = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -19,14 +21,15 @@ describe('AI API client', () => {
           expiresAt: '2999-01-01T00:00:00Z',
         }),
       )
-      .mockResolvedValueOnce(
-        response({
+      .mockImplementationOnce(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const requestBody = JSON.parse(String(init?.body));
+        return response({
           version: AI_API_VERSION,
-          requestId: 'server-request',
+          requestId: requestBody.requestId,
           model: 'gemini-3.5-flash',
           results: [{ id: 'line-1', translatedText: 'Hello', status: 'translated' }],
-        }),
-      );
+        });
+      });
     const client = createAiApiClient({
       baseUrl: 'https://api.example.test/',
       fetchImpl,
@@ -60,9 +63,15 @@ describe('AI API client', () => {
       .mockResolvedValueOnce(
         response({ version: AI_API_VERSION, token: 'new', expiresAt: '2999-01-01T00:00:00Z' }),
       )
-      .mockResolvedValueOnce(
-        response({ version: AI_API_VERSION, requestId: 'r', model: 'm', results: [] }),
-      );
+      .mockImplementationOnce(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const requestBody = JSON.parse(String(init?.body));
+        return response({
+          version: AI_API_VERSION,
+          requestId: requestBody.requestId,
+          model: 'm',
+          results: [{ id: '1', translatedText: 'नमस्ते', status: 'translated' }],
+        });
+      });
     const client = createAiApiClient({
       fetchImpl,
       clientIdProvider: async () => 'client-1234567890123456',
@@ -87,5 +96,68 @@ describe('AI API client', () => {
     await expect(
       client.translate('job', 'hi-en', [{ id: '1', page: 0, text: 'नमस्ते' }]),
     ).rejects.toThrow(/daily AI limit/u);
+  });
+
+  it('uses a stable public error when an upstream failure has no JSON body', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce(
+        response({ version: AI_API_VERSION, token: 'token', expiresAt: '2999-01-01T00:00:00Z' }),
+      )
+      .mockResolvedValueOnce(new Response('', { status: 502 }));
+    const client = createAiApiClient({
+      fetchImpl,
+      clientIdProvider: async () => 'client-1234567890123456',
+    });
+
+    await expect(
+      client.translate('job', 'hi-en', [{ id: '1', page: 0, text: 'नमस्ते' }]),
+    ).rejects.toThrow('AI service request failed (HTTP 502).');
+  });
+
+  it('rejects malformed translation and OCR responses from the network', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce(
+        response({ version: AI_API_VERSION, token: 'token', expiresAt: '2999-01-01T00:00:00Z' }),
+      )
+      .mockResolvedValueOnce(
+        response({ version: AI_API_VERSION, requestId: 'wrong', model: 'm', results: [] }),
+      );
+    const client = createAiApiClient({
+      fetchImpl,
+      clientIdProvider: async () => 'client-1234567890123456',
+    });
+    await expect(
+      client.translate('job', 'en-hi', [{ id: '1', page: 0, text: 'Hello' }]),
+    ).rejects.toThrow(/requestId mismatch/u);
+
+    const ocrFetch = jest
+      .fn()
+      .mockResolvedValueOnce(
+        response({ version: AI_API_VERSION, token: 'token', expiresAt: '2999-01-01T00:00:00Z' }),
+      )
+      .mockImplementationOnce(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const requestBody = JSON.parse(String(init?.body));
+        return response({
+          version: AI_API_VERSION,
+          requestId: requestBody.requestId,
+          model: 'm',
+          lines: [{ text: 'नमस्ते', box_2d: [0, 0, 1200, 100] }],
+        });
+      });
+    const ocrClient = createAiApiClient({
+      fetchImpl: ocrFetch,
+      clientIdProvider: async () => 'client-1234567890123456',
+    });
+    const ocrRequestPromise = ocrClient.ocr({
+      jobId: 'job',
+      page: 0,
+      imageBase64: 'AA==',
+      mimeType: 'image/jpeg',
+      imagePxWidth: 10,
+      imagePxHeight: 10,
+    });
+    await expect(ocrRequestPromise).rejects.toThrow(/invalid bounding box/u);
   });
 });

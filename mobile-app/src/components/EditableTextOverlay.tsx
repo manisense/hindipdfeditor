@@ -22,6 +22,8 @@ type Props = {
   selectAllOnFocus?: boolean;
   /** Whether this edit is the actively focused one (shows Canva-style selection outline). */
   focused?: boolean;
+  /** False while export/cloud work owns the document snapshot. */
+  interactive?: boolean;
   onBlur?: () => void;
   /** Return false to reject focus (caller dismisses the current edit instead). */
   onFocus?: () => boolean | void;
@@ -53,6 +55,7 @@ export function EditableTextOverlay({
   autoFocus,
   selectAllOnFocus,
   focused,
+  interactive = true,
   onBlur,
   onFocus,
   onMoveStart,
@@ -177,6 +180,8 @@ export function EditableTextOverlay({
         onChangeText={onChangeText}
         onBlur={onBlur}
         onFocus={handleFocus}
+        editable={interactive}
+        selectTextOnFocus={interactive}
         autoFocus={autoFocus}
         multiline
         scrollEnabled={false}
@@ -197,7 +202,7 @@ export function EditableTextOverlay({
           focused && styles.focused,
         ]}
       />
-      {focused && onMove && (
+      {interactive && focused && onMove && (
         <View
           accessibilityRole="adjustable"
           accessibilityLabel="Move selected text box"

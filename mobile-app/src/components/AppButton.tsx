@@ -7,6 +7,8 @@ type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 type Props = {
   title: string;
   onPress: () => void;
+  /** Spoken label for icon-only or symbol-led buttons; defaults to `title`. */
+  accessibilityLabel?: string;
   /** Visual weight: `primary` filled, `secondary` tinted, `danger` destructive, `ghost` text-only. */
   variant?: Variant;
   disabled?: boolean;
@@ -20,11 +22,23 @@ type Props = {
  * shares the same visual language from `theme.ts` (RN's `Button` ignores style props entirely,
  * which is why the pre-polish UI looked like a developer tool).
  */
-export function AppButton({ title, onPress, variant = 'primary', disabled, small, style }: Props) {
+export function AppButton({
+  title,
+  onPress,
+  accessibilityLabel,
+  variant = 'primary',
+  disabled,
+  small,
+  style,
+}: Props) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityState={{ disabled: disabled === true }}
       onPress={onPress}
       disabled={disabled}
+      hitSlop={small ? 4 : undefined}
       android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={({ pressed }) => [
         styles.base,
@@ -47,6 +61,7 @@ export function AppButton({ title, onPress, variant = 'primary', disabled, small
 
 const styles = StyleSheet.create({
   base: {
+    minHeight: 48,
     borderRadius: radius.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -54,6 +69,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   small: {
+    minHeight: 40,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },

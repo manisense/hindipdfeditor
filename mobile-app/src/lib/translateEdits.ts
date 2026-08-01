@@ -1,5 +1,5 @@
 import type { OcrLine } from '../state/editStore';
-import { fontSizeForOcrLine } from './textEditGeometry';
+import { fontSizeForOcrLine, textBoxGeometry } from './textEditGeometry';
 
 const MASK_EXPAND_PT = 3;
 const OCR_MASK_PAD_TOP_RATIO = 0.35;
@@ -17,6 +17,22 @@ export type TranslationGeometry = {
   };
 };
 
+export type SuccessfulTranslation = { line: OcrLine; translated: string };
+
+/**
+ * Pairs OCR source lines (whose boxes are stored in PDF points) with non-empty translated text.
+ * Failed/skipped/missing results stay tappable and must not be consumed from page OCR state.
+ */
+export function successfulTranslations(
+  sourceLines: OcrLine[],
+  translatedById: ReadonlyMap<string, string>,
+): SuccessfulTranslation[] {
+  return sourceLines.flatMap((line) => {
+    const translated = translatedById.get(line.id)?.trim();
+    return translated ? [{ line, translated }] : [];
+  });
+}
+
 /**
  * Computes mask + English overlay geometry for one detected Hindi line, in PDF points.
  * Matches the OCR tap-to-edit padding used by the editor so export alignment stays consistent.
@@ -32,7 +48,13 @@ export function geometryForTranslatedLine(
 ): TranslationGeometry {
   const fontSizePt = fontSizeForOcrLine(line.hPt);
   const padTop = line.hPt * OCR_MASK_PAD_TOP_RATIO;
-  const textY = line.yPt + line.hPt * OCR_TEXT_BASELINE_NUDGE_RATIO;
+  const requestedTextY = line.yPt + line.hPt * OCR_TEXT_BASELINE_NUDGE_RATIO;
+  const textY = Math.min(Math.max(0, requestedTextY), Math.max(0, pageHeightPt - fontSizePt * 1.6));
+  const textGeometry = textBoxGeometry(
+    pageWidthPt,
+    line.xPt,
+    line.wPt * OCR_TEXT_WIDTH_SLACK_RATIO,
+  );
 
   const raw = {
     xPt: line.xPt,
@@ -48,10 +70,10 @@ export function geometryForTranslatedLine(
   return {
     mask: { xPt, yPt, wPt, hPt },
     text: {
-      xPt: line.xPt,
+      xPt: textGeometry.xPt,
       yPt: textY,
       fontSizePt,
-      widthPt: line.wPt * OCR_TEXT_WIDTH_SLACK_RATIO,
+      widthPt: textGeometry.widthPt,
       fontWeight: fontSizePt >= 13 ? 'bold' : 'normal',
     },
   };
