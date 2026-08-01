@@ -53,6 +53,18 @@ export default defineConfig({
   build: {
     outDir: "../edit",
     emptyOutDir: true,
+    // The 595 kB pdf-lib vendor chunk is loaded only when a PDF tool needs it.
+    chunkSizeWarningLimit: 650,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/@cantoo/pdf-lib")) return "pdf-lib";
+          if (id.includes("node_modules/html2canvas")) return "html2canvas";
+          if (id.includes("node_modules/jspdf")) return "jspdf";
+          return undefined;
+        },
+      },
+    },
   },
   server: {
     port: 5173,

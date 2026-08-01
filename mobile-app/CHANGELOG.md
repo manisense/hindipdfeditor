@@ -29,7 +29,8 @@ All notable changes to this project are documented here, grouped by phase (see `
   Doctor and full npm audit runs report clean.
 - Updated Worker and web-editor lockfiles past the vulnerable Wrangler/Miniflare/sharp toolchain.
   The web editor now lazy-loads each PDF tool, reducing its initial JavaScript from about 2.1 MB to
-  about 393 KB and deferring the heavy PDF export engine until an editing tool is opened.
+  about 393 KB, splits the export engine into cacheable vendor chunks, and defers that engine until
+  an editing tool is opened.
 - Raised Android `versionCode` to `4` because EAS production bundles already exist for codes 1–3.
   Removed the unused VIBRATE permission, explicitly disabled Android app backup, and retained only
   the normal network permissions required by Expo while blocking overlay, broad storage, camera,
