@@ -35,3 +35,11 @@ h5 {
   letter-spacing: -0.01em;
   color: var(--ink);
 }
+.app-loading {
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  color: #526079;
+  font-weight: 700;
+}

@@ -1,15 +1,26 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SeoHead } from './components/SeoHead';
 import { HomePage } from './home/HomePage';
 import { readToolIdFromLocation, type ToolId } from './lib/tools';
-import { CompressPdfTool } from './tools/CompressPdfTool';
-import { EditPdfTool } from './tools/EditPdfTool';
-import { MergePdfTool } from './tools/MergePdfTool';
-import { SplitPdfTool } from './tools/SplitPdfTool';
-import { TranslatePdfTool } from './tools/TranslatePdfTool';
 import './App.css';
+
+const CompressPdfTool = lazy(() =>
+  import('./tools/CompressPdfTool').then((module) => ({ default: module.CompressPdfTool })),
+);
+const EditPdfTool = lazy(() =>
+  import('./tools/EditPdfTool').then((module) => ({ default: module.EditPdfTool })),
+);
+const MergePdfTool = lazy(() =>
+  import('./tools/MergePdfTool').then((module) => ({ default: module.MergePdfTool })),
+);
+const SplitPdfTool = lazy(() =>
+  import('./tools/SplitPdfTool').then((module) => ({ default: module.SplitPdfTool })),
+);
+const TranslatePdfTool = lazy(() =>
+  import('./tools/TranslatePdfTool').then((module) => ({ default: module.TranslatePdfTool })),
+);
 
 function useToolId(): ToolId | null {
   const [toolId, setToolId] = useState<ToolId | null>(() => readToolIdFromLocation());
@@ -39,21 +50,29 @@ export default function App() {
   return (
     <>
       <SeoHead toolId={toolId} />
-      {toolId === 'edit' ? (
-        <EditPdfTool />
-      ) : toolId === 'translate' ? (
-        <ErrorBoundary label="Translate">
-          <TranslatePdfTool />
-        </ErrorBoundary>
-      ) : toolId === 'merge' ? (
-        <MergePdfTool />
-      ) : toolId === 'split' ? (
-        <SplitPdfTool />
-      ) : toolId === 'compress' ? (
-        <CompressPdfTool />
-      ) : (
-        <HomePage />
-      )}
+      <Suspense
+        fallback={
+          <div className="app-loading" role="status" aria-live="polite">
+            Loading PDF tool…
+          </div>
+        }
+      >
+        {toolId === 'edit' ? (
+          <EditPdfTool />
+        ) : toolId === 'translate' ? (
+          <ErrorBoundary label="Translate">
+            <TranslatePdfTool />
+          </ErrorBoundary>
+        ) : toolId === 'merge' ? (
+          <MergePdfTool />
+        ) : toolId === 'split' ? (
+          <SplitPdfTool />
+        ) : toolId === 'compress' ? (
+          <CompressPdfTool />
+        ) : (
+          <HomePage />
+        )}
+      </Suspense>
     </>
   );
 }
