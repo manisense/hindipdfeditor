@@ -57,6 +57,13 @@ export function Footer() {
                   <li key={l.label}>
                     <a
                       href={l.href}
+                      {...(l.href === PLAY_STORE_URL
+                        ? {
+                            target: '_blank',
+                            rel: 'noopener noreferrer',
+                            'aria-label': 'Android app on Google Play (opens in a new tab)',
+                          }
+                        : {})}
                       className="text-[14.5px] text-muted transition-colors hover:text-brand"
                     >
                       {l.label}

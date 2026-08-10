@@ -1,4 +1,5 @@
 import { Btn } from './ui/button';
+import { GooglePlayMark } from './ui/google-play-link';
 import { LOGO_BADGE, PLAY_STORE_URL } from './links';
 import { toolHref } from '../lib/tools';
 
@@ -33,9 +34,13 @@ export function Nav() {
         <div className="flex items-center gap-2">
           <a
             href={PLAY_STORE_URL}
-            className="hidden rounded-full px-3.5 py-2 font-display text-[14.5px] font-semibold text-ink transition-colors hover:bg-black/[0.04] sm:block"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Get Hindi PDF Editor on Google Play (opens in a new tab)"
+            className="hidden items-center gap-1.5 rounded-full px-3.5 py-2 font-display text-[14.5px] font-semibold text-ink transition-colors hover:bg-black/[0.04] sm:flex"
           >
-            Android app
+            <GooglePlayMark className="text-brand" />
+            Google Play
           </a>
           <Btn className="text-[14.5px]" href={toolHref('edit')}>
             Open editor

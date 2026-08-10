@@ -1,5 +1,5 @@
 import { Btn } from './ui/button';
-import { PLAY_STORE_URL } from './links';
+import { GooglePlayLink } from './ui/google-play-link';
 import { toolHref } from '../lib/tools';
 
 export function CTA() {
@@ -29,9 +29,7 @@ export function CTA() {
           <Btn size="lg" href={toolHref('edit')}>
             Open the editor →
           </Btn>
-          <Btn size="lg" variant="ghost" href={PLAY_STORE_URL}>
-            Get the Android app
-          </Btn>
+          <GooglePlayLink size="lg" variant="ghost" />
         </div>
       </div>
     </section>

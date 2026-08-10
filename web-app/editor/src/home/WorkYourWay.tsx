@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { Check } from 'lucide-react';
 import { Btn } from './ui/button';
-import { PLAY_STORE_URL } from './links';
+import { GooglePlayLink } from './ui/google-play-link';
 import { toolHref } from '../lib/tools';
 
 const feats = [
@@ -49,9 +49,7 @@ export function WorkYourWay() {
           </div>
           <div className="mt-8 flex flex-wrap gap-3.5">
             <Btn href={toolHref('edit')}>Open the editor →</Btn>
-            <Btn variant="ghost" href={PLAY_STORE_URL}>
-              Get the app
-            </Btn>
+            <GooglePlayLink variant="ghost">Get the Android app</GooglePlayLink>
           </div>
         </div>
 

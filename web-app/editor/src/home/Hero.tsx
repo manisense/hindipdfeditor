@@ -1,11 +1,11 @@
 import { motion } from 'motion/react';
 import { ChevronRight, Pencil, Languages, ScanText, Layers, FileArchive } from 'lucide-react';
 import { Btn } from './ui/button';
+import { GooglePlayLink } from './ui/google-play-link';
 import { TypewriterCycle } from './ui/typewriter-cycle';
 import { PointerHighlight } from './ui/pointer-highlight';
 import { Cover } from './ui/cover';
 import { ImagesBadge } from './ui/images-badge';
-import { PLAY_STORE_URL } from './links';
 import { toolHref } from '../lib/tools';
 
 const tools = [
@@ -120,9 +120,7 @@ export function Hero() {
                 <Btn size="lg" href={toolHref('edit')}>
                   Open the editor →
                 </Btn>
-                <Btn size="lg" variant="subtle" href={PLAY_STORE_URL}>
-                  Get the Android app
-                </Btn>
+                <GooglePlayLink size="lg" variant="subtle" />
               </div>
             </Fade>
 

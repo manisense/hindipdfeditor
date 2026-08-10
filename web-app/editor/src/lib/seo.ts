@@ -130,6 +130,7 @@ export function siteGraphJsonLd(): unknown {
         applicationCategory: 'ProductivityApplication',
         operatingSystem: 'Android, Web',
         url: `${SITE_ORIGIN}/edit/`,
+        downloadUrl: 'https://play.google.com/store/apps/details?id=com.hindipdfeditor.app',
         image: DEFAULT_OG_IMAGE,
         description: HOME.description,
         offers: {
