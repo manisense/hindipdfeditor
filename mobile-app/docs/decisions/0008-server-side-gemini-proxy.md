@@ -20,8 +20,11 @@ Use one Cloudflare Worker at `api.hindipdfeditor.com` for Android and web AI OCR
    local and immutable.
 4. Set Gemini interaction storage to false, protect identifiers/dates/amounts/URLs before prompting,
    validate target script and IDs after response, and fail closed on malformed output.
-5. Apply Turnstile to web session creation, per-minute Worker rate limiting, D1 daily document/page
-   quotas, feature kill switches, strict production CORS, and content-free operational metrics.
+5. Apply Turnstile to web session creation, including environment-specific exact action and
+   hostname checks (`hindipdfeditor.com`/`ai-session` in production; the fixed `example.com` host
+   and an explicitly absent action for Cloudflare's local dummy-key response), per-minute Worker
+   rate limiting, D1 daily document/page quotas, feature kill switches, strict production CORS, and
+   content-free operational metrics.
 6. Continue to apply results as masks plus Unicode overlays through ADR 0001's Render & Print path.
 
 ## Rejected alternatives

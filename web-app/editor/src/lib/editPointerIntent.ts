@@ -9,3 +9,8 @@ export function shouldDismissFocusedEdit(
 ): boolean {
   return focusedEditId !== null && targetEditId !== focusedEditId;
 }
+
+/** Returns true when a page gesture originated on an existing editable text overlay. */
+export function pointerTargetsEditableText(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('[data-edit-id]') !== null;
+}

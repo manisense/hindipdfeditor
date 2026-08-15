@@ -217,6 +217,28 @@ describe('EditPdfTool pointer intent', () => {
     expect(container.querySelector('.editable-text-overlay--focused')).toBeNull();
   });
 
+  it('reactivates a completed edit only after its click can finish', async () => {
+    const textarea = requiredElement<HTMLTextAreaElement>(
+      container,
+      'textarea[data-edit-id="edit-a"]',
+    );
+    const mouseDown = new MouseEvent('mousedown', {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    await act(async () => {
+      textarea.dispatchEvent(mouseDown);
+    });
+    expect(mouseDown.defaultPrevented).toBe(true);
+    expect(document.activeElement).not.toBe(textarea);
+
+    await act(async () => textarea.click());
+
+    expect(document.activeElement).toBe(textarea);
+    expect(textarea.classList.contains('editable-text-overlay--focused')).toBe(true);
+  });
+
   it('cancels a pending replacement when Escape wins the request race', async () => {
     await act(async () => root.unmount());
     loadPage([], [lineB]);

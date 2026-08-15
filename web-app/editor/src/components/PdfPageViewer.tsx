@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { dpToPt } from '../lib/coordinateMath';
+import { pointerTargetsEditableText } from '../lib/editPointerIntent';
 import type { PageState } from '../state/editStore';
 import './PdfPageViewer.css';
 
@@ -98,6 +99,10 @@ export function PdfPageViewer({
 
   const handlePointerDown = (event: React.PointerEvent) => {
     touchMovedRef.current = false;
+    if (pointerTargetsEditableText(event.target)) {
+      touchStartRef.current = null;
+      return;
+    }
     if (event.pointerType === 'touch') {
       const touches = (event.currentTarget as HTMLElement).parentElement?.querySelector(
         '.pdf-page-viewer__scroll',
@@ -117,7 +122,9 @@ export function PdfPageViewer({
   const handleTouchStart = (event: React.TouchEvent) => {
     touchMovedRef.current = false;
     if (event.touches.length === 1) {
-      touchStartRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      touchStartRef.current = pointerTargetsEditableText(event.target)
+        ? null
+        : { x: event.touches[0].clientX, y: event.touches[0].clientY };
     }
     if (event.touches.length === 2) {
       const dist = pinchDistance(event.touches);
@@ -172,7 +179,14 @@ export function PdfPageViewer({
   };
 
   const handleClick = (event: React.MouseEvent) => {
-    if (disablePress || touchMovedRef.current || viewWidthPx <= 0) return;
+    if (
+      disablePress ||
+      touchMovedRef.current ||
+      viewWidthPx <= 0 ||
+      pointerTargetsEditableText(event.target)
+    ) {
+      return;
+    }
     const { xPt, yPt } = pageCoordsFromClient(event.clientX, event.clientY);
     onTap(xPt, yPt);
   };

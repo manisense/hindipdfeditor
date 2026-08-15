@@ -5,4 +5,6 @@ TURNSTILE_SECRET_KEY=replace-with-turnstile-test-secret
 
 # Local-only overrides for the production-safe allowlists in wrangler.jsonc.
 ALLOWED_ORIGINS=http://localhost:5173
-TURNSTILE_HOSTNAMES=localhost
+TURNSTILE_HOSTNAMES=localhost,example.com
+# Cloudflare's fixed test response currently uses example.com and omits action.
+TURNSTILE_EXPECTED_ACTION=none

@@ -24,6 +24,11 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ### Fixed — web editor text replacement and translation
 
+- Restored editing of existing replacement overlays by keeping textarea gestures out of PDF-page
+  pointer capture and hit-testing; an existing edit now stays focused when clicked again.
+- Made Turnstile action validation environment-specific and still exact: production requires
+  `hindipdfeditor.com`/`ai-session`, while local development explicitly expects Cloudflare's fixed
+  `example.com` response with no action from the dummy validation key.
 - Fixed the blur-before-click race that could dismiss one editor and select the next detected line
   with the same mouse/touch gesture. Pointer intent is captured before blur, synthetic touch clicks
   stay dismiss-only, and Escape/outside actions invalidate delayed color-sampling work before it can

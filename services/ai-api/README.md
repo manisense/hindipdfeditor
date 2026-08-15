@@ -21,7 +21,11 @@ environment variables.
 
 1. Copy `.dev.vars.example` to `.dev.vars` and use staging-only secrets. The example also
    overrides production CORS and Turnstile hostnames for `http://localhost:5173`; never add those
-   development hosts to the production `wrangler.jsonc` allowlists.
+   development hosts to the production `wrangler.jsonc` allowlists. Cloudflare's fixed dummy-key
+   Siteverify response currently uses `example.com` and omits `action`, so local config explicitly
+   allows that test hostname and uses the `none` policy; production remains an exact
+   `hindipdfeditor.com`/`ai-session` check. Never use either local override in a deployed
+   environment.
 2. Apply D1 migrations locally with
    `npx wrangler d1 migrations apply hindipdfeditor-ai --local`.
 3. Run the web editor with `VITE_AI_API_BASE_URL` pointing at the local Worker URL when testing the

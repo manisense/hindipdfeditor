@@ -14,6 +14,7 @@ function environment(): Env {
     GEMINI_API_KEY: "gemini-secret",
     SESSION_SIGNING_SECRET: SECRET,
     TURNSTILE_SECRET_KEY: "turnstile-secret",
+    TURNSTILE_EXPECTED_ACTION: "ai-session",
     GEMINI_MODEL: "gemini-3.5-flash",
     ALLOWED_ORIGINS: "https://hindipdfeditor.com",
     TURNSTILE_HOSTNAMES: "hindipdfeditor.com",
@@ -118,6 +119,69 @@ describe("AI API router", () => {
       "https://challenges.cloudflare.com/turnstile/v0/siteverify",
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  it("rejects a Turnstile action that does not match the production action", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: true,
+          hostname: "hindipdfeditor.com",
+          action: "test",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    const response = await handleRequest(
+      request(
+        "/v1/session",
+        {
+          version: AI_API_VERSION,
+          clientId: "browser-installation-123456",
+          platform: "web",
+          turnstileToken: "token",
+        },
+        { Origin: "https://hindipdfeditor.com" },
+      ),
+      environment(),
+      undefined,
+      { fetchImpl: fetchMock, now: () => NOW },
+    );
+    expect(response.status).toBe(403);
+  });
+
+  it("accepts Cloudflare's fixed local test response without weakening production", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: true,
+          hostname: "example.com",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    const localEnv = {
+      ...environment(),
+      ALLOWED_ORIGINS: "http://localhost:5173",
+      TURNSTILE_HOSTNAMES: "localhost,example.com",
+      TURNSTILE_EXPECTED_ACTION: "none",
+    };
+    const response = await handleRequest(
+      request(
+        "/v1/session",
+        {
+          version: AI_API_VERSION,
+          clientId: "browser-installation-123456",
+          platform: "web",
+          turnstileToken: "dummy-token",
+        },
+        { Origin: "http://localhost:5173" },
+      ),
+      localEnv,
+      undefined,
+      { fetchImpl: fetchMock, now: () => NOW },
+    );
+    expect(response.status).toBe(200);
   });
 
   it("rejects unauthenticated translation before calling Gemini", async () => {

@@ -2,6 +2,7 @@ export interface Env {
   GEMINI_API_KEY: string;
   SESSION_SIGNING_SECRET: string;
   TURNSTILE_SECRET_KEY: string;
+  TURNSTILE_EXPECTED_ACTION: string;
   GEMINI_MODEL: string;
   ALLOWED_ORIGINS: string;
   TURNSTILE_HOSTNAMES: string;

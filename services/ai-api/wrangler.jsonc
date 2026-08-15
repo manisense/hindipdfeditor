@@ -8,6 +8,7 @@
     "GEMINI_MODEL": "gemini-3.5-flash",
     "ALLOWED_ORIGINS": "https://hindipdfeditor.com,https://www.hindipdfeditor.com",
     "TURNSTILE_HOSTNAMES": "hindipdfeditor.com,www.hindipdfeditor.com",
+    "TURNSTILE_EXPECTED_ACTION": "ai-session",
     "AI_TRANSLATION_ENABLED": "true",
     "AI_OCR_ENABLED": "true",
   },

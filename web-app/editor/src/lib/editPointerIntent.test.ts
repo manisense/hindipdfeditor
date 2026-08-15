@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { shouldDismissFocusedEdit } from './editPointerIntent';
+import { pointerTargetsEditableText, shouldDismissFocusedEdit } from './editPointerIntent';
 
 describe('shouldDismissFocusedEdit', () => {
   it('keeps a pointer gesture on the active editor interactive', () => {
@@ -18,5 +18,22 @@ describe('shouldDismissFocusedEdit', () => {
   it('allows a fresh page gesture when no editor is active', () => {
     expect(shouldDismissFocusedEdit(null, null)).toBe(false);
     expect(shouldDismissFocusedEdit(null, 'edit-b')).toBe(false);
+  });
+});
+
+describe('pointerTargetsEditableText', () => {
+  it('recognizes an editable overlay and its descendants', () => {
+    const textarea = document.createElement('textarea');
+    textarea.dataset.editId = 'edit-a';
+    const child = document.createElement('span');
+    textarea.append(child);
+
+    expect(pointerTargetsEditableText(textarea)).toBe(true);
+    expect(pointerTargetsEditableText(child)).toBe(true);
+  });
+
+  it('rejects page targets and missing targets', () => {
+    expect(pointerTargetsEditableText(document.createElement('div'))).toBe(false);
+    expect(pointerTargetsEditableText(null)).toBe(false);
   });
 });

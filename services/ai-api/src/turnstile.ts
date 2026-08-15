@@ -46,12 +46,17 @@ export async function verifyTurnstile(
   const allowedHostnames = new Set(
     env.TURNSTILE_HOSTNAMES.split(",").map((value) => value.trim()),
   );
+  const expectedAction = env.TURNSTILE_EXPECTED_ACTION.trim();
+  const actionMatches =
+    expectedAction === "none"
+      ? result?.action === undefined
+      : expectedAction.length > 0 && result?.action === expectedAction;
   if (
     !response.ok ||
     result?.success !== true ||
     !result.hostname ||
     !allowedHostnames.has(result.hostname) ||
-    result.action !== "ai-session"
+    !actionMatches
   ) {
     throw new ApiError(
       "FORBIDDEN",

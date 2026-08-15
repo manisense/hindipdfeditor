@@ -71,10 +71,12 @@ export function EditableTextOverlay({
   }, [autoFocus]);
 
   const handleFocus = () => {
-    const accepted = onFocus?.();
-    if (accepted === false) {
-      inputRef.current?.blur();
-      return;
+    if (!focused) {
+      const accepted = onFocus?.();
+      if (accepted === false) {
+        inputRef.current?.blur();
+        return;
+      }
     }
     if (selectAllOnFocus && edit.text.length > 0) {
       requestAnimationFrame(() => {
@@ -89,6 +91,16 @@ export function EditableTextOverlay({
       data-edit-id={edit.id}
       value={edit.text}
       onChange={(e) => onChangeText(e.target.value)}
+      onMouseDown={(event) => {
+        // Native focus happens before click. Activating an old edit also reveals
+        // the formatting toolbar above the page, so focusing here would move the
+        // textarea out from under the pointer before the click is dispatched.
+        if (!focused) event.preventDefault();
+      }}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (!focused) handleFocus();
+      }}
       onBlur={onBlur}
       onFocus={handleFocus}
       className={`editable-text-overlay ${focused ? 'editable-text-overlay--focused' : ''}`}
