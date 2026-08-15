@@ -12,6 +12,7 @@
   white-space: pre-wrap;
   word-break: normal;
   writing-mode: horizontal-tb;
+  cursor: text;
   z-index: 2;
 }
 

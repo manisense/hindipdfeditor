@@ -15,7 +15,16 @@ export type EmbeddedTextRun = {
 
 const LINE_Y_TOLERANCE_RATIO = 0.55;
 const WORD_GAP_RATIO = 0.12;
-const COLUMN_GAP_RATIO = 4;
+const COLUMN_GAP_RATIO = 0.75;
+
+function isPrivateUseCodePoint(codePoint: number | undefined): boolean {
+  return (
+    codePoint !== undefined &&
+    ((codePoint >= 0xe000 && codePoint <= 0xf8ff) ||
+      (codePoint >= 0xf0000 && codePoint <= 0xffffd) ||
+      (codePoint >= 0x100000 && codePoint <= 0x10fffd))
+  );
+}
 
 function isUnsafeExtractedCodePoint(codePoint: number | undefined): boolean {
   return (
@@ -31,21 +40,26 @@ function isUnsafeExtractedCodePoint(codePoint: number | undefined): boolean {
 export type SanitizedEmbeddedText = {
   text: string;
   removedCodePoints: number;
+  removedPrivateUseCodePoints: number;
 };
 
-/** Removes invalid PDF text-map code points while retaining all valid Unicode content. */
+/** Removes invalid text-map bytes and font-specific private-use glyphs from embedded PDF text. */
 export function sanitizeEmbeddedText(text: string): SanitizedEmbeddedText {
   let sanitized = '';
   let removedCodePoints = 0;
+  let removedPrivateUseCodePoints = 0;
   for (const character of text) {
     const codePoint = character.codePointAt(0);
     if (isUnsafeExtractedCodePoint(codePoint)) {
       removedCodePoints += 1;
+    } else if (isPrivateUseCodePoint(codePoint)) {
+      removedCodePoints += 1;
+      removedPrivateUseCodePoints += 1;
     } else {
       sanitized += character;
     }
   }
-  return { text: sanitized, removedCodePoints };
+  return { text: sanitized, removedCodePoints, removedPrivateUseCodePoints };
 }
 
 /** Returns whether embedded PDF text is safe to use as Unicode source text. */
@@ -79,6 +93,9 @@ function ascentRatio(style: { ascent?: number; descent?: number }): number {
  * NUL/control/replacement characters from an incomplete PDF text map are stripped and the page
  * is marked `embedded-degraded`. This keeps its accurate boxes available for manual editing while
  * allowing cloud-assisted translation to replace the unreliable strings with image OCR first.
+ * Font-specific private-use glyphs are omitted without degrading the page so icons remain in the
+ * immutable raster background instead of turning into missing-glyph boxes when adjacent text is
+ * edited.
  * Vertical or rotated text still returns no lines because its geometry is unsupported.
  *
  * @param pdfBytes Full PDF file bytes.
@@ -99,7 +116,7 @@ export async function extractEmbeddedTextLines(
     for (const item of textContent.items) {
       if (!('str' in item)) continue;
       const sanitized = sanitizeEmbeddedText(item.str);
-      if (sanitized.removedCodePoints > 0) degraded = true;
+      if (sanitized.removedCodePoints > sanitized.removedPrivateUseCodePoints) degraded = true;
 
       const normalized = sanitized.text.normalize('NFC').replace(/\s+/gu, ' ');
       const text = normalized.trim();
@@ -175,9 +192,14 @@ export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): Embedded
     const horizontalGap = run.xPt - (previous.xPt + previous.wPt);
     const isSeparateColumn =
       horizontalGap > Math.max(previous.hPt, run.hPt) * COLUMN_GAP_RATIO;
+    const isHorizontalBacktrack =
+      run.xPt < previous.xPt - Math.min(previous.hPt, run.hPt) * 0.25;
 
-    if (sameBaseline && !previous.hasEol && !isSeparateColumn) last.push(run);
-    else groups.push([run]);
+    if (sameBaseline && !previous.hasEol && !isSeparateColumn && !isHorizontalBacktrack) {
+      last.push(run);
+    } else {
+      groups.push([run]);
+    }
   }
 
   return groups.map((group) => {
@@ -200,5 +222,10 @@ export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): Embedded
       leadingSpace: false,
       trailingSpace: false,
     };
+  }).sort((a, b) => {
+    const centerDelta = a.yPt + a.hPt / 2 - (b.yPt + b.hPt / 2);
+    const sameVisualLine =
+      Math.abs(centerDelta) <= Math.max(3, Math.min(a.hPt, b.hPt) * LINE_Y_TOLERANCE_RATIO);
+    return sameVisualLine ? a.xPt - b.xPt : a.yPt - b.yPt;
   });
 }

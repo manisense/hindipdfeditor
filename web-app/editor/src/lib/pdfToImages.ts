@@ -58,7 +58,7 @@ export async function renderPage(page: number, scale: number): Promise<PageImage
 }
 
 /**
- * Samples the average background color in a band surrounding a rectangle on the page image.
+ * Samples the representative local background color in a band surrounding a page rectangle.
  *
  * @param uri Page background data URL.
  * @param xPx Left edge, in background-image px.

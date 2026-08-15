@@ -486,6 +486,7 @@ export function EditPdfTool() {
             pageState.widthPt,
           );
           let textColor = "#111111";
+          let maskColor = paperColor;
           try {
             textColor = await sampleTextColor(
               pageState.backgroundImageUri,
@@ -497,10 +498,22 @@ export function EditPdfTool() {
           } catch {
             /* keep black */
           }
+          try {
+            maskColor = await sampleAverageColor(
+              pageState.backgroundImageUri,
+              Math.round(sampleXPx),
+              Math.round(sampleYPx),
+              Math.round(sampleWPx),
+              Math.round(sampleHPx),
+              MASK_SAMPLE_MARGIN_PX,
+            );
+          } catch {
+            /* keep page-level fallback */
+          }
 
           const maskEdit = addMaskEdit(pageIndex, {
             ...geo.mask,
-            color: paperColor,
+            color: maskColor,
           });
           const textEdit = addTextEdit(pageIndex, {
             xPt: geo.text.xPt,

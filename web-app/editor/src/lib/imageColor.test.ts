@@ -37,6 +37,24 @@ describe('sampleAverageColorFromDataUrl', () => {
     const color = await sampleAverageColorFromDataUrl(uri, 50, 40, 100, 16, 8);
     expect(color.toLowerCase()).toBe('#ffffff');
   });
+
+  it('preserves the original light-grey paper instead of coercing it to white', async () => {
+    const uri = makePageDataUrl(200, 100, {
+      paper: '#f2f3f4',
+      ink: { x: 50, y: 40, w: 100, h: 16 },
+    });
+    const color = await sampleAverageColorFromDataUrl(uri, 50, 40, 100, 16, 8);
+    expect(color.toLowerCase()).toBe('#f2f3f4');
+  });
+
+  it('preserves a colored background behind editable text', async () => {
+    const uri = makePageDataUrl(200, 100, {
+      paper: '#3d51fa',
+      ink: { x: 50, y: 40, w: 100, h: 16, color: '#ffffff' },
+    });
+    const color = await sampleAverageColorFromDataUrl(uri, 50, 40, 100, 16, 8);
+    expect(color.toLowerCase()).toBe('#3d51fa');
+  });
 });
 
 describe('samplePagePaperColorFromDataUrl', () => {

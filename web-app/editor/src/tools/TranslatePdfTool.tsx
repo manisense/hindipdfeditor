@@ -26,6 +26,7 @@ import {
   getPageCount,
   getPdfBase64,
   renderPage,
+  sampleAverageColor,
   samplePagePaperColor,
   sampleTextColor,
   setPdfBytes,
@@ -42,6 +43,7 @@ import "./UtilityTool.css";
 
 const tool = getTool("translate")!;
 const RASTER_SCALE = 2;
+const MASK_SAMPLE_MARGIN_PX = 16;
 const UNKNOWN_ENCODING_FONT_NAME = "unknown (font inspection failed)";
 
 /** Soft caps so a phone/tab browser does not OOM on huge scans. */
@@ -278,6 +280,7 @@ async function buildTranslatedDocument(
       );
 
       let textColor = "#111111";
+      let maskColor = paperColor;
       try {
         textColor = await sampleTextColor(
           page.backgroundImageUri,
@@ -289,13 +292,25 @@ async function buildTranslatedDocument(
       } catch {
         /* keep black */
       }
+      try {
+        maskColor = await sampleAverageColor(
+          page.backgroundImageUri,
+          Math.round(tx),
+          Math.round(ty),
+          Math.round(tw),
+          Math.round(th),
+          MASK_SAMPLE_MARGIN_PX,
+        );
+      } catch {
+        /* keep page-level fallback */
+      }
 
       edits.push({
         type: "mask",
         id: crypto.randomUUID(),
         page: i,
         ...geo.mask,
-        color: paperColor,
+        color: maskColor,
       });
       edits.push({
         type: "text",

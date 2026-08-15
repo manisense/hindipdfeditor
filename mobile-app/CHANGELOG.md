@@ -24,6 +24,12 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ### Fixed — web editor text replacement and translation
 
+- Preserved the source region's median local background color for manual edits and translated
+  masks, including light-grey and colored surfaces instead of forcing every light background to
+  white.
+- Split same-baseline text across real column gaps and horizontal reading-order resets, omitted
+  private-use icon glyphs from editable text, prioritized exact small/large-box hits before padded
+  neighbors, and show a text-edit cursor over detected and active text boxes.
 - Restored editing of existing replacement overlays by keeping textarea gestures out of PDF-page
   pointer capture and hit-testing; an existing edit now stays focused when clicked again.
 - Made Turnstile action validation environment-specific and still exact: production requires

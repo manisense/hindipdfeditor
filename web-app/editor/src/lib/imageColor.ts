@@ -23,8 +23,9 @@ function lumaOf(r: number, g: number, b: number): number {
 
 /**
  * Samples paper/background color from a band around a rectangle.
- * Prefers light pixels (paper) over averages that include ink — averaging ink+paper
- * is what produced grey mask boxes behind English overlays.
+ * Uses the median RGB channels so glyph antialiasing and other sparse foreground pixels do not
+ * tint the result. Unlike the old light-pixel filter, this preserves grey and colored backgrounds
+ * instead of coercing every light surface to white.
  *
  * @param dataUrl Page background JPEG as a data URL.
  * @param xPx Left edge of inner rectangle, in px.
@@ -64,41 +65,40 @@ export async function sampleAverageColorFromDataUrl(
     y1: Math.min(height, Math.ceil(yPx + hPx)),
   };
 
-  const light: number[] = [];
-  const pushIfInBand = (x: number, y: number) => {
+  const red = new Uint32Array(256);
+  const green = new Uint32Array(256);
+  const blue = new Uint32Array(256);
+  let sampleCount = 0;
+  const sampleIfInBand = (x: number, y: number) => {
     const inInner = x >= inner.x0 && x < inner.x1 && y >= inner.y0 && y < inner.y1;
     if (inInner) return;
     const i = (y * width + x) * 4;
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    const luma = lumaOf(r, g, b);
-    // Keep paper-like pixels only — skip ink / shadows that drag the average grey.
-    if (luma >= 200) light.push(r, g, b);
+    red[r] += 1;
+    green[g] += 1;
+    blue[b] += 1;
+    sampleCount += 1;
   };
 
   for (let y = outer.y0; y < outer.y1; y++) {
     for (let x = outer.x0; x < outer.x1; x++) {
-      pushIfInBand(x, y);
+      sampleIfInBand(x, y);
     }
   }
 
-  if (light.length >= 3) {
-    let r = 0;
-    let g = 0;
-    let b = 0;
-    const n = light.length / 3;
-    for (let i = 0; i < light.length; i += 3) {
-      r += light[i];
-      g += light[i + 1];
-      b += light[i + 2];
-    }
-    r /= n;
-    g /= n;
-    b /= n;
-    // Near-white / light-grey paper → exact white so masks never show as grey slabs.
-    if (lumaOf(r, g, b) >= 200) return '#ffffff';
-    return rgbToHex(r, g, b);
+  if (sampleCount > 0) {
+    const medianChannel = (histogram: Uint32Array): number => {
+      const midpoint = Math.ceil(sampleCount / 2);
+      let seen = 0;
+      for (let value = 0; value < histogram.length; value += 1) {
+        seen += histogram[value];
+        if (seen >= midpoint) return value;
+      }
+      return 255;
+    };
+    return rgbToHex(medianChannel(red), medianChannel(green), medianChannel(blue));
   }
 
   return '#ffffff';
