@@ -2,6 +2,7 @@ import { Nav } from './Nav';
 import { Hero } from './Hero';
 import { Features } from './Features';
 import { WorkYourWay } from './WorkYourWay';
+import { AndroidShowcase } from './AndroidShowcase';
 import { Privacy } from './Privacy';
 import { FAQ } from './FAQ';
 import { CTA } from './CTA';
@@ -17,6 +18,7 @@ export function HomePage() {
         <Hero />
         <Features />
         <WorkYourWay />
+        <AndroidShowcase />
         <Privacy />
         <FAQ />
         <CTA />

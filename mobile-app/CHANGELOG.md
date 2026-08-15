@@ -4,6 +4,12 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Added — Android app marketing previews
+
+- Added the current Play Store phone and tablet creatives to the web marketing page as a
+  lazy-loaded Android showcase, with descriptive image text, large social preview metadata, and
+  SoftwareApplication screenshot data for search engines.
+
 ### Changed — local AI development configuration
 
 - Made the web AI API endpoint configurable through the documented public
