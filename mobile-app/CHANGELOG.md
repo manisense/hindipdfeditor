@@ -24,6 +24,10 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ### Fixed — web editor text replacement and translation
 
+- Replaced native browser alert windows and the editor's translation/security dialogs with one
+  accessible, queued, website-themed popup system. The shared modal traps/restores focus, supports
+  Escape and backdrop dismissal, adapts to mobile screens, and uses distinct branded states for
+  success, warning, information, and errors; lint now prevents native alert APIs from returning.
 - Preserved the source region's median local background color for manual edits and translated
   masks, including light-grey and colored surfaces instead of forcing every light background to
   white.

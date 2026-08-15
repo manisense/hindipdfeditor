@@ -214,53 +214,6 @@ body {
   }
 }
 
-.app__modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  z-index: 1000;
-}
-
-.app__modal {
-  background: var(--surface);
-  border-radius: 16px;
-  padding: 24px;
-  max-width: 440px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.app__modal h2 {
-  margin: 0;
-  font-size: 17px;
-}
-
-.app__modal p {
-  margin: 0;
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.45;
-}
-
-.app__modal-input {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 14px;
-}
-
-.app__modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
 @media (max-width: 640px) {
   .app__header {
     flex-direction: column;

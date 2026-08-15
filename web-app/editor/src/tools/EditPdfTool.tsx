@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AppButton } from "../components/AppButton";
+import { AppPopup } from "../components/AppPopup";
+import { useAppPopup } from "../components/appPopupContext";
 import { DropZone } from "../components/DropZone";
 import { EditableTextOverlay } from "../components/EditableTextOverlay";
 import { EditToolbar } from "../components/EditToolbar";
@@ -93,6 +95,7 @@ async function detectLegacyFontWarnings(
 }
 
 export function EditPdfTool() {
+  const { showPopup } = useAppPopup();
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const [focusedEditId, setFocusedEditId] = useState<string | null>(null);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
@@ -326,7 +329,13 @@ export function EditPdfTool() {
       setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "done" }));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      window.alert(`Enhance with AI failed: ${message}`);
+      await showPopup({
+        title: "Enhancement couldn’t finish",
+        message,
+        tone: "error",
+        eyebrow: "AI text detection",
+        actionLabel: "Back to editor",
+      });
     } finally {
       setEnhancingPage(null);
     }
@@ -541,18 +550,32 @@ export function EditPdfTool() {
       if (translatedCount === 0) {
         const sourceLabel =
           direction === "hi-en" ? "Hindi (Devanagari)" : "English";
-        window.alert(
-          `No ${sourceLabel} text was found to translate. Try Enhance with AI on scanned pages, then translate again.`,
-        );
+        await showPopup({
+          title: "No source text found",
+          message: `No ${sourceLabel} text was found to translate. Try Enhance with AI on scanned pages, then translate again.`,
+          tone: "warning",
+          eyebrow: "Translation check",
+          actionLabel: "Back to editor",
+        });
         return;
       }
       const targetLabel = direction === "hi-en" ? "English" : "Hindi";
-      window.alert(
-        `Replaced ${translatedCount} line${translatedCount === 1 ? "" : "s"} with ${targetLabel}. Review the overlays, then download the edited PDF.`,
-      );
+      await showPopup({
+        title: "Translation complete",
+        message: `Replaced ${translatedCount} line${translatedCount === 1 ? "" : "s"} with ${targetLabel}. Review the overlays, then download the edited PDF.`,
+        tone: "success",
+        eyebrow: "Ready to review",
+        actionLabel: "Review edits",
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      window.alert(`Translation failed: ${message}`);
+      await showPopup({
+        title: "Translation couldn’t finish",
+        message,
+        tone: "error",
+        eyebrow: "Translation failed",
+        actionLabel: "Back to editor",
+      });
     } finally {
       setTranslating(false);
     }
@@ -933,7 +956,7 @@ export function EditPdfTool() {
             const target = event.target as HTMLElement;
             if (
               target.closest(
-                ".app__page-card, .app__toolbar-card, .edit-toolbar, .app__modal",
+                ".app__page-card, .app__toolbar-card, .edit-toolbar",
               )
             ) {
               return;
@@ -1165,76 +1188,74 @@ export function EditPdfTool() {
       )}
 
       {translationOptionsVisible && (
-        <div className="app__modal-backdrop">
-          <div
-            className="app__modal"
-            role="dialog"
-            aria-labelledby="translate-title"
-          >
-            <h2 id="translate-title">Translate PDF</h2>
-            {detectedDirection ? (
-              <>
-                <p>
-                  Detected{" "}
-                  <strong>
-                    {detectedDirection === "hi-en"
-                      ? "Hindi → English"
-                      : "English → Hindi"}
-                  </strong>
-                  . Source-language lines are sent securely through our Gemini
-                  proxy. The original PDF is never overwritten.
-                </p>
-                <div className="app__modal-actions">
-                  <AppButton
-                    title="This page"
-                    small
-                    onClick={() => queueTranslation("page")}
-                  />
-                  <AppButton
-                    title="Whole PDF"
-                    small
-                    onClick={() => queueTranslation("document")}
-                  />
-                </div>
-              </>
-            ) : (
-              <p>
-                No clear Hindi or English source text was detected yet. Run{" "}
-                <strong>Enhance with AI</strong> or wait for text detection,
-                then try Translate again.
-              </p>
-            )}
-            <div className="app__modal-actions">
+        <AppPopup
+          open
+          title="Translate PDF"
+          eyebrow="Choose translation scope"
+          onClose={() => setTranslationOptionsVisible(false)}
+          actions={
+            <>
               <AppButton
                 title="Cancel"
                 small
                 variant="ghost"
                 onClick={() => setTranslationOptionsVisible(false)}
               />
-            </div>
-          </div>
-        </div>
+              {detectedDirection && (
+                <>
+                  <AppButton
+                    title="This page"
+                    small
+                    variant="secondary"
+                    onClick={() => queueTranslation("page")}
+                  />
+                  <AppButton
+                    title="Whole PDF"
+                    small
+                    onClick={() => queueTranslation("document")}
+                    data-popup-initial-focus
+                  />
+                </>
+              )}
+            </>
+          }
+        >
+          {detectedDirection ? (
+            <p>
+              Detected{" "}
+              <strong>
+                {detectedDirection === "hi-en"
+                  ? "Hindi → English"
+                  : "English → Hindi"}
+              </strong>
+              . Source-language lines are sent securely through our Gemini
+              proxy. The original PDF is never overwritten.
+            </p>
+          ) : (
+            <p>
+              No clear Hindi or English source text was detected yet. Run{" "}
+              <strong>Enhance with AI</strong> or wait for text detection, then
+              try Translate again.
+            </p>
+          )}
+        </AppPopup>
       )}
 
       {aiConsentVisible && (
-        <div className="app__modal-backdrop">
-          <div
-            className="app__modal"
-            role="dialog"
-            aria-labelledby="ai-ocr-title"
-          >
-            <h2 id="ai-ocr-title">
-              {aiGateMode === "translate"
-                ? "Security check for translation"
-                : "Enhance with AI OCR"}
-            </h2>
-            <p>
-              {aiGateMode === "translate"
-                ? "Complete the security check, then detected source-language lines will be translated through our Gemini proxy. If local extraction is unreliable, only the affected page image is also sent for higher-accuracy OCR. The original PDF is never changed."
-                : "This page image will be sent securely through our service to Google's Gemini API for higher-accuracy text detection. The original PDF is never changed."}
-            </p>
-            <TurnstileWidget onToken={setTurnstileToken} />
-            <div className="app__modal-actions">
+        <AppPopup
+          open
+          title={
+            aiGateMode === "translate"
+              ? "Security check for translation"
+              : "Enhance with AI OCR"
+          }
+          eyebrow="Privacy-first AI"
+          onClose={() => {
+            setAiConsentVisible(false);
+            setPendingTranslation(null);
+          }}
+          actions={
+            <>
               <AppButton
                 title="Cancel"
                 small
@@ -1249,10 +1270,18 @@ export function EditPdfTool() {
                 small
                 onClick={confirmAiOcr}
                 disabled={!turnstileToken}
+                data-popup-initial-focus
               />
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        >
+          <p>
+            {aiGateMode === "translate"
+              ? "Complete the security check, then detected source-language lines will be translated through our Gemini proxy. If local extraction is unreliable, only the affected page image is also sent for higher-accuracy OCR. The original PDF is never changed."
+              : "This page image will be sent securely through our service to Google's Gemini API for higher-accuracy text detection. The original PDF is never changed."}
+          </p>
+          <TurnstileWidget onToken={setTurnstileToken} />
+        </AppPopup>
       )}
     </ToolShell>
   );

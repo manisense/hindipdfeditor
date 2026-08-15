@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 
+import { AppPopupProvider } from './components/AppPopup';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SeoHead } from './components/SeoHead';
 import { HomePage } from './home/HomePage';
@@ -48,7 +49,7 @@ export default function App() {
   const toolId = useToolId();
 
   return (
-    <>
+    <AppPopupProvider>
       <SeoHead toolId={toolId} />
       <Suspense
         fallback={
@@ -73,6 +74,6 @@ export default function App() {
           <HomePage />
         )}
       </Suspense>
-    </>
+    </AppPopupProvider>
   );
 }

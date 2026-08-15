@@ -19,6 +19,18 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      'no-restricted-globals': [
+        'error',
+        { name: 'alert', message: 'Use the shared AppPopup system instead.' },
+        { name: 'confirm', message: 'Use the shared AppPopup system instead.' },
+        { name: 'prompt', message: 'Use the shared AppPopup system instead.' },
+      ],
+      'no-restricted-properties': [
+        'error',
+        { object: 'window', property: 'alert', message: 'Use the shared AppPopup system instead.' },
+        { object: 'window', property: 'confirm', message: 'Use the shared AppPopup system instead.' },
+        { object: 'window', property: 'prompt', message: 'Use the shared AppPopup system instead.' },
+      ],
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },

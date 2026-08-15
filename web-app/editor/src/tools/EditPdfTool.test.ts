@@ -2,6 +2,7 @@ import { act, createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AppPopupProvider } from '../components/AppPopup';
 import { useEditStore, type OcrLine, type PageState, type TextEdit } from '../state/editStore';
 import { EditPdfTool } from './EditPdfTool';
 
@@ -139,6 +140,10 @@ async function settleAsyncWork() {
   });
 }
 
+function editToolTree() {
+  return createElement(AppPopupProvider, null, createElement(EditPdfTool));
+}
+
 describe('EditPdfTool pointer intent', () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -152,7 +157,7 @@ describe('EditPdfTool pointer intent', () => {
     document.body.append(container);
     root = createRoot(container);
     await act(async () => {
-      root.render(createElement(EditPdfTool));
+      root.render(editToolTree());
     });
   });
 
@@ -243,7 +248,7 @@ describe('EditPdfTool pointer intent', () => {
     await act(async () => root.unmount());
     loadPage([], [lineB]);
     root = createRoot(container);
-    await act(async () => root.render(createElement(EditPdfTool)));
+    await act(async () => root.render(editToolTree()));
 
     const pendingTextColor = deferred<string>();
     imageMocks.sampleTextColor.mockReturnValueOnce(pendingTextColor.promise);
@@ -273,7 +278,7 @@ describe('EditPdfTool pointer intent', () => {
     await act(async () => root.unmount());
     loadPage([], [lineB]);
     root = createRoot(container);
-    await act(async () => root.render(createElement(EditPdfTool)));
+    await act(async () => root.render(editToolTree()));
 
     const pendingPaperColor = deferred<string>();
     imageMocks.sampleAverageColor.mockReturnValueOnce(pendingPaperColor.promise);
@@ -304,7 +309,7 @@ describe('EditPdfTool pointer intent', () => {
     await act(async () => root.unmount());
     loadPage([], [lineB]);
     root = createRoot(container);
-    await act(async () => root.render(createElement(EditPdfTool)));
+    await act(async () => root.render(editToolTree()));
 
     const pendingTextColor = deferred<string>();
     imageMocks.sampleTextColor.mockReturnValueOnce(pendingTextColor.promise);
@@ -335,7 +340,7 @@ describe('EditPdfTool pointer intent', () => {
     await act(async () => root.unmount());
     loadPage([], [lineB, lineC]);
     root = createRoot(container);
-    await act(async () => root.render(createElement(EditPdfTool)));
+    await act(async () => root.render(editToolTree()));
 
     const firstTextColor = deferred<string>();
     imageMocks.sampleTextColor
