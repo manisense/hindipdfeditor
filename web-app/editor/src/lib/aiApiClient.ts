@@ -130,4 +130,6 @@ export function createAiApiClient(options: Options = {}) {
   };
 }
 
-export const aiApiClient = createAiApiClient();
+export const aiApiClient = createAiApiClient({
+  baseUrl: import.meta.env.VITE_AI_API_BASE_URL as string | undefined,
+});

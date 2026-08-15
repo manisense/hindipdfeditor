@@ -4,6 +4,12 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Changed — local AI development configuration
+
+- Made the web AI API endpoint configurable through the documented public
+  `VITE_AI_API_BASE_URL` variable. Local Worker origins and hostnames now live in the ignored
+  `.dev.vars` workflow instead of weakening production CORS or Turnstile allowlists.
+
 ### Fixed — web editor text replacement and translation
 
 - Fixed the blur-before-click race that could dismiss one editor and select the next detected line

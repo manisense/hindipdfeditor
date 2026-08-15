@@ -19,10 +19,14 @@ environment variables.
 
 ## Local setup
 
-1. Copy `.dev.vars.example` to `.dev.vars` and use staging-only secrets.
+1. Copy `.dev.vars.example` to `.dev.vars` and use staging-only secrets. The example also
+   overrides production CORS and Turnstile hostnames for `http://localhost:5173`; never add those
+   development hosts to the production `wrangler.jsonc` allowlists.
 2. Apply D1 migrations locally with
    `npx wrangler d1 migrations apply hindipdfeditor-ai --local`.
-3. Run `npm test`, `npm run typecheck`, and `npx wrangler deploy --dry-run`.
+3. Run the web editor with `VITE_AI_API_BASE_URL` pointing at the local Worker URL when testing the
+   end-to-end AI flow.
+4. Run `npm test`, `npm run typecheck`, and `npx wrangler deploy --dry-run`.
 
 ## Production prerequisites
 

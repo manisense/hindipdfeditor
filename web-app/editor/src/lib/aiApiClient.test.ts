@@ -38,6 +38,8 @@ describe("web AI API client", () => {
       { id: "1", page: 0, text: "Hello" },
     ]);
 
+    expect(fetchImpl.mock.calls[0][0]).toBe("https://api.test/v1/session");
+    expect(fetchImpl.mock.calls[1][0]).toBe("https://api.test/v1/translate");
     const sessionBody = JSON.parse(fetchImpl.mock.calls[0][1].body as string);
     expect(sessionBody).toMatchObject({
       platform: "web",

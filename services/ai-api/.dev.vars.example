@@ -1,3 +1,8 @@
-GEMINI_API_KEY=replace-with-a-staging-auth-key
-SESSION_SIGNING_SECRET=replace-with-at-least-32-random-bytes
-TURNSTILE_SECRET_KEY=replace-with-a-turnstile-test-secret
+# Copy this file to .dev.vars for local development. Never put production secrets here.
+GEMINI_API_KEY=replace-with-staging-gemini-key
+SESSION_SIGNING_SECRET=replace-with-at-least-32-random-characters
+TURNSTILE_SECRET_KEY=replace-with-turnstile-test-secret
+
+# Local-only overrides for the production-safe allowlists in wrangler.jsonc.
+ALLOWED_ORIGINS=http://localhost:5173
+TURNSTILE_HOSTNAMES=localhost
