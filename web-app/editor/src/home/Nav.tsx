@@ -6,8 +6,6 @@ import { toolHref } from '../lib/tools';
 const links = [
   { label: 'Features', href: '#features' },
   { label: 'How it works', href: '#work' },
-  { label: 'Android app', href: '#android-app' },
-  { label: 'Privacy', href: '#privacy' },
   { label: 'FAQ', href: '#faq' },
 ];
 

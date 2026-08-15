@@ -4,6 +4,12 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Removed — homepage Android and privacy sections
+
+- Removed the Play Store screenshot carousel, the homepage privacy feature block, and their header
+  navigation anchors. The dedicated Privacy Policy remains linked from the footer, while the Play
+  Store assets remain available for social-sharing and search metadata.
+
 ### Added — Android app marketing previews
 
 - Added the current Play Store phone and tablet creatives to the web marketing page as a
