@@ -381,6 +381,9 @@ Added after Phase 4, driven by real use: on a scanned document (no text layer at
       through Render & Print. Anonymous session, rate, document, and page limits are enforced server
       side. Unit/integration verification is complete; the newly changed native UI and live deployed
       service remain unverified on hardware at the user's explicit request.
+      The web editor additionally detects incomplete PDF text maps: after the translation consent UI
+      explicitly discloses the fallback, only affected page images may first pass through `/v1/ocr`;
+      the resulting lines, not the incomplete embedded strings, then enter `/v1/translate`.
 
 ### Phase 4.6 — Stable editor viewport and asset-led UX — ✅ PASSED, verified on a real device
 

@@ -12,6 +12,7 @@ import { ToolShell } from "../components/ToolShell";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { aiApiClient } from "../lib/aiApiClient";
 import { ptSizeToImagePx, ptToImagePx } from "../lib/coordinateMath";
+import { textGeometryForDetectedLine } from "../lib/detectedLineTextGeometry";
 import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
 import {
   ensureFontsLoaded,
@@ -22,6 +23,7 @@ import type { TranslationDirection } from "@hindipdfeditor/translation-contract"
 
 import { translateOcrLines } from "../lib/geminiTranslate";
 import { detectLegacyFonts } from "../lib/legacyFontDetector";
+import { shouldDismissFocusedEdit } from "../lib/editPointerIntent";
 import { detectTextLines, detectTextLinesWithGemini } from "../lib/ocr";
 import { findOcrTargetAt, findTextEditAt } from "../lib/ocrHitTest";
 import {
@@ -39,6 +41,7 @@ import {
   isTranslatableEnglishLine,
   isTranslatableHindiLine,
 } from "../lib/translationSource";
+import { buildTranslationLinesWithContext } from "../lib/translationContext";
 import { geometryForTranslatedLine } from "../lib/translateEdits";
 import {
   useEditStore,
@@ -57,11 +60,8 @@ const DEFAULT_FONT_SIZE_PT = 14;
 const RASTER_SCALE = 2;
 const MASK_SAMPLE_MARGIN_PX = 16;
 const MASK_EXPAND_PT = 3;
-const OCR_FONT_SIZE_RATIO = 0.82;
-const MIN_OCR_FONT_SIZE_PT = 6;
 const OCR_MASK_PAD_TOP_RATIO = 0.35;
-const OCR_TEXT_WIDTH_SLACK_RATIO = 1.25;
-const OCR_TEXT_BASELINE_NUDGE_RATIO = 0.06;
+const EDIT_TEXT_WIDTH_SLACK_RATIO = 1.25;
 
 type EditMode = "edit" | "addText" | "erase";
 type OcrStatusByPage = Record<number, "running" | "done" | "failed">;
@@ -100,6 +100,8 @@ export function EditPdfTool() {
   const [ocrStatusByPage, setOcrStatusByPage] = useState<OcrStatusByPage>({});
   const ocrAttemptedPagesRef = useRef(new Set<number>());
   const editPairingsRef = useRef(new Map<string, EditPairing>());
+  const dismissOnlyGestureRef = useRef(false);
+  const pendingEditRequestRef = useRef(0);
   const [enhancingPage, setEnhancingPage] = useState<number | null>(null);
   const [translating, setTranslating] = useState(false);
   const [aiConsentVisible, setAiConsentVisible] = useState(false);
@@ -142,6 +144,8 @@ export function EditPdfTool() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      pendingEditRequestRef.current += 1;
+      dismissOnlyGestureRef.current = false;
       setFocusedEditId(null);
       setEditMode("edit");
     };
@@ -150,11 +154,14 @@ export function EditPdfTool() {
   }, []);
 
   const exitToolMode = () => {
+    pendingEditRequestRef.current += 1;
+    dismissOnlyGestureRef.current = false;
     setFocusedEditId(null);
     setEditMode("edit");
   };
 
   const openPdfFile = async (file: File) => {
+    pendingEditRequestRef.current += 1;
     setStatus({ state: "opening" });
     try {
       const buffer = await file.arrayBuffer();
@@ -252,12 +259,16 @@ export function EditPdfTool() {
 
   const goToPage = (index: number) => {
     if (!document || index < 0 || index >= document.pages.length) return;
+    pendingEditRequestRef.current += 1;
+    dismissOnlyGestureRef.current = false;
     setCurrentPageIndex(index);
     setFocusedEditId(null);
     ensureOcrForPage(document, index);
   };
 
   const handleUndo = () => {
+    pendingEditRequestRef.current += 1;
+    dismissOnlyGestureRef.current = false;
     setFocusedEditId(null);
     undo();
   };
@@ -293,6 +304,8 @@ export function EditPdfTool() {
   };
 
   const selectEditMode = (mode: EditMode) => {
+    pendingEditRequestRef.current += 1;
+    dismissOnlyGestureRef.current = false;
     setEditMode(mode);
     setFocusedEditId(null);
   };
@@ -395,6 +408,34 @@ export function EditPdfTool() {
           }
         }
 
+        const needsHighAccuracyOcr =
+          forceOcr ||
+          lines.length === 0 ||
+          lines.some((line) => line.source === "embedded-degraded");
+        if (needsHighAccuracyOcr) {
+          try {
+            lines = await detectTextLinesWithGemini(
+              pageState,
+              aiJobIdRef.current,
+              pageIndex,
+            );
+            if (
+              useEditStore.getState().document?.sourceName !== doc.sourceName
+            ) {
+              return;
+            }
+            setOcrLines(pageIndex, lines);
+            setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "done" }));
+          } catch (error) {
+            console.warn(
+              `High-accuracy OCR failed on page ${pageIndex} during translate`,
+              error,
+            );
+            setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "failed" }));
+            continue;
+          }
+        }
+
         const sourceLines = lines.filter((line) =>
           direction === "hi-en"
             ? isTranslatableHindiLine(line.text)
@@ -405,21 +446,11 @@ export function EditPdfTool() {
         const translatedById = await translateOcrLines(
           aiJobIdRef.current,
           direction,
-          sourceLines.map((line) => ({
-            id: line.id,
-            page: pageIndex,
-            text: line.text,
-          })),
+          buildTranslationLinesWithContext(pageIndex, lines, sourceLines),
         );
         if (useEditStore.getState().document?.sourceName !== doc.sourceName) {
           return;
         }
-
-        const sourceIds = new Set(sourceLines.map((line) => line.id));
-        setOcrLines(
-          pageIndex,
-          lines.filter((line) => !sourceIds.has(line.id)),
-        );
 
         let paperColor = "#ffffff";
         try {
@@ -432,6 +463,7 @@ export function EditPdfTool() {
           /* keep white */
         }
 
+        const consumedIds = new Set<string>();
         for (const line of sourceLines) {
           const translated = translatedById.get(line.id)?.trim();
           if (!translated) continue;
@@ -439,6 +471,7 @@ export function EditPdfTool() {
             line,
             pageState.widthPt,
             pageState.heightPt,
+            translated,
           );
           const { x: sampleXPx, y: sampleYPx } = ptToImagePx(
             line.xPt,
@@ -483,8 +516,13 @@ export function EditPdfTool() {
             maskId: maskEdit.id,
             ocrLine: line,
           });
+          consumedIds.add(line.id);
           translatedCount += 1;
         }
+        setOcrLines(
+          pageIndex,
+          lines.filter((line) => !consumedIds.has(line.id)),
+        );
       }
 
       if (translatedCount === 0) {
@@ -533,8 +571,11 @@ export function EditPdfTool() {
       fontWeight?: "normal" | "bold";
     },
     consumedOcrLine?: OcrLine,
+    requestId = ++pendingEditRequestRef.current,
   ) => {
-    if (!page) return;
+    if (!page || !document) return;
+    const targetPageIndex = currentPageIndex;
+    const targetSourceName = document.sourceName;
 
     const maskRect = {
       xPt: Math.max(0, rect.xPt - MASK_EXPAND_PT),
@@ -574,7 +615,25 @@ export function EditPdfTool() {
       console.warn("sampleAverageColor failed, falling back to white", error);
     }
 
-    const maskEdit = addMaskEdit(currentPageIndex, {
+    const currentDocument = useEditStore.getState().document;
+    const currentPage = currentDocument?.pages[targetPageIndex];
+    if (
+      requestId !== pendingEditRequestRef.current ||
+      currentDocument?.sourceName !== targetSourceName ||
+      !currentPage
+    ) {
+      return;
+    }
+
+    checkpoint();
+    if (consumedOcrLine) {
+      setOcrLines(
+        targetPageIndex,
+        currentPage.ocrLines.filter((line) => line.id !== consumedOcrLine.id),
+      );
+    }
+
+    const maskEdit = addMaskEdit(targetPageIndex, {
       xPt: maskRect.xPt,
       yPt: maskRect.yPt,
       wPt: maskRect.wPt,
@@ -582,7 +641,7 @@ export function EditPdfTool() {
       color,
     });
 
-    const textEdit = addTextEdit(currentPageIndex, {
+    const textEdit = addTextEdit(targetPageIndex, {
       xPt: text.xPt,
       yPt: text.yPt,
       fontSizePt: text.fontSizePt,
@@ -615,6 +674,15 @@ export function EditPdfTool() {
   const handleTap = async (xPt: number, yPt: number) => {
     if (editingBlocked || editMode === "erase") return;
     if (!page) return;
+    const requestId = ++pendingEditRequestRef.current;
+
+    // `blur` fires before `click`, so React may already report no focused edit here.
+    // Pointer-down capture preserves that this gesture began as a dismiss-only click.
+    // Keep the flag until the next pointer-down so touchend + synthetic click are both ignored.
+    if (dismissOnlyGestureRef.current) {
+      setFocusedEditId(null);
+      return;
+    }
 
     const textEdits = page.edits.filter(
       (e): e is TextEdit => e.type === "text",
@@ -636,16 +704,11 @@ export function EditPdfTool() {
 
     const hitLine = findOcrTargetAt(page.ocrLines, xPt, yPt);
     if (hitLine) {
-      checkpoint();
-      setOcrLines(
-        currentPageIndex,
-        page.ocrLines.filter((l) => l.id !== hitLine.id),
+      const textGeometry = textGeometryForDetectedLine(
+        hitLine,
+        page.widthPt,
+        EDIT_TEXT_WIDTH_SLACK_RATIO,
       );
-      const fontSizePt = Math.max(
-        MIN_OCR_FONT_SIZE_PT,
-        hitLine.hPt * OCR_FONT_SIZE_RATIO,
-      );
-      const textY = hitLine.yPt + hitLine.hPt * OCR_TEXT_BASELINE_NUDGE_RATIO;
       const { x: sampleXPx, y: sampleYPx } = ptToImagePx(
         hitLine.xPt,
         hitLine.yPt,
@@ -670,8 +733,6 @@ export function EditPdfTool() {
       } catch (error) {
         console.warn("sampleTextColor failed, falling back to black", error);
       }
-      const fontWeight: "normal" | "bold" =
-        fontSizePt >= 13 ? "bold" : "normal";
       const padTop = hitLine.hPt * OCR_MASK_PAD_TOP_RATIO;
       await maskAndReplaceRegion(
         {
@@ -681,15 +742,16 @@ export function EditPdfTool() {
           hPt: hitLine.hPt + padTop,
         },
         {
-          xPt: hitLine.xPt,
-          yPt: textY,
+          xPt: textGeometry.xPt,
+          yPt: textGeometry.yPt,
           prefill: hitLine.text,
-          fontSizePt,
-          widthPt: hitLine.wPt * OCR_TEXT_WIDTH_SLACK_RATIO,
+          fontSizePt: textGeometry.fontSizePt,
+          widthPt: textGeometry.widthPt,
           color: textColor,
-          fontWeight,
+          fontWeight: "normal",
         },
         hitLine,
+        requestId,
       );
       return;
     }
@@ -727,7 +789,6 @@ export function EditPdfTool() {
 
   const handleMaskDrawn = async (rect: DrawnMaskRect) => {
     if (!page || editingBlocked || editMode !== "erase") return;
-    checkpoint();
     await maskAndReplaceRegion(rect, {
       xPt: rect.xPt,
       yPt: rect.yPt,
@@ -737,15 +798,20 @@ export function EditPdfTool() {
   };
 
   const saveAndExport = async () => {
-    if (!document) return;
+    pendingEditRequestRef.current += 1;
+    dismissOnlyGestureRef.current = false;
+    setFocusedEditId(null);
+    const documentToExport = useEditStore.getState().document;
+    if (!documentToExport) return;
     setStatus({ state: "saving" });
     try {
       const fontBase64ByFamily = {
         NotoSansDevanagari: await getFontBase64("NotoSansDevanagari"),
         NotoSerifDevanagari: await getFontBase64("NotoSerifDevanagari"),
       };
-      const blob = await exportPdf(document, fontBase64ByFamily);
-      const baseName = document.sourceName.replace(/\.pdf$/i, "") || "edited";
+      const blob = await exportPdf(documentToExport, fontBase64ByFamily);
+      const baseName =
+        documentToExport.sourceName.replace(/\.pdf$/i, "") || "edited";
       const filename = `${baseName}-edited.pdf`;
       downloadPdfBlob(blob, filename);
       setStatus({ state: "saved", filename });
@@ -784,6 +850,8 @@ export function EditPdfTool() {
   const step = status.state === "saved" ? 3 : document ? 2 : 1;
 
   const handleCloseDocument = () => {
+    pendingEditRequestRef.current += 1;
+    dismissOnlyGestureRef.current = false;
     closeDocument();
     setFocusedEditId(null);
     setSelectAllEditId(null);
@@ -857,9 +925,10 @@ export function EditPdfTool() {
             ) {
               return;
             }
-            if (editMode !== "edit" || focusedEditId) {
-              exitToolMode();
-            }
+            // Cancel an in-flight OCR replacement even before it has created/focused
+            // a textarea. Otherwise a click-away during async color sampling can still
+            // commit the stale replacement after the user has left the editor.
+            exitToolMode();
           }}
         >
           <section className="app__toolbar-card">
@@ -983,7 +1052,19 @@ export function EditPdfTool() {
             />
           )}
 
-          <section className="app__page-card">
+          <section
+            className="app__page-card"
+            onPointerDownCapture={(event) => {
+              const target = event.target as HTMLElement;
+              const targetEditId =
+                target.closest<HTMLElement>("[data-edit-id]")?.dataset.editId ??
+                null;
+              dismissOnlyGestureRef.current = shouldDismissFocusedEdit(
+                focusedEditId,
+                targetEditId,
+              );
+            }}
+          >
             <PdfPageViewer
               key={page.pageIndex}
               page={page}
@@ -1136,7 +1217,7 @@ export function EditPdfTool() {
             </h2>
             <p>
               {aiGateMode === "translate"
-                ? "Complete the security check, then detected source-language lines will be translated through our Gemini proxy. The original PDF is never changed."
+                ? "Complete the security check, then detected source-language lines will be translated through our Gemini proxy. If local extraction is unreliable, only the affected page image is also sent for higher-accuracy OCR. The original PDF is never changed."
                 : "This page image will be sent securely through our service to Google's Gemini API for higher-accuracy text detection. The original PDF is never changed."}
             </p>
             <TurnstileWidget onToken={setTurnstileToken} />

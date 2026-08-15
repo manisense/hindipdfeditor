@@ -21,7 +21,7 @@
 
 - Core editing and PDF utilities run locally in the browser or on-device; documents are not uploaded to Hindi PDF Editor servers.
 - Devanagari text is shaped via a browser/HTML print pipeline so conjuncts, matras, and reph stay correct.
-- Translate sends detected source lines through a secured Gemini proxy only after an explicit action; both Hindi → English and English → Hindi are supported.
+- Translate sends detected source lines through a secured Gemini proxy only after an explicit action; both Hindi → English and English → Hindi are supported. If web extraction is flagged as unreliable, the consent UI discloses that only affected page images may first be sent for higher-accuracy OCR.
 - Optional AI OCR sends the selected page image through the same proxy. The Gemini key stays server-side and is never requested from users.
 - Exports always create a new PDF; the source file is never overwritten.
 - Free on web; Android app available on Google Play.

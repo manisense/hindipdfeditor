@@ -86,6 +86,9 @@
           <li>
             Web and Android Translate send detected text lines through the same
             secured API; both Hindi → English and English → Hindi are supported.
+            On the web, an affected page image may also be processed for OCR when
+            local text extraction is flagged as unreliable and the translation
+            consent screen explicitly discloses the fallback.
           </li>
         </ul>
 
@@ -103,8 +106,8 @@
             <tbody>
               <tr>
                 <td>PDF page image</td>
-                <td>Processed by our API and Google only if AI OCR is used.</td>
-                <td>Text detection for difficult scans.</td>
+                <td>Processed by our API and Google only for user-consented AI OCR or the disclosed web Translate OCR fallback.</td>
+                <td>Text detection for difficult scans or unreliable PDF text maps.</td>
                 <td>No.</td>
               </tr>
               <tr>

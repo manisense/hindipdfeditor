@@ -97,7 +97,15 @@ function toOcrLines(lines: RecognizedLine[], page: PageState): OcrLine[] {
         page.imagePxWidth,
         page.widthPt,
       );
-      return { id: crypto.randomUUID(), text: line.text, xPt, yPt, wPt, hPt };
+      return {
+        id: crypto.randomUUID(),
+        text: line.text.normalize("NFC"),
+        xPt,
+        yPt,
+        wPt,
+        hPt,
+        source: "ocr" as const,
+      };
     });
 }
 

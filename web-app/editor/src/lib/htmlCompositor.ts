@@ -1,5 +1,6 @@
 import { ptToImagePx } from './coordinateMath';
 import type { DevanagariFontFamily } from './fontAsset';
+import { TEXT_LINE_HEIGHT, TEXT_OVERFLOW_WRAP } from './textLayout';
 import type { DocumentState, MaskEdit, PageState, TextEdit } from '../state/editStore';
 
 /**
@@ -35,10 +36,10 @@ function textLayerHtml(edit: TextEdit, page: PageState): string {
   // unconstrained edit keeps white-space:pre: a single line unless the user typed newlines.
   const widthStyle =
     edit.widthPt === undefined
-      ? 'white-space:pre'
-      : `width:${edit.widthPt * scale}px;white-space:pre-wrap;overflow-wrap:break-word`;
+      ? 'white-space:pre;'
+      : `width:${edit.widthPt * scale}px;white-space:pre-wrap;overflow-wrap:${TEXT_OVERFLOW_WRAP};`;
   const weightStyle = edit.fontWeight === 'bold' ? 'font-weight:700;' : '';
-  return `<span style="position:absolute;left:${x}px;top:${y}px;font-size:${fontPx}px;font-family:'${edit.fontFamily}',system-ui,sans-serif;color:${edit.color};line-height:1.15;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span>`;
+  return `<span style="position:absolute;display:block;left:${x}px;top:${y}px;font-size:${fontPx}px;font-family:'${edit.fontFamily}',system-ui,sans-serif;color:${edit.color};line-height:${TEXT_LINE_HEIGHT};word-break:normal;writing-mode:horizontal-tb;overflow:visible;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span>`;
 }
 
 /**

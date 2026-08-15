@@ -4,6 +4,26 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Fixed — web editor text replacement and translation
+
+- Fixed the blur-before-click race that could dismiss one editor and select the next detected line
+  with the same mouse/touch gesture. Pointer intent is captured before blur, synthetic touch clicks
+  stay dismiss-only, and Escape/outside actions invalidate delayed color-sampling work before it can
+  create a stale mask or text edit.
+- Corrected embedded PDF line geometry by treating PDF.js widths as already device-scaled, using
+  font ascent for the top edge, and joining split glyph runs only across real geometric gaps. Invalid
+  text-map control bytes are stripped and marked as degraded: their accurate boxes remain available
+  for manual editing, while translation refreshes those pages with consented Gemini OCR instead of
+  translating incomplete Devanagari strings.
+- Unified live and exported text layout around browser-native font metrics, content-box outlines,
+  and auto-height editors. Devanagari upper/lower marks and wrapped text no longer hide behind a
+  one-em textarea; long translated lines are measured and shrunk toward a 6pt floor before wrapping.
+- Added neighboring full-page context before translation batching and hardened the Gemini request
+  with a trusted system instruction, inert document-data boundary, medium reasoning, closed result
+  schema, exact result counts, and allowed line IDs. Failed lines remain available for retry.
+- Added focused extraction, geometry, typography, translation-context, prompt-boundary, and
+  pointer/async-race coverage across the web editor and AI API.
+
 ### Fixed — production readiness audit
 
 - Added honest page-by-page progress while opening and exporting long PDFs. Export progress only

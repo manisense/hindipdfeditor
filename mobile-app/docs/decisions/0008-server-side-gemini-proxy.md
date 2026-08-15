@@ -14,8 +14,10 @@ Use one Cloudflare Worker at `api.hindipdfeditor.com` for Android and web AI OCR
 
 1. Store the Gemini key only as a Worker secret; clients receive anonymous signed sessions only.
 2. Support Hindi → English and English → Hindi with one versioned, dependency-free shared contract.
-3. Send stable line IDs and only source lines for translation; send page images only after explicit
-   AI OCR consent. Keep the original PDF local and immutable.
+3. Send stable line IDs and only source lines for normal translation. The web translation consent
+   UI may explicitly disclose and authorize page-image OCR when an affected PDF text map is
+   incomplete; otherwise send page images only after explicit AI OCR consent. Keep the original PDF
+   local and immutable.
 4. Set Gemini interaction storage to false, protect identifiers/dates/amounts/URLs before prompting,
    validate target script and IDs after response, and fail closed on malformed output.
 5. Apply Turnstile to web session creation, per-minute Worker rate limiting, D1 daily document/page

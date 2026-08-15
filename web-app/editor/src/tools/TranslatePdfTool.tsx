@@ -2,7 +2,6 @@ import { useRef, useState } from "react";
 import {
   AI_LIMITS,
   type TranslationDirection,
-  type TranslationLine,
 } from "@hindipdfeditor/translation-contract";
 
 import { AppButton } from "../components/AppButton";
@@ -12,15 +11,16 @@ import { TurnstileWidget } from "../components/TurnstileWidget";
 import { aiApiClient } from "../lib/aiApiClient";
 import { ptSizeToImagePx, ptToImagePx } from "../lib/coordinateMath";
 import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
-import { getFontBase64 } from "../lib/fontAsset";
+import { ensureFontsLoaded, getFontBase64 } from "../lib/fontAsset";
 import {
   containsDevanagari,
   detectTranslationDirection,
   isTranslatableEnglishLine,
   isTranslatableHindiLine,
 } from "../lib/translationSource";
+import { buildTranslationLinesWithContext } from "../lib/translationContext";
 import { detectLegacyFonts } from "../lib/legacyFontDetector";
-import { detectTextLines } from "../lib/ocr";
+import { detectTextLines, detectTextLinesWithGemini } from "../lib/ocr";
 import { extractEmbeddedTextLines } from "../lib/pdfTextExtract";
 import {
   getPageCount,
@@ -136,13 +136,17 @@ async function buildTranslatedDocument(
   onProgress({ phase: "loading", detail: "Checking fonts…" });
   const legacyFontWarnings = await detectLegacyFontWarnings(pageCount);
   throwIfAborted(signal);
-  const forceOcr = legacyFontWarnings.length > 0;
+  const forceOcrPages = new Set(
+    legacyFontWarnings.map((warning) => warning.page),
+  );
 
   const pages: PageState[] = [];
   let translatedLines = 0;
   let skippedLines = 0;
+  let usedOcrFallback = false;
 
   for (let i = 0; i < pageCount; i++) {
+    const forceOcr = forceOcrPages.has(i);
     throwIfAborted(signal);
     onProgress({
       phase: "loading",
@@ -176,6 +180,20 @@ async function buildTranslatedDocument(
     }
     throwIfAborted(signal);
 
+    if (
+      forceOcr ||
+      lines.length === 0 ||
+      lines.some((line) => line.source === "embedded-degraded")
+    ) {
+      usedOcrFallback = true;
+      onProgress({
+        phase: "detecting",
+        detail: `Improving text detection on page ${i + 1} of ${pageCount}…`,
+      });
+      lines = await detectTextLinesWithGemini(page, jobId, i);
+      throwIfAborted(signal);
+    }
+
     const sourceLines = lines.filter((line) =>
       direction === "hi-en"
         ? isTranslatableHindiLine(line.text)
@@ -197,11 +215,11 @@ async function buildTranslatedDocument(
       detail: `Translating ${sourceLines.length} line(s) on page ${i + 1}…`,
     });
     const translatedById = new Map<string, string>();
-    const requestLines: TranslationLine[] = sourceLines.map((line) => ({
-      id: line.id,
-      page: i,
-      text: line.text,
-    }));
+    const requestLines = buildTranslationLinesWithContext(
+      i,
+      lines,
+      sourceLines,
+    );
     for (
       let start = 0;
       start < requestLines.length;
@@ -240,7 +258,12 @@ async function buildTranslatedDocument(
         continue;
       }
 
-      const geo = geometryForTranslatedLine(line, page.widthPt, page.heightPt);
+      const geo = geometryForTranslatedLine(
+        line,
+        page.widthPt,
+        page.heightPt,
+        translated,
+      );
       const { x: tx, y: ty } = ptToImagePx(
         line.xPt,
         line.yPt,
@@ -307,7 +330,7 @@ async function buildTranslatedDocument(
     },
     translatedLines,
     skippedLines,
-    usedOcrFallback: forceOcr,
+    usedOcrFallback,
   };
 }
 
@@ -362,6 +385,8 @@ export function TranslatePdfTool() {
       if (!turnstileToken)
         throw new Error("Complete the security check before translating.");
       aiApiClient.setTurnstileTokenProvider(() => turnstileToken);
+      ensureFontsLoaded();
+      await document.fonts.load("12px NotoSansDevanagari");
       const { doc, translatedLines, skippedLines, usedOcrFallback } =
         await buildTranslatedDocument(
           file,
@@ -447,8 +472,9 @@ export function TranslatePdfTool() {
             </p>
             <p className="utility-tool__note">
               Detected source lines are sent securely through our service to
-              Google&apos;s Gemini API. Output is a new file; the source PDF is
-              never modified.
+              Google&apos;s Gemini API. If local extraction is unreliable, only
+              the affected page image is also sent for higher-accuracy OCR.
+              Output is a new file; the source PDF is never modified.
             </p>
             <fieldset disabled={busy || detectingLanguage}>
               <legend>Translation direction</legend>
