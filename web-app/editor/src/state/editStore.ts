@@ -34,6 +34,8 @@ export type OcrLine = {
   yPt: number;
   wPt: number;
   hPt: number;
+  /** Whether geometry came from the PDF text layer or a raster OCR engine. */
+  source?: 'embedded' | 'embedded-degraded' | 'ocr';
 };
 
 export type PageState = {

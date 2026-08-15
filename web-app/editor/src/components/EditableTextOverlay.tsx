@@ -1,6 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
 import { ptSizeToDp, ptToDp } from '../lib/coordinateMath';
+import {
+  resizeTextAreaToContent,
+  TEXT_LINE_HEIGHT,
+  TEXT_OVERFLOW_WRAP,
+} from '../lib/textLayout';
 import type { TextEdit } from '../state/editStore';
 import './EditableTextOverlay.css';
 
@@ -35,6 +40,24 @@ export function EditableTextOverlay({
       ? undefined
       : ptSizeToDp(edit.widthPt, 0, viewWidthPx, pageWidthPt).wDp;
 
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    resizeTextAreaToContent(input);
+  }, [edit.fontFamily, edit.fontWeight, edit.text, fontSizePx, widthPx]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void document.fonts?.ready.then(() => {
+      if (!cancelled && inputRef.current) {
+        resizeTextAreaToContent(inputRef.current);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [edit.fontFamily, edit.fontWeight, edit.text, fontSizePx, widthPx]);
+
   useEffect(() => {
     if (focused) {
       inputRef.current?.focus();
@@ -63,6 +86,7 @@ export function EditableTextOverlay({
   return (
     <textarea
       ref={inputRef}
+      data-edit-id={edit.id}
       value={edit.text}
       onChange={(e) => onChangeText(e.target.value)}
       onBlur={onBlur}
@@ -72,7 +96,8 @@ export function EditableTextOverlay({
         left: xDp,
         top: yDp,
         fontSize: fontSizePx,
-        lineHeight: `${fontSizePx}px`,
+        lineHeight: TEXT_LINE_HEIGHT,
+        overflowWrap: TEXT_OVERFLOW_WRAP,
         color: edit.color,
         fontFamily: edit.fontFamily,
         fontWeight: edit.fontWeight === 'bold' ? 700 : 400,
