@@ -1,6 +1,11 @@
 .app-button {
+  align-items: center;
   border: none;
   border-radius: 999px;
+  display: inline-flex;
+  gap: 8px;
+  justify-content: center;
+  min-height: 46px;
   padding: 12px 18px;
   font-size: 15px;
   font-weight: 600;
@@ -10,7 +15,8 @@
     background 0.15s ease,
     color 0.15s ease,
     box-shadow 0.15s ease,
-    transform 0.15s ease;
+    transform 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .app-button:disabled {
@@ -19,10 +25,20 @@
 }
 
 .app-button:not(:disabled):hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+}
+
+.app-button:not(:disabled):active {
+  transform: translateY(0) scale(0.98);
+}
+
+.app-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--brand) 26%, transparent);
+  outline-offset: 3px;
 }
 
 .app-button--small {
+  min-height: 38px;
   padding: 8px 14px;
   font-size: 13px;
 }
@@ -38,28 +54,36 @@
 }
 
 .app-button--secondary {
+  border: 1px solid color-mix(in srgb, var(--brand) 9%, var(--line));
   background: var(--brand-wash);
   color: var(--brand-hover);
 }
 
 .app-button--danger {
+  border: 1px solid color-mix(in srgb, var(--danger) 13%, var(--line));
   background: var(--danger-soft);
   color: var(--danger);
 }
 
 .app-button--ghost {
+  border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
 }
 
-.app-link {
-  color: var(--brand);
-  text-decoration: none;
-  font-weight: 700;
-  font-family: var(--font-display);
+.app-button--ghost:not(:disabled):hover {
+  border-color: var(--line);
+  background: var(--surface-subtle);
+  color: var(--ink);
 }
 
-.app-link:hover {
-  color: var(--brand-hover);
-  text-decoration: underline;
+.app-button__icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+}
+
+.app-button__icon svg {
+  height: 1.05em;
+  width: 1.05em;
 }

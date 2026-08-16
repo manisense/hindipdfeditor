@@ -11,5 +11,15 @@
   cursor: text;
   border: 1px solid color-mix(in srgb, var(--brand) 40%, transparent);
   background: color-mix(in srgb, var(--brand) 8%, transparent);
-  border-radius: 2px;
+  border-radius: 3px;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.ocr-highlight-layer__box:hover {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  border-color: color-mix(in srgb, var(--brand) 72%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 10%, transparent);
 }

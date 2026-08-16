@@ -1,0 +1,66 @@
+.app-status {
+  --status-tone: var(--brand);
+  --status-soft: var(--brand-wash);
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--status-soft) 72%, white);
+  border: 1px solid color-mix(in srgb, var(--status-tone) 18%, var(--line));
+  border-radius: 18px;
+  color: color-mix(in srgb, var(--status-tone) 84%, var(--ink));
+  display: flex;
+  font-size: 14px;
+  gap: 12px;
+  line-height: 1.5;
+  padding: 15px 17px;
+  width: 100%;
+}
+
+.app-status--success {
+  --status-tone: var(--success);
+  --status-soft: var(--success-soft);
+}
+
+.app-status--warning {
+  --status-tone: var(--warning);
+  --status-soft: var(--warning-soft);
+}
+
+.app-status--error {
+  --status-tone: var(--danger);
+  --status-soft: var(--danger-soft);
+}
+
+.app-status__icon {
+  display: grid;
+  flex: none;
+  height: 30px;
+  place-items: center;
+  width: 30px;
+}
+
+.app-status__copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.app-status__copy strong {
+  color: var(--ink);
+  display: block;
+  font-family: var(--font-display);
+  margin-bottom: 2px;
+}
+
+.app-status--busy .app-status__icon svg {
+  animation: app-status-spin 800ms linear infinite;
+}
+
+@keyframes app-status-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-status--busy .app-status__icon svg {
+    animation: none;
+  }
+}

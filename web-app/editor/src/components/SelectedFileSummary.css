@@ -1,0 +1,44 @@
+.selected-file-summary {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  min-width: 0;
+}
+
+.selected-file-summary__icon {
+  background: var(--tool-soft, var(--brand-wash));
+  border-radius: 16px;
+  color: var(--tool-accent, var(--brand));
+  display: grid;
+  flex: none;
+  height: 50px;
+  place-items: center;
+  width: 50px;
+}
+
+.selected-file-summary__copy {
+  min-width: 0;
+}
+
+.selected-file-summary__label {
+  color: var(--tool-accent, var(--brand));
+  display: block;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.selected-file-summary h2 {
+  font-size: 1.05rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.selected-file-summary p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 3px 0 0;
+}

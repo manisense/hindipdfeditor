@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
+import { AppStatus } from "./AppStatus";
+import "./TurnstileWidget.css";
+
 type TurnstileApi = {
   render: (
     element: HTMLElement,
@@ -77,9 +80,9 @@ export function TurnstileWidget({
   }, [onToken]);
 
   return (
-    <div>
-      <div ref={containerRef} aria-label="Security check" />
-      {error && <p className="app__status app__status--error">{error}</p>}
+    <div className="turnstile-widget">
+      <div className="turnstile-widget__frame" ref={containerRef} aria-label="Security check" />
+      {error && <AppStatus tone="error">{error}</AppStatus>}
     </div>
   );
 }

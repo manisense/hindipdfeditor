@@ -1,0 +1,13 @@
+.turnstile-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 100%;
+  width: 100%;
+}
+
+.turnstile-widget__frame {
+  max-width: 100%;
+  min-height: 65px;
+  overflow: hidden;
+}

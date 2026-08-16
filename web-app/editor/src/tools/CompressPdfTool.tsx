@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
 import { AppButton } from '../components/AppButton';
+import { AppStatus } from '../components/AppStatus';
 import { DropZone } from '../components/DropZone';
+import { SelectedFileSummary } from '../components/SelectedFileSummary';
 import { ToolShell } from '../components/ToolShell';
 import { compressPdfFile, downloadPdfBytes } from '../lib/pdfOps';
 import { getTool } from '../lib/tools';
@@ -57,6 +59,7 @@ export function CompressPdfTool() {
   return (
     <ToolShell
       tool={tool}
+      compact={Boolean(file)}
       steps={[
         { label: 'Select PDF', active: step === 1, done: step > 1 },
         { label: 'Compress', active: step === 2, done: step > 2 },
@@ -78,23 +81,34 @@ export function CompressPdfTool() {
           />
         ) : (
           <div className="utility-tool__panel">
-            <h2>{file.name}</h2>
-            <p className="utility-tool__meta">{formatBytes(file.size)}</p>
-            <label className="utility-tool__slider">
-              Quality ({Math.round(quality * 100)}%)
-              <input
-                type="range"
-                min={0.4}
-                max={0.92}
-                step={0.02}
-                value={quality}
-                onChange={(e) => setQuality(Number(e.target.value))}
-              />
-            </label>
-            <p className="utility-tool__note">
-              Lower quality = smaller file. Compression rasterizes each page, so text will no longer
-              be selectable in the output.
-            </p>
+            <SelectedFileSummary name={file.name} meta={formatBytes(file.size)} />
+            <div className="utility-tool__setting-card">
+              <div className="utility-tool__setting-heading">
+                <div>
+                  <strong>Image quality</strong>
+                  <span>Balance clarity and file size</span>
+                </div>
+                <output>{Math.round(quality * 100)}%</output>
+              </div>
+              <label className="utility-tool__slider">
+                <span className="utility-tool__sr-only">Compression quality</span>
+                <input
+                  type="range"
+                  min={0.4}
+                  max={0.92}
+                  step={0.02}
+                  value={quality}
+                  onChange={(e) => setQuality(Number(e.target.value))}
+                />
+              </label>
+              <div className="utility-tool__range-labels" aria-hidden="true">
+                <span>Smaller file</span>
+                <span>Sharper pages</span>
+              </div>
+              <p className="utility-tool__note">
+                Compression rasterizes each page, so text will no longer be selectable in the output.
+              </p>
+            </div>
             <div className="utility-tool__actions">
               <AppButton
                 title="Choose another"
@@ -114,12 +128,12 @@ export function CompressPdfTool() {
             </div>
           </div>
         )}
-        {error && <div className="utility-tool__status utility-tool__status--error">{error}</div>}
+        {error && <AppStatus tone="error" title="Compression failed">{error}</AppStatus>}
         {result && (
-          <div className="utility-tool__status utility-tool__status--ok">
+          <AppStatus tone="success" title="Your smaller PDF is ready">
             Downloaded {result.filename} · {result.pageCount} pages ·{' '}
             {formatBytes(result.originalBytes)} → {formatBytes(result.compressedBytes)}
-          </div>
+          </AppStatus>
         )}
       </div>
     </ToolShell>

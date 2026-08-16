@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Download,
+  Eraser,
+  FileText,
+  Languages,
+  Plus,
+  RotateCcw,
+  Sparkles,
+  Type,
+  Undo2,
+} from "lucide-react";
 
 import { AppButton } from "../components/AppButton";
 import { AppPopup } from "../components/AppPopup";
+import { AppStatus } from "../components/AppStatus";
 import { useAppPopup } from "../components/appPopupContext";
 import { DropZone } from "../components/DropZone";
 import { EditableTextOverlay } from "../components/EditableTextOverlay";
@@ -900,6 +912,7 @@ export function EditPdfTool() {
   return (
     <ToolShell
       tool={tool}
+      compact={Boolean(document)}
       steps={[
         { label: "Select PDF", active: step === 1, done: step > 1 },
         { label: "Edit", active: step === 2, done: step > 2 },
@@ -913,6 +926,7 @@ export function EditPdfTool() {
         document ? (
           <AppButton
             title="Open another"
+            icon={<RotateCcw size={16} aria-hidden="true" />}
             small
             variant="secondary"
             onClick={handleCloseDocument}
@@ -923,11 +937,13 @@ export function EditPdfTool() {
     >
       {status.state === "opening" && (
         <div className="app__centered app__fill">
-          <div className="app__spinner" />
-          <p className="app__progress">Opening PDF…</p>
-          <p className="app__progress-sub">
-            Rendering pages and detecting text
-          </p>
+          <div className="app__loading-card">
+            <div className="app__spinner" />
+            <div>
+              <p className="app__progress">Opening your PDF…</p>
+              <p className="app__progress-sub">Rendering pages and detecting editable text</p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -942,9 +958,7 @@ export function EditPdfTool() {
             disabled={status.state === "saving"}
           />
           {status.state === "error" && (
-            <div className="app__status app__status--error">
-              {status.message}
-            </div>
+            <AppStatus tone="error" title="Couldn’t open this PDF">{status.message}</AppStatus>
           )}
         </div>
       )}
@@ -968,7 +982,7 @@ export function EditPdfTool() {
           }}
         >
           <section className="app__toolbar-card">
-            <div className="app__toolbar-row">
+            <div className="app__toolbar-row app__toolbar-row--document">
               {document.pages.length > 1 ? (
                 <div className="app__pager">
                   <AppButton
@@ -990,24 +1004,29 @@ export function EditPdfTool() {
                   />
                 </div>
               ) : (
-                <span>1 page</span>
+                <span className="app__page-count">1 page</span>
               )}
-              <span className="app__filename">{document.sourceName}</span>
+              <span className="app__filename">
+                <FileText size={15} aria-hidden="true" />
+                <span>{document.sourceName}</span>
+              </span>
               <AppButton
-                title="↩ Undo"
+                title="Undo"
+                icon={<Undo2 size={15} aria-hidden="true" />}
                 small
                 variant="ghost"
                 onClick={handleUndo}
                 disabled={!canUndo}
               />
             </div>
-            <div className="app__toolbar-row">
+            <div className="app__toolbar-row app__toolbar-row--ai">
               <AppButton
                 title={
                   enhancingPage === currentPageIndex
                     ? "Enhancing…"
-                    : "✨ Enhance with AI"
+                    : "Enhance with AI"
                 }
+                icon={<Sparkles size={15} aria-hidden="true" />}
                 small
                 variant="secondary"
                 onClick={() => void handleEnhancePressed()}
@@ -1019,7 +1038,8 @@ export function EditPdfTool() {
                 }
               />
               <AppButton
-                title={translating ? "Translating…" : "🌐 Translate"}
+                title={translating ? "Translating…" : "Translate"}
+                icon={<Languages size={15} aria-hidden="true" />}
                 small
                 variant="secondary"
                 onClick={() => void handleTranslatePressed()}
@@ -1031,16 +1051,18 @@ export function EditPdfTool() {
                 }
               />
             </div>
-            <div className="app__toolbar-row">
+            <div className="app__toolbar-row app__toolbar-row--modes" aria-label="Editing modes">
               <AppButton
                 title="Edit text"
+                icon={<Type size={15} aria-hidden="true" />}
                 small
                 variant={editMode === "edit" ? "primary" : "secondary"}
                 onClick={() => selectEditMode("edit")}
                 disabled={editingBlocked}
               />
               <AppButton
-                title="+ Add text"
+                title="Add text"
+                icon={<Plus size={15} aria-hidden="true" />}
                 small
                 variant={editMode === "addText" ? "primary" : "secondary"}
                 onClick={() => selectEditMode("addText")}
@@ -1048,6 +1070,7 @@ export function EditPdfTool() {
               />
               <AppButton
                 title="Erase box"
+                icon={<Eraser size={15} aria-hidden="true" />}
                 small
                 variant={editMode === "erase" ? "primary" : "secondary"}
                 onClick={() => selectEditMode("erase")}
@@ -1171,18 +1194,17 @@ export function EditPdfTool() {
             title={
               status.state === "saving" ? "Exporting…" : "Download edited PDF"
             }
+            icon={<Download size={17} aria-hidden="true" />}
             onClick={() => void saveAndExport()}
             disabled={status.state === "saving"}
           />
           {status.state === "saved" && (
-            <div className="app__status app__status--success">
+            <AppStatus tone="success" title="Edited PDF downloaded">
               Exported successfully as {status.filename}
-            </div>
+            </AppStatus>
           )}
           {status.state === "error" && (
-            <div className="app__status app__status--error">
-              {status.message}
-            </div>
+            <AppStatus tone="error" title="Export failed">{status.message}</AppStatus>
           )}
         </main>
       )}

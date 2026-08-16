@@ -17,6 +17,8 @@
 .mask-overlay__drag {
   position: absolute;
   border: 2px solid var(--brand);
+  border-radius: 5px;
   background: color-mix(in srgb, var(--brand) 15%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 10%, transparent);
   pointer-events: none;
 }

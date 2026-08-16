@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
 import { AppButton } from '../components/AppButton';
+import { AppStatus } from '../components/AppStatus';
 import { DropZone } from '../components/DropZone';
+import { SelectedFileSummary } from '../components/SelectedFileSummary';
 import { ToolShell } from '../components/ToolShell';
 import { downloadPdfBytes, mergePdfFiles } from '../lib/pdfOps';
 import { getTool } from '../lib/tools';
@@ -36,6 +38,7 @@ export function MergePdfTool() {
   return (
     <ToolShell
       tool={tool}
+      compact={files.length > 0}
       steps={[
         { label: 'Select PDFs', active: step === 1, done: step > 1 },
         { label: 'Merge', active: step === 2, done: step > 2 },
@@ -58,11 +61,17 @@ export function MergePdfTool() {
           />
         ) : (
           <div className="utility-tool__panel">
-            <h2>Files to merge ({files.length})</h2>
+            <SelectedFileSummary
+              multiple
+              label="Merge queue"
+              name={`${files.length} PDF${files.length === 1 ? '' : 's'} ready`}
+              meta="Files will be combined in the order shown below"
+            />
             <ol className="utility-tool__list">
               {files.map((file, index) => (
                 <li key={`${file.name}-${index}`}>
-                  <span>{file.name}</span>
+                  <span className="utility-tool__list-index">{index + 1}</span>
+                  <span className="utility-tool__list-name">{file.name}</span>
                   <button
                     type="button"
                     className="utility-tool__remove"
@@ -75,6 +84,7 @@ export function MergePdfTool() {
             </ol>
             <DropZone
               multiple
+              compact
               accent={tool.accent}
               title="Add more PDFs"
               subtitle="Drop additional files to append."
@@ -100,11 +110,11 @@ export function MergePdfTool() {
             </div>
           </div>
         )}
-        {error && <div className="utility-tool__status utility-tool__status--error">{error}</div>}
+        {error && <AppStatus tone="error" title="Merge failed">{error}</AppStatus>}
         {doneName && (
-          <div className="utility-tool__status utility-tool__status--ok">
+          <AppStatus tone="success" title="Merged PDF ready">
             Downloaded {doneName}
-          </div>
+          </AppStatus>
         )}
       </div>
     </ToolShell>

@@ -1,8 +1,22 @@
 .legacy-font-warning {
-  background: var(--warning-soft);
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--warning-soft) 72%, white);
   border: 1px solid color-mix(in srgb, var(--warning) 25%, var(--line));
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 18px;
+  display: flex;
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+.legacy-font-warning__icon {
+  background: var(--warning-soft);
+  border-radius: 11px;
+  color: var(--warning);
+  display: grid;
+  flex: none;
+  height: 38px;
+  place-items: center;
+  width: 38px;
 }
 
 .legacy-font-warning__title {

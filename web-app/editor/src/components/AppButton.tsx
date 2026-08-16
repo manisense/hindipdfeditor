@@ -8,12 +8,16 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   title: string;
   variant?: Variant;
   small?: boolean;
+  icon?: ReactNode;
+  iconAfter?: boolean;
 };
 
 export function AppButton({
   title,
   variant = 'primary',
   small,
+  icon,
+  iconAfter,
   className = '',
   ...rest
 }: Props) {
@@ -23,23 +27,9 @@ export function AppButton({
       className={`app-button app-button--${variant} ${small ? 'app-button--small' : ''} ${className}`.trim()}
       {...rest}
     >
-      {title}
+      {icon && !iconAfter && <span className="app-button__icon">{icon}</span>}
+      <span>{title}</span>
+      {icon && iconAfter && <span className="app-button__icon">{icon}</span>}
     </button>
-  );
-}
-
-export function AppLink({
-  href,
-  children,
-  className = '',
-}: {
-  href: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <a className={`app-link ${className}`.trim()} href={href}>
-      {children}
-    </a>
   );
 }

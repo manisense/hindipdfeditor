@@ -1,6 +1,9 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { House, RefreshCw, RotateCcw } from 'lucide-react';
 
 import { AppButton } from './AppButton';
+import { AppStatus } from './AppStatus';
+import './ErrorBoundary.css';
 
 type Props = {
   children: ReactNode;
@@ -35,21 +38,37 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       const label = this.props.label ?? 'This tool';
       return (
-        <div
-          className="utility-tool"
-          style={{ padding: 48, textAlign: 'center', maxWidth: 480, margin: '0 auto' }}
-        >
-          <h2 style={{ marginBottom: 12 }}>{label} hit an error</h2>
-          <p style={{ color: 'var(--muted, #5b6475)', marginBottom: 20 }}>
-            Switching browser tabs during translation can interrupt the in-browser model. Reload to
-            continue — your original PDF is unchanged.
-          </p>
-          <p style={{ fontSize: 13, color: '#8a93a3', marginBottom: 24, wordBreak: 'break-word' }}>
-            {this.state.error.message}
-          </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <AppButton title="Try again" onClick={this.reset} />
-            <AppButton title="Reload page" variant="ghost" onClick={() => window.location.reload()} />
+        <div className="error-boundary">
+          <div className="error-boundary__card">
+            <a className="error-boundary__brand" href="/edit/">
+              <img src="/assets/app-icon.png" alt="" width={36} height={36} />
+              Hindi PDF <strong>Editor</strong>
+            </a>
+            <span className="error-boundary__eyebrow">Safe recovery</span>
+            <h2>{label} needs a quick reset</h2>
+            <p className="error-boundary__intro">
+              Switching browser tabs during translation can interrupt browser processing. Your
+              original PDF is unchanged.
+            </p>
+            <AppStatus tone="error" title="What happened">
+              {this.state.error.message}
+            </AppStatus>
+            <div className="error-boundary__actions">
+              <AppButton
+                title="Try again"
+                icon={<RotateCcw size={16} aria-hidden="true" />}
+                onClick={this.reset}
+              />
+              <AppButton
+                title="Reload page"
+                icon={<RefreshCw size={16} aria-hidden="true" />}
+                variant="secondary"
+                onClick={() => window.location.reload()}
+              />
+            </div>
+            <a className="error-boundary__home" href="/edit/">
+              <House size={15} aria-hidden="true" /> Back to all tools
+            </a>
           </div>
         </div>
       );

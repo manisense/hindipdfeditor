@@ -4,6 +4,19 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Pre-Phase 0
 
+### Changed — unified web brand experience
+
+- Rebuilt every browser tool around the homepage visual language: floating glass navigation,
+  one-tap tool switching, soft branded color systems, connected progress steps, compact in-work
+  headers, private-file upload cards, responsive work panels, and a shared legal/support footer.
+- Removed the repeated promotional summary banner from Edit, Translate, Merge, Split, and Compress
+  while preserving each tool's connected Select PDF, action, and Download progress steps.
+- Centered the visible progress-step sequence on the same horizontal axis as the tool tab switcher.
+- Standardized buttons, selected-file summaries, settings, security checks, loaders, feedback
+  banners, recovery UI, text-format controls, legacy-font warnings, and PDF editing states across
+  Edit, Translate, Merge, Split, and Compress. Mobile layouts use swipeable tool/progress rails and
+  full-width actions without creating page-level horizontal overflow.
+
 ### Removed — homepage Android and privacy sections
 
 - Removed the Play Store screenshot carousel, the homepage privacy feature block, and their header

@@ -4,9 +4,12 @@
 }
 
 .pdf-page-viewer__scroll {
+  background: #eef0f4;
   overflow: auto;
   position: relative;
   -webkit-overflow-scrolling: touch;
+  scrollbar-color: color-mix(in srgb, var(--brand) 28%, var(--line)) transparent;
+  scrollbar-width: thin;
 }
 
 .pdf-page-viewer__content {

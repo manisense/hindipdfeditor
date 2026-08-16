@@ -1,60 +1,160 @@
 .edit-toolbar {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(21, 23, 44, 0.08);
+  border-radius: 22px;
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto 1fr auto;
+  padding: 12px;
+}
+
+.edit-toolbar__heading {
+  border-right: 1px solid var(--line);
+  padding: 2px 14px 2px 4px;
+}
+
+.edit-toolbar__heading strong {
+  color: var(--ink);
+  display: block;
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+
+.edit-toolbar__heading span {
+  color: var(--muted);
+  display: block;
+  font-size: 10.5px;
+  margin-top: 2px;
+  white-space: nowrap;
 }
 
 .edit-toolbar__row {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: 8px;
 }
 
+.edit-toolbar__group {
+  align-items: center;
+  background: var(--surface-subtle);
+  border-radius: 12px;
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+}
+
 .edit-toolbar__chip {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 4px 10px;
-  background: var(--surface);
-  cursor: pointer;
-  font-size: 13px;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
   color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 32px;
+  padding: 6px 9px;
+}
+
+.edit-toolbar__chip:hover {
+  color: var(--ink);
 }
 
 .edit-toolbar__chip.active {
-  border-color: var(--brand);
-  background: var(--brand-tint);
-  color: var(--brand-hover);
+  background: var(--surface);
+  box-shadow: 0 3px 9px rgba(21, 23, 44, 0.09);
+  color: var(--brand);
+}
+
+.edit-toolbar__chip--bold {
+  font-weight: 900;
+}
+
+.edit-toolbar__group--size {
+  gap: 2px;
+}
+
+.edit-toolbar__group--size .app-button {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  min-height: 32px;
+  padding: 5px 8px;
 }
 
 .edit-toolbar__size {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted);
-  min-width: 38px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 39px;
   text-align: center;
 }
 
+.edit-toolbar__group--colors {
+  gap: 6px;
+  padding-inline: 7px;
+}
+
 .edit-toolbar__swatch {
-  width: 26px;
-  height: 26px;
+  border: 2px solid var(--surface);
   border-radius: 50%;
-  border: 2px solid var(--line);
+  box-shadow: 0 0 0 1px var(--line-strong);
   cursor: pointer;
+  height: 24px;
   padding: 0;
+  transition: box-shadow 150ms ease, transform 150ms ease;
+  width: 24px;
+}
+
+.edit-toolbar__swatch:hover {
+  transform: scale(1.08);
 }
 
 .edit-toolbar__swatch.active {
-  border-color: var(--brand);
-  border-width: 3px;
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--brand);
 }
 
 .edit-toolbar__actions {
   display: flex;
+  gap: 7px;
   justify-content: flex-end;
-  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .edit-toolbar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .edit-toolbar__heading {
+    border-bottom: 1px solid var(--line);
+    border-right: 0;
+    grid-column: 1 / -1;
+    padding: 0 0 9px;
+  }
+
+  .edit-toolbar__heading span {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 600px) {
+  .edit-toolbar {
+    align-items: stretch;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .edit-toolbar__row {
+    align-items: stretch;
+  }
+
+  .edit-toolbar__actions .app-button {
+    flex: 1;
+  }
 }

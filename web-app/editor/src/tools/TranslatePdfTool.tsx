@@ -5,7 +5,9 @@ import {
 } from "@hindipdfeditor/translation-contract";
 
 import { AppButton } from "../components/AppButton";
+import { AppStatus } from "../components/AppStatus";
 import { DropZone } from "../components/DropZone";
+import { SelectedFileSummary } from "../components/SelectedFileSummary";
 import { ToolShell } from "../components/ToolShell";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { aiApiClient } from "../lib/aiApiClient";
@@ -461,6 +463,7 @@ export function TranslatePdfTool() {
   return (
     <ToolShell
       tool={tool}
+      compact={Boolean(file)}
       steps={[
         { label: "Select PDF", active: step === 1, done: step > 1 },
         { label: "Translate", active: step === 2, done: step > 2 },
@@ -480,38 +483,35 @@ export function TranslatePdfTool() {
           />
         ) : (
           <div className="utility-tool__panel">
-            <h2>{file.name}</h2>
-            <p className="utility-tool__meta">
-              {(file.size / 1024).toFixed(1)} KB · max {MAX_PAGES} pages /{" "}
-              {Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB
-            </p>
-            <p className="utility-tool__note">
-              Detected source lines are sent securely through our service to
-              Google&apos;s Gemini API. If local extraction is unreliable, only
-              the affected page image is also sent for higher-accuracy OCR.
-              Output is a new file; the source PDF is never modified.
-            </p>
-            <fieldset disabled={busy || detectingLanguage}>
-              <legend>Translation direction</legend>
-              {detectingLanguage ? (
-                <p className="utility-tool__note">Detecting language…</p>
-              ) : direction ? (
-                <p>
-                  <strong>
-                    {direction === "hi-en"
-                      ? "Hindi → English"
-                      : "English → Hindi"}
-                  </strong>{" "}
-                  (auto-detected; the other direction is disabled for this
-                  file)
-                </p>
-              ) : (
-                <p className="utility-tool__note">
-                  No clear Hindi or English source text detected.
-                </p>
-              )}
-            </fieldset>
-            <TurnstileWidget onToken={setTurnstileToken} />
+            <SelectedFileSummary
+              name={file.name}
+              meta={`${(file.size / 1024).toFixed(1)} KB · up to ${MAX_PAGES} pages / ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`}
+            />
+            <div className="utility-tool__setting-card utility-tool__setting-card--translate">
+              <fieldset disabled={busy || detectingLanguage}>
+                <legend>Translation direction</legend>
+                {detectingLanguage ? (
+                  <AppStatus busy>Detecting the source language…</AppStatus>
+                ) : direction ? (
+                  <div className="utility-tool__direction">
+                    <span>{direction === "hi-en" ? "हिंदी" : "English"}</span>
+                    <strong>→</strong>
+                    <span>{direction === "hi-en" ? "English" : "हिंदी"}</span>
+                    <small>Auto-detected</small>
+                  </div>
+                ) : (
+                  <AppStatus tone="warning">No clear Hindi or English source text detected.</AppStatus>
+                )}
+              </fieldset>
+              <p className="utility-tool__note">
+                Detected lines are sent securely through our Gemini proxy. Difficult pages may use
+                consented AI OCR; the source PDF is never modified.
+              </p>
+              <div className="utility-tool__security-check">
+                <span>One quick security check</span>
+                <TurnstileWidget onToken={setTurnstileToken} />
+              </div>
+            </div>
             <div className="utility-tool__actions">
               <AppButton
                 title="Choose another"
@@ -542,21 +542,19 @@ export function TranslatePdfTool() {
           </div>
         )}
         {progress && (
-          <div className="utility-tool__status">{progress.detail}</div>
+          <AppStatus busy title="Translation in progress">{progress.detail}</AppStatus>
         )}
         {error && (
-          <div className="utility-tool__status utility-tool__status--error">
-            {error}
-          </div>
+          <AppStatus tone="error" title="Translation couldn’t finish">{error}</AppStatus>
         )}
         {result && (
-          <div className="utility-tool__status utility-tool__status--ok">
+          <AppStatus tone="success" title="Translated PDF ready">
             Downloaded {result.filename} · {result.pageCount} pages ·{" "}
             {result.translatedLines} line
             {result.translatedLines === 1 ? "" : "s"} translated
             {result.skippedLines > 0 ? ` · ${result.skippedLines} skipped` : ""}
             {result.usedOcrFallback ? " · used OCR (legacy font)" : ""}
-          </div>
+          </AppStatus>
         )}
       </div>
     </ToolShell>

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
 import { AppButton } from '../components/AppButton';
+import { AppStatus } from '../components/AppStatus';
 import { DropZone } from '../components/DropZone';
+import { SelectedFileSummary } from '../components/SelectedFileSummary';
 import { ToolShell } from '../components/ToolShell';
 import { downloadPdfBytes, getPdfPageCount, splitPdfFile } from '../lib/pdfOps';
 import { getTool } from '../lib/tools';
@@ -55,6 +57,7 @@ export function SplitPdfTool() {
   return (
     <ToolShell
       tool={tool}
+      compact={Boolean(file)}
       steps={[
         { label: 'Select PDF', active: step === 1, done: step > 1 },
         { label: 'Choose pages', active: step === 2, done: step > 2 },
@@ -72,29 +75,40 @@ export function SplitPdfTool() {
           />
         ) : (
           <div className="utility-tool__panel">
-            <h2>{file.name}</h2>
-            <p className="utility-tool__meta">{pageCount} page{pageCount === 1 ? '' : 's'}</p>
-            <div className="utility-tool__range">
-              <label>
-                From
-                <input
-                  type="number"
-                  min={1}
-                  max={pageCount}
-                  value={fromPage}
-                  onChange={(e) => setFromPage(Number(e.target.value))}
-                />
-              </label>
-              <label>
-                To
-                <input
-                  type="number"
-                  min={1}
-                  max={pageCount}
-                  value={toPage}
-                  onChange={(e) => setToPage(Number(e.target.value))}
-                />
-              </label>
+            <SelectedFileSummary
+              name={file.name}
+              meta={`${pageCount} page${pageCount === 1 ? '' : 's'}`}
+            />
+            <div className="utility-tool__setting-card">
+              <div className="utility-tool__setting-heading">
+                <div>
+                  <strong>Choose pages to keep</strong>
+                  <span>Enter one continuous page range</span>
+                </div>
+              </div>
+              <div className="utility-tool__range">
+                <label>
+                  From page
+                  <input
+                    type="number"
+                    min={1}
+                    max={pageCount}
+                    value={fromPage}
+                    onChange={(e) => setFromPage(Number(e.target.value))}
+                  />
+                </label>
+                <span className="utility-tool__range-arrow" aria-hidden="true">→</span>
+                <label>
+                  To page
+                  <input
+                    type="number"
+                    min={1}
+                    max={pageCount}
+                    value={toPage}
+                    onChange={(e) => setToPage(Number(e.target.value))}
+                  />
+                </label>
+              </div>
             </div>
             <div className="utility-tool__actions">
               <AppButton
@@ -115,11 +129,11 @@ export function SplitPdfTool() {
             </div>
           </div>
         )}
-        {error && <div className="utility-tool__status utility-tool__status--error">{error}</div>}
+        {error && <AppStatus tone="error" title="Couldn’t split this PDF">{error}</AppStatus>}
         {doneName && (
-          <div className="utility-tool__status utility-tool__status--ok">
+          <AppStatus tone="success" title="Split PDF ready">
             Downloaded {doneName}
-          </div>
+          </AppStatus>
         )}
       </div>
     </ToolShell>
