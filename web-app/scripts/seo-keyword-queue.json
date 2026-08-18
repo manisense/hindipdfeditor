@@ -115,7 +115,8 @@
         "a": "No. Hindi PDF Editor is 100% local-first. Documents are processed in your browser memory and never uploaded to any remote database."
       }
     ],
-    "status": "queued"
+    "status": "published",
+    "publishedDate": "2026-08-18"
   },
   {
     "slug": "up-police-bharti-admit-card-hindi-pdf-edit",

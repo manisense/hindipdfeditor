@@ -15,6 +15,7 @@
 - Guide: Edit Sarkari Admit Card Hindi PDF: https://hindipdfeditor.com/articles/edit-sarkari-admit-card-hindi-pdf/
 - Guide: Translate Hindi PDF to English: https://hindipdfeditor.com/articles/translate-hindi-pdf-to-english/
 - Guide: How to Edit Kruti Dev 010 Hindi PDF and Convert to Unicode Online: https://hindipdfeditor.com/articles/kruti-dev-to-unicode-hindi-pdf-editor/
+- Guide: How to Edit Hindi Khasra-Khatauni & Land Record (Bhulekh) PDF Documents: https://hindipdfeditor.com/articles/khasra-khatauni-land-record-hindi-pdf-edit/
 - Extended Documentation & Full LLM Specs: https://hindipdfeditor.com/llms-full.txt
 - Android App on Google Play: https://play.google.com/store/apps/details?id=com.hindipdfeditor.app
 - XML Sitemap: https://hindipdfeditor.com/sitemap.xml
