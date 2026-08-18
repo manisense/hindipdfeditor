@@ -166,39 +166,55 @@ function generateArticleHtml(item) {
     </script>
   </head>
   <body>
-    <header class="site-header">
-      <nav class="nav" aria-label="Primary navigation">
+    <!-- Floating Glass Pill Header (Matching Homepage Nav) -->
+    <div class="floating-header-wrapper">
+      <header class="floating-header">
         <a class="brand" href="/">
           <img src="/assets/app-icon.png" alt="Hindi PDF Editor logo" />
-          <span>Hindi<span class="brand-accent">PDF</span></span>
+          <span>Hindi PDF <span style="color: var(--accent);">Editor</span></span>
         </a>
-        <div class="nav-links">
-          <a href="/">HOME</a>
-          <a href="/edit/">ALL TOOLS</a>
-          <a class="active" href="/articles/">ARTICLES</a>
-          <a href="/support/">SUPPORT</a>
-          <a href="/privacy/">PRIVACY</a>
+        <nav class="floating-nav-links" aria-label="Primary navigation">
+          <a href="/">Features</a>
+          <a href="/#how-it-works">How it works</a>
+          <a href="/#compare">Compare</a>
+          <a href="/#use-cases">Use cases</a>
+          <a class="active" href="/articles/">Guides</a>
+        </nav>
+        <div class="floating-header-actions">
+          <a
+            class="btn-pill btn-pill-ghost"
+            href="https://play.google.com/store/apps/details?id=com.hindipdfeditor.app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Google Play
+          </a>
+          <a class="btn-pill btn-pill-primary" href="/edit/?tool=edit">
+            Open editor
+          </a>
         </div>
-        <div class="nav-actions">
-          <a class="button primary" href="/edit/?tool=edit">Open Editor</a>
-        </div>
-      </nav>
-    </header>
+      </header>
+    </div>
 
     <main>
-      <section class="page-hero">
-        <div class="page-hero-inner">
-          <p class="eyebrow">${category}</p>
+      <!-- Hero Section with Background Grid -->
+      <section class="hero-knowledge" style="padding-top: 130px;">
+        <div class="bg-grid-pattern" aria-hidden="true"></div>
+        <div class="hero-knowledge-inner">
+          <div class="eyebrow-pill">
+            <span>✨</span>
+            <span>${category}</span>
+          </div>
           <h1>${title}</h1>
           <p>${metaDesc}</p>
         </div>
       </section>
 
-      <article class="content">
+      <article class="content" style="max-width: 860px; margin: 0 auto; padding-inline: 24px;">
         <!-- Direct Answer Block for AEO -->
-        <div class="guide-step" style="border-left: 4px solid var(--accent);">
-          <h4>Direct Answer: ${title}</h4>
-          <p style="margin: 0; color: var(--ink); font-weight: 500;">
+        <div class="guide-step" style="border-left: 4px solid var(--accent); background: var(--cream); padding: 22px; border-radius: 16px; margin: 28px 0;">
+          <h4 style="margin: 0 0 8px; font-size: 16.5px; font-weight: 800; color: var(--ink);">Direct Answer: ${title}</h4>
+          <p style="margin: 0; color: var(--ink); font-weight: 500; font-size: 15px; line-height: 1.6;">
             ${directAnswer}
           </p>
         </div>
@@ -214,9 +230,9 @@ function generateArticleHtml(item) {
                ${faqs
                  .map(
                    (f) => `
-                 <div class="guide-step">
-                   <h4>${escapeHtml(f.q)}</h4>
-                   <p style="margin: 0;">${escapeHtml(f.a)}</p>
+                 <div class="guide-step" style="background: var(--cream); padding: 20px; border-radius: 14px; margin: 16px 0;">
+                   <h4 style="margin: 0 0 6px; font-size: 16px; font-weight: 800; color: var(--ink);">${escapeHtml(f.q)}</h4>
+                   <p style="margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.55;">${escapeHtml(f.a)}</p>
                  </div>
                `
                  )
@@ -224,21 +240,22 @@ function generateArticleHtml(item) {
             : ''
         }
 
-        <div class="content-card" style="margin-top: 36px; text-align: center;">
-          <h3 style="margin-top: 0;">Try Hindi PDF Editor Free</h3>
-          <p style="margin: 8px 0 18px;">Zero server uploads · 100% Client-Side Private · Flawless Devanagari Shaping</p>
-          <a href="/edit/?tool=edit" class="button primary" style="display: inline-block;">
+        <div class="content-card" style="margin-top: 42px; text-align: center; border-radius: 20px; padding: 36px 24px;">
+          <h3 style="margin-top: 0; font-size: 22px; font-weight: 800;">Try Hindi PDF Editor Free</h3>
+          <p style="margin: 8px 0 20px; font-size: 15px; color: var(--muted);">Zero server uploads · 100% Client-Side Private · Flawless Devanagari Shaping</p>
+          <a href="/edit/?tool=edit" class="btn-pill btn-pill-primary" style="font-size: 15px; padding: 12px 28px;">
             Open Editor Now →
           </a>
         </div>
       </article>
     </main>
 
+    <!-- Site Footer (Matching Homepage Design) -->
     <footer class="site-footer">
       <div class="footer-inner">
         <div>
           <a class="brand" href="/">
-            <img src="/assets/app-icon.png" alt="" />
+            <img src="/assets/app-icon.png" alt="Hindi PDF Editor logo" />
             <span>Hindi<span class="brand-accent">PDF</span></span>
           </a>
           <p class="footer-copy">Local-first Hindi PDF tools with flawless Devanagari shaping.</p>
@@ -266,6 +283,7 @@ function generateArticleHtml(item) {
   </body>
 </html>
 `;
+
 }
 
 function updateSitemap(slug) {

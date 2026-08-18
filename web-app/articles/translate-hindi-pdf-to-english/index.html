@@ -115,29 +115,45 @@
     </script>
   </head>
   <body>
-    <header class="site-header">
-      <nav class="nav" aria-label="Primary navigation">
+    <!-- Floating Glass Pill Header (Matching Homepage Nav) -->
+    <div class="floating-header-wrapper">
+      <header class="floating-header">
         <a class="brand" href="/">
           <img src="/assets/app-icon.png" alt="Hindi PDF Editor logo" />
-          <span>Hindi<span class="brand-accent">PDF</span></span>
+          <span>Hindi PDF <span style="color: var(--accent);">Editor</span></span>
         </a>
-        <div class="nav-links">
-          <a href="/">HOME</a>
-          <a href="/edit/">ALL TOOLS</a>
-          <a class="active" href="/articles/">ARTICLES</a>
-          <a href="/support/">SUPPORT</a>
-          <a href="/privacy/">PRIVACY</a>
+        <nav class="floating-nav-links" aria-label="Primary navigation">
+          <a href="/">Features</a>
+          <a href="/#how-it-works">How it works</a>
+          <a href="/#compare">Compare</a>
+          <a href="/#use-cases">Use cases</a>
+          <a class="active" href="/articles/">Guides</a>
+        </nav>
+        <div class="floating-header-actions">
+          <a
+            class="btn-pill btn-pill-ghost"
+            href="https://play.google.com/store/apps/details?id=com.hindipdfeditor.app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Google Play
+          </a>
+          <a class="btn-pill btn-pill-primary" href="/edit/?tool=translate">
+            Open translator
+          </a>
         </div>
-        <div class="nav-actions">
-          <a class="button primary" href="/edit/?tool=translate">Open Translator</a>
-        </div>
-      </nav>
-    </header>
+      </header>
+    </div>
 
     <main>
-      <section class="page-hero">
-        <div class="page-hero-inner">
-          <p class="eyebrow">Translation &amp; AI Guides</p>
+      <!-- Hero Section with Background Grid -->
+      <section class="hero-knowledge" style="padding-top: 130px;">
+        <div class="bg-grid-pattern" aria-hidden="true"></div>
+        <div class="hero-knowledge-inner">
+          <div class="eyebrow-pill">
+            <span>✨</span>
+            <span>Translation &amp; AI Guides</span>
+          </div>
           <h1>How to Translate Hindi PDF to English Online Without Losing Page Formatting</h1>
           <p>
             A step-by-step guide to translating Hindi documents, circulars, and certificates into English
@@ -146,14 +162,15 @@
         </div>
       </section>
 
-      <article class="content">
+      <article class="content" style="max-width: 860px; margin: 0 auto; padding-inline: 24px;">
         <!-- Direct Answer Block for AEO -->
-        <div class="guide-step" style="border-left: 4px solid var(--purple);">
-          <h4>Direct Answer: Translating Hindi PDFs with Layout Preservation</h4>
-          <p style="margin: 0; color: var(--ink); font-weight: 500;">
+        <div class="guide-step" style="border-left: 4px solid var(--purple); background: var(--cream); padding: 22px; border-radius: 16px; margin: 28px 0;">
+          <h4 style="margin: 0 0 8px; font-size: 16.5px; font-weight: 800; color: var(--ink);">Direct Answer: Translating Hindi PDFs with Layout Preservation</h4>
+          <p style="margin: 0; color: var(--ink); font-weight: 500; font-size: 15px; line-height: 1.6;">
             To translate a Hindi PDF to English without distorting page formatting, use <a href="/edit/?tool=translate">Hindi PDF Editor Translate Tool</a>. Open your document, select Hindi → English direction, click Translate, and the engine detects text bounding boxes and replaces the Hindi lines with translated English text in the exact original coordinates.
           </p>
         </div>
+
 
         <h2>The Challenge with Traditional PDF Translation Tools</h2>
         <p>
@@ -198,15 +215,16 @@
           </p>
         </div>
 
-        <div class="content-card" style="margin-top: 36px; text-align: center;">
-          <h3 style="margin-top: 0;">Translate Your Hindi PDF Now</h3>
-          <p style="margin: 8px 0 18px;">Free in browser · Layout preserved · Safe &amp; private</p>
-          <a href="/edit/?tool=translate" class="button primary" style="display: inline-block;">
+        <div class="content-card" style="margin-top: 42px; text-align: center; border-radius: 20px; padding: 36px 24px;">
+          <h3 style="margin-top: 0; font-size: 22px; font-weight: 800;">Translate Your Hindi PDF Now</h3>
+          <p style="margin: 8px 0 20px; font-size: 15px; color: var(--muted);">Free in browser · Layout preserved · Safe &amp; private</p>
+          <a href="/edit/?tool=translate" class="btn-pill btn-pill-primary" style="font-size: 15px; padding: 12px 28px;">
             Open Translation Tool →
           </a>
         </div>
       </article>
     </main>
+
 
     <footer class="site-footer">
       <div class="footer-inner">

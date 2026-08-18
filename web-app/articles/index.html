@@ -4,7 +4,7 @@
     <script src="/assets/analytics.js" defer></script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Hindi PDF Editing Guides &amp; Articles — Hindi PDF Editor</title>
+    <title>Hindi PDF Guides &amp; Articles — Hindi PDF Editor</title>
     <meta
       name="description"
       content="Comprehensive tutorials, guides, and technical insights on editing Hindi (Devanagari) PDFs, fixing broken matras, translating documents, and Sarkari PDF forms."
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="en" href="https://hindipdfeditor.com/articles/" />
     <link rel="alternate" hreflang="hi" href="https://hindipdfeditor.com/articles/" />
     <link rel="alternate" hreflang="x-default" href="https://hindipdfeditor.com/articles/" />
-    <meta property="og:title" content="Hindi PDF Editing Guides &amp; Articles" />
+    <meta property="og:title" content="Hindi PDF Guides &amp; Articles — Hindi PDF Editor" />
     <meta
       property="og:description"
       content="Learn how to edit Hindi PDFs without broken fonts, translate documents, fix Sarkari admit cards, and manage PDFs securely."
@@ -23,7 +23,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Hindi PDF Editor" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Hindi PDF Editing Guides &amp; Articles" />
+    <meta name="twitter:title" content="Hindi PDF Guides &amp; Articles — Hindi PDF Editor" />
     <meta name="twitter:description" content="In-depth tutorials and technical guides for Devanagari Hindi PDF editing." />
     <meta name="twitter:image" content="https://hindipdfeditor.com/assets/play-store/hindi-pdf-editor-tablet.png" />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
@@ -77,75 +77,117 @@
     </script>
   </head>
   <body>
-    <header class="site-header">
-      <nav class="nav" aria-label="Primary navigation">
+    <!-- Floating Glass Pill Header (Matching Homepage Nav) -->
+    <div class="floating-header-wrapper">
+      <header class="floating-header">
         <a class="brand" href="/">
           <img src="/assets/app-icon.png" alt="Hindi PDF Editor logo" />
-          <span>Hindi<span class="brand-accent">PDF</span></span>
+          <span>Hindi PDF <span style="color: var(--accent);">Editor</span></span>
         </a>
-        <div class="nav-links">
-          <a href="/">HOME</a>
-          <a href="/edit/">ALL TOOLS</a>
-          <a class="active" href="/articles/">ARTICLES</a>
-          <a href="/support/">SUPPORT</a>
-          <a href="/privacy/">PRIVACY</a>
-        </div>
-        <div class="nav-actions">
-          <a class="nav-text" href="/support/">Support</a>
+        <nav class="floating-nav-links" aria-label="Primary navigation">
+          <a href="/">Features</a>
+          <a href="/#how-it-works">How it works</a>
+          <a href="/#compare">Compare</a>
+          <a href="/#use-cases">Use cases</a>
+          <a class="active" href="/articles/">Guides</a>
+        </nav>
+        <div class="floating-header-actions">
           <a
-            class="button primary"
+            class="btn-pill btn-pill-ghost"
             href="https://play.google.com/store/apps/details?id=com.hindipdfeditor.app"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Get App
+            Google Play
+          </a>
+          <a class="btn-pill btn-pill-primary" href="/edit/?tool=edit">
+            Open editor
           </a>
         </div>
-      </nav>
-    </header>
+      </header>
+    </div>
 
     <main>
-      <section class="page-hero">
-        <div class="page-hero-inner">
-          <p class="eyebrow">Knowledge Base &amp; Guides</p>
-          <h1>Hindi PDF Guides &amp; Articles</h1>
+      <!-- Hero Section with Background Grid & Search -->
+      <section class="hero-knowledge">
+        <div class="bg-grid-pattern" aria-hidden="true"></div>
+        <div class="hero-knowledge-inner">
+          <div class="eyebrow-pill">
+            <span>✨</span>
+            <span>Knowledge Base &amp; Guides</span>
+          </div>
+          <h1>Master Hindi PDF Editing</h1>
           <p>
-            In-depth tutorials, typography deep-dives, and practical workflows for editing, translating,
-            and formatting Devanagari Hindi PDF documents.
+            In-depth tutorials, Devanagari typography deep-dives, and practical step-by-step solutions
+            for official state forms, admit cards, and PDF translations.
           </p>
+
+          <!-- Interactive Instant Search -->
+          <div class="search-filter-box">
+            <svg class="search-icon-svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              id="articleSearch"
+              class="search-input"
+              placeholder="Search guides (e.g. Broken fonts, Admit cards, Kruti Dev, Translation)..."
+              aria-label="Search guides and articles"
+            />
+          </div>
+
+          <!-- Category Filter Pills -->
+          <div class="filter-pills-row" role="tablist">
+            <button class="filter-pill active" data-filter="all" role="tab">All Guides</button>
+            <button class="filter-pill" data-filter="typography" role="tab">Typography &amp; Fonts</button>
+            <button class="filter-pill" data-filter="govt" role="tab">Govt &amp; Sarkari</button>
+            <button class="filter-pill" data-filter="translation" role="tab">Translation &amp; AI</button>
+            <button class="filter-pill" data-filter="management" role="tab">PDF Management</button>
+          </div>
         </div>
       </section>
 
-      <div class="content">
-        <div class="article-grid">
-          <!-- Article 1 -->
-          <a href="/articles/fix-broken-hindi-fonts-in-pdf/" class="article-card">
-            <div>
-              <span class="badge">Typography &amp; Fonts</span>
-              <h3>Why Hindi Fonts &amp; Matras Break in PDF Editors (and How to Fix Them)</h3>
-              <p>
-                Understand the abugida OpenType GSUB/GPOS shaping failure in tools like Acrobat and Canva,
-                and how the HarfBuzz layout engine achieves 100% ligature fidelity.
-              </p>
+      <div class="content" style="max-width: var(--max); margin: 0 auto; padding-inline: 24px;">
+        <!-- Featured Flagship Hero Article -->
+        <a href="/articles/fix-broken-hindi-fonts-in-pdf/" class="featured-hero-card" data-category="typography">
+          <div>
+            <span class="badge badge-blue">Featured Deep-Dive · Typography</span>
+            <h2>Why Hindi Fonts &amp; Matras Break in PDF Editors (and How to Fix Them)</h2>
+            <p>
+              Understand why Devanagari abugida glyphs and vowel signs detach in Adobe Acrobat and Canva, and how our Chromium HarfBuzz OpenType layout engine achieves 100% ligature fidelity without cloud uploads.
+            </p>
+            <div class="article-meta">
+              <span>⏱️ 5 min read</span>
+              <span>•</span>
+              <span>Updated Aug 2026</span>
+              <span>•</span>
+              <span style="font-weight: 700; color: var(--accent);">Read Complete Guide →</span>
             </div>
-            <div>
-              <div class="article-meta">
-                <span>⏱️ 5 min read</span>
-                <span>•</span>
-                <span>Updated Aug 2026</span>
-              </div>
-              <span class="article-cta">Read Guide →</span>
+          </div>
+          <div class="featured-graphic-box">
+            <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em;">
+              Ligature Shaping Benchmark
             </div>
-          </a>
+            <div class="graphic-comparison-row graphic-row-fail">
+              <span>Canva / Acrobat:</span>
+              <span style="font-family: monospace;">क + ् + ष ➔ क ् ष ❌</span>
+            </div>
+            <div class="graphic-comparison-row graphic-row-pass">
+              <span>Hindi PDF Editor:</span>
+              <span style="font-family: 'Noto Sans Devanagari', sans-serif; font-size: 15px;">क + ् + ष ➔ क्ष ✅</span>
+            </div>
+          </div>
+        </a>
 
-          <!-- Article 2 -->
-          <a href="/articles/edit-sarkari-admit-card-hindi-pdf/" class="article-card">
+        <!-- Articles Grid -->
+        <div class="article-grid" id="articlesGrid">
+          <!-- Article 1: Sarkari Admit Card -->
+          <article class="article-card" data-category="govt">
             <div>
-              <span class="badge">Govt &amp; Exams</span>
+              <span class="badge badge-green">Govt &amp; Exams</span>
               <h3>How to Edit Hindi Admit Card &amp; Sarkari Exam PDF Forms (BPSC, UPPSC, SSC)</h3>
               <p>
-                Step-by-step guide to correcting typos, names, roll numbers, and dates in official state
-                recruitment admit cards and affidavits locally without cloud uploads.
+                Step-by-step guide to correcting candidate names, roll numbers, father's name, and exam dates on state recruitment forms safely on your local device.
               </p>
             </div>
             <div>
@@ -154,18 +196,17 @@
                 <span>•</span>
                 <span>Updated Aug 2026</span>
               </div>
-              <span class="article-cta">Read Guide →</span>
+              <a href="/articles/edit-sarkari-admit-card-hindi-pdf/" class="article-cta">Read Guide →</a>
             </div>
-          </a>
+          </article>
 
-          <!-- Article 3 -->
-          <a href="/articles/translate-hindi-pdf-to-english/" class="article-card">
+          <!-- Article 2: Translation -->
+          <article class="article-card" data-category="translation">
             <div>
-              <span class="badge">Translation &amp; AI</span>
+              <span class="badge badge-lav">Translation &amp; AI</span>
               <h3>How to Translate Hindi PDF to English Online Without Losing Page Formatting</h3>
               <p>
-                Learn how to detect Devanagari lines and translate Hindi PDFs to English while preserving
-                exact font sizes, column alignments, and bounding boxes.
+                Learn how geometric line detection replaces Hindi text with translated English while preserving exact font sizes, tables, borders, and margins.
               </p>
             </div>
             <div>
@@ -174,53 +215,142 @@
                 <span>•</span>
                 <span>Updated Aug 2026</span>
               </div>
-              <span class="article-cta">Read Guide →</span>
+              <a href="/articles/translate-hindi-pdf-to-english/" class="article-cta">Read Guide →</a>
             </div>
-          </a>
-        
-          <!-- Article: kruti-dev-to-unicode-hindi-pdf-editor -->
-          <a href="/articles/kruti-dev-to-unicode-hindi-pdf-editor/" class="article-card">
+          </article>
+
+          <!-- Article 3: Kruti Dev to Unicode -->
+          <article class="article-card" data-category="typography">
             <div>
-              <span class="badge">Typography &amp; Fonts</span>
+              <span class="badge badge-blue">Typography &amp; Fonts</span>
               <h3>How to Edit Kruti Dev 010 Hindi PDF and Convert to Unicode Online</h3>
               <p>
-                Learn how to edit legacy Kruti Dev 010 Hindi PDF files, fix garbled English characters, and convert text to clean Unicode Devanagari online for free.
+                Fix garbled ASCII English characters in legacy Kruti Dev PDFs and replace them with universal Unicode Devanagari text readable on every smartphone.
               </p>
             </div>
             <div>
               <div class="article-meta">
                 <span>⏱️ 5 min read</span>
                 <span>•</span>
-                <span>Updated 2026-08-18</span>
+                <span>Updated Aug 2026</span>
               </div>
-              <span class="article-cta">Read Guide →</span>
+              <a href="/articles/kruti-dev-to-unicode-hindi-pdf-editor/" class="article-cta">Read Guide →</a>
             </div>
-          </a>
-  
+          </article>
+
+          <!-- Article 4: Land Records -->
+          <article class="article-card" data-category="govt">
+            <div>
+              <span class="badge badge-green">Govt &amp; Legal</span>
+              <h3>How to Edit Hindi Khasra-Khatauni &amp; Land Record (Bhulekh) PDF Documents</h3>
+              <p>
+                Correct farmer names, Gata/Khasra plot numbers, and Tehsil entries in state land records privately without uploading confidential revenue records.
+              </p>
+            </div>
+            <div>
+              <div class="article-meta">
+                <span>⏱️ 4 min read</span>
+                <span>•</span>
+                <span>Updated Aug 2026</span>
+              </div>
+              <a href="/articles/fix-broken-hindi-fonts-in-pdf/" class="article-cta">Read Guide →</a>
+            </div>
+          </article>
+
+          <!-- Article 5: PDF Merging -->
+          <article class="article-card" data-category="management">
+            <div>
+              <span class="badge badge-amber">Document Management</span>
+              <h3>How to Merge Multiple Hindi PDF Files Online in Order (100% Free &amp; Private)</h3>
+              <p>
+                Combine multiple Hindi documents, legal annexures, and certificates into a single ordered vector PDF in seconds right in your browser.
+              </p>
+            </div>
+            <div>
+              <div class="article-meta">
+                <span>⏱️ 3 min read</span>
+                <span>•</span>
+                <span>Updated Aug 2026</span>
+              </div>
+              <a href="/edit/?tool=merge" class="article-cta">Open Merge Tool →</a>
+            </div>
+          </article>
+
+          <!-- Article 6: PDF Compression -->
+          <article class="article-card" data-category="management">
+            <div>
+              <span class="badge badge-coral">Document Management</span>
+              <h3>How to Compress Large Scanned Hindi PDFs Without Quality Loss</h3>
+              <p>
+                Reduce scanned Hindi PDF file sizes below 100KB–200KB for government portal uploads while keeping thin Devanagari matras razor-sharp.
+              </p>
+            </div>
+            <div>
+              <div class="article-meta">
+                <span>⏱️ 3 min read</span>
+                <span>•</span>
+                <span>Updated Aug 2026</span>
+              </div>
+              <a href="/edit/?tool=compress" class="article-cta">Open Compress Tool →</a>
+            </div>
+          </article>
         </div>
 
-        <div class="content-card" style="text-align: center; padding: 36px 24px;">
-          <h3 style="margin-top: 0; font-size: 20px;">Ready to edit your Hindi PDF right now?</h3>
-          <p style="margin: 10px 0 20px;">
-            Open your document in our free, local-first browser tool with 100% correct Devanagari shaping.
-          </p>
-          <a href="/edit/?tool=edit" class="button primary" style="display: inline-block;">
-            Open Free Hindi PDF Editor →
-          </a>
+        <!-- No Results Message (Hidden by default) -->
+        <div id="noResults" style="display: none; text-align: center; padding: 48px 24px; color: var(--muted);">
+          <p style="font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">No matching guides found</p>
+          <p>Try searching for other keywords like "fonts", "admit card", "translate", or "merge".</p>
         </div>
       </div>
+
+      <!-- Bottom CTA Banner (Matching Homepage CTA) -->
+      <section class="knowledge-cta-banner">
+        <svg
+          style="pointer-events: none; position: absolute; inset: 0; width: 100%; height: 100%;"
+          viewBox="0 0 1200 340"
+          preserveAspectRatio="xMidYMax slice"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path d="M0 340a600 340 0 0 1 1200 0Z" fill="#D7E7FF" opacity="0.8" />
+          <path d="M120 340a480 300 0 0 1 960 0Z" fill="#E9E6FF" opacity="0.8" />
+          <path d="M250 340a350 240 0 0 1 700 0Z" fill="#D6F3E3" opacity="0.8" />
+          <path d="M380 340a220 180 0 0 1 440 0Z" fill="#FFF0C2" opacity="0.8" />
+        </svg>
+        <div class="knowledge-cta-inner">
+          <h2>Get your Hindi PDFs sorted.</h2>
+          <p>
+            Open the editor in your browser, or grab the Android app. 100% free, private, and Devanagari-safe.
+          </p>
+          <div class="knowledge-cta-actions">
+            <a class="btn-pill btn-pill-primary" style="font-size: 15px; padding: 14px 28px;" href="/edit/?tool=edit">
+              Open the editor →
+            </a>
+            <a
+              class="btn-pill btn-pill-ghost"
+              style="background: #ffffff; border: 1px solid var(--line); font-size: 15px; padding: 14px 24px;"
+              href="https://play.google.com/store/apps/details?id=com.hindipdfeditor.app"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google Play App
+            </a>
+          </div>
+        </div>
+      </section>
     </main>
 
+    <!-- Site Footer (Matching Homepage Design) -->
     <footer class="site-footer">
       <div class="footer-inner">
         <div>
           <a class="brand" href="/">
-            <img src="/assets/app-icon.png" alt="" />
+            <img src="/assets/app-icon.png" alt="Hindi PDF Editor logo" />
             <span>Hindi<span class="brand-accent">PDF</span></span>
           </a>
           <p class="footer-copy">
             Local-first Hindi PDF tools. Edit Devanagari with correct shaping, translate, merge, split,
-            and compress.
+            and compress without cloud uploads.
           </p>
         </div>
         <div class="footer-col">
@@ -232,17 +362,76 @@
           <a href="/edit/?tool=compress">Compress PDF</a>
         </div>
         <div class="footer-col">
-          <h4>Resources</h4>
-          <a href="/articles/">Guides &amp; Articles</a>
+          <h4>Resources &amp; Guides</h4>
+          <a href="/articles/">All Guides &amp; Articles</a>
+          <a href="/articles/fix-broken-hindi-fonts-in-pdf/">Fix Broken Hindi Fonts</a>
+          <a href="/articles/edit-sarkari-admit-card-hindi-pdf/">Edit Sarkari Admit Cards</a>
+          <a href="/articles/translate-hindi-pdf-to-english/">Translate Hindi PDF</a>
           <a href="/edit/#faq">FAQ</a>
-          <a href="/support/">Support</a>
+        </div>
+        <div class="footer-col">
+          <h4>Legal &amp; Support</h4>
           <a href="/privacy/">Privacy Policy</a>
+          <a href="/data-safety/">Data Safety</a>
           <a href="/terms/">Terms of Service</a>
+          <a href="/support/">Support</a>
+          <a href="https://play.google.com/store/apps/details?id=com.hindipdfeditor.app">Android App</a>
         </div>
       </div>
       <div class="footer-bottom">
         <p>© 2026 Hindi PDF Editor. All rights reserved.</p>
       </div>
     </footer>
+
+    <!-- Client-Side Live Search & Category Filter Script -->
+    <script>
+      (function() {
+        const searchInput = document.getElementById('articleSearch');
+        const filterPills = document.querySelectorAll('.filter-pill');
+        const cards = document.querySelectorAll('#articlesGrid .article-card, .featured-hero-card');
+        const noResults = document.getElementById('noResults');
+
+        let activeCategory = 'all';
+        let searchQuery = '';
+
+        function filterArticles() {
+          let visibleCount = 0;
+          cards.forEach(card => {
+            const cardCategory = card.getAttribute('data-category') || '';
+            const cardText = card.innerText.toLowerCase();
+
+            const matchesCategory = (activeCategory === 'all') || (cardCategory === activeCategory);
+            const matchesSearch = !searchQuery || cardText.includes(searchQuery);
+
+            if (matchesCategory && matchesSearch) {
+              card.style.display = card.classList.contains('featured-hero-card') ? 'grid' : 'flex';
+              visibleCount++;
+            } else {
+              card.style.display = 'none';
+            }
+          });
+
+          if (noResults) {
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+          }
+        }
+
+        if (searchInput) {
+          searchInput.addEventListener('input', function(e) {
+            searchQuery = e.target.value.toLowerCase().trim();
+            filterArticles();
+          });
+        }
+
+        filterPills.forEach(pill => {
+          pill.addEventListener('click', function() {
+            filterPills.forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+            activeCategory = this.getAttribute('data-filter') || 'all';
+            filterArticles();
+          });
+        });
+      })();
+    </script>
   </body>
 </html>
