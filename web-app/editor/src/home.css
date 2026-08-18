@@ -58,7 +58,16 @@
     background: var(--color-brand-tint);
     color: var(--color-brand-hover);
   }
+  .home-root a.bg-brand,
+  .home-root a.bg-navy,
+  .home-root a.bg-accent,
+  .home-root button.bg-brand,
+  .home-root button.bg-navy,
+  .home-root button.bg-accent {
+    color: #ffffff !important;
+  }
 }
+
 
 /* Typewriter caret */
 @keyframes caret-blink {
