@@ -161,35 +161,327 @@ function generateArticleHtml(item) {
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/assets/site.css" />
+    <style>
+      :root {
+        --brand: #1843dd;
+        --brand-hover: #1130a8;
+        --brand-wash: #eef3ff;
+        --brand-tint: #d7e7ff;
+        --accent: #1843dd;
+        --navy: #050839;
+        --ink: #15172c;
+        --muted: #5b6172;
+        --cream: #fbf8f1;
+        --line: #eceae2;
+        --font-display: 'Plus Jakarta Sans', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
+        --font-body: 'Inter', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: var(--font-body);
+        background: #ffffff;
+        color: var(--ink);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: var(--brand); text-decoration: none; }
+
+      /* Floating Header */
+      .header-wrapper {
+        position: fixed;
+        top: 12px;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        padding: 0 16px;
+        pointer-events: none;
+      }
+
+      .nav-container {
+        pointer-events: auto;
+        max-width: 1040px;
+        margin: 0 auto;
+        height: 62px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 0 10px 0 20px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(20px) saturate(160%);
+        -webkit-backdrop-filter: blur(20px) saturate(160%);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 8px 30px rgba(21, 23, 44, 0.08);
+      }
+
+      .brand-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 17px;
+        color: var(--ink) !important;
+        text-decoration: none;
+        flex-shrink: 0;
+      }
+
+      .brand-logo img { width: 32px; height: 32px; border-radius: 8px; }
+
+      .nav-menu { display: flex; align-items: center; gap: 28px; }
+      .nav-menu a {
+        font-size: 14.5px;
+        font-weight: 600;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.15s ease;
+      }
+      .nav-menu a:hover, .nav-menu a.active { color: var(--brand); }
+
+      .nav-ctas { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+      .btn-play {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-family: var(--font-display);
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--ink);
+        text-decoration: none;
+        transition: background 0.15s ease;
+      }
+      .btn-play:hover { background: rgba(0, 0, 0, 0.04); }
+      .btn-editor {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--brand);
+        color: #ffffff !important;
+        padding: 10px 22px;
+        border-radius: 999px;
+        font-family: var(--font-display);
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        box-shadow: 0 10px 24px rgba(24, 67, 221, 0.25);
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+      .btn-editor:hover {
+        background: var(--brand-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 12px 28px rgba(24, 67, 221, 0.35);
+      }
+
+      /* Article Hero */
+      .article-hero {
+        position: relative;
+        padding: 130px 24px 44px;
+        background: var(--cream);
+        text-align: center;
+        border-bottom: 1px solid var(--line);
+      }
+      .article-hero-inner { max-width: 820px; margin: 0 auto; }
+      .eyebrow-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 16px;
+        border-radius: 999px;
+        background: var(--brand-wash);
+        border: 1px solid rgba(24, 67, 221, 0.15);
+        color: var(--brand);
+        font-family: var(--font-display);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+      }
+      .article-hero h1 {
+        font-family: var(--font-display);
+        font-size: clamp(2rem, 3.8vw, 2.9rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        color: var(--ink);
+        margin-bottom: 14px;
+      }
+      .article-hero p {
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.6;
+        max-width: 700px;
+        margin: 0 auto;
+      }
+
+      /* Content Area */
+      .article-body {
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 44px 24px 80px;
+      }
+      .direct-answer {
+        background: var(--cream);
+        border-left: 4px solid var(--brand);
+        padding: 22px 24px;
+        border-radius: 16px;
+        margin: 0 0 36px;
+      }
+      .direct-answer h4 {
+        font-family: var(--font-display);
+        font-size: 16.5px;
+        font-weight: 800;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+      .direct-answer p {
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--ink);
+        line-height: 1.65;
+      }
+      .article-body h2 {
+        font-family: var(--font-display);
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--ink);
+        margin: 38px 0 16px;
+        letter-spacing: -0.01em;
+      }
+      .article-body p {
+        font-size: 16px;
+        color: #2b2e4a;
+        line-height: 1.7;
+        margin-bottom: 16px;
+      }
+      .article-body ul, .article-body ol {
+        margin: 14px 0 20px 24px;
+        color: #2b2e4a;
+        font-size: 15.5px;
+        line-height: 1.7;
+      }
+      .article-body li { margin-bottom: 8px; }
+      .step-card {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 22px 24px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 14px rgba(21, 23, 44, 0.03);
+      }
+      .step-card h4 {
+        font-family: var(--font-display);
+        font-size: 16.5px;
+        font-weight: 800;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+      .step-card p {
+        font-size: 15px;
+        color: var(--muted);
+        margin-bottom: 0;
+        line-height: 1.6;
+      }
+      .article-cta-box {
+        margin-top: 48px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 40px 24px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(21, 23, 44, 0.04);
+      }
+      .article-cta-box h3 {
+        font-family: var(--font-display);
+        font-size: 22px;
+        font-weight: 800;
+        margin: 0 0 8px;
+        color: var(--ink);
+      }
+      .article-cta-box p {
+        color: var(--muted);
+        font-size: 15px;
+        margin-bottom: 22px;
+      }
+
+      /* Footer */
+      .site-foot {
+        border-top: 1px solid var(--line);
+        background: #ffffff;
+        padding: 60px 24px 36px;
+      }
+      .foot-grid {
+        max-width: 1120px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1.4fr 1fr 1.2fr 1fr;
+        gap: 32px;
+      }
+      .foot-col h4 {
+        font-family: var(--font-display);
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 14px;
+      }
+      .foot-col a {
+        display: block;
+        font-size: 14px;
+        color: var(--muted);
+        text-decoration: none;
+        margin-bottom: 9px;
+        transition: color 0.15s ease;
+      }
+      .foot-col a:hover { color: var(--brand); }
+      .foot-bottom {
+        max-width: 1120px;
+        margin: 40px auto 0;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+
+      @media (max-width: 860px) {
+        .nav-menu { display: none; }
+        .foot-grid { grid-template-columns: 1fr; gap: 28px; }
+      }
+    </style>
     <script type="application/ld+json">
       ${JSON.stringify(schemaGraph, null, 2)}
     </script>
   </head>
   <body>
-    <!-- Floating Glass Pill Header (Matching Homepage Nav) -->
-    <div class="floating-header-wrapper">
-      <header class="floating-header">
-        <a class="brand" href="/">
+    <!-- Floating Header -->
+    <div class="header-wrapper">
+      <header class="nav-container">
+        <a class="brand-logo" href="/">
           <img src="/assets/app-icon.png" alt="Hindi PDF Editor logo" />
-          <span>Hindi PDF <span style="color: var(--accent);">Editor</span></span>
+          <span>Hindi PDF <span style="color: var(--brand);">Editor</span></span>
         </a>
-        <nav class="floating-nav-links" aria-label="Primary navigation">
-          <a href="/">Features</a>
+        <nav class="nav-menu" aria-label="Primary navigation">
+          <a href="/#features">Features</a>
           <a href="/#how-it-works">How it works</a>
           <a href="/#compare">Compare</a>
           <a href="/#use-cases">Use cases</a>
           <a class="active" href="/articles/">Guides</a>
         </nav>
-        <div class="floating-header-actions">
+        <div class="nav-ctas">
           <a
-            class="btn-pill btn-pill-ghost"
+            class="btn-play"
             href="https://play.google.com/store/apps/details?id=com.hindipdfeditor.app"
             target="_blank"
             rel="noopener noreferrer"
           >
             Google Play
           </a>
-          <a class="btn-pill btn-pill-primary" href="/edit/?tool=edit">
+          <a class="btn-editor" href="/edit/?tool=edit">
             Open editor
           </a>
         </div>
@@ -197,11 +489,10 @@ function generateArticleHtml(item) {
     </div>
 
     <main>
-      <!-- Hero Section with Background Grid -->
-      <section class="hero-knowledge" style="padding-top: 130px;">
-        <div class="bg-grid-pattern" aria-hidden="true"></div>
-        <div class="hero-knowledge-inner">
-          <div class="eyebrow-pill">
+      <!-- Hero Section -->
+      <section class="article-hero">
+        <div class="article-hero-inner">
+          <div class="eyebrow-tag">
             <span>✨</span>
             <span>${category}</span>
           </div>
@@ -210,11 +501,11 @@ function generateArticleHtml(item) {
         </div>
       </section>
 
-      <article class="content" style="max-width: 860px; margin: 0 auto; padding-inline: 24px;">
+      <article class="article-body">
         <!-- Direct Answer Block for AEO -->
-        <div class="guide-step" style="border-left: 4px solid var(--accent); background: var(--cream); padding: 22px; border-radius: 16px; margin: 28px 0;">
-          <h4 style="margin: 0 0 8px; font-size: 16.5px; font-weight: 800; color: var(--ink);">Direct Answer: ${title}</h4>
-          <p style="margin: 0; color: var(--ink); font-weight: 500; font-size: 15px; line-height: 1.6;">
+        <div class="direct-answer">
+          <h4>Direct Answer: ${title}</h4>
+          <p>
             ${directAnswer}
           </p>
         </div>
@@ -230,9 +521,9 @@ function generateArticleHtml(item) {
                ${faqs
                  .map(
                    (f) => `
-                 <div class="guide-step" style="background: var(--cream); padding: 20px; border-radius: 14px; margin: 16px 0;">
-                   <h4 style="margin: 0 0 6px; font-size: 16px; font-weight: 800; color: var(--ink);">${escapeHtml(f.q)}</h4>
-                   <p style="margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.55;">${escapeHtml(f.a)}</p>
+                 <div class="step-card">
+                   <h4>${escapeHtml(f.q)}</h4>
+                   <p>${escapeHtml(f.a)}</p>
                  </div>
                `
                  )
@@ -240,27 +531,29 @@ function generateArticleHtml(item) {
             : ''
         }
 
-        <div class="content-card" style="margin-top: 42px; text-align: center; border-radius: 20px; padding: 36px 24px;">
-          <h3 style="margin-top: 0; font-size: 22px; font-weight: 800;">Try Hindi PDF Editor Free</h3>
-          <p style="margin: 8px 0 20px; font-size: 15px; color: var(--muted);">Zero server uploads · 100% Client-Side Private · Flawless Devanagari Shaping</p>
-          <a href="/edit/?tool=edit" class="btn-pill btn-pill-primary" style="font-size: 15px; padding: 12px 28px;">
+        <div class="article-cta-box">
+          <h3>Try Hindi PDF Editor Free</h3>
+          <p>Zero server uploads · 100% Client-Side Private · Flawless Devanagari Shaping</p>
+          <a href="/edit/?tool=edit" class="btn-editor" style="font-size: 15px; padding: 12px 28px;">
             Open Editor Now →
           </a>
         </div>
       </article>
     </main>
 
-    <!-- Site Footer (Matching Homepage Design) -->
-    <footer class="site-footer">
-      <div class="footer-inner">
+    <!-- Footer -->
+    <footer class="site-foot">
+      <div class="foot-grid">
         <div>
-          <a class="brand" href="/">
+          <a class="brand-logo" href="/" style="margin-bottom: 12px;">
             <img src="/assets/app-icon.png" alt="Hindi PDF Editor logo" />
-            <span>Hindi<span class="brand-accent">PDF</span></span>
+            <span>Hindi PDF <span style="color: var(--brand);">Editor</span></span>
           </a>
-          <p class="footer-copy">Local-first Hindi PDF tools with flawless Devanagari shaping.</p>
+          <p style="color: var(--muted); font-size: 14px; line-height: 1.55;">
+            Local-first Hindi PDF tools with flawless Devanagari shaping.
+          </p>
         </div>
-        <div class="footer-col">
+        <div class="foot-col">
           <h4>Tools</h4>
           <a href="/edit/?tool=edit">Edit Hindi PDF</a>
           <a href="/edit/?tool=translate">Translate Hindi ↔ English</a>
@@ -268,7 +561,7 @@ function generateArticleHtml(item) {
           <a href="/edit/?tool=split">Split PDF</a>
           <a href="/edit/?tool=compress">Compress PDF</a>
         </div>
-        <div class="footer-col">
+        <div class="foot-col">
           <h4>Resources</h4>
           <a href="/articles/">Articles &amp; Guides</a>
           <a href="/support/">Support</a>
@@ -276,8 +569,9 @@ function generateArticleHtml(item) {
           <a href="/terms/">Terms of Service</a>
         </div>
       </div>
-      <div class="footer-bottom">
+      <div class="foot-bottom">
         <p>© 2026 Hindi PDF Editor. All rights reserved.</p>
+        <p>100% Client-Side Processing · Zero Server Storage</p>
       </div>
     </footer>
   </body>
