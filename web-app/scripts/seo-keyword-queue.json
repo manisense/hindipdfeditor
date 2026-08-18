@@ -1,0 +1,249 @@
+[
+  {
+    "slug": "fix-broken-hindi-fonts-in-pdf",
+    "title": "Why Hindi Fonts & Matras Break in PDF Editors (and How to Fix Them)",
+    "category": "Typography & Fonts",
+    "status": "published",
+    "publishedDate": "2026-08-18"
+  },
+  {
+    "slug": "edit-sarkari-admit-card-hindi-pdf",
+    "title": "How to Edit Hindi Admit Card & Sarkari Exam PDF Forms (BPSC, UPPSC, SSC)",
+    "category": "Govt & Exams",
+    "status": "published",
+    "publishedDate": "2026-08-18"
+  },
+  {
+    "slug": "translate-hindi-pdf-to-english",
+    "title": "How to Translate Hindi PDF to English Online Without Losing Page Formatting",
+    "category": "Translation & AI",
+    "status": "published",
+    "publishedDate": "2026-08-18"
+  },
+  {
+    "slug": "kruti-dev-to-unicode-hindi-pdf-editor",
+    "title": "How to Edit Kruti Dev 010 Hindi PDF and Convert to Unicode Online",
+    "category": "Typography & Fonts",
+    "metaDescription": "Learn how to edit legacy Kruti Dev 010 Hindi PDF files, fix garbled English characters, and convert text to clean Unicode Devanagari online for free.",
+    "directAnswer": "To edit a Kruti Dev 010 Hindi PDF, open the file in Hindi PDF Editor. The tool detects legacy font encodings, allows you to mask the old garbled text box, and type replacement text using modern Unicode Devanagari (Mangal/Noto Sans). The exported PDF renders clean vector text compatible with all devices without requiring Kruti Dev fonts installed.",
+    "readTime": "5 min read",
+    "badgeTone": "Typography & Fonts",
+    "sections": [
+      {
+        "heading": "Why Kruti Dev 010 PDFs Show Up as Garbled English",
+        "paragraphs": [
+          "Kruti Dev 010 is a legacy ASCII-mapped font where standard Latin keyboard characters (like 'd', 'k', 'j') are remapped to Hindi glyph shapes. When opened in modern PDF readers that expect Unicode, Kruti Dev text appears as random English characters like 'd`fr nso' instead of 'कृति देव'.",
+          "Most online PDF editors fail to convert Kruti Dev because they cannot map legacy non-standard glyph indexes to canonical Unicode code points."
+        ]
+      },
+      {
+        "heading": "How to Replace Kruti Dev Text with Unicode in Hindi PDF Editor",
+        "paragraphs": [
+          "Hindi PDF Editor uses raster-only Unicode replacement mode: the original page image is preserved with 100% fidelity, and new edits are rendered with standard Unicode fonts (Google Noto Sans Devanagari / Mangal). This eliminates font dependencies entirely."
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Open Your Kruti Dev PDF",
+        "desc": "Drag and drop your PDF into Hindi PDF Editor. The document renders cleanly in high resolution."
+      },
+      {
+        "title": "Mask the Legacy Text Field",
+        "desc": "Click on the line containing Kruti Dev text. The editor applies a background-matching mask over the old characters."
+      },
+      {
+        "title": "Type in Clean Unicode Hindi",
+        "desc": "Type using any standard Hindi keyboard (Mangal, InScript, or Google Input). The text shapes perfectly with HarfBuzz OpenType layout."
+      },
+      {
+        "title": "Export Universal PDF",
+        "desc": "Click Export PDF to download a vector-accurate PDF readable on any phone, tablet, or PC without missing font errors."
+      }
+    ],
+    "faqs": [
+      {
+        "q": "Do I need to install Kruti Dev font to edit my PDF?",
+        "a": "No. Hindi PDF Editor renders replacement text using universal Unicode Devanagari webfonts, so no font installation is required."
+      },
+      {
+        "q": "Will the exported PDF open on mobile phones?",
+        "a": "Yes. Because Unicode is universally supported across Android, iOS, Windows, and Mac, your exported PDF will look identical on every screen."
+      }
+    ],
+    "status": "published",
+    "publishedDate": "2026-08-18"
+  },
+  {
+    "slug": "khasra-khatauni-land-record-hindi-pdf-edit",
+    "title": "How to Edit Hindi Khasra-Khatauni & Land Record (Bhulekh) PDF Documents",
+    "category": "Govt & Legal",
+    "metaDescription": "Step-by-step tutorial on how to edit and correct Hindi text, plot numbers, and owner names in Bhulekh Khasra-Khatauni land record PDFs safely.",
+    "directAnswer": "To edit a Hindi Khasra-Khatauni (Bhulekh) land record PDF, open it in Hindi PDF Editor at hindipdfeditor.com/edit/. Mask the outdated plot number, farmer name, or acreage field, and type the updated details in Unicode Hindi. Because all editing runs 100% locally in your browser, sensitive land ownership records are never uploaded to cloud servers.",
+    "readTime": "4 min read",
+    "badgeTone": "Govt & Legal",
+    "sections": [
+      {
+        "heading": "Common Land Record Corrections (UP, MP, Bihar Bhulekh)",
+        "paragraphs": [
+          "State land records (Bhulekh) in Uttar Pradesh, Bihar, Madhya Pradesh, and Rajasthan often contain typographical mistakes in Hindi names (e.g., father's name, village Tehsil spelling, or Gata/Khasra numbers).",
+          "Correcting draft applications before revenue court or Tehsil registry requires clean Devanagari typography that matches the original government land record style."
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Upload Bhulekh PDF Locally",
+        "desc": "Load your land record PDF into the editor. WebAssembly parses the pages on your device without server transmission."
+      },
+      {
+        "title": "Mask Name or Khasra Number",
+        "desc": "Click on the land record entry that needs modification to place an automatic background mask."
+      },
+      {
+        "title": "Enter Correct Hindi Details",
+        "desc": "Type the corrected Hindi name or numeric digits. Select font size to match the original document table."
+      },
+      {
+        "title": "Download Clean Vector PDF",
+        "desc": "Export the updated PDF instantly with crisp text suitable for printing and submission."
+      }
+    ],
+    "faqs": [
+      {
+        "q": "Are my land records uploaded to your server?",
+        "a": "No. Hindi PDF Editor is 100% local-first. Documents are processed in your browser memory and never uploaded to any remote database."
+      }
+    ],
+    "status": "queued"
+  },
+  {
+    "slug": "up-police-bharti-admit-card-hindi-pdf-edit",
+    "title": "How to Edit UP Police Bharti & Constable Exam Admit Card Hindi PDF",
+    "category": "Govt & Exams",
+    "metaDescription": "Guide to editing UP Police Constable recruitment admit cards, fixing Hindi name typos, examination center details, and photo signatures safely.",
+    "directAnswer": "To edit or correct details on a UP Police Constable admit card PDF, load the file into Hindi PDF Editor. Select the candidate name, roll number, or exam date line to mask and type the corrected text in Unicode Hindi. Export the vector PDF immediately with 100% correct Devanagari matras.",
+    "readTime": "4 min read",
+    "badgeTone": "Govt & Exams",
+    "sections": [
+      {
+        "heading": "Handling Admit Card Typographical Errors",
+        "paragraphs": [
+          "During state recruitment drives like UPPRPB Constable & SI exams, applicants frequently spot typographical mismatches between their Aadhaar and admit cards (such as missing halants or split vowel matras).",
+          "Hindi PDF Editor allows candidates to prepare corrected verification drafts locally with zero privacy risk."
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Open Admit Card",
+        "desc": "Select your UP Police recruitment PDF from your device."
+      },
+      {
+        "title": "Select Correction Area",
+        "desc": "Click on the candidate details box to mask the typo."
+      },
+      {
+        "title": "Type Hindi Unicode Text",
+        "desc": "Enter your correct name or father's name with perfect conjunct rendering."
+      },
+      {
+        "title": "Save Corrected PDF",
+        "desc": "Click Export PDF to download your high-resolution vector document."
+      }
+    ],
+    "faqs": [
+      {
+        "q": "Can I edit PDF on my Android mobile?",
+        "a": "Yes. Hindi PDF Editor is fully responsive on mobile browsers and also offers a free native Android companion app on Google Play."
+      }
+    ],
+    "status": "queued"
+  },
+  {
+    "slug": "merge-multiple-hindi-pdf-files-online",
+    "title": "How to Merge Multiple Hindi PDF Files Online in Order (100% Free & Private)",
+    "category": "Document Management",
+    "metaDescription": "Learn how to combine and merge multiple Hindi PDF files into a single document in sequential order for free without file size limits or server uploads.",
+    "directAnswer": "To merge multiple Hindi PDF files, visit hindipdfeditor.com/edit/?tool=merge. Select or drag multiple PDF documents, arrange their sequence using the drag handles or arrow buttons, and click Merge PDFs. The files are combined 100% locally in your browser memory without uploading any data to external servers.",
+    "readTime": "3 min read",
+    "badgeTone": "Document Management",
+    "sections": [
+      {
+        "heading": "Why Local PDF Merging is Safer",
+        "paragraphs": [
+          "Most online PDF merging tools require uploading all your PDF pages to cloud servers where they are processed remotely. For sensitive legal briefs, certificates, or financial records, this represents a significant data safety risk.",
+          "Hindi PDF Editor processes PDF merging directly inside your browser memory using WebAssembly, ensuring complete confidentiality."
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Open Merge Tool",
+        "desc": "Go to the Merge PDF workspace at hindipdfeditor.com/edit/?tool=merge."
+      },
+      {
+        "title": "Add Multiple PDFs",
+        "desc": "Select two or more PDF files from your phone or computer."
+      },
+      {
+        "title": "Arrange File Sequence",
+        "desc": "Drag and reorder cards to match your desired document order."
+      },
+      {
+        "title": "Download Combined PDF",
+        "desc": "Click Merge & Download to save your single unified PDF document."
+      }
+    ],
+    "faqs": [
+      {
+        "q": "Is there a limit on how many PDFs I can merge?",
+        "a": "No. There are no artificial page quotas or file count restrictions because the processing uses your local device resources."
+      }
+    ],
+    "status": "queued"
+  },
+  {
+    "slug": "compress-scanned-hindi-pdf-without-blur",
+    "title": "How to Compress Large Scanned Hindi PDFs Without Quality Loss",
+    "category": "Document Management",
+    "metaDescription": "Learn how to reduce scanned Hindi PDF file size below 100KB, 200KB, or 500KB for government job portals without making Hindi matras blurry.",
+    "directAnswer": "To compress a large scanned Hindi PDF, open hindipdfeditor.com/edit/?tool=compress. Choose your preferred compression mode (Balanced, Strong, or Maximum Compression), and click Compress PDF. The tool optimizes image streams and removes redundant metadata while keeping Devanagari text razor-sharp for portal uploads.",
+    "readTime": "3 min read",
+    "badgeTone": "Document Management",
+    "sections": [
+      {
+        "heading": "Meeting Sarkari Portal Upload Size Limits (100KB - 300KB)",
+        "paragraphs": [
+          "Government job applications (UPSC, SSC, State PSCs) typically restrict document upload sizes to under 200KB. Naive online compressors often over-compress documents, turning Hindi matras and text into unreadable pixelated blur.",
+          "Hindi PDF Editor uses smart DPI scaling to balance file size reduction with maximum Devanagari text legibility."
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Select Large PDF",
+        "desc": "Open the Compress tool and upload your scanned Hindi document."
+      },
+      {
+        "title": "Pick Target Compression",
+        "desc": "Select from Balanced (optimal quality) or Strong (under 200KB)."
+      },
+      {
+        "title": "Compress In-Browser",
+        "desc": "The engine shrinks image streams locally without cloud transmission."
+      },
+      {
+        "title": "Download Compressed File",
+        "desc": "Save your lightweight, portal-ready PDF document."
+      }
+    ],
+    "faqs": [
+      {
+        "q": "Will Hindi text remain readable after compression?",
+        "a": "Yes. The compression algorithm is tuned specifically to preserve high contrast around thin Devanagari strokes and vowel matras."
+      }
+    ],
+    "status": "queued"
+  }
+]

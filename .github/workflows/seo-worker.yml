@@ -1,0 +1,61 @@
+name: 24-Hour Autonomous SEO, GEO & AEO Worker
+
+on:
+  schedule:
+    # Runs every 24 hours at 04:00 UTC (09:30 AM IST)
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    # Allows manual 1-click execution anytime from GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  seo-daily-automation:
+    name: Run 24h SEO Audit & Content Expansion
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'web-app/editor/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd web-app/editor
+          npm ci --progress=false
+
+      - name: Execute Autonomous SEO Worker (Publish Next Guide)
+        run: |
+          node web-app/scripts/seo-worker.mjs --publish-next
+
+      - name: Run Web App Verification Tests
+        run: |
+          npm --prefix web-app/editor test
+
+      - name: Build Production Web App
+        run: |
+          npm --prefix web-app run build
+
+      - name: Commit & Push Daily SEO Updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          if [ -n "$(git status --porcelain)" ]; then
+            git add web-app/
+            git commit -m "chore(seo): daily 24h automated seo audit and article publication [skip ci]"
+            git push origin main
+            echo "Successfully deployed daily SEO improvements to main."
+          else
+            echo "No changes to commit. All SEO assets are up to date."
+          fi
