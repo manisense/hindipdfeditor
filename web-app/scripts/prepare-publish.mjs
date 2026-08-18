@@ -12,6 +12,8 @@ const STATIC_ENTRIES = [
   'robots.txt',
   'sitemap.xml',
   'llms.txt',
+  'llms-full.txt',
+  'SEO_GEO_AEO_PLAYBOOK.md',
   '_headers',
   '_redirects',
   'assets',
@@ -20,6 +22,7 @@ const STATIC_ENTRIES = [
   'terms',
   'data-safety',
 ];
+
 
 function copyEntry(name) {
   const from = path.join(webAppRoot, name);

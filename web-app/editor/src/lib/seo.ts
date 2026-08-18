@@ -91,7 +91,7 @@ export function applySeo(payload: SeoPayload): void {
   upsertMeta('name', 'twitter:image', DEFAULT_OG_IMAGE);
 }
 
-/** Organization + WebSite + SoftwareApplication graph for the marketing hub. */
+/** Organization + WebSite + SoftwareApplication + HowTo + FAQPage graph for the marketing hub. */
 export function siteGraphJsonLd(): unknown {
   return {
     '@context': 'https://schema.org',
@@ -128,11 +128,21 @@ export function siteGraphJsonLd(): unknown {
         '@id': `${SITE_ORIGIN}/#app`,
         name: 'Hindi PDF Editor',
         applicationCategory: 'ProductivityApplication',
-        operatingSystem: 'Android, Web',
+        applicationSubCategory: 'PDF Editor',
+        operatingSystem: 'Android, Web, Windows, macOS, Linux, iOS',
         url: `${SITE_ORIGIN}/edit/`,
         downloadUrl: 'https://play.google.com/store/apps/details?id=com.hindipdfeditor.app',
         image: DEFAULT_OG_IMAGE,
         description: HOME.description,
+        featureList: [
+          'Flawless Devanagari OpenType text shaping with correct conjuncts and matras',
+          '100% Client-side local processing with zero server uploads',
+          'Bidirectional Hindi to English and English to Hindi PDF translation',
+          'Built-in OCR text detection for scanned Hindi and English documents',
+          'Merge, split, and compress PDF documents locally',
+          'Non-destructive editing: source PDFs are never overwritten',
+        ],
+        browserRequirements: 'Requires modern browser with WebAssembly and Canvas support (Chrome, Firefox, Safari, Edge)',
         offers: {
           '@type': 'Offer',
           price: '0',
@@ -140,6 +150,57 @@ export function siteGraphJsonLd(): unknown {
         },
         privacyPolicy: `${SITE_ORIGIN}/privacy/`,
         publisher: { '@id': `${SITE_ORIGIN}/#organization` },
+      },
+      {
+        '@type': 'HowTo',
+        '@id': `${SITE_ORIGIN}/edit/#howto`,
+        name: 'How to Edit Hindi PDF Online with Correct Fonts & Shaping',
+        description:
+          'Step-by-step guide to add or replace Hindi Devanagari text in a PDF document with flawless character shaping and complete local privacy.',
+        step: [
+          {
+            '@type': 'HowToStep',
+            position: 1,
+            name: 'Open your PDF file',
+            text: 'Open or drag your PDF document into the local browser editor. The file is processed locally on your device without server uploads.',
+          },
+          {
+            '@type': 'HowToStep',
+            position: 2,
+            name: 'Select or mask text',
+            text: 'Click on existing Hindi text to mask and replace, or tap anywhere to create a new text box.',
+          },
+          {
+            '@type': 'HowToStep',
+            position: 3,
+            name: 'Type in Hindi',
+            text: 'Type your text using Unicode Hindi keyboards or Google Input Tools. Conjuncts and matras render with 100% font accuracy.',
+          },
+          {
+            '@type': 'HowToStep',
+            position: 4,
+            name: 'Export fresh PDF',
+            text: 'Click Export PDF to download your newly shaped vector PDF document. Your original file remains untouched.',
+          },
+        ],
+      },
+      {
+        '@type': 'BreadcrumbList',
+        '@id': `${SITE_ORIGIN}/edit/#breadcrumb`,
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: `${SITE_ORIGIN}/`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Hindi PDF Tools',
+            item: `${SITE_ORIGIN}/edit/`,
+          },
+        ],
       },
       {
         '@type': 'FAQPage',
@@ -173,17 +234,48 @@ export function applyToolJsonLd(toolId: ToolId): void {
   if (!tool) return;
   upsertJsonLd('seo-tool-graph', {
     '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: tool.title,
-    applicationCategory: 'ProductivityApplication',
-    operatingSystem: 'Web, Android',
-    url: `${SITE_ORIGIN}/edit/?tool=${tool.id}`,
-    description: tool.description,
-    isPartOf: { '@id': `${SITE_ORIGIN}/#app` },
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    '@graph': [
+      {
+        '@type': 'SoftwareApplication',
+        '@id': `${SITE_ORIGIN}/edit/?tool=${tool.id}#app`,
+        name: `${tool.title} — Hindi PDF Editor`,
+        applicationCategory: 'ProductivityApplication',
+        applicationSubCategory: 'PDF Tool',
+        operatingSystem: 'Web, Android, Windows, macOS, Linux, iOS',
+        url: `${SITE_ORIGIN}/edit/?tool=${tool.id}`,
+        description: tool.description,
+        isPartOf: { '@id': `${SITE_ORIGIN}/#app` },
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        '@id': `${SITE_ORIGIN}/edit/?tool=${tool.id}#breadcrumb`,
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: `${SITE_ORIGIN}/`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Tools',
+            item: `${SITE_ORIGIN}/edit/`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: tool.title,
+            item: `${SITE_ORIGIN}/edit/?tool=${tool.id}`,
+          },
+        ],
+      },
+    ],
   });
 }
 
 export function clearToolJsonLd(): void {
   document.getElementById('seo-tool-graph')?.remove();
 }
+

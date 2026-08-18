@@ -3,11 +3,14 @@
 User-agent: *
 Allow: /
 
-# Common AI / answer-engine crawlers (explicit allow for AISEO discoverability)
+# Common AI / answer-engine crawlers (explicit allow for AISEO/GEO discoverability)
 User-agent: GPTBot
 Allow: /
 
 User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
 Allow: /
 
 User-agent: Google-Extended
@@ -19,12 +22,30 @@ Allow: /
 User-agent: ClaudeBot
 Allow: /
 
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
 User-agent: PerplexityBot
+Allow: /
+
+
+User-agent: Applebot-Extended
 Allow: /
 
 User-agent: Bytespider
 Allow: /
 
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
 Sitemap: https://hindipdfeditor.com/sitemap.xml
-# Machine-readable site summary for LLMs / AEO:
+# Machine-readable site summary for LLMs / AEO / GEO:
 # https://hindipdfeditor.com/llms.txt
+# https://hindipdfeditor.com/llms-full.txt
+

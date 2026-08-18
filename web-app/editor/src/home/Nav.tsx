@@ -5,9 +5,12 @@ import { toolHref } from '../lib/tools';
 
 const links = [
   { label: 'Features', href: '#features' },
-  { label: 'How it works', href: '#work' },
+  { label: 'How it works', href: '#how-it-works' },
+  { label: 'Compare', href: '#compare' },
+  { label: 'Use cases', href: '#use-cases' },
   { label: 'FAQ', href: '#faq' },
 ];
+
 
 export function Nav() {
   return (

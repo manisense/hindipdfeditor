@@ -130,7 +130,9 @@ export async function samplePagePaperColorFromDataUrl(
 }
 
 /**
- * Estimates the dominant dark ink color inside a text region (for OCR replacement pre-fill).
+ * Estimates the dominant ink color inside a text region (for OCR replacement pre-fill).
+ * Uses contrast distance from the background color so light text on dark backgrounds
+ * (e.g. white text on blue) is correctly detected rather than coerced to dark ink.
  *
  * @param dataUrl Page background JPEG as a data URL.
  * @param xPx Left edge, in px.
@@ -154,13 +156,50 @@ export async function sampleTextColorFromDataUrl(
   ctx.drawImage(img, 0, 0);
   const { data, width } = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-  const left = Math.max(0, Math.floor(xPx));
-  const top = Math.max(0, Math.floor(yPx));
-  const right = Math.min(width, Math.ceil(xPx + wPx));
-  const bottom = Math.min(canvas.height, Math.ceil(yPx + hPx));
+  const insetX = Math.min(Math.floor(wPx * 0.08), Math.floor(wPx / 4));
+  const insetY = Math.min(Math.floor(hPx * 0.08), Math.floor(hPx / 4));
+  const left = Math.max(0, Math.floor(xPx + insetX));
+  const top = Math.max(0, Math.floor(yPx + insetY));
+  const right = Math.min(width, Math.ceil(xPx + wPx - insetX));
+  const bottom = Math.min(canvas.height, Math.ceil(yPx + hPx - insetY));
 
-  let bestLuma = 255;
-  let best = { r: 17, g: 17, b: 17 };
+  if (right <= left || bottom <= top) return '#15172c';
+
+  const histR = new Uint32Array(256);
+  const histG = new Uint32Array(256);
+  const histB = new Uint32Array(256);
+  let totalPixels = 0;
+
+  for (let y = top; y < bottom; y++) {
+    for (let x = left; x < right; x++) {
+      const i = (y * width + x) * 4;
+      histR[data[i]] += 1;
+      histG[data[i + 1]] += 1;
+      histB[data[i + 2]] += 1;
+      totalPixels += 1;
+    }
+  }
+  if (totalPixels === 0) return '#15172c';
+
+  const medianChannel = (histogram: Uint32Array): number => {
+    const midpoint = Math.ceil(totalPixels / 2);
+    let seen = 0;
+    for (let value = 0; value < histogram.length; value += 1) {
+      seen += histogram[value];
+      if (seen >= midpoint) return value;
+    }
+    return 255;
+  };
+
+  const bgR = medianChannel(histR);
+  const bgG = medianChannel(histG);
+  const bgB = medianChannel(histB);
+
+  const distCounts = new Uint32Array(766);
+  const distRedSums = new Float64Array(766);
+  const distGreenSums = new Float64Array(766);
+  const distBlueSums = new Float64Array(766);
+  let maxDist = 0;
 
   for (let y = top; y < bottom; y++) {
     for (let x = left; x < right; x++) {
@@ -168,13 +207,46 @@ export async function sampleTextColorFromDataUrl(
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
-      const luma = lumaOf(r, g, b);
-      if (luma < bestLuma) {
-        bestLuma = luma;
-        best = { r, g, b };
-      }
+      const dist = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
+      distCounts[dist] += 1;
+      distRedSums[dist] += r;
+      distGreenSums[dist] += g;
+      distBlueSums[dist] += b;
+      if (dist > maxDist) maxDist = dist;
     }
   }
 
-  return rgbToHex(best.r, best.g, best.b);
+  if (maxDist < 35) {
+    const bgLuma = lumaOf(bgR, bgG, bgB);
+    return bgLuma > 128 ? '#15172c' : '#ffffff';
+  }
+
+  const targetSampleCount = Math.max(10, Math.floor((totalPixels * 8) / 100));
+  let accumulatedCount = 0;
+  let sumR = 0;
+  let sumG = 0;
+  let sumB = 0;
+  const minDistanceThreshold = Math.max(25, Math.floor((maxDist * 40) / 100));
+
+  for (let d = 765; d >= minDistanceThreshold; d--) {
+    const count = distCounts[d];
+    if (count > 0) {
+      accumulatedCount += count;
+      sumR += distRedSums[d];
+      sumG += distGreenSums[d];
+      sumB += distBlueSums[d];
+      if (accumulatedCount >= targetSampleCount) break;
+    }
+  }
+
+  if (accumulatedCount === 0) {
+    const bgLuma = lumaOf(bgR, bgG, bgB);
+    return bgLuma > 128 ? '#15172c' : '#ffffff';
+  }
+
+  return rgbToHex(
+    Math.round(sumR / accumulatedCount),
+    Math.round(sumG / accumulatedCount),
+    Math.round(sumB / accumulatedCount),
+  );
 }

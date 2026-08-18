@@ -21,17 +21,21 @@ const cols = [
     ],
   },
   {
-    title: 'More',
+    title: 'Resources & Compare',
     links: [
-      { label: 'Privacy Policy', href: '/privacy/' },
-      { label: 'Android app', href: PLAY_STORE_URL },
+      { label: 'How it works', href: '#how-it-works' },
+      { label: 'Compare vs Acrobat/Canva', href: '#compare' },
+      { label: 'Document use cases', href: '#use-cases' },
       { label: 'FAQ', href: '#faq' },
-      { label: 'Support', href: '/support/' },
-      { label: 'Terms', href: '/terms/' },
+      { label: 'Privacy Policy', href: '/privacy/' },
       { label: 'Data Safety', href: '/data-safety/' },
+      { label: 'Terms of Service', href: '/terms/' },
+      { label: 'Support', href: '/support/' },
+      { label: 'Android App', href: PLAY_STORE_URL },
     ],
   },
 ];
+
 
 export function Footer() {
   return (

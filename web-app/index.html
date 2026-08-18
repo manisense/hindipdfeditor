@@ -14,11 +14,14 @@
       content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
     />
     <link rel="canonical" href="https://hindipdfeditor.com/" />
-    <link rel="alternate" href="https://hindipdfeditor.com/edit/" />
-    <meta property="og:title" content="Hindi PDF Editor" />
+    <link rel="alternate" hreflang="en" href="https://hindipdfeditor.com/edit/" />
+    <link rel="alternate" hreflang="hi" href="https://hindipdfeditor.com/edit/" />
+    <link rel="alternate" hreflang="en-IN" href="https://hindipdfeditor.com/edit/" />
+    <link rel="alternate" hreflang="x-default" href="https://hindipdfeditor.com/edit/" />
+    <meta property="og:title" content="Hindi PDF Editor — Edit, Translate &amp; Manage Hindi PDFs Online" />
     <meta
       property="og:description"
-      content="Every tool you need to work with Hindi PDFs — edit text, translate to English, merge, split, compress. Free and local-first."
+      content="Every tool you need to work with Hindi PDFs — edit text with correct Devanagari shaping, translate to English, merge, split, compress. Free and local-first."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://hindipdfeditor.com/" />
@@ -45,25 +48,153 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Hindi PDF Editor",
-        "applicationCategory": "ProductivityApplication",
-        "operatingSystem": "Android, Web",
-        "url": "https://hindipdfeditor.com/edit/",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "description": "Edit Hindi and English text in PDFs with correct Devanagari shaping. Translate Hindi PDFs to English. Merge, split, and compress PDFs locally in the browser.",
-        "screenshot": [
-          "https://hindipdfeditor.com/assets/play-store/hindi-pdf-editor-android-home.png",
-          "https://hindipdfeditor.com/assets/play-store/edit-hindi-pdf-android.png",
-          "https://hindipdfeditor.com/assets/play-store/translate-hindi-pdf-android.png",
-          "https://hindipdfeditor.com/assets/play-store/hindi-english-ocr-android.png",
-          "https://hindipdfeditor.com/assets/play-store/merge-split-pdf-android.png"
-        ],
-        "privacyPolicy": "https://hindipdfeditor.com/privacy/"
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://hindipdfeditor.com/#organization",
+            "name": "Hindi PDF Editor",
+            "url": "https://hindipdfeditor.com",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://hindipdfeditor.com/assets/app-icon.png"
+            },
+            "sameAs": [
+              "https://play.google.com/store/apps/details?id=com.hindipdfeditor.app"
+            ],
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "email": "support@hindipdfeditor.com",
+              "contactType": "customer support"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://hindipdfeditor.com/#website",
+            "url": "https://hindipdfeditor.com",
+            "name": "Hindi PDF Editor",
+            "inLanguage": ["en", "hi"],
+            "publisher": { "@id": "https://hindipdfeditor.com/#organization" }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://hindipdfeditor.com/#app",
+            "name": "Hindi PDF Editor",
+            "applicationCategory": "ProductivityApplication",
+            "applicationSubCategory": "PDF Editor",
+            "operatingSystem": "Android, Web, Windows, macOS, Linux, iOS",
+            "url": "https://hindipdfeditor.com/edit/",
+            "downloadUrl": "https://play.google.com/store/apps/details?id=com.hindipdfeditor.app",
+            "image": "https://hindipdfeditor.com/assets/app-icon.png",
+            "screenshot": [
+              "https://hindipdfeditor.com/assets/play-store/hindi-pdf-editor-android-home.png",
+              "https://hindipdfeditor.com/assets/play-store/edit-hindi-pdf-android.png",
+              "https://hindipdfeditor.com/assets/play-store/translate-hindi-pdf-android.png",
+              "https://hindipdfeditor.com/assets/play-store/hindi-english-ocr-android.png",
+              "https://hindipdfeditor.com/assets/play-store/merge-split-pdf-android.png"
+            ],
+            "description": "Edit Hindi and English text in PDFs with correct Devanagari shaping. Translate Hindi PDFs to English. Merge, split, and compress PDFs locally in the browser.",
+            "featureList": [
+              "Flawless Devanagari OpenType text shaping with correct conjuncts and matras",
+              "100% Client-side local processing with zero server uploads",
+              "Bidirectional Hindi to English and English to Hindi PDF translation",
+              "Built-in OCR text detection for scanned Hindi and English documents",
+              "Merge, split, and compress PDF documents locally",
+              "Non-destructive editing: source PDFs are never overwritten"
+            ],
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "privacyPolicy": "https://hindipdfeditor.com/privacy/"
+          },
+          {
+            "@type": "HowTo",
+            "@id": "https://hindipdfeditor.com/edit/#howto",
+            "name": "How to Edit Hindi PDF Online with Correct Fonts & Shaping",
+            "description": "Step-by-step guide to add or replace Hindi Devanagari text in a PDF document with flawless character shaping and complete local privacy.",
+            "step": [
+              {
+                "@type": "HowToStep",
+                "position": 1,
+                "name": "Open your PDF file",
+                "text": "Open or drag your PDF document into the local browser editor. The file is processed locally on your device without server uploads."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 2,
+                "name": "Select or mask text",
+                "text": "Click on existing Hindi text to mask and replace, or tap anywhere to create a new text box."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 3,
+                "name": "Type in Hindi",
+                "text": "Type your text using Unicode Hindi keyboards or Google Input Tools. Conjuncts and matras render with 100% font accuracy."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 4,
+                "name": "Export fresh PDF",
+                "text": "Click Export PDF to download your newly shaped vector PDF document. Your original file remains untouched."
+              }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://hindipdfeditor.com/edit/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Are my files uploaded to a server?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Core editing, text replacement, merging, splitting, and compression run 100% locally in your browser via WebAssembly and Canvas. Your private documents, government forms, and IDs never leave your device."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Why do Hindi letters and matras break in other PDF editors?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Devanagari is an abugida script requiring OpenType substitution (GSUB) and positioning (GPOS) tables to combine consonants and vowel matras into conjunct glyphs. Standard tools like Canva or Adobe Acrobat often use naive 1:1 character mapping, detaching matras. Hindi PDF Editor renders via a Chromium HarfBuzz pipeline, guaranteeing 100% correct ligature shaping."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How do I type Hindi in a PDF without broken fonts?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Open your PDF in Hindi PDF Editor, tap on any text line or blank area, and type using standard Unicode Devanagari (via Google Input Tools, InScript keyboard, or mobile Hindi keyboard). The editor automatically shapes conjuncts like 'क्ष', 'त्र', 'ज्ञ' and complex matras in real time."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I edit Government exam admit cards, land records, or legal affidavits?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Hindi PDF Editor is designed for official Hindi documents including Sarkari admit cards (BPSC, UPPSC, SSC), land records (Khasra-Khatauni), legal affidavits, marks sheets, and office circulars without corrupting font layouts."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How does Hindi ↔ English PDF translation work?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Select the Translate tool to detect Hindi or English text. The lines are processed through our secure Gemini AI proxy only after your explicit confirmation. The translation is aligned back onto your PDF layout, and your original document is never overwritten."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is Hindi PDF Editor free?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes, the full suite of PDF editing, translation, merging, splitting, and compression tools is 100% free with no account, subscription, or watermark required."
+                }
+              }
+            ]
+          }
+        ]
       }
     </script>
     <style>

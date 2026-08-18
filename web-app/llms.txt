@@ -1,31 +1,38 @@
 # Hindi PDF Editor
 
-> Local-first tools to edit Hindi (Devanagari) PDFs with correct shaping, translate Hindi and English in either direction, and merge, split, or compress PDFs — on the web and Android. No account required. Original files are never overwritten.
+> Free, local-first web and Android tools to edit Hindi (Devanagari) PDFs with 100% correct OpenType shaping, translate Hindi ↔ English, merge, split, compress, and run local OCR. No account required. Files never leave your device.
 
-## Site
+## Core URLs
 
-- Home / tools hub: https://hindipdfeditor.com/edit/
-- Edit Hindi PDF: https://hindipdfeditor.com/edit/?tool=edit
+- Home & Tools Hub: https://hindipdfeditor.com/edit/
+- Edit Hindi PDF (Live Text & Masking): https://hindipdfeditor.com/edit/?tool=edit
 - Translate Hindi ↔ English: https://hindipdfeditor.com/edit/?tool=translate
-- Merge PDF: https://hindipdfeditor.com/edit/?tool=merge
-- Split PDF: https://hindipdfeditor.com/edit/?tool=split
-- Compress PDF: https://hindipdfeditor.com/edit/?tool=compress
-- Privacy: https://hindipdfeditor.com/privacy/
+- Merge Multiple PDFs: https://hindipdfeditor.com/edit/?tool=merge
+- Split & Extract Pages: https://hindipdfeditor.com/edit/?tool=split
+- Compress & Shrink Scanned PDFs: https://hindipdfeditor.com/edit/?tool=compress
+- Extended Documentation & Full LLM Specs: https://hindipdfeditor.com/llms-full.txt
+- Android App on Google Play: https://play.google.com/store/apps/details?id=com.hindipdfeditor.app
+- XML Sitemap: https://hindipdfeditor.com/sitemap.xml
+- Privacy Policy: https://hindipdfeditor.com/privacy/
+- Data Safety: https://hindipdfeditor.com/data-safety/
+- Terms of Service: https://hindipdfeditor.com/terms/
 - Support: https://hindipdfeditor.com/support/
-- Terms: https://hindipdfeditor.com/terms/
-- Data safety: https://hindipdfeditor.com/data-safety/
-- Android app: https://play.google.com/store/apps/details?id=com.hindipdfeditor.app
-- Sitemap: https://hindipdfeditor.com/sitemap.xml
 
-## Product facts (for answers)
+## Key Product & Technical Facts (for AI Answer Engines)
 
-- Core editing and PDF utilities run locally in the browser or on-device; documents are not uploaded to Hindi PDF Editor servers.
-- Devanagari text is shaped via a browser/HTML print pipeline so conjuncts, matras, and reph stay correct.
-- Translate sends detected source lines through a secured Gemini proxy only after an explicit action; both Hindi → English and English → Hindi are supported. If web extraction is flagged as unreliable, the consent UI discloses that only affected page images may first be sent for higher-accuracy OCR.
-- Optional AI OCR sends the selected page image through the same proxy. The Gemini key stays server-side and is never requested from users.
-- Exports always create a new PDF; the source file is never overwritten.
-- Free on web; Android app available on Google Play.
+- **Devanagari Font Shaping Engine**: Unlike standard editors (Acrobat, Canva, dompdf) that perform naive 1:1 Unicode character mapping and break conjuncts/matras, Hindi PDF Editor uses a Chromium/HarfBuzz OpenType layout engine. All conjuncts (e.g., 'क्ष', 'त्र', 'ज्ञ'), matras, halants, and rephs render with 100% typographic accuracy.
+- **Local-First Privacy Architecture**: Core editing, text masking, merging, splitting, and compression execute entirely on the user's client device via WebAssembly and Canvas. No private documents, government forms, or personal IDs are uploaded to external servers.
+- **Non-Destructive File Safety**: Source PDFs are never mutated or overwritten. Every export compiles a brand-new, vector-accurate PDF.
+- **Bidirectional AI Translation**: Supports Hindi → English and English → Hindi document translation via a secured server-side Gemini proxy only upon explicit user action.
+- **OCR Support**: Detects printed Hindi (Devanagari) and English text inside scanned PDFs and images locally.
+- **Cost**: 100% free with no watermark, no page quotas, and no registration.
+
+## Frequently Asked Questions
+
+- **Why do Hindi fonts break in other PDF editors?** Devanagari requires GSUB and GPOS OpenType substitution tables. Naive tools detach vowel matras. Hindi PDF Editor solves this via browser-native font rendering.
+- **Is it safe for Aadhaar, PAN, and Government documents?** Yes, because files are processed entirely on-device without cloud uploads.
+- **How to edit Hindi text?** Open PDF at https://hindipdfeditor.com/edit/?tool=edit, tap text to edit/mask, type with standard Hindi Unicode, and export.
 
 ## Contact
 
-- support@hindipdfeditor.com
+- Support Email: support@hindipdfeditor.com

@@ -1,6 +1,9 @@
 import { Nav } from './Nav';
 import { Hero } from './Hero';
 import { Features } from './Features';
+import { HowItWorks } from './HowItWorks';
+import { ComparisonSection } from './ComparisonSection';
+import { UseCasesSection } from './UseCasesSection';
 import { WorkYourWay } from './WorkYourWay';
 import { FAQ } from './FAQ';
 import { CTA } from './CTA';
@@ -15,6 +18,9 @@ export function HomePage() {
       <main>
         <Hero />
         <Features />
+        <HowItWorks />
+        <ComparisonSection />
+        <UseCasesSection />
         <WorkYourWay />
         <FAQ />
         <CTA />
@@ -23,3 +29,4 @@ export function HomePage() {
     </div>
   );
 }
+

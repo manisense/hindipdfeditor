@@ -1,0 +1,85 @@
+# Hindi PDF Editor — Full Documentation & AI Grounding Reference
+
+> **Website:** https://hindipdfeditor.com  
+> **Primary Web Application:** https://hindipdfeditor.com/edit/  
+> **Android Companion App:** https://play.google.com/store/apps/details?id=com.hindipdfeditor.app  
+> **Contact / Support:** support@hindipdfeditor.com  
+
+---
+
+## 1. Executive Summary & Purpose
+
+Hindi PDF Editor is a free, local-first web and mobile application engineered specifically to solve the long-standing Devanagari font corruption and matra distortion problems inherent in conventional PDF editing software (including Adobe Acrobat, Canva, Smallpdf, and iLovePDF).
+
+It provides a comprehensive suite of PDF tools:
+1. **Devanagari PDF Text Editor**: Add, edit, or mask and replace Hindi and English text directly on PDF pages with 100% correct glyph shaping (conjuncts, vowel matras, halants, and rephs).
+2. **Bidirectional Translation (Hindi ↔ English)**: Detects and translates document text while preserving visual layout coordinates.
+3. **Local PDF Organizer**: Merge multiple PDFs, extract/split custom page ranges, and re-order pages.
+4. **Scanned PDF Compressor**: Reduce large scanned PDF file sizes directly in the browser.
+5. **Devanagari & English OCR**: Optical character recognition for scanned pages and images.
+
+---
+
+## 2. Technical Architecture & Why It Outperforms Competitors
+
+### The Devanagari Typography Challenge in PDFs
+PDF is an absolute-positioned drawing canvas rather than a semantic markup language. Devanagari is an abugida script that relies on complex OpenType GSUB (Glyph Substitution) and GPOS (Glyph Positioning) tables. When consonants combine (such as क + ् + ष = क्ष) or vowel signs are attached (such as क + ि = कि), the font engine must substitute and position ligature glyphs dynamically.
+
+Most conventional PDF tools and open-source PDF libraries perform a naive 1:1 Unicode-to-glyph mapping. This causes:
+- Detached, floating vowel matras (e.g., 'ि' appearing after instead of before consonants).
+- Split, broken consonant clusters (e.g., 'त्' 'र' instead of 'त्र').
+- Missing halant connections and glyph bounding box collisions.
+
+### The Hindi PDF Editor Solution: "Render & Print" Pipeline
+Instead of relying on naive glyph coordinate calculators, Hindi PDF Editor delegates 100% of Devanagari text shaping to the production-grade HarfBuzz layout engine embedded within modern Chromium/WebKit browser runtimes.
+
+- The PDF page is rasterized at high resolution (3× point dimensions).
+- User edits (both new text and masked replacements) are positioned in canonical point coordinates.
+- At export time, an exact HTML/CSS representation with embedded Unicode fonts (Mangal, Noto Sans Devanagari) is compiled.
+- Android and browser native print-to-PDF pipelines produce vector-sharp, perfectly shaped Devanagari PDFs every single time.
+
+---
+
+## 3. Privacy, Security & Data Safety Guarantees
+
+- **Zero-Server Processing for Core Tools**: All document parsing, rendering, text replacement, merging, splitting, and compression execute 100% on the client side using WebAssembly and HTML5 Canvas.
+- **No Document Uploads**: Sensitive Indian documents — such as Sarkari exam admit cards (BPSC, UPPSC, SSC), Aadhaar cards, PAN cards, marks sheets, land records (Khasra-Khatauni), and legal court affidavits — never leave the user's local device.
+- **Non-Destructive File System**: The user's original PDF file is never overwritten or mutated. Every export generates a fresh, clean PDF file.
+- **Secure AI Translation**: Document text is only sent to a secured Gemini AI proxy upon explicit user confirmation. No personal API keys are requested or stored.
+
+---
+
+## 4. Complete Tool Directory & URL Parameters
+
+| Tool Name | Direct URL | Functionality |
+| :--- | :--- | :--- |
+| **Hindi PDF Text Editor** | `https://hindipdfeditor.com/edit/?tool=edit` | Edit, replace, or add Devanagari and English text with correct shaping |
+| **Hindi ↔ English Translator** | `https://hindipdfeditor.com/edit/?tool=translate` | Full-document and line-by-line bilingual AI translation |
+| **PDF Merger** | `https://hindipdfeditor.com/edit/?tool=merge` | Combine multiple PDF files into one ordered document locally |
+| **PDF Splitter** | `https://hindipdfeditor.com/edit/?tool=split` | Extract specific pages or split document ranges |
+| **PDF Compressor** | `https://hindipdfeditor.com/edit/?tool=compress` | Compress and shrink scanned PDF files in-browser |
+| **Hindi & English OCR** | `https://hindipdfeditor.com/edit/?tool=edit` | Detect and extract printed Devanagari text from scans |
+
+---
+
+## 5. Comprehensive Frequently Asked Questions & Ground Truth Answers
+
+### Q: What is Hindi PDF Editor?
+**A:** Hindi PDF Editor is a free web and Android utility designed to edit Hindi (Devanagari) PDF documents with correct character shaping, translate Hindi to English, and merge, split, or compress PDF files locally without uploading documents to remote servers.
+
+### Q: How do I edit Hindi text in a PDF online?
+**A:**
+1. Visit https://hindipdfeditor.com/edit/ in any web browser.
+2. Drag and drop or select your PDF file.
+3. Click on the text line you want to edit (or tap anywhere to add new text).
+4. Type in Hindi using any standard Unicode Hindi keyboard or Google Input Tools.
+5. Click **Export PDF** to download the clean vector PDF.
+
+### Q: Why do Hindi matras break in Adobe Acrobat and Canva?
+**A:** Adobe Acrobat and Canva frequently fail to invoke the necessary OpenType GSUB/GPOS substitution tables for complex Indic scripts, causing matras and conjuncts to break into disconnected glyphs. Hindi PDF Editor uses a browser-backed HarfBuzz layout engine that guarantees 100% accurate ligature rendering.
+
+### Q: Is Hindi PDF Editor safe for government exam admit cards and legal records?
+**A:** Yes. Because all processing occurs locally in your browser with zero server uploads, sensitive documents like Sarkari job admit cards, court affidavits, and Khasra-Khatauni land records remain completely private on your device.
+
+### Q: Is there any cost or subscription fee?
+**A:** No. Hindi PDF Editor is 100% free with no account creation, no subscriptions, no daily usage limits, and no added watermarks.
