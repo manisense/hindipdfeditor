@@ -1,30 +1,45 @@
-import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import type { ReactNode } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, shadows, spacing } from '../theme';
 
-type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
+export type ButtonVariant =
+  'primary' | 'secondary' | 'danger' | 'ghost' | 'success' | 'subtle' | 'warning';
 
 type Props = {
   title: string;
   onPress: () => void;
   /** Spoken label for icon-only or symbol-led buttons; defaults to `title`. */
   accessibilityLabel?: string;
-  /** Visual weight: `primary` filled, `secondary` tinted, `danger` destructive, `ghost` text-only. */
-  variant?: Variant;
+  /** Visual weight variant */
+  variant?: ButtonVariant;
   disabled?: boolean;
   /** Announces a persistent toggle/mode selection to accessibility services. */
   selected?: boolean;
   /** Announces that the action is currently processing. */
   busy?: boolean;
-  /** Compact height/padding for toolbar placement. */
+  /** Shows spinning loading indicator */
+  loading?: boolean;
+  /** Compact height/padding for toolbar and header placement. */
   small?: boolean;
+  /** Optional leading icon component */
+  icon?: ReactNode;
   style?: StyleProp<ViewStyle>;
+  labelStyle?: StyleProp<TextStyle>;
 };
 
 /**
- * The app's one button. Replaces React Native's unstylable platform `Button` so every action
- * shares the same visual language from `theme.ts` (RN's `Button` ignores style props entirely,
- * which is why the pre-polish UI looked like a developer tool).
+ * Modern pill-shaped button matching the web app design system.
+ * Features tactile spring-like press response, crisp typography, and full color variants.
  */
 export function AppButton({
   title,
@@ -34,80 +49,161 @@ export function AppButton({
   disabled,
   selected,
   busy,
+  loading,
   small,
+  icon,
   style,
+  labelStyle,
 }: Props) {
+  const isActionDisabled = disabled === true || loading === true;
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityState={{
-        disabled: disabled === true,
+        disabled: isActionDisabled,
         selected: selected === true,
-        busy: busy === true,
+        busy: busy === true || loading === true,
       }}
       onPress={onPress}
-      disabled={disabled}
-      hitSlop={small ? 4 : undefined}
-      android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      disabled={isActionDisabled}
+      hitSlop={small ? 6 : undefined}
+      android_ripple={{
+        color: variant === 'primary' ? 'rgba(255,255,255,0.2)' : 'rgba(24,67,221,0.1)',
+        borderless: false,
+      }}
       style={({ pressed }) => [
         styles.base,
-        small && styles.small,
+        small ? styles.small : styles.normal,
         variantStyles[variant],
-        pressed && styles.pressed,
-        disabled && styles.disabled,
+        variant === 'primary' && !disabled && styles.primaryShadow,
+        selected && styles.selected,
+        pressed && !isActionDisabled && styles.pressed,
+        isActionDisabled && styles.disabled,
         style,
       ]}
     >
-      <Text
-        style={[styles.label, small && styles.labelSmall, labelStyles[variant]]}
-        numberOfLines={1}
-      >
-        {title}
-      </Text>
+      <View style={styles.contentRow}>
+        {loading ? (
+          <ActivityIndicator
+            size={small ? 14 : 18}
+            color={variant === 'primary' ? colors.textOnPrimary : colors.brand}
+            style={styles.spinner}
+          />
+        ) : (
+          icon && <View style={styles.iconWrapper}>{icon}</View>
+        )}
+        <Text
+          style={[styles.label, small && styles.labelSmall, labelStyles[variant], labelStyle]}
+          numberOfLines={1}
+        >
+          {title}
+        </Text>
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 48,
-    borderRadius: radius.sm,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  normal: {
+    minHeight: 46,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.xl,
+  },
+  small: {
+    minHeight: 34,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
+  },
+  primaryShadow: {
+    ...shadows.brand,
+  },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm - 2,
+  },
+  iconWrapper: {
+    marginRight: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  small: {
-    minHeight: 40,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+  spinner: {
+    marginRight: 4,
   },
   pressed: {
-    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
   },
   disabled: {
     opacity: 0.45,
   },
+  selected: {
+    borderWidth: 2,
+    borderColor: colors.brand,
+  },
   label: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   labelSmall: {
-    fontSize: 13,
+    fontSize: 12.5,
+    fontWeight: '600',
   },
 });
 
-const variantStyles: Record<Variant, ViewStyle> = {
-  primary: { backgroundColor: colors.primary },
-  secondary: { backgroundColor: colors.primarySoft },
-  danger: { backgroundColor: colors.dangerSoft },
-  ghost: { backgroundColor: 'transparent' },
+const variantStyles: Record<ButtonVariant, ViewStyle> = {
+  primary: {
+    backgroundColor: colors.brand,
+    borderWidth: 1,
+    borderColor: colors.brand,
+  },
+  secondary: {
+    backgroundColor: colors.brandWash,
+    borderWidth: 1,
+    borderColor: colors.brandTint,
+  },
+  subtle: {
+    backgroundColor: colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  danger: {
+    backgroundColor: colors.dangerSoft,
+    borderWidth: 1,
+    borderColor: 'rgba(198, 48, 62, 0.2)',
+  },
+  success: {
+    backgroundColor: colors.accentTint,
+    borderWidth: 1,
+    borderColor: 'rgba(1, 135, 62, 0.2)',
+  },
+  warning: {
+    backgroundColor: colors.amberTint,
+    borderWidth: 1,
+    borderColor: 'rgba(181, 132, 0, 0.2)',
+  },
+  ghost: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+  },
 };
 
 const labelStyles = StyleSheet.create({
   primary: { color: colors.textOnPrimary },
-  secondary: { color: colors.primaryDark },
+  secondary: { color: colors.brandDark },
+  subtle: { color: colors.textPrimary },
   danger: { color: colors.danger },
-  ghost: { color: colors.primaryDark },
+  success: { color: colors.accent },
+  warning: { color: colors.amberInk },
+  ghost: { color: colors.brand },
 });

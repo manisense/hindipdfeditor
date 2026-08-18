@@ -1,13 +1,22 @@
 package expo.modules.pdfpageimage
 
+import android.Manifest
+import android.content.ContentUris
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
 import android.os.ParcelFileDescriptor
+import android.provider.MediaStore
+import android.provider.Settings
+import androidx.core.content.ContextCompat
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -65,6 +74,21 @@ class PdfPageImageModule : Module() {
     // paper color for mask fills.
     AsyncFunction("sampleTextColor") { uri: String, xPx: Int, yPx: Int, wPx: Int, hPx: Int ->
       sampleTextColor(uri, xPx, yPx, wPx, hPx)
+    }
+
+    // Checks if the app has broad device storage permission
+    AsyncFunction("hasStoragePermission") {
+      hasStoragePermission()
+    }
+
+    // Requests device storage permission or opens Android All Files Access settings
+    AsyncFunction("requestStoragePermission") {
+      requestStoragePermission()
+    }
+
+    // Scans device MediaStore storage for all PDF documents on the device.
+    AsyncFunction("scanDevicePdfFiles") {
+      scanDevicePdfFiles()
     }
   }
 
@@ -246,9 +270,15 @@ class PdfPageImageModule : Module() {
   }
 
   /**
-   * Approximates the burned-in text color inside an OCR-detected line box by taking a low
-   * luminance percentile of the inner pixels (text ink is usually among the darkest pixels on
-   * a light page). Insets the sample region slightly so anti-aliased box edges don't dominate.
+   * Estimates the dominant ink/text color inside an OCR-detected line box by finding the color
+   * cluster with maximum contrast from the background paper color.
+   *
+   * Unlike luminance-only percentiles (which fail on light text over dark/colored backgrounds
+   * by picking the darker background color instead of the text ink), this:
+   * 1. Determines the background color using channel medians across the box.
+   * 2. Measures Manhattan color distance |r - bgR| + |g - bgG| + |b - bgB| for every pixel.
+   * 3. Averages the highest-contrast pixels (top distance buckets) to accurately extract the text color.
+   * 4. Supports light-on-dark, dark-on-light, and colored text over colored backgrounds.
    */
   private fun sampleTextColor(
     uriString: String,
@@ -270,57 +300,314 @@ class PdfPageImageModule : Module() {
     }
 
     try {
-      val insetX = (wPx * 0.12).toInt().coerceAtMost(wPx / 2)
-      val insetY = (hPx * 0.12).toInt().coerceAtMost(hPx / 2)
+      val insetX = (wPx * 0.08).toInt().coerceAtMost(wPx / 4)
+      val insetY = (hPx * 0.08).toInt().coerceAtMost(hPx / 4)
       val left = (xPx + insetX).coerceIn(0, bitmap.width)
       val top = (yPx + insetY).coerceIn(0, bitmap.height)
       val right = (xPx + wPx - insetX).coerceIn(0, bitmap.width)
       val bottom = (yPx + hPx - insetY).coerceIn(0, bitmap.height)
-      if (right <= left || bottom <= top) return "#111111"
+      if (right <= left || bottom <= top) return "#15172c"
 
-      // Keep one fixed-size histogram instead of one boxed Pair per pixel. An unusually large
-      // OCR box can cover most of a 3x page; retaining millions of Pair objects here previously
-      // risked an avoidable OOM even though only one percentile bucket is needed.
-      val counts = LongArray(256)
-      val redSums = LongArray(256)
-      val greenSums = LongArray(256)
-      val blueSums = LongArray(256)
-      var pixelCount = 0L
+      val histR = IntArray(256)
+      val histG = IntArray(256)
+      val histB = IntArray(256)
+      var totalPixels = 0L
+
+      // Step 1: Collect channel histograms to find the background color (median of each channel)
       for (y in top until bottom) {
         for (x in left until right) {
           val pixel = bitmap.getPixel(x, y)
-          val red = Color.red(pixel)
-          val green = Color.green(pixel)
-          val blue = Color.blue(pixel)
-          val luminance = (red * 299 + green * 587 + blue * 114) / 1000
-          counts[luminance]++
-          redSums[luminance] += red.toLong()
-          greenSums[luminance] += green.toLong()
-          blueSums[luminance] += blue.toLong()
-          pixelCount++
+          histR[Color.red(pixel)]++
+          histG[Color.green(pixel)]++
+          histB[Color.blue(pixel)]++
+          totalPixels++
         }
       }
-      if (pixelCount == 0L) return "#111111"
+      if (totalPixels == 0L) return "#15172c"
 
-      val target = (pixelCount * 12 / 100).coerceAtMost(pixelCount - 1)
-      var cumulative = 0L
-      var bucket = 0
-      for (value in 0..255) {
-        cumulative += counts[value]
-        if (cumulative > target) {
-          bucket = value
-          break
+      fun medianOf(histogram: IntArray): Int {
+        val half = totalPixels / 2
+        var runningCount = 0L
+        for (value in 0..255) {
+          runningCount += histogram[value]
+          if (runningCount > half) return value
+        }
+        return 255
+      }
+
+      val bgR = medianOf(histR)
+      val bgG = medianOf(histG)
+      val bgB = medianOf(histB)
+
+      // Step 2: Measure distance from background for all pixels
+      val distCounts = LongArray(766)
+      val distRedSums = LongArray(766)
+      val distGreenSums = LongArray(766)
+      val distBlueSums = LongArray(766)
+      var maxDist = 0
+
+      for (y in top until bottom) {
+        for (x in left until right) {
+          val pixel = bitmap.getPixel(x, y)
+          val r = Color.red(pixel)
+          val g = Color.green(pixel)
+          val b = Color.blue(pixel)
+          val dist = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB)
+          distCounts[dist]++
+          distRedSums[dist] += r.toLong()
+          distGreenSums[dist] += g.toLong()
+          distBlueSums[dist] += b.toLong()
+          if (dist > maxDist) {
+            maxDist = dist
+          }
         }
       }
-      val bucketCount = counts[bucket].coerceAtLeast(1)
-      return String.format(
-        "#%02x%02x%02x",
-        (redSums[bucket] / bucketCount).toInt(),
-        (greenSums[bucket] / bucketCount).toInt(),
-        (blueSums[bucket] / bucketCount).toInt()
-      )
+
+      // If there is very little contrast in the region (< 35 total delta), fallback
+      // based on the background brightness so text is always legible.
+      if (maxDist < 35) {
+        val bgLuma = (bgR * 299 + bgG * 587 + bgB * 114) / 1000
+        return if (bgLuma > 128) "#15172c" else "#ffffff"
+      }
+
+      // Step 3: Accumulate the highest-contrast pixels (top distance buckets)
+      val targetSampleCount = Math.max(10L, (totalPixels * 8 / 100))
+      var accumulatedCount = 0L
+      var sumR = 0L
+      var sumG = 0L
+      var sumB = 0L
+      val minDistanceThreshold = (maxDist * 40 / 100).coerceAtLeast(25)
+
+      for (d in 765 downTo minDistanceThreshold) {
+        val count = distCounts[d]
+        if (count > 0) {
+          accumulatedCount += count
+          sumR += distRedSums[d]
+          sumG += distGreenSums[d]
+          sumB += distBlueSums[d]
+          if (accumulatedCount >= targetSampleCount) {
+            break
+          }
+        }
+      }
+
+      if (accumulatedCount == 0L) {
+        val bgLuma = (bgR * 299 + bgG * 587 + bgB * 114) / 1000
+        return if (bgLuma > 128) "#15172c" else "#ffffff"
+      }
+
+      val finalR = (sumR / accumulatedCount).toInt().coerceIn(0, 255)
+      val finalG = (sumG / accumulatedCount).toInt().coerceIn(0, 255)
+      val finalB = (sumB / accumulatedCount).toInt().coerceIn(0, 255)
+
+      return String.format("#%02x%02x%02x", finalR, finalG, finalB)
     } finally {
       bitmap.recycle()
+    }
+  }
+
+  /**
+   * Comprehensive device PDF scanner querying both Android MediaStore and storage folders.
+   */
+  private fun scanDevicePdfFiles(): List<Map<String, Any>> {
+    val results = mutableListOf<Map<String, Any>>()
+    val seenKeys = mutableSetOf<String>()
+
+    fun addFileResult(
+      name: String,
+      uriStr: String,
+      sizeBytes: Long,
+      dateModified: Long,
+      folder: String?,
+      filePath: String?,
+      key: String
+    ) {
+      if (seenKeys.add(key)) {
+        val map = mutableMapOf<String, Any>(
+          "name" to name,
+          "uri" to uriStr,
+          "sizeBytes" to sizeBytes,
+          "dateModified" to dateModified
+        )
+        if (!folder.isNullOrBlank()) {
+          map["folder"] = folder
+        }
+        if (!filePath.isNullOrBlank()) {
+          map["path"] = filePath
+        }
+        results.add(map)
+      }
+    }
+
+    fun queryMediaStoreUri(queryUri: Uri) {
+      try {
+        val projection = arrayOf(
+          MediaStore.Files.FileColumns._ID,
+          MediaStore.Files.FileColumns.DISPLAY_NAME,
+          MediaStore.Files.FileColumns.SIZE,
+          MediaStore.Files.FileColumns.DATE_MODIFIED,
+          MediaStore.Files.FileColumns.DATA,
+          MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME
+        )
+        val selection = "${MediaStore.Files.FileColumns.MIME_TYPE} = ? OR ${MediaStore.Files.FileColumns.MIME_TYPE} = ? OR ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE ?"
+        val selectionArgs = arrayOf("application/pdf", "application/x-pdf", "%.pdf")
+        val sortOrder = "${MediaStore.Files.FileColumns.DATE_MODIFIED} DESC"
+
+        context.contentResolver.query(queryUri, projection, selection, selectionArgs, sortOrder)?.use { cursor ->
+          val idCol = cursor.getColumnIndex(MediaStore.Files.FileColumns._ID)
+          val nameCol = cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
+          val sizeCol = cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
+          val dateCol = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_MODIFIED)
+          val dataCol = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
+          val bucketCol = cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
+
+          while (cursor.moveToNext()) {
+            val id = if (idCol >= 0) cursor.getLong(idCol) else -1L
+            val name = if (nameCol >= 0) (cursor.getString(nameCol) ?: "Document.pdf") else "Document.pdf"
+            val size = if (sizeCol >= 0) cursor.getLong(sizeCol) else 0L
+            val dateModified = if (dateCol >= 0) cursor.getLong(dateCol) else 0L
+            val filePath = if (dataCol >= 0) cursor.getString(dataCol) else null
+            val bucketName = if (bucketCol >= 0) cursor.getString(bucketCol) else null
+
+            val uriStr = if (filePath != null && File(filePath).exists()) {
+              Uri.fromFile(File(filePath)).toString()
+            } else if (id >= 0) {
+              ContentUris.withAppendedId(queryUri, id).toString()
+            } else null
+
+            val inferredFolder = bucketName ?: (if (filePath != null) File(filePath).parentFile?.name else null)
+
+            if (uriStr != null) {
+              val key = filePath ?: "$name-$size"
+              addFileResult(
+                name = name,
+                uriStr = uriStr,
+                sizeBytes = size,
+                dateModified = dateModified,
+                folder = inferredFolder,
+                filePath = filePath,
+                key = key
+              )
+            }
+          }
+        }
+      } catch (e: Exception) {
+        // ignore
+      }
+    }
+
+    // 1. Query MediaStore Files
+    queryMediaStoreUri(MediaStore.Files.getContentUri("external"))
+
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+      try {
+        queryMediaStoreUri(MediaStore.Downloads.EXTERNAL_CONTENT_URI)
+      } catch (e: Exception) {
+        // ignore
+      }
+    }
+
+    // 2. Scan standard device public and app-accessible storage directories
+    val scanDirs = mutableListOf<File>()
+    try {
+      Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)?.let { scanDirs.add(it) }
+      Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)?.let { scanDirs.add(it) }
+      scanDirs.add(File("/storage/emulated/0/Download"))
+      scanDirs.add(File("/storage/emulated/0/Documents"))
+      scanDirs.add(File("/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Documents"))
+      scanDirs.add(File("/storage/emulated/0/WhatsApp/Media/WhatsApp Documents"))
+      scanDirs.add(File("/storage/emulated/0/Telegram/Telegram Documents"))
+      scanDirs.add(File("/storage/emulated/0/CamScanner"))
+      scanDirs.add(File("/storage/emulated/0/Adobe Acrobat"))
+      scanDirs.add(File("/storage/emulated/0/Bluetooth"))
+      scanDirs.add(File("/storage/emulated/0/DCIM"))
+      context.getExternalFilesDirs(null).forEach { if (it != null) scanDirs.add(it) }
+    } catch (e: Exception) {
+      // ignore
+    }
+
+    fun crawlDir(dir: File, depth: Int) {
+      if (depth > 4 || !dir.exists() || !dir.isDirectory || !dir.canRead()) return
+      val list = dir.listFiles() ?: return
+      for (file in list) {
+        if (file.isDirectory && !file.name.startsWith(".")) {
+          crawlDir(file, depth + 1)
+        } else if (file.isFile && file.name.endsWith(".pdf", ignoreCase = true) && file.length() > 0) {
+          addFileResult(
+            name = file.name,
+            uriStr = Uri.fromFile(file).toString(),
+            sizeBytes = file.length(),
+            dateModified = file.lastModified() / 1000,
+            folder = file.parentFile?.name,
+            filePath = file.absolutePath,
+            key = file.absolutePath
+          )
+        }
+      }
+    }
+
+    for (dir in scanDirs) {
+      try {
+        crawlDir(dir, 0)
+      } catch (e: Exception) {
+        // ignore
+      }
+    }
+
+    return results
+  }
+
+  private fun hasStoragePermission(): Boolean {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      Environment.isExternalStorageManager()
+    } else {
+      ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.READ_EXTERNAL_STORAGE
+      ) == PackageManager.PERMISSION_GRANTED
+    }
+  }
+
+  private fun requestStoragePermission(): Boolean {
+    val activity = appContext.currentActivity
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      if (Environment.isExternalStorageManager()) {
+        true
+      } else {
+        try {
+          val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+            data = Uri.parse("package:${context.packageName}")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+          }
+          context.startActivity(intent)
+          false
+        } catch (e: Exception) {
+          try {
+            val genericIntent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+              addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(genericIntent)
+            false
+          } catch (e2: Exception) {
+            false
+          }
+        }
+      }
+    } else {
+      val isGranted = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.READ_EXTERNAL_STORAGE
+      ) == PackageManager.PERMISSION_GRANTED
+      if (!isGranted && activity != null) {
+        activity.requestPermissions(
+          arrayOf(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+          ),
+          1001
+        )
+      }
+      isGranted
     }
   }
 }

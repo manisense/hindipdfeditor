@@ -2,6 +2,57 @@
 
 All notable changes to this project are documented here, grouped by phase (see `hindi-pdf-editor-spec.md` Section 10 for the phase definitions). Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — Mobile Web Parity & Architecture Overhaul
+
+### Added — 5-Tool Mobile Suite with Dedicated Workspaces & Mockup Design Implementation
+
+- **Mockup Design Screens Implementation**:
+  - **Screen 1: Home Dashboard (`src/screens/HomeScreen.tsx`)**: Matches `hindi_pdf_editor_home_dashboard.png` with brand header (`ह Hindi PDF Editor`), `नमस्ते!` hero greeting, 6-tool grid (`Edit PDF`, `Translate`, `Merge`, `Split`, `Compress`, `PDF Viewer`), and recent documents list with thumbnail previews.
+  - **Screen 2: Files Manager (`src/screens/FilesScreen.tsx`)**: Matches `hindi_pdf_editor_home_dashboard (1).png` with search bar (`Search files / फाइलें खोजें`), category filter tabs (`All Files`, `Downloads`, `Starred`), document cards with bilingual Hindi/English titles, file size & date, context menu (`Star`, `Share`, `Remove`), and floating `+` action button (FAB).
+  - **Screen 3: Split PDF Workspace (`src/tools/SplitPdfTool.tsx`)**: Matches `hindi_pdf_editor_home_dashboard (2).png` with 4-column visual PDF thumbnail grid, active blue checkmark selection overlays, page number pills, `Extract all pages` vs `Split by range` options, and full-width CTA.
+  - **Screen 4: Merge PDF Workspace (`src/tools/MergePdfTool.tsx`)**: Matches `hindi_pdf_editor_home_dashboard (3).png` with reorderable file cards, page thumbnails, `≡` drag handles, `+ Add More Files / और फ़ाइलें जोड़ें` button, and full-width CTA.
+  - **Screen 5: Multi-Step DropZone (`src/components/DropZone.tsx`)**: Matches `pdf_file_selection_screen.png` with 3-step progress indicator (`(1) Select PDF` → `(2) Edit` → `(3) Download`), dashed card with cloud upload icon, and privacy trust badges.
+  - **4-Tab Bilingual Bottom Navigation (`src/components/BottomNavBar.tsx`)**: 4 main tabs (`Home / होम`, `Files / फाइलें`, `Tools / उपकरण`, `Profile / प्रोफ़ाइल`).
+  - **Dynamic Core Integration & Zero Dummy Items**:
+    - Removed all static/mock data across Home, Files, Split, and Merge screens.
+    - Added local persistence via `FileSystem.documentDirectory` in `recentFilesStore.ts` to retain recent, downloaded, and starred PDFs across restarts.
+    - Dynamic thumbnail generation for all imported, edited, translated, merged, split, and compressed PDFs using native `renderPage`.
+    - Real-time search query filtering and category tab switching (All Files, Downloads, Starred) on Files screen.
+    - Integrated document picker, native sharing, and folder saving across all tool workspaces.
+    - **Comprehensive Device PDF Discovery & File Management in Files Screen (`src/screens/FilesScreen.tsx`)**:
+      - Enhanced Android MediaStore ContentResolver queries (`scanDevicePdfFiles` in `PdfPageImageModule.kt`) to scan `MediaStore.Files`, `MediaStore.Downloads`, public storage directories (Download, Documents, DCIM, CamScanner, Adobe Acrobat, Bluetooth), WhatsApp Documents, and Telegram Documents.
+      - Extracts folder names, exact byte sizes, and last modified timestamps.
+      - Added horizontal scrollable Folder Chips filter row (e.g., `All Folders`, `Download`, `WhatsApp Documents`, `Documents`, `CamScanner`) with per-folder document counters.
+      - Added multi-criteria Sort Modal supporting Date (Newest/Oldest), Name (A-Z/Z-A), and File Size (Largest/Smallest).
+      - Added 5 category tabs (`All Files`, `Downloads`, `WhatsApp`, `Documents`, `Starred`).
+      - Added rich Context Menu Action Sheet (✏️ Edit Hindi, 🌐 Translate, 🗜️ Compress, ✂️ Split, 📑 Merge, ⭐ Star, 📤 Share, ℹ️ File Details, 🗑️ Remove).
+      - Added File Details & Properties modal showing file name, Hindi transliteration, folder location, exact byte size, page count, modified timestamp, and URI path.
+      - Added lazy background thumbnail generation and page counting with in-memory caching.
+      - Virtualized `FlatList` with `RefreshControl` pull-to-refresh for smooth 60fps/120fps scrolling across hundreds of device files.
+
+- **Multi-Tool Shell (`src/components/ToolShell.tsx`)**: Unified mobile tool shell featuring frosted floating header, `ह` brand badge, horizontal tool switcher pills (Reader, Edit, Translate, Merge, Split, Compress), and animated 3-step progress nodes.
+- **Dedicated Tool Screens**:
+  - `src/tools/ViewPdfTool.tsx`: Dedicated PDF Reader & Viewer separate from the Editor with continuous vertical scroll and single-page flip modes, 3 reading themes (Day Light, Warm Sepia, Night Dark Mode), zoom in/out/fit controls, fullscreen distraction-free reading mode, floating page indicator with jump-to-page dialog, native printing, sharing, and 1-tap seamless handoff to Edit or Translate.
+  - `src/tools/EditPdfTool.tsx`: WYSIWYG editor with 3-mode selector (✏️ Edit with OCR hit testing, ➕ Add Text, 🧼 Erase drag-to-mask), page navigator, undo/redo checkpoints, font picker modal, and Plan A export.
+  - `src/tools/TranslatePdfTool.tsx`: Dedicated bilingual translation tool with direction selector (`Hindi → English`, `English → Hindi`), on-device OCR, backend Gemini translation, automatic text replacement masks, and Plan A export.
+  - `src/tools/MergePdfTool.tsx`: Multi-PDF combiner supporting file selection, visual ordering controls, removal, and local native merging.
+  - `src/tools/SplitPdfTool.tsx`: Page range extractor supporting custom start/end page boundaries with validation.
+  - `src/tools/CompressPdfTool.tsx`: Local scan optimizer supporting Balanced, Strong, and High-Res compression presets via native rasterization.
+- **Native PDF Operations (`src/lib/pdfOps.ts`)**: Pure client-side PDF manipulation routines (`mergePdfFiles`, `splitPdfFile`, `compressPdfFile`) with unit test coverage (`src/lib/pdfOps.test.ts`).
+- **Web-Aligned UI Component Suite**:
+  - `src/components/AppButton.tsx`: Full pill standard (`radius.full`), rich variants (`primary`, `secondary`, `danger`, `ghost`, `success`, `subtle`), loading state, and tactile press scaling.
+  - `src/components/AppPopup.tsx` & `src/components/appPopupContext.ts`: Promise-based modal dialog provider with tone icons (Info, Success, Warning, Error) replacing native `Alert.alert` calls.
+  - `src/components/DropZone.tsx`: Mobile file picker card with dashed accent border, -3° rotated squircle icon badge, and security trust badges.
+  - `src/components/AppStatus.tsx`: Clean status banners for spinners and alerts.
+
+### Changed — Design Tokens & Monolith Deconstruction
+
+- **Design System (`src/theme.ts`)**: Upgraded theme to match web app's warm cream palette (`#FBF8F1`), midnight navy (`#050839`), electric brand blue (`#1843DD`), tool category colors (Emerald, Lavender, Amber, Coral), shadows, and radii.
+- **`App.tsx` Refactor**: Deconstructed the ~2,300-line monolithic file into a clean root component (~60 lines) wrapping providers, `ToolShell`, and modular tool views.
+- **`EditToolbar.tsx`**: Redesigned floating toolbar with typography chips, numeric font size stepper (`A-`/`A+`), double-ring color swatches including pure White preset, and pill buttons.
+- **`ToolShell.tsx` & `App.tsx` Navigation Overhaul**: Added a fixed 5-tool bottom navigation bar with icons on the home tool hub. When any tool is selected, the bottom bar is completely hidden and the workspace expands to full-screen mode with an intuitive "‹ All Tools" back navigation header. Removed the About button from the header for a clean, distraction-free interface.
+- **Contrast-Aware OCR Text Color Detection (`PdfPageImageModule.kt` & `imageColor.ts`)**: Upgraded `sampleTextColor` from luminance-only percentile (which incorrectly sampled dark/colored backgrounds on light text) to a contrast-distance clustering algorithm that accurately detects white and light text on colored/dark PDF backgrounds.
+
 ## [Unreleased] — Pre-Phase 0
 
 ### Changed — unified web brand experience

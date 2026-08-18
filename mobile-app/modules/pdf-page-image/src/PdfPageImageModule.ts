@@ -42,6 +42,21 @@ declare class PdfPageImageModule extends NativeModule<Record<never, never>> {
    * background. Returns a `#rrggbb` hex string.
    */
   sampleTextColor(uri: string, xPx: number, yPx: number, wPx: number, hPx: number): Promise<string>;
+
+  /**
+   * Checks if the app currently has broad device storage permission.
+   */
+  hasStoragePermission(): Promise<boolean>;
+
+  /**
+   * Requests device storage permission or opens Android All Files Access settings.
+   */
+  requestStoragePermission(): Promise<boolean>;
+
+  /**
+   * Scans device storage using MediaStore and public directories to find all PDF files.
+   */
+  scanDevicePdfFiles(): Promise<import('./PdfPageImage.types').DevicePdfFile[]>;
 }
 
 export default requireNativeModule<PdfPageImageModule>('PdfPageImage');

@@ -85,3 +85,49 @@ export async function sampleTextColor(
 ): Promise<string> {
   return PdfPageImage.sampleTextColor(uri, xPx, yPx, wPx, hPx);
 }
+
+export type { DevicePdfFile } from '../../modules/pdf-page-image/src';
+
+/**
+ * Checks if the app currently has broad device storage permission.
+ */
+export async function hasStoragePermission(): Promise<boolean> {
+  try {
+    if (!PdfPageImage || typeof PdfPageImage.hasStoragePermission !== 'function') {
+      return true;
+    }
+    return await PdfPageImage.hasStoragePermission();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Requests device storage permission or opens Android All Files Access settings.
+ */
+export async function requestStoragePermission(): Promise<boolean> {
+  try {
+    if (!PdfPageImage || typeof PdfPageImage.requestStoragePermission !== 'function') {
+      return true;
+    }
+    return await PdfPageImage.requestStoragePermission();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Queries Android device storage via MediaStore to find all PDF files.
+ */
+export async function scanDevicePdfFiles(): Promise<
+  import('../../modules/pdf-page-image/src').DevicePdfFile[]
+> {
+  try {
+    if (!PdfPageImage || typeof PdfPageImage.scanDevicePdfFiles !== 'function') {
+      return [];
+    }
+    return await PdfPageImage.scanDevicePdfFiles();
+  } catch {
+    return [];
+  }
+}

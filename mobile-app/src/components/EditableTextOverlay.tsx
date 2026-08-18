@@ -172,6 +172,10 @@ export function EditableTextOverlay({
     }
   };
 
+  const isLightText =
+    edit.color.toUpperCase() === '#FFFFFF' || edit.color === 'white' || edit.color === '#fff';
+  const focusBgColor = isLightText ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.7)';
+
   return (
     <>
       <TextInput
@@ -186,7 +190,6 @@ export function EditableTextOverlay({
         multiline
         scrollEnabled={false}
         allowFontScaling={false}
-        selectionColor={colors.primary}
         style={[
           styles.input,
           {
@@ -199,7 +202,7 @@ export function EditableTextOverlay({
             fontFamily: edit.fontFamily,
             fontWeight: edit.fontWeight === 'bold' ? '700' : '400',
           },
-          focused && styles.focused,
+          focused && [styles.focused, { backgroundColor: focusBgColor }],
         ]}
       />
       {interactive && focused && onMove && (
@@ -237,7 +240,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.primary,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.35)',
   },
   moveHandle: {
     position: 'absolute',

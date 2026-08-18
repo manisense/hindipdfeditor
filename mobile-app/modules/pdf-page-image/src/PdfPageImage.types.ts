@@ -9,3 +9,13 @@ export interface PageImageResult {
   /** Rendered bitmap height, in px. */
   height: number;
 }
+
+export interface DevicePdfFile {
+  name: string;
+  uri: string;
+  sizeBytes: number;
+  dateModified?: number;
+  folder?: string;
+  path?: string;
+  pageCount?: number;
+}

@@ -24,11 +24,14 @@ const config: ExpoConfig = {
     },
     // Play Store: only declare what we need. Document picker uses the system SAF on Android 13+
     // and does not require broad storage permissions. Block permissions added by transitive deps.
-    permissions: ['INTERNET'],
+    permissions: [
+      'INTERNET',
+      'READ_EXTERNAL_STORAGE',
+      'WRITE_EXTERNAL_STORAGE',
+      'MANAGE_EXTERNAL_STORAGE',
+    ],
     blockedPermissions: [
       'android.permission.SYSTEM_ALERT_WINDOW',
-      'android.permission.READ_EXTERNAL_STORAGE',
-      'android.permission.WRITE_EXTERNAL_STORAGE',
       'android.permission.VIBRATE',
       'android.permission.RECORD_AUDIO',
       'android.permission.CAMERA',
