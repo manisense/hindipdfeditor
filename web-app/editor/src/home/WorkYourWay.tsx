@@ -2,37 +2,39 @@ import { motion } from 'motion/react';
 import { Check } from 'lucide-react';
 import { Btn } from './ui/button';
 import { GooglePlayLink } from './ui/google-play-link';
+import { useLanguage } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
 
-const feats = [
-  {
-    h: 'No install on web',
-    p: 'Open a tab and get straight to editing — nothing to download.',
-  },
-  {
-    h: 'Native Android app',
-    p: 'The full toolkit on your phone, tuned for touch.',
-  },
-  {
-    h: 'Same result, everywhere',
-    p: 'Devanagari shaping stays identical across web and mobile.',
-  },
-];
-
 export function WorkYourWay() {
+  const { t, isHindi } = useLanguage();
+
+  const feats = [
+    {
+      h: t('work.f1Title'),
+      p: t('work.f1Desc'),
+    },
+    {
+      h: t('work.f2Title'),
+      p: t('work.f2Desc'),
+    },
+    {
+      h: t('work.f3Title'),
+      p: t('work.f3Desc'),
+    },
+  ];
+
   return (
     <section id="work" className="py-24">
       <div className="section-x grid items-center gap-14 md:grid-cols-2">
         <div>
           <div className="mb-3 font-display text-sm font-semibold uppercase tracking-[0.08em] text-brand">
-            Work your way
+            {t('work.eyebrow')}
           </div>
           <h2 className="text-[clamp(28px,3.6vw,42px)] font-bold leading-tight text-ink">
-            On the web, or in your pocket.
+            {t('work.title')}
           </h2>
           <p className="mt-4 text-lg text-muted">
-            Start in the browser with nothing to install, or take the same toolkit anywhere with the
-            Android app.
+            {t('work.subtitle')}
           </p>
           <div className="mt-7 grid gap-4">
             {feats.map((f) => (
@@ -48,8 +50,8 @@ export function WorkYourWay() {
             ))}
           </div>
           <div className="mt-8 flex flex-wrap gap-3.5">
-            <Btn href={toolHref('edit')}>Open the editor →</Btn>
-            <GooglePlayLink variant="ghost">Get the Android app</GooglePlayLink>
+            <Btn href={toolHref('edit')}>{isHindi ? 'एडिटर खोलें →' : 'Open the editor →'}</Btn>
+            <GooglePlayLink variant="ghost" />
           </div>
         </div>
 

@@ -1,34 +1,66 @@
 import { motion } from 'motion/react';
 import { BookOpen, ArrowRight, Sparkles } from 'lucide-react';
-
-const featuredArticles = [
-  {
-    category: 'Typography & Fonts',
-    title: 'Why Hindi Fonts & Matras Break in PDF Editors (and How to Fix Them)',
-    desc: 'Understand the abugida OpenType shaping failure in conventional PDF tools and how our HarfBuzz pipeline delivers 100% ligature fidelity.',
-    href: '/articles/fix-broken-hindi-fonts-in-pdf/',
-    badgeTone: 'bg-brand-tint text-brand',
-    readTime: '5 min read',
-  },
-  {
-    category: 'Govt & Exams',
-    title: 'How to Edit Hindi Admit Card & Sarkari Exam PDF Forms (BPSC, UPPSC, SSC)',
-    desc: 'Step-by-step tutorial on safely correcting names, roll numbers, and personal details on state recruitment forms without cloud uploads.',
-    href: '/articles/edit-sarkari-admit-card-hindi-pdf/',
-    badgeTone: 'bg-accent-tint text-accent',
-    readTime: '4 min read',
-  },
-  {
-    category: 'Translation & AI',
-    title: 'How to Translate Hindi PDF to English Online Without Losing Page Formatting',
-    desc: 'Learn how our geometric bounding box translator replaces Hindi text with English while preserving font sizes, margins, and tables.',
-    href: '/articles/translate-hindi-pdf-to-english/',
-    badgeTone: 'bg-pop-lav text-[#5B4BD6]',
-    readTime: '4 min read',
-  },
-];
+import { useLanguage } from '../lib/i18n';
 
 export function ArticlesSection() {
+  const { t, isHindi } = useLanguage();
+
+  const articlesEn = [
+    {
+      category: 'Typography & Fonts',
+      title: 'Why Hindi Fonts & Matras Break in PDF Editors (and How to Fix Them)',
+      desc: 'Understand the abugida OpenType shaping failure in conventional PDF tools and how our HarfBuzz pipeline delivers 100% ligature fidelity.',
+      href: '/articles/fix-broken-hindi-fonts-in-pdf/',
+      badgeTone: 'bg-brand-tint text-brand',
+      readTime: '5 min read',
+    },
+    {
+      category: 'Govt & Exams',
+      title: 'How to Edit Hindi Admit Card & Sarkari Exam PDF Forms (BPSC, UPPSC, SSC)',
+      desc: 'Step-by-step tutorial on safely correcting names, roll numbers, and personal details on state recruitment forms without cloud uploads.',
+      href: '/articles/edit-sarkari-admit-card-hindi-pdf/',
+      badgeTone: 'bg-accent-tint text-accent',
+      readTime: '4 min read',
+    },
+    {
+      category: 'Translation & AI',
+      title: 'How to Translate Hindi PDF to English Online Without Losing Page Formatting',
+      desc: 'Learn how our geometric bounding box translator replaces Hindi text with English while preserving font sizes, margins, and tables.',
+      href: '/articles/translate-hindi-pdf-to-english/',
+      badgeTone: 'bg-pop-lav text-[#5B4BD6]',
+      readTime: '4 min read',
+    },
+  ];
+
+  const articlesHi = [
+    {
+      category: '🇮🇳 टाइपोग्राफी',
+      title: 'हिंदी पीडीएफ कैसे एडिट करें — PDF में हिंदी लिखने और बदलने का आसान तरीका',
+      desc: 'जानिए कैसे बिना फॉन्ट टूटे या मात्रा बिखरे अपने मोबाइल या कंप्यूटर पर शुद्ध देवनागरी यूनिकोड के साथ सरकारी फॉर्म और पीडीएफ एडिट करें।',
+      href: '/articles/hindi-pdf-kaise-edit-kare/',
+      badgeTone: 'bg-brand-tint text-brand',
+      readTime: '5 मिनट',
+    },
+    {
+      category: '🇮🇳 सरकारी भर्ती',
+      title: 'एडमिट कार्ड और सरकारी फॉर्म में नाम सुधार शपथ पत्र (Affidavit) कैसे बनाएं',
+      desc: 'UP Police, BPSC, SSC GD और रेलवे भर्ती परीक्षाओं के लिए नाम और पिता के नाम में स्पेलिंग गलती सुधारने का पूरा फॉर्मेट।',
+      href: '/articles/sarkari-admit-card-name-correction-affidavit-hindi/',
+      badgeTone: 'bg-accent-tint text-accent',
+      readTime: '4 मिनट',
+    },
+    {
+      category: '🇮🇳 फॉन्ट कन्वर्जन',
+      title: 'कृति देव 010 पीडीएफ को यूनिकोड में कैसे बदलें और एडिट करें',
+      desc: 'पुरानी कृति देव फाइलों में दिखने वाले अजीब अंग्रेजी अक्षरों (d`fr nso) को ठीक करें और मोबाइल में पढ़ने योग्य शुद्ध यूनिकोड में बदलें।',
+      href: '/articles/kruti-dev-pdf-unicode-converter-hindi/',
+      badgeTone: 'bg-pop-lav text-[#5B4BD6]',
+      readTime: '5 मिनट',
+    },
+  ];
+
+  const featuredArticles = isHindi ? articlesHi : articlesEn;
+
   return (
     <section id="articles" className="py-24 bg-cream/40 border-t border-line" aria-labelledby="articles-heading">
       <div className="section-x">
@@ -36,16 +68,16 @@ export function ArticlesSection() {
           <div>
             <div className="mb-3 inline-flex items-center gap-1.5 font-display text-sm font-semibold uppercase tracking-[0.08em] text-brand">
               <Sparkles className="size-4" />
-              <span>Guides &amp; Articles</span>
+              <span>{t('art.eyebrow')}</span>
             </div>
             <h2
               id="articles-heading"
               className="text-[clamp(28px,3.6vw,42px)] font-bold leading-tight text-ink"
             >
-              Master Hindi PDF Editing
+              {t('art.title')}
             </h2>
             <p className="mt-3 text-lg text-muted max-w-2xl">
-              Practical guides, Devanagari typography tutorials, and step-by-step solutions for real-world documents.
+              {t('art.subtitle')}
             </p>
           </div>
           <div>
@@ -53,7 +85,7 @@ export function ArticlesSection() {
               href="/articles/"
               className="inline-flex items-center gap-2 font-display text-[15px] font-bold text-brand hover:text-brand/80 transition-colors"
             >
-              <span>View all guides</span>
+              <span>{isHindi ? 'सभी गाइड्स और लेख देखें →' : 'View all guides →'}</span>
               <ArrowRight className="size-4" />
             </a>
           </div>
@@ -88,7 +120,7 @@ export function ArticlesSection() {
               <div className="mt-6 pt-4 border-t border-line/60 flex items-center justify-between text-sm font-bold text-brand">
                 <span className="inline-flex items-center gap-1.5">
                   <BookOpen className="size-4" />
-                  <span>Read Guide</span>
+                  <span>{isHindi ? 'गाइड पढ़ें' : 'Read Guide'}</span>
                 </span>
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
               </div>

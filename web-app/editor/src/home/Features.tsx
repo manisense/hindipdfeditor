@@ -1,7 +1,8 @@
+import { Pencil, Languages, ScanText, Layers, ShieldCheck, FileArchive } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Pencil, Languages, ScanText, Layers, ShieldCheck, FileArchive } from 'lucide-react';
 import { cn } from '../lib/cn';
+import { useLanguage } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
 
 function Card({
@@ -112,73 +113,73 @@ function OrganizeVisual() {
 }
 
 export function Features() {
+  const { t, isHindi } = useLanguage();
+
   return (
     <section id="features" className="bg-cream py-24">
       <div className="section-x">
         <div className="mx-auto mb-14 max-w-2xl text-center">
           <div className="mb-3 font-display text-sm font-semibold uppercase tracking-[0.08em] text-brand">
-            The toolkit
+            {t('feat.eyebrow')}
           </div>
           <h2 className="text-[clamp(30px,4vw,46px)] font-bold leading-tight text-ink">
-            Everything you need to work with Hindi PDFs
+            {t('feat.title')}
           </h2>
           <p className="mt-4 text-lg text-muted">
-            One place for editing, organizing and optimizing — built to respect Devanagari at every
-            step.
+            {t('feat.subtitle')}
           </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-6">
           <Card className="md:col-span-4" href={toolHref('edit')}>
             <Ico icon={Pencil} tone="bg-brand-tint text-brand" />
-            <h3 className="text-xl font-bold text-ink">Edit Hindi PDFs, live</h3>
+            <h3 className="text-xl font-bold text-ink">{t('feat.editHeading')}</h3>
             <p className="mt-2 max-w-md text-[15px] text-muted">
-              Change Devanagari text right on the page with correct character shaping — conjuncts,
-              matras and reph stay exactly right.
+              {t('feat.editDesc')}
             </p>
             <EditVisual />
           </Card>
 
           <Card className="md:col-span-2" href={toolHref('translate')}>
             <Ico icon={Languages} tone="bg-accent-tint text-accent" />
-            <h3 className="text-xl font-bold text-ink">Hindi ↔ English</h3>
+            <h3 className="text-xl font-bold text-ink">{t('feat.translateHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">
-              Translate detected Hindi or English through our secure AI service — no API key entry.
+              {t('feat.translateDesc')}
             </p>
             <TranslateVisual />
           </Card>
 
           <Card className="md:col-span-2" href={toolHref('edit')}>
             <Ico icon={ScanText} tone="bg-pop-yellow-tint text-[#B58400]" />
-            <h3 className="text-xl font-bold text-ink">OCR detection</h3>
+            <h3 className="text-xl font-bold text-ink">{t('feat.ocrHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">
-              Automatically detect Hindi and English text inside scans and images.
+              {t('feat.ocrDesc')}
             </p>
             <OcrVisual />
           </Card>
 
           <Card className="md:col-span-2" href={toolHref('merge')}>
             <Ico icon={Layers} tone="bg-pop-lav text-[#5B4BD6]" />
-            <h3 className="text-xl font-bold text-ink">Merge, split &amp; reorder</h3>
+            <h3 className="text-xl font-bold text-ink">{isHindi ? 'पीडीएफ जोड़ें, अलग करें व क्रम बदलें' : 'Merge, split & reorder'}</h3>
             <p className="mt-2 text-[15px] text-muted">
-              Combine, extract page ranges and rebuild documents in the order you want.
+              {isHindi ? 'कई पीडीएफ को मनचाहे क्रम में जोड़ें या जरूरी पेज अलग करें।' : 'Combine, extract page ranges and rebuild documents in the order you want.'}
             </p>
             <OrganizeVisual />
           </Card>
 
           <Card className="md:col-span-2" href={toolHref('compress')}>
             <Ico icon={FileArchive} tone="bg-brand-tint text-brand" />
-            <h3 className="text-xl font-bold text-ink">Compress scans</h3>
+            <h3 className="text-xl font-bold text-ink">{t('feat.compressHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">
-              Shrink large scanned PDFs by re-encoding pages — runs entirely in your browser.
+              {t('feat.compressDesc')}
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              {['Smaller files', 'Local-only', 'New export'].map((t) => (
+              {(isHindi ? ['छोटी फाइल', '100% लोकल', 'नया एक्सपोर्ट'] : ['Smaller files', 'Local-only', 'New export']).map((text) => (
                 <span
-                  key={t}
+                  key={text}
                   className="rounded-full border border-line bg-white px-3 py-1 font-display text-[13px] font-semibold text-ink"
                 >
-                  {t}
+                  {text}
                 </span>
               ))}
             </div>
@@ -186,17 +187,17 @@ export function Features() {
 
           <Card className="md:col-span-2" href={toolHref('edit')}>
             <Ico icon={ShieldCheck} tone="bg-accent-tint text-accent" />
-            <h3 className="text-xl font-bold text-ink">Private &amp; on-device</h3>
+            <h3 className="text-xl font-bold text-ink">{t('feat.privacyHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">
-              Core tools run locally — your original file is never overwritten or uploaded to us.
+              {t('feat.privacyDesc')}
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              {['Add text', 'Replace', 'Export clean'].map((t) => (
+              {(isHindi ? ['टेक्स्ट जोड़ें', 'मास्क करें', 'सुरक्षित एक्सपोर्ट'] : ['Add text', 'Replace', 'Export clean']).map((text) => (
                 <span
-                  key={t}
+                  key={text}
                   className="rounded-full border border-line bg-white px-3 py-1 font-display text-[13px] font-semibold text-ink"
                 >
-                  {t}
+                  {text}
                 </span>
               ))}
             </div>

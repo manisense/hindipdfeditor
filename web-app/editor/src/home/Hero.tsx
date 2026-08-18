@@ -6,45 +6,8 @@ import { TypewriterCycle } from './ui/typewriter-cycle';
 import { PointerHighlight } from './ui/pointer-highlight';
 import { Cover } from './ui/cover';
 import { ImagesBadge } from './ui/images-badge';
+import { useLanguage } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
-
-const tools = [
-  {
-    icon: Pencil,
-    name: 'Edit Hindi PDF',
-    detail: 'Live Devanagari shaping',
-    tone: 'bg-brand-tint text-brand',
-    href: toolHref('edit'),
-  },
-  {
-    icon: Languages,
-    name: 'Hindi ↔ English',
-    detail: 'Free in your browser',
-    tone: 'bg-accent-tint text-accent',
-    href: toolHref('translate'),
-  },
-  {
-    icon: ScanText,
-    name: 'OCR detection',
-    detail: 'Hindi + English',
-    tone: 'bg-pop-yellow-tint text-[#B58400]',
-    href: toolHref('edit'),
-  },
-  {
-    icon: Layers,
-    name: 'Merge & split',
-    detail: 'Any order, any range',
-    tone: 'bg-pop-lav text-[#5B4BD6]',
-    href: toolHref('merge'),
-  },
-  {
-    icon: FileArchive,
-    name: 'Compress PDF',
-    detail: 'Shrink scanned files',
-    tone: 'bg-pop-yellow-tint text-[#B58400]',
-    href: toolHref('compress'),
-  },
-];
 
 function Fade({
   children,
@@ -68,6 +31,46 @@ function Fade({
 }
 
 export function Hero() {
+  const { t, isHindi } = useLanguage();
+
+  const tools = [
+    {
+      icon: Pencil,
+      name: t('tool.edit'),
+      detail: t('tool.editSub'),
+      tone: 'bg-brand-tint text-brand',
+      href: toolHref('edit'),
+    },
+    {
+      icon: Languages,
+      name: t('tool.translate'),
+      detail: t('tool.translateSub'),
+      tone: 'bg-accent-tint text-accent',
+      href: toolHref('translate'),
+    },
+    {
+      icon: ScanText,
+      name: t('tool.ocr'),
+      detail: t('tool.ocrSub'),
+      tone: 'bg-pop-yellow-tint text-[#B58400]',
+      href: toolHref('edit'),
+    },
+    {
+      icon: Layers,
+      name: t('tool.merge'),
+      detail: t('tool.mergeSub'),
+      tone: 'bg-pop-lav text-[#5B4BD6]',
+      href: toolHref('merge'),
+    },
+    {
+      icon: FileArchive,
+      name: t('tool.compress'),
+      detail: t('tool.compressSub'),
+      tone: 'bg-pop-yellow-tint text-[#B58400]',
+      href: toolHref('compress'),
+    },
+  ];
+
   return (
     <section id="top" className="relative overflow-hidden pt-28 pb-16">
       <div
@@ -84,41 +87,62 @@ export function Hero() {
                 className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1.5 text-[13.5px] font-medium text-muted shadow-[0_1px_2px_rgba(21,23,44,0.04)] transition-colors hover:text-ink"
               >
                 <span className="size-1.5 rounded-full bg-accent" />
-                Free to use · runs locally · no account
+                {t('hero.badge')}
                 <ChevronRight className="size-3.5" />
               </a>
             </Fade>
 
             <Fade delay={0.05}>
               <h1 className="mt-6 font-display text-[clamp(34px,4.6vw,56px)] font-extrabold leading-[1.05] tracking-tight text-ink">
-                <span className="block font-semibold text-muted">Every tool for</span>
+                <span className="block font-semibold text-muted">{t('hero.titlePre')}</span>
                 <TypewriterCycle
                   className="text-ink"
                   caretClassName="bg-brand"
-                  phrases={[
-                    { text: 'Hindi PDFs.' },
-                    { text: 'हिंदी दस्तावेज़।' },
-                    { text: 'your paperwork.' },
-                    { text: 'हर हिंदी फ़ाइल।' },
-                  ]}
+                  phrases={
+                    isHindi
+                      ? [
+                          { text: 'सही देवनागरी में।' },
+                          { text: 'बिना फॉन्ट टूटे।' },
+                          { text: 'सरकारी फॉर्म हेतु।' },
+                          { text: '100% प्राइवेट।' },
+                        ]
+                      : [
+                          { text: 'Hindi PDFs.' },
+                          { text: 'हिंदी दस्तावेज़।' },
+                          { text: 'your paperwork.' },
+                          { text: 'हर हिंदी फ़ाइल।' },
+                        ]
+                  }
                 />
               </h1>
             </Fade>
 
             <Fade delay={0.1}>
               <p className="mt-5 max-w-lg text-[clamp(16px,1.7vw,18px)] leading-relaxed text-muted">
-                Edit, translate, merge, split, compress and OCR your{' '}
-                <PointerHighlight className="mx-0.5 font-semibold text-ink">
-                  Devanagari
-                </PointerHighlight>{' '}
-                documents — all of it, in <Cover>one place</Cover>.
+                {isHindi ? (
+                  <>
+                    देवनागरी के सही अक्षरों और मात्राओं के साथ पीडीएफ{' '}
+                    <PointerHighlight className="mx-0.5 font-semibold text-ink">
+                      एडिट, अनुवाद और कंप्रेस
+                    </PointerHighlight>{' '}
+                    करें — सब कुछ <Cover>एक ही जगह</Cover>।
+                  </>
+                ) : (
+                  <>
+                    Edit, translate, merge, split, compress and OCR your{' '}
+                    <PointerHighlight className="mx-0.5 font-semibold text-ink">
+                      Devanagari
+                    </PointerHighlight>{' '}
+                    documents — all of it, in <Cover>one place</Cover>.
+                  </>
+                )}
               </p>
             </Fade>
 
             <Fade delay={0.15}>
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <Btn size="lg" href={toolHref('edit')}>
-                  Open the editor →
+                  {t('hero.ctaPrimary')}
                 </Btn>
                 <GooglePlayLink size="lg" variant="subtle" />
               </div>
@@ -126,7 +150,7 @@ export function Hero() {
 
             <Fade delay={0.2}>
               <div className="mt-7">
-                <ImagesBadge label="Loved for everyday Hindi paperwork" />
+                <ImagesBadge label={isHindi ? 'दैनिक हिंदी दस्तावेजों के लिए भरोसेमंद' : 'Loved for everyday Hindi paperwork'} />
               </div>
             </Fade>
           </div>
@@ -144,10 +168,10 @@ export function Hero() {
                 </span>
                 <div>
                   <div className="font-display text-[14.5px] font-bold text-ink leading-none">
-                    Edit right in your browser
+                    {isHindi ? 'सीधे ब्राउज़र में एडिट करें' : 'Edit right in your browser'}
                   </div>
                   <div className="mt-1 text-[12.5px] text-muted">
-                    No setup — shaping stays correct
+                    {isHindi ? 'बिना इंस्टालेशन — सही मात्राएं' : 'No setup — shaping stays correct'}
                   </div>
                 </div>
               </div>
@@ -179,10 +203,10 @@ export function Hero() {
             >
               <div className="mb-3 flex items-center justify-between">
                 <div className="font-display text-[14.5px] font-bold text-ink">
-                  One toolkit, every job
+                  {isHindi ? 'एक ही टूलकिट, सभी कार्य' : 'One toolkit, every job'}
                 </div>
                 <span className="rounded-full bg-white px-2.5 py-1 font-display text-[12px] font-semibold text-muted">
-                  {tools.length} tools
+                  {tools.length} {isHindi ? 'टूल्स' : 'tools'}
                 </span>
               </div>
               <div className="rounded-xl border border-black/[0.06] bg-white p-2">

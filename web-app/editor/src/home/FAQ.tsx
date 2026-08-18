@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Plus } from 'lucide-react';
 import { cn } from '../lib/cn';
-import { SITE_FAQS } from './faqData';
+import { useLanguage } from '../lib/i18n';
+import { getFaqs } from './faqData';
 
 function Item({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -42,26 +43,28 @@ function Item({ q, a }: { q: string; a: string }) {
 }
 
 export function FAQ() {
+  const { lang, t } = useLanguage();
+  const faqs = getFaqs(lang);
+
   return (
     <section id="faq" className="py-24" aria-labelledby="faq-heading">
       <div className="section-x grid gap-12 md:grid-cols-[0.8fr_1.2fr]">
         <div>
           <div className="mb-3 font-display text-sm font-semibold uppercase tracking-[0.08em] text-brand">
-            FAQ
+            {t('faq.eyebrow')}
           </div>
           <h2
             id="faq-heading"
             className="text-[clamp(28px,3.6vw,42px)] font-bold leading-tight text-ink"
           >
-            Questions, answered.
+            {t('faq.title')}
           </h2>
           <p className="mt-4 text-lg text-muted">
-            Everything about privacy, Devanagari and the toolkit. Still curious? The editor&apos;s
-            free to try.
+            {t('faq.subtitle')}
           </p>
         </div>
         <div>
-          {SITE_FAQS.map((f) => (
+          {faqs.map((f) => (
             <Item key={f.q} q={f.q} a={f.a} />
           ))}
         </div>

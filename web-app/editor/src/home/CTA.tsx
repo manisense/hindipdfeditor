@@ -1,8 +1,11 @@
 import { Btn } from './ui/button';
 import { GooglePlayLink } from './ui/google-play-link';
+import { useLanguage } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
 
 export function CTA() {
+  const { t } = useLanguage();
+
   return (
     <section className="relative overflow-hidden bg-cream py-24 text-center">
       <svg
@@ -19,15 +22,14 @@ export function CTA() {
       </svg>
       <div className="section-x relative z-10">
         <h2 className="text-[clamp(34px,5.2vw,60px)] font-extrabold leading-[1.05] text-ink">
-          Get your Hindi PDFs sorted.
+          {t('cta.title')}
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-lg text-muted">
-          Open the editor in your browser, or grab the Android app. Free, private, and
-          Devanagari-safe.
+          {t('cta.subtitle')}
         </p>
         <div className="mt-7 flex flex-wrap justify-center gap-3.5">
           <Btn size="lg" href={toolHref('edit')}>
-            Open the editor →
+            {t('cta.open')}
           </Btn>
           <GooglePlayLink size="lg" variant="ghost" />
         </div>

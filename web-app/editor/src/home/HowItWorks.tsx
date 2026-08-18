@@ -1,53 +1,54 @@
 import { motion } from 'motion/react';
 import { UploadCloud, Edit3, Type, FileCheck } from 'lucide-react';
 import { Btn } from './ui/button';
+import { useLanguage } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
 
-const steps = [
-  {
-    icon: UploadCloud,
-    number: '01',
-    title: 'Open Your PDF Locally',
-    desc: 'Select or drag your PDF into the editor. Your file is processed 100% inside your browser via WebAssembly — never uploaded to any remote server.',
-  },
-  {
-    icon: Edit3,
-    number: '02',
-    title: 'Tap to Edit or Mask Text',
-    desc: 'Click on existing Hindi text to mask and replace it, or tap anywhere on the canvas to add fresh Devanagari text boxes and headings.',
-  },
-  {
-    icon: Type,
-    number: '03',
-    title: 'Type with Correct Hindi Shaping',
-    desc: 'Type using standard Unicode Hindi keyboards or Google Input Tools. Our HarfBuzz layout engine ensures all conjuncts (क्ष, त्र, ज्ञ) and matras align flawlessly.',
-  },
-  {
-    icon: FileCheck,
-    number: '04',
-    title: 'Export Clean Vector PDF',
-    desc: 'Download your newly rendered, print-ready PDF instantly. Your original document remains completely unmodified on your device.',
-  },
-];
-
-
 export function HowItWorks() {
+  const { t, isHindi } = useLanguage();
+
+  const steps = [
+    {
+      icon: UploadCloud,
+      number: '01',
+      title: t('how.step1Title'),
+      desc: t('how.step1Desc'),
+    },
+    {
+      icon: Edit3,
+      number: '02',
+      title: t('how.step2Title'),
+      desc: t('how.step2Desc'),
+    },
+    {
+      icon: Type,
+      number: '03',
+      title: t('how.step3Title'),
+      desc: t('how.step3Desc'),
+    },
+    {
+      icon: FileCheck,
+      number: '04',
+      title: t('how.step4Title'),
+      desc: t('how.step4Desc'),
+    },
+  ];
+
   return (
     <section id="how-it-works" className="py-24 bg-white border-y border-line" aria-labelledby="how-it-works-heading">
       <div className="section-x">
         <div className="mx-auto mb-16 max-w-3xl text-center">
           <div className="mb-3 font-display text-sm font-semibold uppercase tracking-[0.08em] text-brand">
-            How It Works
+            {t('how.eyebrow')}
           </div>
           <h2
             id="how-it-works-heading"
             className="text-[clamp(28px,3.6vw,42px)] font-bold leading-tight text-ink"
           >
-            How to Edit Hindi PDF Online in 4 Easy Steps
+            {t('how.title')}
           </h2>
           <p className="mt-4 text-lg text-muted">
-            Edit and replace Devanagari text without broken fonts, missing matras, or privacy risks.
-            No software installation or account required.
+            {t('how.subtitle')}
           </p>
         </div>
 
@@ -83,7 +84,9 @@ export function HowItWorks() {
         </ol>
 
         <div className="mt-12 text-center">
-          <Btn href={toolHref('edit')}>Start Editing Hindi PDF Now →</Btn>
+          <Btn href={toolHref('edit')}>
+            {isHindi ? 'अभी हिंदी पीडीएफ एडिट करना शुरू करें →' : 'Start Editing Hindi PDF Now →'}
+          </Btn>
         </div>
       </div>
     </section>

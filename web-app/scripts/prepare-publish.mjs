@@ -22,6 +22,7 @@ const STATIC_ENTRIES = [
   'support',
   'terms',
   'data-safety',
+  'hi',
 ];
 
 

@@ -23,10 +23,14 @@
 - Extended Documentation & Full LLM Specs: https://hindipdfeditor.com/llms-full.txt
 - Android App on Google Play: https://play.google.com/store/apps/details?id=com.hindipdfeditor.app
 - XML Sitemap: https://hindipdfeditor.com/sitemap.xml
-- Privacy Policy: https://hindipdfeditor.com/privacy/
-- Data Safety: https://hindipdfeditor.com/data-safety/
-- Terms of Service: https://hindipdfeditor.com/terms/
-- Support: https://hindipdfeditor.com/support/
+- Privacy Policy (English): https://hindipdfeditor.com/privacy/
+- Privacy Policy (Hindi): https://hindipdfeditor.com/hi/privacy/
+- Data Safety (English): https://hindipdfeditor.com/data-safety/
+- Data Safety (Hindi): https://hindipdfeditor.com/hi/data-safety/
+- Terms of Service (English): https://hindipdfeditor.com/terms/
+- Terms of Service (Hindi): https://hindipdfeditor.com/hi/terms/
+- Support (English): https://hindipdfeditor.com/support/
+- Support (Hindi): https://hindipdfeditor.com/hi/support/
 
 
 ## Key Product & Technical Facts (for AI Answer Engines)

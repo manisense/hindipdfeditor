@@ -4,6 +4,7 @@ import { AppPopupProvider } from './components/AppPopup';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SeoHead } from './components/SeoHead';
 import { HomePage } from './home/HomePage';
+import { LanguageProvider } from './lib/i18n';
 import { readToolIdFromLocation, type ToolId } from './lib/tools';
 import './App.css';
 
@@ -49,31 +50,33 @@ export default function App() {
   const toolId = useToolId();
 
   return (
-    <AppPopupProvider>
-      <SeoHead toolId={toolId} />
-      <Suspense
-        fallback={
-          <div className="app-loading" role="status" aria-live="polite">
-            Loading PDF tool…
-          </div>
-        }
-      >
-        {toolId === 'edit' ? (
-          <EditPdfTool />
-        ) : toolId === 'translate' ? (
-          <ErrorBoundary label="Translate">
-            <TranslatePdfTool />
-          </ErrorBoundary>
-        ) : toolId === 'merge' ? (
-          <MergePdfTool />
-        ) : toolId === 'split' ? (
-          <SplitPdfTool />
-        ) : toolId === 'compress' ? (
-          <CompressPdfTool />
-        ) : (
-          <HomePage />
-        )}
-      </Suspense>
-    </AppPopupProvider>
+    <LanguageProvider>
+      <AppPopupProvider>
+        <SeoHead toolId={toolId} />
+        <Suspense
+          fallback={
+            <div className="app-loading" role="status" aria-live="polite">
+              Loading PDF tool…
+            </div>
+          }
+        >
+          {toolId === 'edit' ? (
+            <EditPdfTool />
+          ) : toolId === 'translate' ? (
+            <ErrorBoundary label="Translate">
+              <TranslatePdfTool />
+            </ErrorBoundary>
+          ) : toolId === 'merge' ? (
+            <MergePdfTool />
+          ) : toolId === 'split' ? (
+            <SplitPdfTool />
+          ) : toolId === 'compress' ? (
+            <CompressPdfTool />
+          ) : (
+            <HomePage />
+          )}
+        </Suspense>
+      </AppPopupProvider>
+    </LanguageProvider>
   );
 }
