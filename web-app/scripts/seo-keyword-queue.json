@@ -1,8 +1,41 @@
 [
   {
+    "slug": "hindi-pdf-kaise-edit-kare",
+    "title": "हिंदी पीडीएफ कैसे एडिट करें — PDF में हिंदी टाइपिंग और सुधार का आसान तरीका",
+    "category": "देवनागरी टाइपोग्राफी",
+    "language": "hi",
+    "status": "published",
+    "publishedDate": "2026-08-18"
+  },
+  {
+    "slug": "kruti-dev-pdf-unicode-converter-hindi",
+    "title": "कृति देव 010 पीडीएफ को यूनिकोड में कैसे बदलें और एडिट करें",
+    "category": "फॉन्ट कन्वर्जन",
+    "language": "hi",
+    "status": "published",
+    "publishedDate": "2026-08-18"
+  },
+  {
+    "slug": "sarkari-admit-card-name-correction-affidavit-hindi",
+    "title": "एडमिट कार्ड और सरकारी फॉर्म में नाम सुधार शपथ पत्र (Affidavit) कैसे बनाएं",
+    "category": "सरकारी भर्ती",
+    "language": "hi",
+    "status": "published",
+    "publishedDate": "2026-08-18"
+  },
+  {
+    "slug": "khasra-khatauni-bhulekh-sudhar-hindi-pdf",
+    "title": "भूलेख खसरा-खतौनी और परिमार्जन पीडीएफ में नाम सुधार कैसे करें",
+    "category": "भूलेख और राजस्व",
+    "language": "hi",
+    "status": "published",
+    "publishedDate": "2026-08-18"
+  },
+  {
     "slug": "fix-broken-hindi-fonts-in-pdf",
     "title": "Why Hindi Fonts & Matras Break in PDF Editors (and How to Fix Them)",
     "category": "Typography & Fonts",
+    "language": "en",
     "status": "published",
     "publishedDate": "2026-08-18"
   },
@@ -10,6 +43,7 @@
     "slug": "edit-sarkari-admit-card-hindi-pdf",
     "title": "How to Edit Hindi Admit Card & Sarkari Exam PDF Forms (BPSC, UPPSC, SSC)",
     "category": "Govt & Exams",
+    "language": "en",
     "status": "published",
     "publishedDate": "2026-08-18"
   },
@@ -17,6 +51,7 @@
     "slug": "translate-hindi-pdf-to-english",
     "title": "How to Translate Hindi PDF to English Online Without Losing Page Formatting",
     "category": "Translation & AI",
+    "language": "en",
     "status": "published",
     "publishedDate": "2026-08-18"
   },
@@ -24,64 +59,177 @@
     "slug": "kruti-dev-to-unicode-hindi-pdf-editor",
     "title": "How to Edit Kruti Dev 010 Hindi PDF and Convert to Unicode Online",
     "category": "Typography & Fonts",
-    "metaDescription": "Learn how to edit legacy Kruti Dev 010 Hindi PDF files, fix garbled English characters, and convert text to clean Unicode Devanagari online for free.",
-    "directAnswer": "To edit a Kruti Dev 010 Hindi PDF, open the file in Hindi PDF Editor. The tool detects legacy font encodings, allows you to mask the old garbled text box, and type replacement text using modern Unicode Devanagari (Mangal/Noto Sans). The exported PDF renders clean vector text compatible with all devices without requiring Kruti Dev fonts installed.",
-    "readTime": "5 min read",
-    "badgeTone": "Typography & Fonts",
+    "language": "en",
+    "status": "published",
+    "publishedDate": "2026-08-18"
+  },
+  {
+    "slug": "swapramanit-ghoshna-patra-edistrict-hindi-pdf",
+    "title": "e-District UP स्वप्रमाणित घोषणा पत्र PDF कैसे भरें और डाउनलोड करें (जाति, आय, निवास)",
+    "category": "सरकारी और ई-डिस्ट्रिक्ट",
+    "language": "hi",
+    "metaDescription": "उत्तर प्रदेश e-District पोर्टल के लिए स्वप्रमाणित घोषणा पत्र (Self Declaration Form) हिंदी पीडीएफ में भरने, एडिट करने और 100KB साइज में सेव करने का पूरा तरीका।",
+    "directAnswer": "e-District UP स्वप्रमाणित घोषणा पत्र भरने के लिए Hindi PDF Editor में प्रपत्र खोलें। अपना नाम, पिता/पति का नाम, उम्र, व्यवसाय और निवास स्थान टाइप करें। धारा 199/200 के तहत स्वघोषणा की पुष्टि करें और Export PDF दबाकर 100KB के अंदर पोर्टल-रेडी फाइल डाउनलोड करें।",
+    "readTime": "4 min read",
+    "badgeTone": "tag-green",
     "sections": [
       {
-        "heading": "Why Kruti Dev 010 PDFs Show Up as Garbled English",
+        "heading": "स्वप्रमाणित घोषणा पत्र की कानूनी अनिवार्यता",
         "paragraphs": [
-          "Kruti Dev 010 is a legacy ASCII-mapped font where standard Latin keyboard characters (like 'd', 'k', 'j') are remapped to Hindi glyph shapes. When opened in modern PDF readers that expect Unicode, Kruti Dev text appears as random English characters like 'd`fr nso' instead of 'कृति देव'.",
-          "Most online PDF editors fail to convert Kruti Dev because they cannot map legacy non-standard glyph indexes to canonical Unicode code points."
-        ]
-      },
-      {
-        "heading": "How to Replace Kruti Dev Text with Unicode in Hindi PDF Editor",
-        "paragraphs": [
-          "Hindi PDF Editor uses raster-only Unicode replacement mode: the original page image is preserved with 100% fidelity, and new edits are rendered with standard Unicode fonts (Google Noto Sans Devanagari / Mangal). This eliminates font dependencies entirely."
+          "उत्तर प्रदेश में जाति, आय, मूल निवास और हैसियत प्रमाण पत्र बनवाने के लिए प्रार्थी का 'स्वप्रमाणित घोषणा पत्र' लगाना अनिवार्य है।",
+          "इस प्रपत्र में किसी भी गलत बयानबाजी पर भारतीय दंड संहिता (IPC) की धारा 199 व 200 के अंतर्गत कानूनी कार्रवाई का प्रावधान होता है।"
         ]
       }
     ],
     "steps": [
       {
-        "title": "Open Your Kruti Dev PDF",
-        "desc": "Drag and drop your PDF into Hindi PDF Editor. The document renders cleanly in high resolution."
+        "title": "घोषणा पत्र पीडीएफ खोलें",
+        "desc": "e-District का रिक्त स्वप्रमाणित घोषणा पत्र एडिटर में लोड करें।"
       },
       {
-        "title": "Mask the Legacy Text Field",
-        "desc": "Click on the line containing Kruti Dev text. The editor applies a background-matching mask over the old characters."
+        "title": "खाली स्थानों पर विवरण भरें",
+        "desc": "नाम, पिता का नाम और पता शुद्ध देवनागरी हिंदी में टाइप करें।"
       },
       {
-        "title": "Type in Clean Unicode Hindi",
-        "desc": "Type using any standard Hindi keyboard (Mangal, InScript, or Google Input). The text shapes perfectly with HarfBuzz OpenType layout."
-      },
-      {
-        "title": "Export Universal PDF",
-        "desc": "Click Export PDF to download a vector-accurate PDF readable on any phone, tablet, or PC without missing font errors."
+        "title": "100KB साइज में एक्सपोर्ट करें",
+        "desc": "Portal Safe कंप्रेशन सेलेक्ट करके सीधे ई-डिस्ट्रिक्ट पोर्टल पर अपलोड करने योग्य पीडीएफ डाउनलोड करें।"
       }
     ],
     "faqs": [
       {
-        "q": "Do I need to install Kruti Dev font to edit my PDF?",
-        "a": "No. Hindi PDF Editor renders replacement text using universal Unicode Devanagari webfonts, so no font installation is required."
-      },
-      {
-        "q": "Will the exported PDF open on mobile phones?",
-        "a": "Yes. Because Unicode is universally supported across Android, iOS, Windows, and Mac, your exported PDF will look identical on every screen."
+        "q": "क्या ई-डिस्ट्रिक्ट पोर्टल पर 100KB से बड़ी पीडीएफ अपलोड होती है?",
+        "a": "नहीं। ई-डिस्ट्रिक्ट पोर्टल पर 100KB की सख्त सीमा है। हमारा एडिटर ऑटोमैटिक रूप से इसे 100KB से कम साइज में तैयार करता है।"
       }
     ],
-    "status": "published",
-    "publishedDate": "2026-08-18"
+    "status": "queued"
+  },
+  {
+    "slug": "bihar-bhumi-parimarjan-plus-shapath-patra-pdf",
+    "title": "बिहार भूमि परिमार्जन प्लस स्वघोषणा शपथ पत्र PDF कैसे तैयार करें",
+    "category": "भूलेख और राजस्व",
+    "language": "hi",
+    "metaDescription": "बिहार भूमि सुधार परिमार्जन पोर्टल (Parimarjan Plus) पर खता, खेसरा, रकबा या लगान सुधार हेतु स्वघोषणा पत्र पीडीएफ ऑनलाइन भरने और एडिट करने की गाइड।",
+    "directAnswer": "बिहार परिमार्जन प्लस स्वघोषणा पत्र तैयार करने के लिए Hindi PDF Editor में आवेदन प्रपत्र खोलें। अपना जमाबंदी नंबर, खाता, खसरा और सही रकबा (डिसमिल/एकड़) दर्ज करें। लगान रसीद के साथ मर्ज करके तुरंत पोर्टल अपलोड के लिए तैयार पीडीएफ पाएं।",
+    "readTime": "4 min read",
+    "badgeTone": "tag-green",
+    "sections": [
+      {
+        "heading": "परिमार्जन प्लस में आवश्यक सुधार विवरण",
+        "paragraphs": [
+          "डिजिटाइज्ड जमाबंदी में पूर्वजों के नाम की वर्तनी, गलत खाता संख्या या छूटे हुए हिस्सेदारों के नाम को सुधारने के लिए अंचल अधिकारी (CO) को स्वघोषणा पत्र देना होता है।"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "परिमार्जन प्रारूप खोलें",
+        "desc": "प्रपत्र को एडिटर में लोड करें।"
+      },
+      {
+        "title": "सुधार का विवरण दर्ज करें",
+        "desc": "सही खाता/खेसरा और रकबा हिंदी में भरें।"
+      },
+      {
+        "title": "दस्तावेज एक्सपोर्ट करें",
+        "desc": "CO लॉगिन पर सबमिट करने के लिए क्लियर वेक्टर पीडीएफ डाउनलोड करें।"
+      }
+    ],
+    "faqs": [
+      {
+        "q": "क्या परिमार्जन आवेदन मोबाइल से भरा जा सकता है?",
+        "a": "हाँ, आप मोबाइल से परिमार्जन पीडीएफ फॉर्म भरकर डाउनलोड कर सकते हैं।"
+      }
+    ],
+    "status": "queued"
+  },
+  {
+    "slug": "pdf-size-kam-kaise-kare-100kb-sarkari-form",
+    "title": "सरकारी फॉर्म के लिए PDF साइज कम कैसे करें (100KB और 200KB में बदलें)",
+    "category": "पीडीएफ टूल्स",
+    "language": "hi",
+    "metaDescription": "UPSC, SSC, BPSC, और UP Police सरकारी नौकरी फॉर्म में अपलोड करने के लिए पीडीएफ साइज 50KB, 100KB या 200KB में बिना लिखावट धुंधली किए कंप्रेस करें।",
+    "directAnswer": "सरकारी फॉर्म के लिए पीडीएफ साइज कम करने के लिए hindipdfeditor.com/edit/?tool=compress पर जाएं। फाइल चुनें, 'Portal Safe (100KB)' या 'Standard (200KB)' विकल्प चुनें और Compress PDF दबाएं। आपकी हिंदी लिखावट बिल्कुल साफ रहेगी और फाइल साइज तुरंत कम हो जाएगा।",
+    "readTime": "3 min read",
+    "badgeTone": "tag-amber",
+    "sections": [
+      {
+        "heading": "सरकारी पोर्टल्स की अपलोड सीमा (Upload Limits)",
+        "paragraphs": [
+          "सरकारी भर्ती पोर्टल्स (जैसे BPSC, SSC, UP Police) 100KB से 300KB की लिमिट लगाते हैं। साधारण ऑनलाइन कंप्रेसर हिंदी के अक्षरों और मात्राओं को धुंधला कर देते हैं, जिससे फॉर्म रिजेक्ट हो जाता है।",
+          "हमारा स्मार्ट डीपीआई स्केलर देवनागरी स्ट्रोक्स को क्रिस्प रखते हुए फाइल साइज को कम करता है।"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "फाइल सेलेक्ट करें",
+        "desc": "कंप्रेस टूल में अपनी बड़ी पीडीएफ फाइल डालें।"
+      },
+      {
+        "title": "टारगेट साइज चुनें",
+        "desc": "100KB या 200KB प्रीसेट पर क्लिक करें।"
+      },
+      {
+        "title": "डाउनलोड करें",
+        "desc": "तुरंत हल्की और साफ पीडीएफ फाइल सेव करें।"
+      }
+    ],
+    "faqs": [
+      {
+        "q": "क्या कंप्रेस करने से हिंदी फोंट खराब होंगे?",
+        "a": "नहीं। हमारा एल्गोरिदम टेक्स्ट कंट्रास्ट को सुरक्षित रखता है।"
+      }
+    ],
+    "status": "queued"
+  },
+  {
+    "slug": "e-stamp-paper-par-hindi-matter-print-margin-guide",
+    "title": "e-Stamp पेपर पर हिंदी शपथ पत्र (Affidavit) प्रिंट करने का सही मार्जिन तरीका",
+    "category": "कानूनी और शपथ पत्र",
+    "language": "hi",
+    "metaDescription": "₹10, ₹50, ₹100 के ई-स्टांप पेपर पर बारकोड को बचाकर नीचे 60% हिस्से में हिंदी शपथ पत्र और अनुबंध प्रिंट करने की सही मार्जिन सेटिंग गाइड।",
+    "directAnswer": "e-Stamp पेपर पर प्रिंट करने के लिए टॉप मार्जिन को 4.5 इंच (11.5 cm) पर सेट करें ताकि सरकारी ट्रेजरी बारकोड और सील पर टेक्स्ट ओवरलैप न हो। Hindi PDF Editor में e-Stamp प्रीसेट का उपयोग करके सीधे लीगल साइज या A4 पर परफेक्ट प्रिंट निकालें।",
+    "readTime": "4 min read",
+    "badgeTone": "tag-blue",
+    "sections": [
+      {
+        "heading": "ई-स्टांप पेपर खराब होने से कैसे बचाएं?",
+        "paragraphs": [
+          "Stock Holding Corporation (SHCIL) के ई-स्टांप सर्टिफिकेट में ऊपर का 40% हिस्सा ट्रेजरी बारकोड और होलोग्राम के लिए आरक्षित होता है। गलत मार्जिन से प्रिंट करने पर स्टांप पेपर खराब हो जाता है।"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "एफिडेविट टेक्स्ट तैयार करें",
+        "desc": "एडिटर में शपथ पत्र का हिंदी मैटर लिखें।"
+      },
+      {
+        "title": "Top Margin 4.5 inch सेट करें",
+        "desc": "ई-स्टांप मार्जिन प्रीसेट लागू करें।"
+      },
+      {
+        "title": "प्रिंट टेस्ट लें",
+        "desc": "सादे कागज पर टेस्ट प्रिंट करके स्टांप पेपर पर फाइनल प्रिंट निकालें।"
+      }
+    ],
+    "faqs": [
+      {
+        "q": "क्या ई-स्टांप पेपर के लिए विशेष प्रिंटर चाहिए?",
+        "a": "नहीं, किसी भी सामान्य लेजर या इंकजेट प्रिंटर से प्रिंट किया जा सकता है।"
+      }
+    ],
+    "status": "queued"
   },
   {
     "slug": "khasra-khatauni-land-record-hindi-pdf-edit",
     "title": "How to Edit Hindi Khasra-Khatauni & Land Record (Bhulekh) PDF Documents",
     "category": "Govt & Legal",
+    "language": "en",
     "metaDescription": "Step-by-step tutorial on how to edit and correct Hindi text, plot numbers, and owner names in Bhulekh Khasra-Khatauni land record PDFs safely.",
     "directAnswer": "To edit a Hindi Khasra-Khatauni (Bhulekh) land record PDF, open it in Hindi PDF Editor at hindipdfeditor.com/edit/. Mask the outdated plot number, farmer name, or acreage field, and type the updated details in Unicode Hindi. Because all editing runs 100% locally in your browser, sensitive land ownership records are never uploaded to cloud servers.",
     "readTime": "4 min read",
-    "badgeTone": "Govt & Legal",
+    "badgeTone": "tag-green",
     "sections": [
       {
         "heading": "Common Land Record Corrections (UP, MP, Bihar Bhulekh)",
@@ -122,10 +270,11 @@
     "slug": "up-police-bharti-admit-card-hindi-pdf-edit",
     "title": "How to Edit UP Police Bharti & Constable Exam Admit Card Hindi PDF",
     "category": "Govt & Exams",
+    "language": "en",
     "metaDescription": "Guide to editing UP Police Constable recruitment admit cards, fixing Hindi name typos, examination center details, and photo signatures safely.",
     "directAnswer": "To edit or correct details on a UP Police Constable admit card PDF, load the file into Hindi PDF Editor. Select the candidate name, roll number, or exam date line to mask and type the corrected text in Unicode Hindi. Export the vector PDF immediately with 100% correct Devanagari matras.",
     "readTime": "4 min read",
-    "badgeTone": "Govt & Exams",
+    "badgeTone": "tag-green",
     "sections": [
       {
         "heading": "Handling Admit Card Typographical Errors",
@@ -165,10 +314,11 @@
     "slug": "merge-multiple-hindi-pdf-files-online",
     "title": "How to Merge Multiple Hindi PDF Files Online in Order (100% Free & Private)",
     "category": "Document Management",
+    "language": "en",
     "metaDescription": "Learn how to combine and merge multiple Hindi PDF files into a single document in sequential order for free without file size limits or server uploads.",
     "directAnswer": "To merge multiple Hindi PDF files, visit hindipdfeditor.com/edit/?tool=merge. Select or drag multiple PDF documents, arrange their sequence using the drag handles or arrow buttons, and click Merge PDFs. The files are combined 100% locally in your browser memory without uploading any data to external servers.",
     "readTime": "3 min read",
-    "badgeTone": "Document Management",
+    "badgeTone": "tag-amber",
     "sections": [
       {
         "heading": "Why Local PDF Merging is Safer",
@@ -208,10 +358,11 @@
     "slug": "compress-scanned-hindi-pdf-without-blur",
     "title": "How to Compress Large Scanned Hindi PDFs Without Quality Loss",
     "category": "Document Management",
+    "language": "en",
     "metaDescription": "Learn how to reduce scanned Hindi PDF file size below 100KB, 200KB, or 500KB for government job portals without making Hindi matras blurry.",
     "directAnswer": "To compress a large scanned Hindi PDF, open hindipdfeditor.com/edit/?tool=compress. Choose your preferred compression mode (Balanced, Strong, or Maximum Compression), and click Compress PDF. The tool optimizes image streams and removes redundant metadata while keeping Devanagari text razor-sharp for portal uploads.",
     "readTime": "3 min read",
-    "badgeTone": "Document Management",
+    "badgeTone": "tag-coral",
     "sections": [
       {
         "heading": "Meeting Sarkari Portal Upload Size Limits (100KB - 300KB)",

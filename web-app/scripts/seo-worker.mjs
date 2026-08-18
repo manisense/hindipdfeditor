@@ -36,11 +36,13 @@ function generateArticleHtml(item) {
   const category = escapeHtml(item.category || 'Guides & Tutorials');
   const directAnswer = escapeHtml(item.directAnswer);
 
+  const isHindi = item.language === 'hi' || /[\u0900-\u097F]/.test(item.title);
+
   const sectionsHtml = (item.sections || [])
     .map(
       (sec) => `
         <h2>${escapeHtml(sec.heading)}</h2>
-        ${(sec.paragraphs || []).map((p) => `<p>${escapeHtml(p)}</p>`).join('\n')}
+        ${sec.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('\n')}
       `
     )
     .join('\n');
@@ -48,8 +50,8 @@ function generateArticleHtml(item) {
   const stepsHtml = (item.steps || [])
     .map(
       (step, idx) => `
-        <div class="guide-step">
-          <h4>Step ${idx + 1}: ${escapeHtml(step.title)}</h4>
+        <div class="step-card">
+          <h4>${isHindi ? 'स्टेप' : 'Step'} ${idx + 1}: ${escapeHtml(step.title)}</h4>
           <p>${escapeHtml(step.desc)}</p>
         </div>
       `
@@ -72,6 +74,7 @@ function generateArticleHtml(item) {
       {
         '@type': 'Article',
         '@id': `${canonicalUrl}#article`,
+        inLanguage: isHindi ? 'hi' : 'en',
         headline: item.title,
         description: item.metaDescription || item.directAnswer,
         url: canonicalUrl,
@@ -99,13 +102,13 @@ function generateArticleHtml(item) {
           {
             '@type': 'ListItem',
             position: 1,
-            name: 'Home',
+            name: isHindi ? 'होम' : 'Home',
             item: 'https://hindipdfeditor.com/',
           },
           {
             '@type': 'ListItem',
             position: 2,
-            name: 'Articles',
+            name: isHindi ? 'लेख और गाइड्स' : 'Articles',
             item: 'https://hindipdfeditor.com/articles/',
           },
           {
@@ -129,7 +132,7 @@ function generateArticleHtml(item) {
   };
 
   return `<!doctype html>
-<html lang="en">
+<html lang="${isHindi ? 'hi' : 'en'}">
   <head>
     <script src="/assets/analytics.js" defer></script>
     <meta charset="utf-8" />
@@ -157,7 +160,7 @@ function generateArticleHtml(item) {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/assets/site.css" />
@@ -167,14 +170,14 @@ function generateArticleHtml(item) {
         --brand-hover: #1130a8;
         --brand-wash: #eef3ff;
         --brand-tint: #d7e7ff;
-        --accent: #1843dd;
+        --accent: #01873e;
         --navy: #050839;
         --ink: #15172c;
         --muted: #5b6172;
         --cream: #fbf8f1;
         --line: #eceae2;
         --font-display: 'Plus Jakarta Sans', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
-        --font-body: 'Inter', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
+        --font-body: 'Noto Sans Devanagari', 'Inter', ui-sans-serif, system-ui, sans-serif;
       }
 
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -182,7 +185,7 @@ function generateArticleHtml(item) {
         font-family: var(--font-body);
         background: #ffffff;
         color: var(--ink);
-        line-height: 1.6;
+        line-height: 1.7;
         -webkit-font-smoothing: antialiased;
       }
       a { color: var(--brand); text-decoration: none; }
@@ -306,14 +309,14 @@ function generateArticleHtml(item) {
         font-size: clamp(2rem, 3.8vw, 2.9rem);
         font-weight: 800;
         letter-spacing: -0.02em;
-        line-height: 1.2;
+        line-height: 1.3;
         color: var(--ink);
         margin-bottom: 14px;
       }
       .article-hero p {
         color: var(--muted);
         font-size: 17px;
-        line-height: 1.6;
+        line-height: 1.65;
         max-width: 700px;
         margin: 0 auto;
       }
@@ -333,16 +336,16 @@ function generateArticleHtml(item) {
       }
       .direct-answer h4 {
         font-family: var(--font-display);
-        font-size: 16.5px;
+        font-size: 17px;
         font-weight: 800;
         color: var(--ink);
         margin-bottom: 8px;
       }
       .direct-answer p {
-        font-size: 15px;
+        font-size: 15.5px;
         font-weight: 500;
         color: var(--ink);
-        line-height: 1.65;
+        line-height: 1.7;
       }
       .article-body h2 {
         font-family: var(--font-display);
@@ -353,16 +356,16 @@ function generateArticleHtml(item) {
         letter-spacing: -0.01em;
       }
       .article-body p {
-        font-size: 16px;
+        font-size: 16.5px;
         color: #2b2e4a;
-        line-height: 1.7;
+        line-height: 1.75;
         margin-bottom: 16px;
       }
       .article-body ul, .article-body ol {
         margin: 14px 0 20px 24px;
         color: #2b2e4a;
-        font-size: 15.5px;
-        line-height: 1.7;
+        font-size: 16px;
+        line-height: 1.75;
       }
       .article-body li { margin-bottom: 8px; }
       .step-card {
@@ -375,17 +378,18 @@ function generateArticleHtml(item) {
       }
       .step-card h4 {
         font-family: var(--font-display);
-        font-size: 16.5px;
+        font-size: 17px;
         font-weight: 800;
         color: var(--ink);
         margin-bottom: 8px;
       }
       .step-card p {
-        font-size: 15px;
+        font-size: 15.5px;
         color: var(--muted);
         margin-bottom: 0;
-        line-height: 1.6;
+        line-height: 1.65;
       }
+
       .article-cta-box {
         margin-top: 48px;
         background: #ffffff;
@@ -404,7 +408,7 @@ function generateArticleHtml(item) {
       }
       .article-cta-box p {
         color: var(--muted);
-        font-size: 15px;
+        font-size: 15.5px;
         margin-bottom: 22px;
       }
 
@@ -453,6 +457,7 @@ function generateArticleHtml(item) {
         .foot-grid { grid-template-columns: 1fr; gap: 28px; }
       }
     </style>
+
     <script type="application/ld+json">
       ${JSON.stringify(schemaGraph, null, 2)}
     </script>
@@ -466,11 +471,11 @@ function generateArticleHtml(item) {
           <span>Hindi PDF <span style="color: var(--brand);">Editor</span></span>
         </a>
         <nav class="nav-menu" aria-label="Primary navigation">
-          <a href="/#features">Features</a>
-          <a href="/#how-it-works">How it works</a>
-          <a href="/#compare">Compare</a>
-          <a href="/#use-cases">Use cases</a>
-          <a class="active" href="/articles/">Guides</a>
+          <a href="/#features">${isHindi ? 'विशेषताएं' : 'Features'}</a>
+          <a href="/#how-it-works">${isHindi ? 'कैसे काम करता है' : 'How it works'}</a>
+          <a href="/#compare">${isHindi ? 'तुलना' : 'Compare'}</a>
+          <a href="/#use-cases">${isHindi ? 'उपयोग' : 'Use cases'}</a>
+          <a class="active" href="/articles/">${isHindi ? 'गाइड्स' : 'Guides'}</a>
         </nav>
         <div class="nav-ctas">
           <a
@@ -482,7 +487,7 @@ function generateArticleHtml(item) {
             Google Play
           </a>
           <a class="btn-editor" href="/edit/?tool=edit">
-            Open editor
+            ${isHindi ? 'एडिटर खोलें' : 'Open editor'}
           </a>
         </div>
       </header>
@@ -504,7 +509,7 @@ function generateArticleHtml(item) {
       <article class="article-body">
         <!-- Direct Answer Block for AEO -->
         <div class="direct-answer">
-          <h4>Direct Answer: ${title}</h4>
+          <h4>${isHindi ? 'सीधा उत्तर' : 'Direct Answer'}: ${title}</h4>
           <p>
             ${directAnswer}
           </p>
@@ -512,12 +517,12 @@ function generateArticleHtml(item) {
 
         ${sectionsHtml}
 
-        <h2>Step-by-Step Instructions</h2>
+        <h2>${isHindi ? 'स्टेप-बाय-स्टेप निर्देश' : 'Step-by-Step Instructions'}</h2>
         ${stepsHtml}
 
         ${
           faqs.length > 0
-            ? `<h2>Frequently Asked Questions</h2>
+            ? `<h2>${isHindi ? 'अक्सर पूछे जाने वाले सवाल (FAQs)' : 'Frequently Asked Questions'}</h2>
                ${faqs
                  .map(
                    (f) => `
@@ -532,10 +537,10 @@ function generateArticleHtml(item) {
         }
 
         <div class="article-cta-box">
-          <h3>Try Hindi PDF Editor Free</h3>
-          <p>Zero server uploads · 100% Client-Side Private · Flawless Devanagari Shaping</p>
+          <h3>${isHindi ? 'अभी हिंदी पीडीएफ एडिट करना शुरू करें' : 'Try Hindi PDF Editor Free'}</h3>
+          <p>${isHindi ? '100% प्राइवेट · कोई सर्वर अपलोड नहीं · सही देवनागरी मात्राएं' : 'Zero server uploads · 100% Client-Side Private · Flawless Devanagari Shaping'}</p>
           <a href="/edit/?tool=edit" class="btn-editor" style="font-size: 15px; padding: 12px 28px;">
-            Open Editor Now →
+            ${isHindi ? 'एडिटर खोलें →' : 'Open Editor Now →'}
           </a>
         </div>
       </article>
@@ -550,23 +555,23 @@ function generateArticleHtml(item) {
             <span>Hindi PDF <span style="color: var(--brand);">Editor</span></span>
           </a>
           <p style="color: var(--muted); font-size: 14px; line-height: 1.55;">
-            Local-first Hindi PDF tools with flawless Devanagari shaping.
+            ${isHindi ? 'भारत का पहला लोकल-फर्स्ट हिंदी पीडीएफ एडिटर।' : 'Local-first Hindi PDF tools with flawless Devanagari shaping.'}
           </p>
         </div>
         <div class="foot-col">
-          <h4>Tools</h4>
-          <a href="/edit/?tool=edit">Edit Hindi PDF</a>
-          <a href="/edit/?tool=translate">Translate Hindi ↔ English</a>
-          <a href="/edit/?tool=merge">Merge PDF</a>
-          <a href="/edit/?tool=split">Split PDF</a>
-          <a href="/edit/?tool=compress">Compress PDF</a>
+          <h4>${isHindi ? 'टूल्स' : 'Tools'}</h4>
+          <a href="/edit/?tool=edit">${isHindi ? 'हिंदी पीडीएफ एडिट करें' : 'Edit Hindi PDF'}</a>
+          <a href="/edit/?tool=translate">${isHindi ? 'हिंदी अनुवाद' : 'Translate Hindi ↔ English'}</a>
+          <a href="/edit/?tool=merge">${isHindi ? 'पीडीएफ जोड़ें' : 'Merge PDF'}</a>
+          <a href="/edit/?tool=split">${isHindi ? 'पीडीएफ अलग करें' : 'Split PDF'}</a>
+          <a href="/edit/?tool=compress">${isHindi ? 'साइज कम करें' : 'Compress PDF'}</a>
         </div>
         <div class="foot-col">
-          <h4>Resources</h4>
-          <a href="/articles/">Articles &amp; Guides</a>
-          <a href="/support/">Support</a>
-          <a href="/privacy/">Privacy Policy</a>
-          <a href="/terms/">Terms of Service</a>
+          <h4>${isHindi ? 'गाइड्स और नीतियां' : 'Resources'}</h4>
+          <a href="/articles/">${isHindi ? 'सभी गाइड्स' : 'Articles & Guides'}</a>
+          <a href="/support/">${isHindi ? 'सपोर्ट' : 'Support'}</a>
+          <a href="/privacy/">${isHindi ? 'प्राइवेसी पॉलिसी' : 'Privacy Policy'}</a>
+          <a href="/terms/">${isHindi ? 'नियम व शर्तें' : 'Terms of Service'}</a>
         </div>
       </div>
       <div class="foot-bottom">
@@ -577,7 +582,6 @@ function generateArticleHtml(item) {
   </body>
 </html>
 `;
-
 }
 
 function updateSitemap(slug) {
@@ -614,21 +618,31 @@ function updateArticlesHub(item) {
   let hub = readFileSync(articlesHubPath, 'utf8');
   if (hub.includes(`/articles/${item.slug}/`)) return;
 
+  const isHindi = item.language === 'hi' || /[\u0900-\u097F]/.test(item.title);
+
   const categoryMap = {
     'Typography & Fonts': { tone: 'tag-blue', filter: 'typography' },
     'Govt & Exams': { tone: 'tag-green', filter: 'govt' },
     'Govt & Legal': { tone: 'tag-green', filter: 'govt' },
     'Translation & AI': { tone: 'tag-lav', filter: 'translation' },
     'Document Management': { tone: 'tag-amber', filter: 'management' },
+    'देवनागरी टाइपोग्राफी': { tone: 'tag-blue', filter: 'typography' },
+    'फॉन्ट कन्वर्जन': { tone: 'tag-blue', filter: 'typography' },
+    'सरकारी और ई-डिस्ट्रिक्ट': { tone: 'tag-green', filter: 'govt' },
+    'सरकारी भर्ती': { tone: 'tag-green', filter: 'govt' },
+    'भूलेख और राजस्व': { tone: 'tag-green', filter: 'govt' },
+    'पीडीएफ टूल्स': { tone: 'tag-amber', filter: 'management' },
+    'कानूनी और शपथ पत्र': { tone: 'tag-blue', filter: 'govt' },
   };
 
   const meta = categoryMap[item.category] || { tone: 'tag-blue', filter: 'all' };
+  const badgeLabel = isHindi ? `🇮🇳 हिन्दी · ${item.category}` : item.category;
 
   const cardHtml = `
           <!-- Article: ${item.slug} -->
-          <a href="/articles/${item.slug}/" class="guide-card" data-category="${meta.filter}">
+          <a href="/articles/${item.slug}/" class="guide-card" data-category="${meta.filter}" data-lang="${isHindi ? 'hi' : 'en'}">
             <div>
-              <span class="badge-tag ${meta.tone}">${escapeHtml(item.category)}</span>
+              <span class="badge-tag ${meta.tone}">${escapeHtml(badgeLabel)}</span>
               <h3>${escapeHtml(item.title)}</h3>
               <p>
                 ${escapeHtml(item.metaDescription || item.directAnswer)}
@@ -636,7 +650,7 @@ function updateArticlesHub(item) {
             </div>
             <div class="card-footer">
               <span>⏱️ ${item.readTime || '4 min read'}</span>
-              <span class="card-link-text">Read Guide →</span>
+              <span class="card-link-text">${isHindi ? 'गाइड पढ़ें →' : 'Read Guide →'}</span>
             </div>
           </a>`;
 

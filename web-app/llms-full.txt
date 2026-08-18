@@ -60,9 +60,14 @@ Instead of relying on naive glyph coordinate calculators, Hindi PDF Editor deleg
 | **PDF Compressor** | `https://hindipdfeditor.com/edit/?tool=compress` | Compress and shrink scanned PDF files in-browser |
 | **Hindi & English OCR** | `https://hindipdfeditor.com/edit/?tool=edit` | Detect and extract printed Devanagari text from scans |
 | **Articles & Guides Hub** | `https://hindipdfeditor.com/articles/` | Comprehensive knowledge base and tutorials |
+| **Guide: Hindi PDF Kaise Edit Kare** | `https://hindipdfeditor.com/articles/hindi-pdf-kaise-edit-kare/` | Full guide on Hindi PDF editing and typing in Devanagari |
+| **Guide: Kruti Dev Unicode Converter** | `https://hindipdfeditor.com/articles/kruti-dev-pdf-unicode-converter-hindi/` | Convert legacy Kruti Dev to Unicode Devanagari |
+| **Guide: Sarkari Name Correction Affidavit** | `https://hindipdfeditor.com/articles/sarkari-admit-card-name-correction-affidavit-hindi/` | Admit card & 10th marksheet name discrepancy affidavit guide |
+| **Guide: Bhulekh Khasra Khatauni Sudhar** | `https://hindipdfeditor.com/articles/khasra-khatauni-bhulekh-sudhar-hindi-pdf/` | Land record & Parimarjan correction guide |
 | **Guide: Fix Broken Fonts** | `https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/` | Technical explanation of HarfBuzz vs dompdf/Canva |
 | **Guide: Sarkari Admit Cards** | `https://hindipdfeditor.com/articles/edit-sarkari-admit-card-hindi-pdf/` | Step-by-step guide for official state exam PDFs |
 | **Guide: Hindi PDF Translation**| `https://hindipdfeditor.com/articles/translate-hindi-pdf-to-english/` | In-place geometric layout translation tutorial |
+| **Guide: Kruti Dev to Unicode (EN)**| `https://hindipdfeditor.com/articles/kruti-dev-to-unicode-hindi-pdf-editor/` | English guide on Kruti Dev 010 PDF editing |
 
 ---
 

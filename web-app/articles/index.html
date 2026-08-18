@@ -675,9 +675,15 @@
             />
           </div>
 
-          <!-- Category Filter Tabs -->
+          <!-- Language & Category Filter Tabs -->
+          <div class="filter-tabs" role="tablist" style="margin-bottom: 12px;">
+            <button class="tab-btn active" data-lang-filter="all" role="tab">🌐 All Languages (सभी)</button>
+            <button class="tab-btn" data-lang-filter="hi" role="tab">🇮🇳 हिन्दी गाइड्स</button>
+            <button class="tab-btn" data-lang-filter="en" role="tab">🇬🇧 English Guides</button>
+          </div>
+
           <div class="filter-tabs" role="tablist">
-            <button class="tab-btn active" data-filter="all" role="tab">All Guides</button>
+            <button class="tab-btn active" data-filter="all" role="tab">All Topics</button>
             <button class="tab-btn" data-filter="typography" role="tab">Typography &amp; Fonts</button>
             <button class="tab-btn" data-filter="govt" role="tab">Govt &amp; Sarkari</button>
             <button class="tab-btn" data-filter="translation" role="tab">Translation &amp; AI</button>
@@ -689,16 +695,16 @@
       <!-- Main Articles Container -->
       <div class="main-content">
         <!-- Featured Flagship Article -->
-        <a href="/articles/fix-broken-hindi-fonts-in-pdf/" class="featured-card" data-category="typography">
+        <a href="/articles/hindi-pdf-kaise-edit-kare/" class="featured-card" data-category="typography" data-lang="hi">
           <div>
-            <span class="badge-tag tag-blue">Featured Deep-Dive · Typography</span>
-            <h2>Why Hindi Fonts &amp; Matras Break in PDF Editors (and How to Fix Them)</h2>
+            <span class="badge-tag tag-blue">विशेष गाइड · 🇮🇳 हिन्दी</span>
+            <h2>हिंदी पीडीएफ कैसे एडिट करें — PDF में हिंदी लिखने और बदलने का आसान तरीका</h2>
             <p>
-              Understand why Devanagari abugida glyphs and vowel signs detach in Adobe Acrobat and Canva, and how our Chromium HarfBuzz OpenType layout engine achieves 100% ligature fidelity without cloud uploads.
+              जानिए कैसे बिना फॉन्ट टूटे या मात्रा खराब हुए अपने मोबाइल या कंप्यूटर पर शुद्ध देवनागरी यूनिकोड के साथ सरकारी फॉर्म और पीडीएफ एडिट करें।
             </p>
             <div class="card-footer" style="border: none; padding-top: 18px; margin-top: 10px;">
-              <span>⏱️ 5 min read · Updated Aug 2026</span>
-              <span class="card-link-text">Read Complete Guide →</span>
+              <span>⏱️ 5 min read · अपडेटेड 2026</span>
+              <span class="card-link-text">पूरी गाइड पढ़ें →</span>
             </div>
           </div>
           <div class="benchmark-box">
@@ -718,58 +724,73 @@
 
         <!-- Articles Grid -->
         <div class="cards-grid" id="articlesGrid">
-
-          <!-- Article: khasra-khatauni-land-record-hindi-pdf-edit -->
-          <a href="/articles/khasra-khatauni-land-record-hindi-pdf-edit/" class="guide-card" data-category="govt">
+          <!-- Hindi Article 1: Kaise Edit Kare -->
+          <a href="/articles/hindi-pdf-kaise-edit-kare/" class="guide-card" data-category="typography" data-lang="hi">
             <div>
-              <span class="badge-tag tag-green">Govt &amp; Legal</span>
-              <h3>How to Edit Hindi Khasra-Khatauni &amp; Land Record (Bhulekh) PDF Documents</h3>
+              <span class="badge-tag tag-blue">🇮🇳 हिन्दी · टाइपोग्राफी</span>
+              <h3>हिंदी पीडीएफ कैसे एडिट करें (PDF में हिंदी टाइपिंग और सुधार)</h3>
               <p>
-                Step-by-step tutorial on how to edit and correct Hindi text, plot numbers, and owner names in Bhulekh Khasra-Khatauni land record PDFs safely.
+                मोबाइल और कंप्यूटर पर बिना किसी सॉफ्टवेयर इंस्टालेशन के सीधे ब्राउज़र में देवनागरी टेक्स्ट लिखने और बदलने की गाइड।
               </p>
             </div>
             <div class="card-footer">
               <span>⏱️ 4 min read</span>
-              <span class="card-link-text">Read Guide →</span>
+              <span class="card-link-text">गाइड पढ़ें →</span>
             </div>
           </a>
-          <!-- Article 1: Sarkari Admit Card -->
-          <a href="/articles/edit-sarkari-admit-card-hindi-pdf/" class="guide-card" data-category="govt">
+
+          <!-- Hindi Article 2: Kruti Dev Unicode -->
+          <a href="/articles/kruti-dev-pdf-unicode-converter-hindi/" class="guide-card" data-category="typography" data-lang="hi">
             <div>
-              <span class="badge-tag tag-green">Govt &amp; Exams</span>
-              <h3>How to Edit Hindi Admit Card &amp; Sarkari Exam PDF Forms (BPSC, UPPSC, SSC)</h3>
+              <span class="badge-tag tag-blue">🇮🇳 हिन्दी · फॉन्ट कन्वर्जन</span>
+              <h3>कृति देव 010 पीडीएफ को यूनिकोड में कैसे बदलें और एडिट करें</h3>
               <p>
-                Step-by-step guide to correcting candidate names, roll numbers, father's name, and exam dates on state recruitment forms safely on your local device.
+                पुरानी कृति देव फाइलों में दिखने वाले 'd`fr nso' जैसे अजीब अंग्रेजी अक्षरों को ठीक करें और मोबाइल में पढ़ने योग्य शुद्ध यूनिकोड में बदलें।
+              </p>
+            </div>
+            <div class="card-footer">
+              <span>⏱️ 5 min read</span>
+              <span class="card-link-text">गाइड पढ़ें →</span>
+            </div>
+          </a>
+
+          <!-- Hindi Article 3: Sarkari Admit Card Affidavit -->
+          <a href="/articles/sarkari-admit-card-name-correction-affidavit-hindi/" class="guide-card" data-category="govt" data-lang="hi">
+            <div>
+              <span class="badge-tag tag-green">🇮🇳 हिन्दी · सरकारी भर्ती</span>
+              <h3>एडमिट कार्ड और सरकारी फॉर्म में नाम सुधार शपथ पत्र (Affidavit) कैसे बनाएं</h3>
+              <p>
+                UP Police, BPSC, SSC GD और रेलवे भर्ती परीक्षाओं के लिए नाम और पिता के नाम में स्पेलिंग गलती सुधारने का शपथ पत्र प्रारूप।
               </p>
             </div>
             <div class="card-footer">
               <span>⏱️ 4 min read</span>
-              <span class="card-link-text">Read Guide →</span>
+              <span class="card-link-text">गाइड पढ़ें →</span>
             </div>
           </a>
 
-          <!-- Article 2: Translation -->
-          <a href="/articles/translate-hindi-pdf-to-english/" class="guide-card" data-category="translation">
+          <!-- Hindi Article 4: Bhulekh Khasra Khatauni -->
+          <a href="/articles/khasra-khatauni-bhulekh-sudhar-hindi-pdf/" class="guide-card" data-category="govt" data-lang="hi">
             <div>
-              <span class="badge-tag tag-lav">Translation &amp; AI</span>
-              <h3>How to Translate Hindi PDF to English Online Without Losing Page Formatting</h3>
+              <span class="badge-tag tag-green">🇮🇳 हिन्दी · भूलेख और राजस्व</span>
+              <h3>भूलेख खसरा-खतौनी और परिमार्जन पीडीएफ में नाम सुधार कैसे करें</h3>
               <p>
-                Learn how geometric line detection replaces Hindi text with translated English while preserving exact font sizes, tables, borders, and margins.
+                उत्तर प्रदेश (UP Bhulekh), बिहार परिमार्जन और मध्य प्रदेश भूलेख खतौनी में नाम, रकबा या गाटा संख्या सुधार के लिए पीडीएफ तैयार करने की विधि।
               </p>
             </div>
             <div class="card-footer">
               <span>⏱️ 4 min read</span>
-              <span class="card-link-text">Read Guide →</span>
+              <span class="card-link-text">गाइड पढ़ें →</span>
             </div>
           </a>
 
-          <!-- Article 3: Kruti Dev to Unicode -->
-          <a href="/articles/kruti-dev-to-unicode-hindi-pdf-editor/" class="guide-card" data-category="typography">
+          <!-- English Article 1: Typography -->
+          <a href="/articles/fix-broken-hindi-fonts-in-pdf/" class="guide-card" data-category="typography" data-lang="en">
             <div>
               <span class="badge-tag tag-blue">Typography &amp; Fonts</span>
-              <h3>How to Edit Kruti Dev 010 Hindi PDF and Convert to Unicode Online</h3>
+              <h3>Why Hindi Fonts &amp; Matras Break in PDF Editors (and How to Fix Them)</h3>
               <p>
-                Fix garbled ASCII English characters in legacy Kruti Dev PDFs and replace them with universal Unicode Devanagari text readable on every smartphone.
+                Deep technical dive into Devanagari OpenType shaping, GSUB/GPOS tables, and why generic PDF editors corrupt Hindi matras.
               </p>
             </div>
             <div class="card-footer">
@@ -778,13 +799,13 @@
             </div>
           </a>
 
-          <!-- Article 4: Land Records -->
-          <a href="/articles/fix-broken-hindi-fonts-in-pdf/" class="guide-card" data-category="govt">
+          <!-- English Article 2: Sarkari Admit Card -->
+          <a href="/articles/edit-sarkari-admit-card-hindi-pdf/" class="guide-card" data-category="govt" data-lang="en">
             <div>
-              <span class="badge-tag tag-green">Govt &amp; Legal</span>
-              <h3>How to Edit Hindi Khasra-Khatauni &amp; Land Record (Bhulekh) PDF Documents</h3>
+              <span class="badge-tag tag-green">Govt &amp; Exams</span>
+              <h3>How to Edit Hindi Admit Card &amp; Sarkari Exam PDF Forms (BPSC, UPPSC, SSC)</h3>
               <p>
-                Correct farmer names, Gata/Khasra plot numbers, and Tehsil entries in state land records privately without uploading confidential revenue records.
+                Step-by-step guide to correcting candidate names, roll numbers, father's name, and exam dates on state recruitment forms safely.
               </p>
             </div>
             <div class="card-footer">
@@ -793,13 +814,43 @@
             </div>
           </a>
 
-          <!-- Article 5: PDF Merging -->
-          <a href="/edit/?tool=merge" class="guide-card" data-category="management">
+          <!-- English Article 3: Translation -->
+          <a href="/articles/translate-hindi-pdf-to-english/" class="guide-card" data-category="translation" data-lang="en">
+            <div>
+              <span class="badge-tag tag-lav">Translation &amp; AI</span>
+              <h3>How to Translate Hindi PDF to English Online Without Losing Page Formatting</h3>
+              <p>
+                Learn how geometric line detection replaces Hindi text with translated English while preserving exact font sizes, tables, and borders.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span>⏱️ 4 min read</span>
+              <span class="card-link-text">Read Guide →</span>
+            </div>
+          </a>
+
+          <!-- English Article 4: Kruti Dev to Unicode -->
+          <a href="/articles/kruti-dev-to-unicode-hindi-pdf-editor/" class="guide-card" data-category="typography" data-lang="en">
+            <div>
+              <span class="badge-tag tag-blue">Typography &amp; Fonts</span>
+              <h3>How to Edit Kruti Dev 010 Hindi PDF and Convert to Unicode Online</h3>
+              <p>
+                Fix garbled ASCII English characters in legacy Kruti Dev PDFs and replace them with universal Unicode Devanagari text.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span>⏱️ 5 min read</span>
+              <span class="card-link-text">Read Guide →</span>
+            </div>
+          </a>
+
+          <!-- English Article 5: PDF Merging -->
+          <a href="/edit/?tool=merge" class="guide-card" data-category="management" data-lang="en">
             <div>
               <span class="badge-tag tag-amber">Document Management</span>
               <h3>How to Merge Multiple Hindi PDF Files Online in Order (100% Free &amp; Private)</h3>
               <p>
-                Combine multiple Hindi documents, legal annexures, and certificates into a single ordered vector PDF in seconds right in your browser.
+                Combine multiple Hindi documents, legal annexures, and certificates into a single ordered vector PDF in seconds.
               </p>
             </div>
             <div class="card-footer">
@@ -808,13 +859,13 @@
             </div>
           </a>
 
-          <!-- Article 6: PDF Compression -->
-          <a href="/edit/?tool=compress" class="guide-card" data-category="management">
+          <!-- English Article 6: PDF Compression -->
+          <a href="/edit/?tool=compress" class="guide-card" data-category="management" data-lang="en">
             <div>
               <span class="badge-tag tag-coral">Document Management</span>
               <h3>How to Compress Large Scanned Hindi PDFs Without Quality Loss</h3>
               <p>
-                Reduce scanned Hindi PDF file sizes below 100KB–200KB for government portal uploads while keeping thin Devanagari matras razor-sharp.
+                Reduce scanned Hindi PDF file sizes below 100KB–200KB for government portal uploads while keeping Devanagari matras sharp.
               </p>
             </div>
             <div class="card-footer">
@@ -904,23 +955,27 @@
     <script>
       (function() {
         const searchInput = document.getElementById('articleSearch');
-        const filterBtns = document.querySelectorAll('.tab-btn');
+        const langBtns = document.querySelectorAll('[data-lang-filter]');
+        const catBtns = document.querySelectorAll('[data-filter]');
         const cards = document.querySelectorAll('#articlesGrid .guide-card, .featured-card');
         const noResults = document.getElementById('noResults');
 
+        let activeLang = 'all';
         let activeCategory = 'all';
         let searchQuery = '';
 
         function filterArticles() {
           let visibleCount = 0;
           cards.forEach(card => {
+            const cardLang = card.getAttribute('data-lang') || 'en';
             const cardCategory = card.getAttribute('data-category') || '';
             const cardText = card.innerText.toLowerCase();
 
+            const matchesLang = (activeLang === 'all') || (cardLang === activeLang);
             const matchesCategory = (activeCategory === 'all') || (cardCategory === activeCategory);
             const matchesSearch = !searchQuery || cardText.includes(searchQuery);
 
-            if (matchesCategory && matchesSearch) {
+            if (matchesLang && matchesCategory && matchesSearch) {
               card.style.display = card.classList.contains('featured-card') ? 'grid' : 'flex';
               visibleCount++;
             } else {
@@ -940,9 +995,18 @@
           });
         }
 
-        filterBtns.forEach(btn => {
+        langBtns.forEach(btn => {
           btn.addEventListener('click', function() {
-            filterBtns.forEach(b => b.classList.remove('active'));
+            langBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            activeLang = this.getAttribute('data-lang-filter') || 'all';
+            filterArticles();
+          });
+        });
+
+        catBtns.forEach(btn => {
+          btn.addEventListener('click', function() {
+            catBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             activeCategory = this.getAttribute('data-filter') || 'all';
             filterArticles();
