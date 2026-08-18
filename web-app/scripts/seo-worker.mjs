@@ -614,30 +614,37 @@ function updateArticlesHub(item) {
   let hub = readFileSync(articlesHubPath, 'utf8');
   if (hub.includes(`/articles/${item.slug}/`)) return;
 
+  const categoryMap = {
+    'Typography & Fonts': { tone: 'tag-blue', filter: 'typography' },
+    'Govt & Exams': { tone: 'tag-green', filter: 'govt' },
+    'Govt & Legal': { tone: 'tag-green', filter: 'govt' },
+    'Translation & AI': { tone: 'tag-lav', filter: 'translation' },
+    'Document Management': { tone: 'tag-amber', filter: 'management' },
+  };
+
+  const meta = categoryMap[item.category] || { tone: 'tag-blue', filter: 'all' };
+
   const cardHtml = `
           <!-- Article: ${item.slug} -->
-          <a href="/articles/${item.slug}/" class="article-card">
+          <a href="/articles/${item.slug}/" class="guide-card" data-category="${meta.filter}">
             <div>
-              <span class="badge">${escapeHtml(item.category)}</span>
+              <span class="badge-tag ${meta.tone}">${escapeHtml(item.category)}</span>
               <h3>${escapeHtml(item.title)}</h3>
               <p>
                 ${escapeHtml(item.metaDescription || item.directAnswer)}
               </p>
             </div>
-            <div>
-              <div class="article-meta">
-                <span>⏱️ ${item.readTime || '4 min read'}</span>
-                <span>•</span>
-                <span>Updated ${getTodayDate()}</span>
-              </div>
-              <span class="article-cta">Read Guide →</span>
+            <div class="card-footer">
+              <span>⏱️ ${item.readTime || '4 min read'}</span>
+              <span class="card-link-text">Read Guide →</span>
             </div>
-          </a>
-  `;
+          </a>`;
 
-  hub = hub.replace('</div>\n\n        <div class="content-card"', `${cardHtml}\n        </div>\n\n        <div class="content-card"`);
-  writeFileSync(articlesHubPath, hub, 'utf8');
-  console.log(`[SEO Worker] Injected ${item.slug} card into /articles/ hub`);
+  if (hub.includes('id="articlesGrid">')) {
+    hub = hub.replace('id="articlesGrid">', `id="articlesGrid">\n${cardHtml}`);
+    writeFileSync(articlesHubPath, hub, 'utf8');
+    console.log(`[SEO Worker] Injected ${item.slug} card into /articles/ hub`);
+  }
 }
 
 export function runWorker({ publishNext = false } = {}) {
@@ -671,9 +678,14 @@ export function runWorker({ publishNext = false } = {}) {
 
     console.log(`[SEO Worker] Successfully published article: ${nextItem.slug}`);
 
-    // Rebuild dist static files
+    // Rebuild dist static files if edit/ exists
     console.log(`[SEO Worker] Syncing publish artifacts...`);
-    execSync('node scripts/prepare-publish.mjs', { cwd: webAppRoot, stdio: 'inherit' });
+    const editIndex = path.join(webAppRoot, 'edit', 'index.html');
+    if (existsSync(editIndex)) {
+      execSync('node scripts/prepare-publish.mjs', { cwd: webAppRoot, stdio: 'inherit' });
+    } else {
+      console.log('[SEO Worker] Notice: web-app/edit/ not present in this workspace. Build step will sync dist artifacts.');
+    }
   } else {
     console.log('[SEO Worker] Health audit complete. No new articles pending publication today.');
   }

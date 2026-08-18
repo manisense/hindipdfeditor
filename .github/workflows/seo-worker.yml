@@ -31,8 +31,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd web-app/editor
-          npm ci --progress=false
+          npm --prefix web-app/editor ci --progress=false
 
       - name: Execute Autonomous SEO Worker (Publish Next Guide)
         run: |
@@ -44,7 +43,8 @@ jobs:
 
       - name: Build Production Web App
         run: |
-          npm --prefix web-app run build
+          npm --prefix web-app/editor run build
+          node web-app/scripts/prepare-publish.mjs
 
       - name: Commit & Push Daily SEO Updates
         run: |
