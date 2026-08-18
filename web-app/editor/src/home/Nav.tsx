@@ -8,8 +8,10 @@ const links = [
   { label: 'How it works', href: '#how-it-works' },
   { label: 'Compare', href: '#compare' },
   { label: 'Use cases', href: '#use-cases' },
+  { label: 'Guides', href: '#articles' },
   { label: 'FAQ', href: '#faq' },
 ];
+
 
 
 export function Nav() {

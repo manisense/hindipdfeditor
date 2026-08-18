@@ -4,6 +4,7 @@ import { Features } from './Features';
 import { HowItWorks } from './HowItWorks';
 import { ComparisonSection } from './ComparisonSection';
 import { UseCasesSection } from './UseCasesSection';
+import { ArticlesSection } from './ArticlesSection';
 import { WorkYourWay } from './WorkYourWay';
 import { FAQ } from './FAQ';
 import { CTA } from './CTA';
@@ -21,6 +22,7 @@ export function HomePage() {
         <HowItWorks />
         <ComparisonSection />
         <UseCasesSection />
+        <ArticlesSection />
         <WorkYourWay />
         <FAQ />
         <CTA />
@@ -29,4 +31,5 @@ export function HomePage() {
     </div>
   );
 }
+
 

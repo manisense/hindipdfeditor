@@ -17,11 +17,13 @@ const STATIC_ENTRIES = [
   '_headers',
   '_redirects',
   'assets',
+  'articles',
   'privacy',
   'support',
   'terms',
   'data-safety',
 ];
+
 
 
 function copyEntry(name) {

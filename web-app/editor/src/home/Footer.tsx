@@ -23,6 +23,7 @@ const cols = [
   {
     title: 'Resources & Compare',
     links: [
+      { label: 'Articles & Guides', href: '/articles/' },
       { label: 'How it works', href: '#how-it-works' },
       { label: 'Compare vs Acrobat/Canva', href: '#compare' },
       { label: 'Document use cases', href: '#use-cases' },
@@ -35,6 +36,7 @@ const cols = [
     ],
   },
 ];
+
 
 
 export function Footer() {

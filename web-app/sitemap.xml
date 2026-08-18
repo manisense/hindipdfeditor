@@ -67,6 +67,30 @@
     <priority>0.4</priority>
   </url>
   <url>
+    <loc>https://hindipdfeditor.com/articles/</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://hindipdfeditor.com/articles/edit-sarkari-admit-card-hindi-pdf/</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://hindipdfeditor.com/articles/translate-hindi-pdf-to-english/</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://hindipdfeditor.com/llms.txt</loc>
     <lastmod>2026-08-18</lastmod>
     <changefreq>weekly</changefreq>
@@ -79,3 +103,4 @@
     <priority>0.5</priority>
   </url>
 </urlset>
+

@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script src="/assets/analytics.js" defer></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Why Hindi Fonts &amp; Matras Break in PDF Editors (and How to Fix Them)</title>
+    <meta
+      name="description"
+      content="Learn why Hindi (Devanagari) matras and conjuncts break in Adobe Acrobat and Canva, and how to edit Hindi PDFs with 100% correct OpenType shaping for free."
+    />
+    <link rel="canonical" href="https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/" />
+    <link rel="alternate" hreflang="en" href="https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/" />
+    <link rel="alternate" hreflang="hi" href="https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/" />
+    <link rel="alternate" hreflang="x-default" href="https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/" />
+    <meta property="og:title" content="Why Hindi Fonts &amp; Matras Break in PDF Editors (and How to Fix Them)" />
+    <meta
+      property="og:description"
+      content="A technical and practical guide to fixing broken Devanagari ligatures, floating matras, and disjointed conjuncts in PDF files."
+    />
+    <meta property="og:url" content="https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/" />
+    <meta property="og:image" content="https://hindipdfeditor.com/assets/play-store/hindi-pdf-editor-tablet.png" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Hindi PDF Editor" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Why Hindi Fonts &amp; Matras Break in PDF Editors (and How to Fix Them)" />
+    <meta name="twitter:description" content="Detailed guide on OpenType Devanagari font shaping in PDFs." />
+    <meta name="twitter:image" content="https://hindipdfeditor.com/assets/play-store/hindi-pdf-editor-tablet.png" />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/site.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Article",
+            "@id": "https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/#article",
+            "headline": "Why Hindi Fonts & Matras Break in PDF Editors (and How to Fix Them)",
+            "description": "Learn why Hindi (Devanagari) matras and conjuncts break in Adobe Acrobat and Canva, and how to edit Hindi PDFs with 100% correct OpenType shaping for free.",
+            "url": "https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/",
+            "datePublished": "2026-08-18",
+            "dateModified": "2026-08-18",
+            "author": {
+              "@type": "Organization",
+              "name": "Hindi PDF Editor Team",
+              "url": "https://hindipdfeditor.com"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Hindi PDF Editor",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://hindipdfeditor.com/assets/app-icon.png"
+              }
+            },
+            "mainEntityOfPage": "https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://hindipdfeditor.com/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Articles",
+                "item": "https://hindipdfeditor.com/articles/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Fix Broken Hindi Fonts in PDF",
+                "item": "https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/"
+              }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Why do Hindi matras appear disconnected or after the letter in PDFs?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "In Devanagari script, the short 'i' matra (ि) is pronounced after the consonant but visually placed before it. When standard PDF tools lack an OpenType GSUB layout engine, they place the glyph strictly sequentially according to raw Unicode code points, resulting in reversed or detached matras."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How does Hindi PDF Editor ensure 100% correct Devanagari font shaping?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Hindi PDF Editor delegates text shaping to the browser's native Chromium HarfBuzz OpenType layout engine. It renders text with embedded Unicode fonts (like Noto Sans Devanagari) and exports vector-accurate PDFs via the native print pipeline."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Primary navigation">
+        <a class="brand" href="/">
+          <img src="/assets/app-icon.png" alt="Hindi PDF Editor logo" />
+          <span>Hindi<span class="brand-accent">PDF</span></span>
+        </a>
+        <div class="nav-links">
+          <a href="/">HOME</a>
+          <a href="/edit/">ALL TOOLS</a>
+          <a class="active" href="/articles/">ARTICLES</a>
+          <a href="/support/">SUPPORT</a>
+          <a href="/privacy/">PRIVACY</a>
+        </div>
+        <div class="nav-actions">
+          <a class="button primary" href="/edit/?tool=edit">Open Editor</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="page-hero-inner">
+          <p class="eyebrow">Typography &amp; Technical Deep-Dive</p>
+          <h1>Why Hindi Fonts &amp; Matras Break in PDF Editors (and How to Fix Them)</h1>
+          <p>
+            An in-depth explanation of Devanagari OpenType shaping in PDF documents, why standard editors fail,
+            and how to edit Hindi text with 100% ligature fidelity.
+          </p>
+        </div>
+      </section>
+
+      <article class="content">
+        <!-- Direct Answer Block for AEO -->
+        <div class="guide-step" style="border-left: 4px solid var(--accent);">
+          <h4>Direct Answer: Why Hindi Fonts Break in PDFs</h4>
+          <p style="margin: 0; color: var(--ink); font-weight: 500;">
+            Hindi (Devanagari) is an abugida script that requires OpenType GSUB (Glyph Substitution) and GPOS (Glyph Positioning) tables to dynamically combine consonants and vowel matras into conjunct ligatures. Standard PDF software uses naive 1:1 Unicode character mapping, causing vowel matras (ि, ी, ु, ू) to detach and clusters (क्ष, त्र, ज्ञ) to break. To fix this, use an editor powered by the Chromium HarfBuzz layout engine like <a href="/edit/?tool=edit">Hindi PDF Editor</a>.
+          </p>
+        </div>
+
+        <h2>The Root Cause: Abugida Scripts vs. PDF Glyph Positioning</h2>
+        <p>
+          Unlike the Latin alphabet (where each character corresponds directly to an isolated glyph), Devanagari characters are <strong>syllabic (abugida)</strong>:
+        </p>
+        <ul>
+          <li><strong>Consonants carry an inherent vowel:</strong> Adding a halant (्) suppresses the vowel, forming a half-letter (e.g. <code>क + ् = क्</code>).</li>
+          <li><strong>Consonant clusters merge into single glyphs:</strong> For example, <code>क + ् + ष</code> merges into the single ligature <code>क्ष</code>.</li>
+          <li><strong>Vowel signs (matras) attach re-entrantly:</strong> The short 'i' matra (ि) is typed after the consonant in Unicode order (<code>क + ि</code>) but must be visually positioned <em>before and above</em> the consonant (<code>कि</code>).</li>
+        </ul>
+        <p>
+          Standard PDF generation engines (dompdf, naive PDF.js, and legacy Acrobat plugins) do not run a full OpenType layout engine. They simply place glyphs one by one at fixed X/Y coordinates. Fed Devanagari, they produce disjointed, broken characters that look completely unprofessional.
+        </p>
+
+        <h2>Comparison: How Different PDF Editors Handle Devanagari</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Editor / Software</th>
+                <th>Devanagari Shaping</th>
+                <th>Underlying Engine</th>
+                <th>File Privacy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Hindi PDF Editor</strong></td>
+                <td><span style="color: var(--teal); font-weight: 700;">100% Perfect Ligatures</span></td>
+                <td>Chromium HarfBuzz OpenType Pipeline</td>
+                <td>100% Local (Zero Server Upload)</td>
+              </tr>
+              <tr>
+                <td>Adobe Acrobat</td>
+                <td>Frequently Broken / Split Matras</td>
+                <td>Legacy PDF Coordinate Model</td>
+                <td>Cloud Sync Required</td>
+              </tr>
+              <tr>
+                <td>Canva PDF</td>
+                <td>Broken Conjuncts &amp; Glyph Boxes</td>
+                <td>Custom Web Canvas (No GSUB)</td>
+                <td>Cloud Storage Upload</td>
+              </tr>
+              <tr>
+                <td>Smallpdf / iLovePDF</td>
+                <td>Detached Raw Characters</td>
+                <td>Server-side Rasterizer</td>
+                <td>Cloud Processing</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>How to Edit Hindi PDFs with Correct Fonts (Step-by-Step)</h2>
+        <div class="guide-step">
+          <h4>Step 1: Open Your PDF in Hindi PDF Editor</h4>
+          <p>
+            Navigate to <a href="/edit/?tool=edit">https://hindipdfeditor.com/edit/?tool=edit</a>. Drag and drop your PDF file. The file is rendered locally on your device using WebAssembly.
+          </p>
+        </div>
+
+        <div class="guide-step">
+          <h4>Step 2: Select or Mask the Text</h4>
+          <p>
+            Click on any line of existing text to mask and replace it, or tap anywhere on the canvas to place a new Devanagari text box.
+          </p>
+        </div>
+
+        <div class="guide-step">
+          <h4>Step 3: Type in Hindi Using Standard Unicode</h4>
+          <p>
+            Type using any standard Unicode Hindi keyboard (InScript, Google Input Tools, or your phone's native Hindi keyboard). The editor uses Google Noto Sans Devanagari and Mangal font metrics with real-time ligature shaping.
+          </p>
+        </div>
+
+        <div class="guide-step">
+          <h4>Step 4: Export Vector-Accurate PDF</h4>
+          <p>
+            Click <strong>Export PDF</strong> to compile a vector-sharp, print-ready document. Your original PDF is left completely untouched on your device.
+          </p>
+        </div>
+
+        <div class="content-card" style="margin-top: 36px; text-align: center;">
+          <h3 style="margin-top: 0;">Try Hindi PDF Editor Free</h3>
+          <p style="margin: 8px 0 18px;">No download, no account required, and zero document uploads.</p>
+          <a href="/edit/?tool=edit" class="button primary" style="display: inline-block;">
+            Open Editor Now →
+          </a>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div>
+          <a class="brand" href="/">
+            <img src="/assets/app-icon.png" alt="" />
+            <span>Hindi<span class="brand-accent">PDF</span></span>
+          </a>
+          <p class="footer-copy">Local-first Hindi PDF tools with flawless Devanagari shaping.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Tools</h4>
+          <a href="/edit/?tool=edit">Edit Hindi PDF</a>
+          <a href="/edit/?tool=translate">Translate Hindi ↔ English</a>
+          <a href="/edit/?tool=merge">Merge PDF</a>
+          <a href="/edit/?tool=split">Split PDF</a>
+          <a href="/edit/?tool=compress">Compress PDF</a>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <a href="/articles/">Articles &amp; Guides</a>
+          <a href="/support/">Support</a>
+          <a href="/privacy/">Privacy Policy</a>
+          <a href="/terms/">Terms of Service</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Hindi PDF Editor. All rights reserved.</p>
+      </div>
+    </footer>
+  </body>
+</html>
