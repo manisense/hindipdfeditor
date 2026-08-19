@@ -101,7 +101,8 @@
         "a": "नहीं। ई-डिस्ट्रिक्ट पोर्टल पर 100KB की सख्त सीमा है। हमारा एडिटर ऑटोमैटिक रूप से इसे 100KB से कम साइज में तैयार करता है।"
       }
     ],
-    "status": "queued"
+    "status": "published",
+    "publishedDate": "2026-08-19"
   },
   {
     "slug": "bihar-bhumi-parimarjan-plus-shapath-patra-pdf",
