@@ -21,6 +21,7 @@
 - Guide: How to Edit Kruti Dev 010 Hindi PDF and Convert to Unicode Online: https://hindipdfeditor.com/articles/kruti-dev-to-unicode-hindi-pdf-editor/
 - Guide: How to Edit Hindi Khasra-Khatauni & Land Record (Bhulekh) PDF Documents: https://hindipdfeditor.com/articles/khasra-khatauni-land-record-hindi-pdf-edit/
 - Guide: e-District UP स्वप्रमाणित घोषणा पत्र PDF कैसे भरें और डाउनलोड करें (जाति, आय, निवास): https://hindipdfeditor.com/articles/swapramanit-ghoshna-patra-edistrict-hindi-pdf/
+- Guide: बिहार भूमि परिमार्जन प्लस स्वघोषणा शपथ पत्र PDF कैसे तैयार करें: https://hindipdfeditor.com/articles/bihar-bhumi-parimarjan-plus-shapath-patra-pdf/
 - Extended Documentation & Full LLM Specs: https://hindipdfeditor.com/llms-full.txt
 - Android App on Google Play: https://play.google.com/store/apps/details?id=com.hindipdfeditor.app
 - XML Sitemap: https://hindipdfeditor.com/sitemap.xml

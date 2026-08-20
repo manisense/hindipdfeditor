@@ -141,7 +141,8 @@
         "a": "हाँ, आप मोबाइल से परिमार्जन पीडीएफ फॉर्म भरकर डाउनलोड कर सकते हैं।"
       }
     ],
-    "status": "queued"
+    "status": "published",
+    "publishedDate": "2026-08-20"
   },
   {
     "slug": "pdf-size-kam-kaise-kare-100kb-sarkari-form",
