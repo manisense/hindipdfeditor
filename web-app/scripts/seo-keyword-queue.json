@@ -222,7 +222,8 @@
         "a": "नहीं, किसी भी सामान्य लेजर या इंकजेट प्रिंटर से प्रिंट किया जा सकता है।"
       }
     ],
-    "status": "queued"
+    "status": "published",
+    "publishedDate": "2026-08-22"
   },
   {
     "slug": "khasra-khatauni-land-record-hindi-pdf-edit",

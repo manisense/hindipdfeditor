@@ -23,6 +23,7 @@
 - Guide: e-District UP स्वप्रमाणित घोषणा पत्र PDF कैसे भरें और डाउनलोड करें (जाति, आय, निवास): https://hindipdfeditor.com/articles/swapramanit-ghoshna-patra-edistrict-hindi-pdf/
 - Guide: बिहार भूमि परिमार्जन प्लस स्वघोषणा शपथ पत्र PDF कैसे तैयार करें: https://hindipdfeditor.com/articles/bihar-bhumi-parimarjan-plus-shapath-patra-pdf/
 - Guide: सरकारी फॉर्म के लिए PDF साइज कम कैसे करें (100KB और 200KB में बदलें): https://hindipdfeditor.com/articles/pdf-size-kam-kaise-kare-100kb-sarkari-form/
+- Guide: e-Stamp पेपर पर हिंदी शपथ पत्र (Affidavit) प्रिंट करने का सही मार्जिन तरीका: https://hindipdfeditor.com/articles/e-stamp-paper-par-hindi-matter-print-margin-guide/
 - Extended Documentation & Full LLM Specs: https://hindipdfeditor.com/llms-full.txt
 - Android App on Google Play: https://play.google.com/store/apps/details?id=com.hindipdfeditor.app
 - XML Sitemap: https://hindipdfeditor.com/sitemap.xml
