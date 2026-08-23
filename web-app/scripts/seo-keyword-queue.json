@@ -312,7 +312,8 @@
         "a": "Yes. Hindi PDF Editor is fully responsive on mobile browsers and also offers a free native Android companion app on Google Play."
       }
     ],
-    "status": "queued"
+    "status": "published",
+    "publishedDate": "2026-08-23"
   },
   {
     "slug": "merge-multiple-hindi-pdf-files-online",
