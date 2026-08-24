@@ -357,7 +357,8 @@
         "a": "No. There are no artificial page quotas or file count restrictions because the processing uses your local device resources."
       }
     ],
-    "status": "queued"
+    "status": "published",
+    "publishedDate": "2026-08-24"
   },
   {
     "slug": "compress-scanned-hindi-pdf-without-blur",
