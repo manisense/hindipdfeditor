@@ -402,6 +402,7 @@
         "a": "Yes. The compression algorithm is tuned specifically to preserve high contrast around thin Devanagari strokes and vowel matras."
       }
     ],
-    "status": "queued"
+    "status": "published",
+    "publishedDate": "2026-08-25"
   }
 ]

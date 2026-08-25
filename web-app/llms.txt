@@ -26,6 +26,7 @@
 - Guide: e-Stamp पेपर पर हिंदी शपथ पत्र (Affidavit) प्रिंट करने का सही मार्जिन तरीका: https://hindipdfeditor.com/articles/e-stamp-paper-par-hindi-matter-print-margin-guide/
 - Guide: How to Edit UP Police Bharti & Constable Exam Admit Card Hindi PDF: https://hindipdfeditor.com/articles/up-police-bharti-admit-card-hindi-pdf-edit/
 - Guide: How to Merge Multiple Hindi PDF Files Online in Order (100% Free & Private): https://hindipdfeditor.com/articles/merge-multiple-hindi-pdf-files-online/
+- Guide: How to Compress Large Scanned Hindi PDFs Without Quality Loss: https://hindipdfeditor.com/articles/compress-scanned-hindi-pdf-without-blur/
 - Extended Documentation & Full LLM Specs: https://hindipdfeditor.com/llms-full.txt
 - Android App on Google Play: https://play.google.com/store/apps/details?id=com.hindipdfeditor.app
 - XML Sitemap: https://hindipdfeditor.com/sitemap.xml
