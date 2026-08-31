@@ -269,8 +269,7 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingVertical: spacing.xs,
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   heroCard: {
     backgroundColor: colors.surface,

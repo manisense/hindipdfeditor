@@ -8,9 +8,9 @@ type Props = {
 };
 
 /**
- * Standardized, unified header across all main app tabs.
- * Guarantees identical position, alignment, icon size, height, and typography.
- * Completely free of buttons for a clean, consistent top layout.
+ * Standardized, fixed header across all main app tabs.
+ * Guarantees identical top position, fixed alignment, icon size, height, and typography.
+ * Completely free of buttons and immune to scroll events.
  */
 export function ScreenHeader({ title, titleAccent, subtitle }: Props) {
   return (
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 2,
     marginTop: spacing.xs,
-    marginBottom: spacing.xs + 2,
+    marginBottom: spacing.sm + 2,
   },
   leftRow: {
     flexDirection: 'row',

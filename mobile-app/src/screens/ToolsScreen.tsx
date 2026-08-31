@@ -88,59 +88,63 @@ const ALL_TOOLS: ToolCatalogItem[] = [
 
 export function ToolsScreen({ onOpenTool }: Props) {
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
+    <View style={styles.container}>
+      {/* Fixed Header (Never Scrolls) */}
       <ScreenHeader
         title="PDF Tools /"
         titleAccent="उपकरण"
         subtitle="Complete Devanagari & English PDF utility suite"
       />
 
-      {/* Tools List */}
-      <View style={styles.toolsList}>
-        {ALL_TOOLS.map((tool) => (
-          <Pressable
-            key={tool.id}
-            accessibilityRole="button"
-            accessibilityLabel={`${tool.titleEn} - ${tool.titleHi}`}
-            onPress={() => onOpenTool(tool.id)}
-            style={({ pressed }) => [styles.toolCard, pressed && styles.toolCardPressed]}
-          >
-            {/* 12px Rounded Square Category Icon Chip */}
-            <View style={[styles.iconBox, { backgroundColor: tool.tint }]}>
-              <MaterialCommunityIcons name={tool.iconName} size={24} color={tool.accent} />
-            </View>
-
-            <View style={styles.cardContent}>
-              <View style={styles.titleRow}>
-                <Text style={styles.titleEn}>{tool.titleEn}</Text>
-                <View style={[styles.badge, { backgroundColor: tool.tint }]}>
-                  <Text style={[styles.badgeText, { color: tool.accent }]}>{tool.badge}</Text>
-                </View>
+      {/* Scrollable Tools List */}
+      <ScrollView
+        style={styles.scrollArea}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.toolsList}>
+          {ALL_TOOLS.map((tool) => (
+            <Pressable
+              key={tool.id}
+              accessibilityRole="button"
+              accessibilityLabel={`${tool.titleEn} - ${tool.titleHi}`}
+              onPress={() => onOpenTool(tool.id)}
+              style={({ pressed }) => [styles.toolCard, pressed && styles.toolCardPressed]}
+            >
+              {/* 12px Rounded Square Category Icon Chip */}
+              <View style={[styles.iconBox, { backgroundColor: tool.tint }]}>
+                <MaterialCommunityIcons name={tool.iconName} size={24} color={tool.accent} />
               </View>
-              <Text style={[styles.titleHi, { color: tool.accent }]}>{tool.titleHi}</Text>
-              <Text style={styles.desc}>{tool.desc}</Text>
-            </View>
 
-            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-          </Pressable>
-        ))}
-      </View>
-    </ScrollView>
+              <View style={styles.cardContent}>
+                <View style={styles.titleRow}>
+                  <Text style={styles.titleEn}>{tool.titleEn}</Text>
+                  <View style={[styles.badge, { backgroundColor: tool.tint }]}>
+                    <Text style={[styles.badgeText, { color: tool.accent }]}>{tool.badge}</Text>
+                  </View>
+                </View>
+                <Text style={[styles.titleHi, { color: tool.accent }]}>{tool.titleHi}</Text>
+                <Text style={styles.desc}>{tool.desc}</Text>
+              </View>
+
+              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+            </Pressable>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    gap: spacing.xs,
+  },
+  scrollArea: {
+    flex: 1,
   },
   content: {
-    paddingVertical: spacing.xs,
-    gap: spacing.md,
     paddingBottom: 60,
   },
   toolsList: {

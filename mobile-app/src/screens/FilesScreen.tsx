@@ -1162,7 +1162,7 @@ export function FilesScreen({ onOpenFile }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    gap: spacing.xs + 2,
+    gap: spacing.xs,
   },
   permissionCard: {
     flexDirection: 'row',
