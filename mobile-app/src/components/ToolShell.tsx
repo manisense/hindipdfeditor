@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomNavBar, type MainTab } from './BottomNavBar';
 import { FilesScreen } from '../screens/FilesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
-import { ProfileScreen } from '../screens/ProfileScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 import { ToolsScreen } from '../screens/ToolsScreen';
 import type { RecentFile } from '../state/recentFilesStore';
 import { colors, radius, shadows, spacing } from '../theme';
@@ -98,7 +98,7 @@ export const TOOLS: ToolDef[] = [
   },
 ];
 
-const CORE_TABS: MainTab[] = ['home', 'files', 'tools', 'profile'];
+const CORE_TABS: MainTab[] = ['home', 'files', 'tools', 'settings'];
 
 type Props = {
   activeTool: ToolId | null;
@@ -108,7 +108,7 @@ type Props = {
 };
 
 /**
- * Modern ToolShell architecture supporting 4 slidable/swipeable bottom tabs (Home, Files, Tools, Profile)
+ * Modern ToolShell architecture supporting 4 slidable/swipeable bottom tabs (Home, Files, Tools, Settings)
  * and immersive full-screen tool workspaces.
  */
 export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Props) {
@@ -224,7 +224,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
               <ToolsScreen onOpenTool={onSelectTool} />
             </View>
             <View style={[styles.tabPage, { width: windowWidth }]}>
-              <ProfileScreen />
+              <SettingsScreen />
             </View>
           </ScrollView>
 

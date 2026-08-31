@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, shadows, spacing } from '../theme';
 
-export type MainTab = 'home' | 'files' | 'tools' | 'profile';
+export type MainTab = 'home' | 'files' | 'tools' | 'settings';
 
 type Props = {
   activeTab: MainTab;
@@ -40,11 +40,11 @@ const TABS: {
     iconActiveName: 'grid',
   },
   {
-    id: 'profile',
-    labelEn: 'Profile',
-    labelHi: 'प्रोफ़ाइल',
-    iconName: 'person-outline',
-    iconActiveName: 'person',
+    id: 'settings',
+    labelEn: 'Settings',
+    labelHi: 'सेटिंग्स',
+    iconName: 'settings-outline',
+    iconActiveName: 'settings',
   },
 ];
 
