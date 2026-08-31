@@ -9,7 +9,6 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors, radius, shadows, spacing } from '../theme';
 
@@ -40,7 +39,7 @@ type Props = {
 
 /**
  * Modern pill-shaped button matching the unified design system.
- * Features blue→indigo gradient for primary variant, full pill shape (9999px),
+ * Features brand primary (#1843DD), full pill shape (9999px),
  * tactile spring press feedback, and crisp 600-weight typography.
  */
 export function AppButton({
@@ -97,8 +96,8 @@ export function AppButton({
       }}
       style={({ pressed }) => [
         styles.base,
-        variant !== 'primary' && (small ? styles.small : styles.normal),
-        variant !== 'primary' && variantStyles[variant],
+        small ? styles.small : styles.normal,
+        variantStyles[variant],
         variant === 'primary' && !disabled && styles.primaryShadow,
         selected && styles.selected,
         pressed && !isActionDisabled && styles.pressed,
@@ -106,18 +105,7 @@ export function AppButton({
         style,
       ]}
     >
-      {variant === 'primary' ? (
-        <LinearGradient
-          colors={[colors.brand, colors.brandDeep]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.gradientFill, small ? styles.small : styles.normal]}
-        >
-          {content}
-        </LinearGradient>
-      ) : (
-        content
-      )}
+      {content}
     </Pressable>
   );
 }
@@ -128,13 +116,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-  },
-  gradientFill: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.full,
   },
   normal: {
     minHeight: 48,
