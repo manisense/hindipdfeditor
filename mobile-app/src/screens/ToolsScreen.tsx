@@ -90,11 +90,7 @@ export function ToolsScreen({ onOpenTool }: Props) {
   return (
     <View style={styles.container}>
       {/* Fixed Header (Never Scrolls) */}
-      <ScreenHeader
-        title="PDF Tools /"
-        titleAccent="उपकरण"
-        subtitle="Complete Devanagari & English PDF utility suite"
-      />
+      <ScreenHeader title="PDF Tools /" titleAccent="उपकरण" />
 
       {/* Scrollable Tools List */}
       <ScrollView
@@ -124,10 +120,9 @@ export function ToolsScreen({ onOpenTool }: Props) {
                   </View>
                 </View>
                 <Text style={[styles.titleHi, { color: tool.accent }]}>{tool.titleHi}</Text>
-                <Text style={styles.desc}>{tool.desc}</Text>
               </View>
 
-              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </Pressable>
           ))}
         </View>

@@ -12,7 +12,6 @@ type LanguageOption = {
   id: AppLanguage;
   titleEn: string;
   titleHi: string;
-  desc: string;
 };
 
 const LANGUAGE_OPTIONS: LanguageOption[] = [
@@ -20,19 +19,16 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
     id: 'bilingual',
     titleEn: 'Bilingual (English + हिंदी)',
     titleHi: 'द्विभाषी (English + हिंदी)',
-    desc: 'Displays both English and Devanagari side by side (Recommended)',
   },
   {
     id: 'english',
     titleEn: 'English Only',
     titleHi: 'केवल अंग्रेज़ी',
-    desc: 'Primary English interface with Latin typography',
   },
   {
     id: 'hindi',
     titleEn: 'हिंदी केवल (Hindi Only)',
     titleHi: 'केवल हिंदी',
-    desc: 'पूर्ण रूप से देवनागरी इंटरफ़ेस और टूल्स',
   },
 ];
 
@@ -75,7 +71,6 @@ export function SettingsScreen() {
   const {
     language,
     theme,
-    lastCheckedForUpdates,
     isCheckingUpdate,
     updateStatus,
     updateMessage,
@@ -95,11 +90,7 @@ export function SettingsScreen() {
   return (
     <View style={styles.container}>
       {/* Fixed Header (Never Scrolls) */}
-      <ScreenHeader
-        title="Settings /"
-        titleAccent="सेटिंग्स"
-        subtitle="Language, theme & updates"
-      />
+      <ScreenHeader title="Settings /" titleAccent="सेटिंग्स" />
 
       {/* Scrollable Content Area */}
       <ScrollView
@@ -114,13 +105,8 @@ export function SettingsScreen() {
               <MaterialCommunityIcons name="translate" size={22} color={colors.accentBlue} />
             </View>
             <View style={styles.cardHeaderTextWrap}>
-              <View style={styles.headerTitleRow}>
-                <Text style={styles.cardTitleEn}>App Language</Text>
-                <Text style={styles.cardTitleHi}>भाषा चयन</Text>
-              </View>
-              <Text style={styles.cardSubtitle}>
-                Choose your default interface display language
-              </Text>
+              <Text style={styles.cardTitleEn}>App Language</Text>
+              <Text style={styles.cardTitleHi}>भाषा चयन</Text>
             </View>
           </View>
 
@@ -140,15 +126,12 @@ export function SettingsScreen() {
                   ]}
                 >
                   <View style={styles.radioTextWrap}>
-                    <View style={styles.radioTitleRow}>
-                      <Text style={[styles.radioTitleEn, isSelected && styles.textBrand]}>
-                        {opt.titleEn}
-                      </Text>
-                      <Text style={[styles.radioTitleHi, isSelected && styles.textBrand]}>
-                        {opt.titleHi}
-                      </Text>
-                    </View>
-                    <Text style={styles.radioDesc}>{opt.desc}</Text>
+                    <Text style={[styles.radioTitleEn, isSelected && styles.textBrand]}>
+                      {opt.titleEn}
+                    </Text>
+                    <Text style={[styles.radioTitleHi, isSelected && styles.textBrand]}>
+                      {opt.titleHi}
+                    </Text>
                   </View>
 
                   <View style={[styles.radioButton, isSelected && styles.radioButtonSelected]}>
@@ -173,11 +156,8 @@ export function SettingsScreen() {
               />
             </View>
             <View style={styles.cardHeaderTextWrap}>
-              <View style={styles.headerTitleRow}>
-                <Text style={styles.cardTitleEn}>Theme & Appearance</Text>
-                <Text style={styles.cardTitleHi}>थीम</Text>
-              </View>
-              <Text style={styles.cardSubtitle}>Select your visual theme preference</Text>
+              <Text style={styles.cardTitleEn}>Theme & Appearance</Text>
+              <Text style={styles.cardTitleHi}>थीम</Text>
             </View>
           </View>
 
@@ -235,13 +215,8 @@ export function SettingsScreen() {
               />
             </View>
             <View style={styles.cardHeaderTextWrap}>
-              <View style={styles.headerTitleRow}>
-                <Text style={styles.cardTitleEn}>App Updates</Text>
-                <Text style={styles.cardTitleHi}>सॉफ़्टवेयर अपडेट</Text>
-              </View>
-              <Text style={styles.cardSubtitle}>
-                Check if a newer version of Hindi PDF Editor is available
-              </Text>
+              <Text style={styles.cardTitleEn}>App Updates</Text>
+              <Text style={styles.cardTitleHi}>सॉफ़्टवेयर अपडेट</Text>
             </View>
           </View>
 
@@ -266,11 +241,6 @@ export function SettingsScreen() {
                       ? 'Checking for updates...'
                       : (updateMessage ?? `Version ${APP_VERSION} installed`)}
                   </Text>
-                  <Text style={styles.statusSubtitle}>
-                    {lastCheckedForUpdates
-                      ? `Last checked: ${lastCheckedForUpdates}`
-                      : 'Never checked'}
-                  </Text>
                 </View>
               </View>
             </View>
@@ -289,12 +259,9 @@ export function SettingsScreen() {
         <View style={styles.footer}>
           <View style={styles.footerBadge}>
             <Ionicons name="shield-checkmark" size={14} color={colors.accentGreen} />
-            <Text style={styles.footerBadgeText}>100% Offline & On-Device Engine</Text>
+            <Text style={styles.footerBadgeText}>100% Offline & On-Device</Text>
           </View>
           <Text style={styles.footerVersionText}>Hindi PDF Editor • v{APP_VERSION} (Build 1)</Text>
-          <Text style={styles.footerSubText}>
-            Built with HarfBuzz shaping for perfect Devanagari rendering
-          </Text>
         </View>
       </ScrollView>
     </View>
@@ -336,9 +303,6 @@ const styles = StyleSheet.create({
   },
   cardHeaderTextWrap: {
     flex: 1,
-    gap: 2,
-  },
-  headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: spacing.xs,
@@ -354,11 +318,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.brand,
   },
-  cardSubtitle: {
-    fontSize: 11.5,
-    color: colors.textTertiary,
-    lineHeight: 15,
-  },
   optionsList: {
     gap: spacing.xs + 2,
   },
@@ -370,7 +329,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: spacing.sm + 4,
     paddingHorizontal: spacing.md,
     gap: spacing.sm,
   },
@@ -384,27 +343,19 @@ const styles = StyleSheet.create({
   },
   radioTextWrap: {
     flex: 1,
-    gap: 2,
-  },
-  radioTitleRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 6,
+    gap: 8,
   },
   radioTitleEn: {
-    fontSize: 13.5,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.textPrimary,
   },
   radioTitleHi: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '600',
     color: colors.textSecondary,
-  },
-  radioDesc: {
-    fontSize: 11,
-    color: colors.textTertiary,
-    lineHeight: 14,
   },
   textBrand: {
     color: colors.brand,
@@ -458,12 +409,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8EDFF',
   },
   themeTileLabelEn: {
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.textPrimary,
   },
   themeTileLabelHi: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -495,21 +446,16 @@ const styles = StyleSheet.create({
   },
   statusTextWrap: {
     flex: 1,
-    gap: 2,
   },
   statusTitle: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
     color: colors.textPrimary,
-  },
-  statusSubtitle: {
-    fontSize: 11,
-    color: colors.textTertiary,
   },
   footer: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
     paddingVertical: spacing.md,
   },
   footerBadge: {
@@ -517,25 +463,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.accentGreenTint,
     paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     borderRadius: radius.full,
     gap: 5,
   },
   footerBadgeText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
     color: colors.accentGreen,
   },
   footerVersionText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '800',
     color: colors.textSecondary,
     letterSpacing: -0.2,
-  },
-  footerSubText: {
-    fontSize: 10.5,
-    fontWeight: '500',
-    color: colors.textTertiary,
-    textAlign: 'center',
   },
 });

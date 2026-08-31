@@ -520,15 +520,7 @@ export function FilesScreen({ onOpenFile }: Props) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <ScreenHeader
-        title="Files /"
-        titleAccent="फाइलें"
-        subtitle={
-          scanning
-            ? 'Scanning all device folders...'
-            : `${mergedFiles.length} PDF files found on device`
-        }
-      />
+      <ScreenHeader title="Files /" titleAccent="फाइलें" />
 
       {/* Permission Request Alert Card if denied */}
       {hasPermission === false && (
@@ -653,15 +645,6 @@ export function FilesScreen({ onOpenFile }: Props) {
             पसंदीदा
           </Text>
         </Pressable>
-      </View>
-
-      {/* Results Subtitle Banner */}
-      <View style={styles.resultStatusRow}>
-        <Text style={styles.resultStatusText}>
-          Showing {sortedFiles.length} of {mergedFiles.length} documents
-          {searchQuery ? ` matching "${searchQuery}"` : ''}
-        </Text>
-        <Text style={styles.sortIndicatorText}>{SORT_LABELS[sortBy].label}</Text>
       </View>
 
       {/* Virtualized FlatList for High Performance */}

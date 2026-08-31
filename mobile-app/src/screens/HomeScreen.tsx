@@ -139,7 +139,7 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
   return (
     <View style={styles.container}>
       {/* Brand Top Header */}
-      <ScreenHeader title="Hindi PDF" titleAccent="Editor" subtitle="हिंदी पीडीएफ संपादक" />
+      <ScreenHeader title="Hindi PDF" titleAccent="Editor" />
 
       {/* Hero Welcome Banner */}
       <View style={styles.heroCard}>
@@ -149,13 +149,10 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
             <Text style={styles.heroSubGreeting}>Welcome back</Text>
           </View>
           <View style={styles.privacyPill}>
-            <Ionicons name="shield-checkmark" size={12} color={colors.accentGreen} />
+            <Ionicons name="shield-checkmark" size={13} color={colors.accentGreen} />
             <Text style={styles.privacyText}>100% Offline</Text>
           </View>
         </View>
-        <Text style={styles.heroCaption}>
-          Edit, translate, split, and merge Hindi documents directly on your phone.
-        </Text>
       </View>
 
       {/* 6-Tool Quick Action Grid (2 columns x 3 rows) */}
@@ -170,7 +167,7 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
           >
             {/* 12px Rounded Square Category Icon Chip */}
             <View style={[styles.toolIconWrapper, { backgroundColor: tool.tint }]}>
-              <MaterialCommunityIcons name={tool.iconName} size={22} color={tool.accent} />
+              <MaterialCommunityIcons name={tool.iconName} size={24} color={tool.accent} />
             </View>
 
             {/* Tool Info with Equal Devanagari Prominence */}
@@ -188,9 +185,6 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
 
               <Text style={[styles.toolTitleHi, { color: tool.accent }]} numberOfLines={1}>
                 {tool.titleHi}
-              </Text>
-              <Text style={styles.toolDesc} numberOfLines={1}>
-                {tool.desc}
               </Text>
             </View>
           </Pressable>
@@ -254,10 +248,7 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
               <Ionicons name="sparkles-outline" size={18} color={colors.brand} />
             </View>
             <View style={styles.quickStartTextGroup}>
-              <Text style={styles.quickStartTitle}>Ready to edit or translate?</Text>
-              <Text style={styles.quickStartSub}>
-                Tap &apos;+ Open PDF&apos; or select any tool above to get started
-              </Text>
+              <Text style={styles.quickStartTitle}>Tap to open and edit any PDF</Text>
             </View>
           </Pressable>
         )}

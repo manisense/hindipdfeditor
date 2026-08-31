@@ -4,12 +4,12 @@ import { colors, radius, shadows, spacing } from '../theme';
 type Props = {
   title: string;
   titleAccent?: string;
-  subtitle: string;
+  subtitle?: string;
 };
 
 /**
  * Standardized, fixed header across all main app tabs.
- * Guarantees identical top position, fixed alignment, icon size, height, and typography.
+ * Guarantees identical top position, fixed alignment, icon size, height, and bold typography.
  * Completely free of buttons and immune to scroll events.
  */
 export function ScreenHeader({ title, titleAccent, subtitle }: Props) {
@@ -26,9 +26,11 @@ export function ScreenHeader({ title, titleAccent, subtitle }: Props) {
             {title}
             {titleAccent ? <Text style={styles.titleAccent}> {titleAccent}</Text> : null}
           </Text>
-          <Text style={styles.subtitle} numberOfLines={1}>
-            {subtitle}
-          </Text>
+          {subtitle ? (
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {subtitle}
+            </Text>
+          ) : null}
         </View>
       </View>
     </View>
@@ -60,10 +62,9 @@ const styles = StyleSheet.create({
   textContainer: {
     flex: 1,
     justifyContent: 'center',
-    gap: 1,
   },
   title: {
-    fontSize: 18,
+    fontSize: 18.5,
     fontWeight: '900',
     color: colors.textPrimary,
     letterSpacing: -0.4,
@@ -74,6 +75,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.textTertiary,
+    color: colors.textSecondary,
+    marginTop: 1,
   },
 });
