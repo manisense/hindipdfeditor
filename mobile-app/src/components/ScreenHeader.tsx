@@ -42,8 +42,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 2,
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm + 2,
+    marginTop: spacing.md,
+    marginBottom: spacing.md + 2,
   },
   leftRow: {
     flexDirection: 'row',
