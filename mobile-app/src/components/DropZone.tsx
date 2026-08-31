@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { AppButton } from './AppButton';
 import { colors, radius, shadows, spacing } from '../theme';
@@ -70,10 +71,7 @@ export function DropZone({
       <View style={styles.dashedCard}>
         {/* Cloud Upload Icon */}
         <View style={styles.cloudIconWrapper}>
-          <Text style={styles.cloudIcon}>☁️</Text>
-          <View style={styles.arrowBadge}>
-            <Text style={styles.arrowText}>↑</Text>
-          </View>
+          <Ionicons name="cloud-upload-outline" size={48} color={badgeAccent} />
         </View>
 
         <View style={styles.textBlock}>
@@ -83,7 +81,8 @@ export function DropZone({
         </View>
 
         <AppButton
-          title={`📄 ${buttonLabel}`}
+          title={buttonLabel}
+          icon={<Ionicons name="document-text-outline" size={18} color="#ffffff" />}
           variant="primary"
           onPress={onSelect}
           loading={loading}
@@ -96,11 +95,11 @@ export function DropZone({
         {/* Reassurance trust chips */}
         <View style={styles.trustRow}>
           <View style={styles.trustChip}>
-            <Text style={styles.trustIcon}>🛡️</Text>
+            <Ionicons name="shield-checkmark-outline" size={14} color={colors.success} />
             <Text style={styles.trustText}>Private by default</Text>
           </View>
           <View style={styles.trustChip}>
-            <Text style={styles.trustIcon}>📄</Text>
+            <Ionicons name="document-outline" size={14} color={colors.brand} />
             <Text style={styles.trustText}>PDF files only</Text>
           </View>
         </View>

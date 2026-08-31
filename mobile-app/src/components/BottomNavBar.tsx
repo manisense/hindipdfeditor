@@ -1,4 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, shadows, spacing } from '../theme';
 
@@ -9,16 +11,49 @@ type Props = {
   onSelectTab: (tab: MainTab) => void;
 };
 
-const TABS: { id: MainTab; labelEn: string; labelHi: string; icon: string }[] = [
-  { id: 'home', labelEn: 'Home', labelHi: 'होम', icon: '🏠' },
-  { id: 'files', labelEn: 'Files', labelHi: 'फाइलें', icon: '📁' },
-  { id: 'tools', labelEn: 'Tools', labelHi: 'उपकरण', icon: '🛠️' },
-  { id: 'profile', labelEn: 'Profile', labelHi: 'प्रोफ़ाइल', icon: '👤' },
+const TABS: {
+  id: MainTab;
+  labelEn: string;
+  labelHi: string;
+  iconName: keyof typeof Ionicons.glyphMap;
+  iconActiveName: keyof typeof Ionicons.glyphMap;
+}[] = [
+  {
+    id: 'home',
+    labelEn: 'Home',
+    labelHi: 'होम',
+    iconName: 'home-outline',
+    iconActiveName: 'home',
+  },
+  {
+    id: 'files',
+    labelEn: 'Files',
+    labelHi: 'फाइलें',
+    iconName: 'folder-outline',
+    iconActiveName: 'folder',
+  },
+  {
+    id: 'tools',
+    labelEn: 'Tools',
+    labelHi: 'उपकरण',
+    iconName: 'grid-outline',
+    iconActiveName: 'grid',
+  },
+  {
+    id: 'profile',
+    labelEn: 'Profile',
+    labelHi: 'प्रोफ़ाइल',
+    iconName: 'person-outline',
+    iconActiveName: 'person',
+  },
 ];
 
 export function BottomNavBar({ activeTab, onSelectTab }: Props) {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, 8);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: bottomPadding }]}>
       <View style={styles.bar}>
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -35,7 +70,11 @@ export function BottomNavBar({ activeTab, onSelectTab }: Props) {
                 pressed && styles.tabItemPressed,
               ]}
             >
-              <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>{tab.icon}</Text>
+              <Ionicons
+                name={isActive ? tab.iconActiveName : tab.iconName}
+                size={22}
+                color={isActive ? colors.brand : colors.textSecondary}
+              />
               <Text style={[styles.tabLabelEn, isActive && styles.tabLabelEnActive]}>
                 {tab.labelEn}
               </Text>
@@ -55,7 +94,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingBottom: 4,
     paddingTop: 6,
     ...shadows.card,
   },

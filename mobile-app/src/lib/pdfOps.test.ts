@@ -23,7 +23,7 @@ jest.mock('./pdfToImages', () => ({
 }));
 
 /* eslint-disable import/first */
-import { compressPdfFile, mergePdfFiles, splitPdfFile } from './pdfOps';
+import { compressPdfFile, extractPdfPages, mergePdfFiles, splitPdfFile } from './pdfOps';
 
 async function createTestPdfBase64(pageCount: number): Promise<string> {
   const doc = await PDFDocument.create();
@@ -88,6 +88,41 @@ describe('pdfOps', () => {
       mockReadAsStringAsync.mockResolvedValue(pdfBase64);
 
       const outputUri = await splitPdfFile('file:///path/doc.pdf', 2, 4);
+
+      expect(outputUri).toBe('file:///cache/split-test-uuid-123.pdf');
+      expect(mockWriteAsStringAsync).toHaveBeenCalledWith(
+        'file:///cache/split-test-uuid-123.pdf',
+        expect.any(String),
+        { encoding: 'base64' },
+      );
+    });
+  });
+
+  describe('extractPdfPages', () => {
+    it('throws when pageIndices is empty', async () => {
+      await expect(extractPdfPages('file:///path/doc.pdf', [])).rejects.toThrow(
+        'extractPdfPages: at least one page index must be specified',
+      );
+    });
+
+    it('throws when any page index is out of bounds', async () => {
+      const pdfBase64 = await createTestPdfBase64(3);
+      mockReadAsStringAsync.mockResolvedValue(pdfBase64);
+
+      await expect(extractPdfPages('file:///path/doc.pdf', [-1])).rejects.toThrow(
+        'extractPdfPages: page index -1 is out of bounds (0..2)',
+      );
+      await expect(extractPdfPages('file:///path/doc.pdf', [0, 3])).rejects.toThrow(
+        'extractPdfPages: page index 3 is out of bounds (0..2)',
+      );
+    });
+
+    it('extracts arbitrary non-contiguous pages and deduplicates indices', async () => {
+      const pdfBase64 = await createTestPdfBase64(5);
+      mockReadAsStringAsync.mockResolvedValue(pdfBase64);
+
+      // User selects page index 0 and 4, with duplicate 0
+      const outputUri = await extractPdfPages('file:///path/doc.pdf', [0, 4, 0]);
 
       expect(outputUri).toBe('file:///cache/split-test-uuid-123.pdf');
       expect(mockWriteAsStringAsync).toHaveBeenCalledWith(

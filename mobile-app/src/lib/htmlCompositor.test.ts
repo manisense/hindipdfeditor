@@ -1,4 +1,10 @@
-import { documentHtml, escapeHtml, pageHtml } from './htmlCompositor';
+import {
+  documentHtml,
+  escapeHtml,
+  pageHtml,
+  sanitizeColor,
+  sanitizeFontFamily,
+} from './htmlCompositor';
 import type { DocumentState, MaskEdit, PageState, TextEdit } from '../state/editStore';
 
 function makePage(overrides: Partial<PageState> = {}): PageState {
@@ -60,6 +66,24 @@ describe('escapeHtml', () => {
     const escaped = escapeHtml(malicious);
     expect(escaped).not.toContain('<img');
     expect(escaped).not.toContain('>');
+  });
+});
+
+describe('sanitizeColor and sanitizeFontFamily', () => {
+  it('accepts valid hex and safe named colors', () => {
+    expect(sanitizeColor('#fff')).toBe('#fff');
+    expect(sanitizeColor('#112233')).toBe('#112233');
+    expect(sanitizeColor('#11223344')).toBe('#11223344');
+    expect(sanitizeColor('white')).toBe('white');
+    expect(sanitizeColor('black')).toBe('black');
+  });
+
+  it('rejects CSS breakout attempts and falls back safely', () => {
+    expect(sanitizeColor('red; background: url(x);', '#ffffff')).toBe('#ffffff');
+    expect(sanitizeColor('"><script>', '#15172c')).toBe('#15172c');
+    expect(sanitizeFontFamily("NotoSans'; background: red; '", 'NotoSansDevanagari')).toBe(
+      'NotoSansbackgroundred',
+    );
   });
 });
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
@@ -11,7 +12,7 @@ import { AppStatus } from '../components/AppStatus';
 import { DropZone } from '../components/DropZone';
 import { ptSizeToImagePx, ptToImagePx } from '../lib/coordinateMath';
 import { exportPdf } from '../lib/exportPdf';
-import { fontFaceWeight, getFontBase64 } from '../lib/fontAsset';
+import { fontFaceWeight, getFontBase64, type DevanagariFontFamily } from '../lib/fontAsset';
 import { containsDevanagari, containsLatin, translateOcrLines } from '../lib/geminiTranslate';
 import { detectTextLines } from '../lib/ocr';
 import { getPageCount, renderPage, sampleAverageColor } from '../lib/pdfToImages';
@@ -211,13 +212,24 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
 
       // 3. Assemble and export the translated PDF
       setProgressMsg('Assembling final translated document...');
-      const fontBase64 = await getFontBase64('NotoSansDevanagari');
-      const embeddedFonts: Record<string, { base64: string; cssFontWeight: '100 900' | '400' }> = {
-        NotoSansDevanagari: {
-          base64: fontBase64,
-          cssFontWeight: fontFaceWeight('NotoSansDevanagari'),
-        },
-      };
+      const usedFamilies = new Set<DevanagariFontFamily>(['NotoSansDevanagari']);
+      for (const p of pages) {
+        for (const e of p.edits) {
+          if (e.type === 'text' && e.fontFamily) {
+            usedFamilies.add(e.fontFamily);
+          }
+        }
+      }
+
+      const embeddedFonts: Record<string, { base64: string; cssFontWeight: '100 900' | '400' }> =
+        {};
+      for (const family of usedFamilies) {
+        const base64 = await getFontBase64(family);
+        embeddedFonts[family] = {
+          base64,
+          cssFontWeight: fontFaceWeight(family),
+        };
+      }
 
       const docState: DocumentState = {
         sourceUri: selectedDoc.uri,
@@ -299,7 +311,6 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
         title="Translate Hindi PDF"
         subtitle="Translate Hindi documents to English or English documents to Hindi seamlessly."
         buttonLabel={selectedDoc ? 'Change PDF' : 'Select PDF file'}
-        iconSymbol="🌐"
         badgeAccent={colors.accent}
         badgeTint={colors.accentTint}
         onSelect={pickPdf}
@@ -308,9 +319,12 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
       {selectedDoc && (
         <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.docName} numberOfLines={1}>
-              📄 {selectedDoc.name}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="document-text-outline" size={16} color={colors.brand} />
+              <Text style={styles.docName} numberOfLines={1}>
+                {selectedDoc.name}
+              </Text>
+            </View>
             <Text style={styles.docPages}>{selectedDoc.pageCount} page(s) detected</Text>
           </View>
 

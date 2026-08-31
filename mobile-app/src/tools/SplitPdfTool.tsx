@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 
@@ -7,7 +8,7 @@ import { AppButton } from '../components/AppButton';
 import { AppStatus } from '../components/AppStatus';
 import { DropZone } from '../components/DropZone';
 import { useAppPopup } from '../components/appPopupContext';
-import { splitPdfFile } from '../lib/pdfOps';
+import { extractPdfPages, splitPdfFile } from '../lib/pdfOps';
 import { getPageCount, renderPage } from '../lib/pdfToImages';
 import { savePdfToPickedDirectory } from '../lib/savePdf';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
@@ -128,35 +129,49 @@ export function SplitPdfTool({ initialFileUri, initialFileName }: Props = {}) {
     if (!document) return;
     setSplitting(true);
     try {
-      let from = 1;
-      let to = document.pageCount;
+      let outUri: string;
+      let outputPageCount: number;
+      let thumbnailUri: string | undefined;
+      let splitDocName: string;
+
       if (splitMode === 'range') {
-        from = Math.max(1, parseInt(fromPage, 10) || 1);
-        to = Math.min(document.pageCount, parseInt(toPage, 10) || document.pageCount);
+        const from = Math.max(1, parseInt(fromPage, 10) || 1);
+        const to = Math.min(document.pageCount, parseInt(toPage, 10) || document.pageCount);
         if (from > to) {
           throw new Error('From page cannot be greater than To page');
         }
+        outUri = await splitPdfFile(document.uri, from, to);
+        outputPageCount = to - from + 1;
+        thumbnailUri = document.pageImages[from - 1];
+        splitDocName = `${document.name.replace(/\.pdf$/i, '')}_p${from}-p${to}.pdf`;
       } else if (splitMode === 'custom') {
         const sorted = Array.from(selectedPages).sort((a, b) => a - b);
         if (sorted.length === 0) {
           throw new Error('Please select at least 1 page to extract');
         }
-        from = sorted[0] + 1;
-        to = sorted[sorted.length - 1] + 1;
+        outUri = await extractPdfPages(document.uri, sorted);
+        outputPageCount = sorted.length;
+        thumbnailUri = document.pageImages[sorted[0]];
+        const pageListStr = sorted.map((p) => p + 1).join('-');
+        splitDocName = `${document.name.replace(/\.pdf$/i, '')}_pages_${pageListStr}.pdf`;
+      } else {
+        const allIndices = Array.from({ length: document.pageCount }, (_, i) => i);
+        outUri = await extractPdfPages(document.uri, allIndices);
+        outputPageCount = document.pageCount;
+        thumbnailUri = document.pageImages[0];
+        splitDocName = `${document.name.replace(/\.pdf$/i, '')}_extracted.pdf`;
       }
 
-      const outUri = await splitPdfFile(document.uri, from, to);
       setSplitUri(outUri);
 
       // Save to recent files store under downloads
-      const splitDocName = `${document.name.replace(/\.pdf$/i, '')}_p${from}-p${to}.pdf`;
       const fileData: Omit<RecentFile, 'id' | 'date'> = {
         name: splitDocName,
         hindiName: `${document.name.replace(/\.pdf$/i, '')}_विभाजित.pdf`,
         uri: outUri,
-        thumbnailUri: document.pageImages[from - 1],
+        thumbnailUri,
         sizeBytes: 0,
-        pageCount: to - from + 1,
+        pageCount: outputPageCount,
         category: 'downloads',
         starred: false,
       };
@@ -222,7 +237,6 @@ export function SplitPdfTool({ initialFileUri, initialFileName }: Props = {}) {
           title="Split PDF / विभाजित करें"
           subtitle="Select a PDF from your device to extract specific page ranges or select individual pages visually."
           buttonLabel="Select PDF file"
-          iconSymbol="✂️"
           badgeAccent={colors.brand}
           onSelect={pickPdf}
         />
@@ -236,9 +250,12 @@ export function SplitPdfTool({ initialFileUri, initialFileName }: Props = {}) {
                 <Text style={styles.changeBtnText}>Change PDF</Text>
               </Pressable>
             </View>
-            <Text style={styles.docName} numberOfLines={1}>
-              📄 {document.name} ({document.pageCount} pages)
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="document-text-outline" size={16} color={colors.brand} />
+              <Text style={styles.docName} numberOfLines={1}>
+                {document.name} ({document.pageCount} pages)
+              </Text>
+            </View>
           </View>
 
           {/* 4-Column Page Thumbnail Grid */}

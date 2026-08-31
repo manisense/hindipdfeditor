@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -25,7 +26,7 @@ import {
   type DevanagariFontFamily,
 } from '../lib/fontAsset';
 import { detectLegacyFonts } from '../lib/legacyFontDetector';
-import { UNKNOWN_ENCODING_FONT_NAME } from '../lib/legacyEditingPolicy';
+import { legacyEditingPolicy, UNKNOWN_ENCODING_FONT_NAME } from '../lib/legacyEditingPolicy';
 import { detectTextLines } from '../lib/ocr';
 import { findOcrTargetAt, findTextEditAt } from '../lib/ocrHitTest';
 import { getPageCount, renderPage, sampleAverageColor, sampleTextColor } from '../lib/pdfToImages';
@@ -126,9 +127,12 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
     [document?.legacyFontWarnings, currentPageIndex],
   );
 
-  const [legacyBypassPages] = useState<Set<number>>(new Set());
-  const editingBlocked =
-    currentPageLegacyFontNames.length > 0 && !legacyBypassPages.has(currentPageIndex);
+  const [legacyBypassPages, setLegacyBypassPages] = useState<Set<number>>(new Set());
+  const policy = useMemo(
+    () => legacyEditingPolicy(currentPageLegacyFontNames, legacyBypassPages.has(currentPageIndex)),
+    [currentPageLegacyFontNames, legacyBypassPages, currentPageIndex],
+  );
+  const editingBlocked = policy.editingBlocked;
 
   const ensureOcrForPage = (doc: DocumentState, pageIndex: number) => {
     const pageState = doc.pages[pageIndex];
@@ -394,22 +398,22 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
     if (!document) return;
     setSaving(true);
     try {
-      const notoBase64 = await getFontBase64('NotoSansDevanagari');
-      const embeddedFonts: Record<string, { base64: string; cssFontWeight: '100 900' | '400' }> = {
-        NotoSansDevanagari: {
-          base64: notoBase64,
-          cssFontWeight: fontFaceWeight('NotoSansDevanagari'),
-        },
-      };
+      const usedFamilies = new Set<DevanagariFontFamily>(['NotoSansDevanagari']);
+      for (const p of document.pages) {
+        for (const e of p.edits) {
+          if (e.type === 'text' && e.fontFamily) {
+            usedFamilies.add(e.fontFamily);
+          }
+        }
+      }
 
-      const hasMukta = document.pages.some((p) =>
-        p.edits.some((e) => e.type === 'text' && e.fontFamily === 'Mukta'),
-      );
-      if (hasMukta) {
-        const muktaBase64 = await getFontBase64('Mukta');
-        embeddedFonts.Mukta = {
-          base64: muktaBase64,
-          cssFontWeight: fontFaceWeight('Mukta'),
+      const embeddedFonts: Record<string, { base64: string; cssFontWeight: '100 900' | '400' }> =
+        {};
+      for (const family of usedFamilies) {
+        const base64 = await getFontBase64(family);
+        embeddedFonts[family] = {
+          base64,
+          cssFontWeight: fontFaceWeight(family),
         };
       }
 
@@ -520,7 +524,6 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
             title="Edit Hindi PDF"
             subtitle="Tap to edit existing Devanagari text, place new text, or drag to mask."
             buttonLabel="Select PDF file"
-            iconSymbol="✏️"
             badgeAccent={colors.brand}
             badgeTint={colors.brandWash}
             onSelect={openPdfFile}
@@ -532,7 +535,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
           {/* Document info bar */}
           <View style={styles.docHeaderRow}>
             <View style={styles.docTitleBadge}>
-              <Text style={styles.docIcon}>📄</Text>
+              <Ionicons name="document-text-outline" size={16} color={colors.brand} />
               <Text style={styles.docNameText} numberOfLines={1}>
                 {document.displayName}
               </Text>
@@ -582,7 +585,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
               <View style={styles.modeSegment}>
                 <ModeTab
                   label="Edit"
-                  icon="✏️"
+                  iconName="format-text"
                   active={editMode === 'edit'}
                   onPress={() => {
                     setEditMode('edit');
@@ -591,7 +594,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
                 />
                 <ModeTab
                   label="Add"
-                  icon="➕"
+                  iconName="plus-circle-outline"
                   active={editMode === 'addText'}
                   onPress={() => {
                     setEditMode('addText');
@@ -600,7 +603,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
                 />
                 <ModeTab
                   label="Erase"
-                  icon="🧼"
+                  iconName="eraser"
                   active={editMode === 'erase'}
                   onPress={() => {
                     setEditMode('erase');
@@ -632,7 +635,19 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
           </View>
 
           {/* Legacy font warning if applicable */}
-          {editingBlocked && <LegacyFontWarning fontNames={currentPageLegacyFontNames} />}
+          {currentPageLegacyFontNames.length > 0 && (
+            <LegacyFontWarning
+              fontNames={currentPageLegacyFontNames}
+              inspectionFailed={policy.inspectionFailed}
+              safeReplacementEnabled={!policy.editingBlocked && !policy.inspectionFailed}
+              onEnableSafeReplacement={
+                !policy.inspectionFailed
+                  ? () => setLegacyBypassPages((prev) => new Set(prev).add(currentPageIndex))
+                  : undefined
+              }
+              onChooseUnicodeFont={() => setFontPickerVisible(true)}
+            />
+          )}
 
           {/* PDF Page Canvas */}
           <View style={styles.canvasCard}>
@@ -776,12 +791,12 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
 
 function ModeTab({
   label,
-  icon,
+  iconName,
   active,
   onPress,
 }: {
   label: string;
-  icon: string;
+  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
   active: boolean;
   onPress: () => void;
 }) {
@@ -792,7 +807,11 @@ function ModeTab({
       onPress={onPress}
       style={[styles.modeTab, active && styles.modeTabActive]}
     >
-      <Text style={styles.modeIcon}>{icon}</Text>
+      <MaterialCommunityIcons
+        name={iconName}
+        size={14}
+        color={active ? colors.brand : colors.textSecondary}
+      />
       <Text style={[styles.modeLabel, active && styles.modeLabelActive]}>{label}</Text>
     </Pressable>
   );

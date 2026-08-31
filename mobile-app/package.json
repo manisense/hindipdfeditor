@@ -5,6 +5,7 @@
   "main": "index.ts",
   "dependencies": {
     "@cantoo/pdf-lib": "^2.7.1",
+    "@expo/vector-icons": "^15.0.2",
     "@hindipdfeditor/translation-contract": "file:../packages/translation-contract",
     "expo": "~56.0.18",
     "expo-asset": "~56.0.19",
@@ -23,6 +24,7 @@
     "react": "19.2.3",
     "react-native": "0.85.3",
     "react-native-safe-area-context": "~5.7.0",
+    "react-native-vector-icons": "^10.3.0",
     "text-recognition": "file:./modules/text-recognition",
     "zustand": "^5.0.14"
   },
@@ -31,6 +33,7 @@
     "@types/jest": "29.5.14",
     "@types/node": "^26.1.0",
     "@types/react": "~19.2.2",
+    "@types/react-native-vector-icons": "^6.4.18",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~56.0.4",
     "expo-dev-client": "~56.0.24",

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 
@@ -181,7 +182,6 @@ export function CompressPdfTool({ initialFileUri, initialFileName }: Props = {})
         title="Compress PDF file"
         subtitle="Reduce file size of scanned Devanagari pages while preserving readability."
         buttonLabel={document ? 'Change PDF' : 'Select PDF file'}
-        iconSymbol="🗜️"
         badgeAccent={colors.amberInk}
         badgeTint={colors.amberTint}
         onSelect={pickPdf}
@@ -190,9 +190,12 @@ export function CompressPdfTool({ initialFileUri, initialFileName }: Props = {})
       {document && (
         <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.docName} numberOfLines={1}>
-              📄 {document.name}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="document-text-outline" size={16} color={colors.brand} />
+              <Text style={styles.docName} numberOfLines={1}>
+                {document.name}
+              </Text>
+            </View>
             <Text style={styles.docMeta}>
               {document.pageCount} pages {document.size ? `· ${formatBytes(document.size)}` : ''}
             </Text>

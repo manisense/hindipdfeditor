@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 
@@ -228,7 +229,6 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
           title="Merge PDF / मर्ज करें"
           subtitle="Combine multiple Hindi and English PDF files into a single unified document."
           buttonLabel="Select PDF files to merge"
-          iconSymbol="📑"
           badgeAccent={colors.brand}
           onSelect={pickMoreFiles}
         />
@@ -282,7 +282,11 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
                     onPress={() => moveUp(idx)}
                     style={[styles.arrowBtn, idx === 0 && styles.arrowBtnDisabled]}
                   >
-                    <Text style={styles.arrowText}>▲</Text>
+                    <Ionicons
+                      name="chevron-up"
+                      size={14}
+                      color={idx === 0 ? colors.textTertiary : colors.textPrimary}
+                    />
                   </Pressable>
                   <Pressable
                     accessibilityLabel="Move down"
@@ -290,16 +294,20 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
                     onPress={() => moveDown(idx)}
                     style={[styles.arrowBtn, idx === files.length - 1 && styles.arrowBtnDisabled]}
                   >
-                    <Text style={styles.arrowText}>▼</Text>
+                    <Ionicons
+                      name="chevron-down"
+                      size={14}
+                      color={idx === files.length - 1 ? colors.textTertiary : colors.textPrimary}
+                    />
                   </Pressable>
                   <Pressable
                     accessibilityLabel="Remove"
                     onPress={() => removeFile(file.id)}
                     style={styles.removeBtn}
                   >
-                    <Text style={styles.removeText}>✕</Text>
+                    <Ionicons name="close" size={14} color={colors.danger} />
                   </Pressable>
-                  <Text style={styles.dragHandle}>≡</Text>
+                  <Ionicons name="reorder-two-outline" size={16} color={colors.textTertiary} />
                 </View>
               </View>
             ))}
@@ -313,7 +321,7 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
             style={({ pressed }) => [styles.addMoreBtn, pressed && styles.addMoreBtnPressed]}
           >
             <View style={styles.addIconCircle}>
-              <Text style={styles.addIconText}>+</Text>
+              <Ionicons name="add" size={14} color={colors.brand} />
             </View>
             <Text style={styles.addMoreText}>Add More Files / और फ़ाइलें जोड़ें</Text>
           </Pressable>

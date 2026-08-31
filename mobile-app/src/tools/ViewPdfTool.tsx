@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -46,7 +47,7 @@ const THEMES: Record<
   {
     name: string;
     hindi: string;
-    icon: string;
+    iconName: keyof typeof Ionicons.glyphMap;
     bg: string;
     cardBg: string;
     textColor: string;
@@ -58,7 +59,7 @@ const THEMES: Record<
   light: {
     name: 'Day Light',
     hindi: 'दिन / सामान्य',
-    icon: '☀️',
+    iconName: 'sunny-outline',
     bg: '#F1F5F9',
     cardBg: '#FFFFFF',
     textColor: '#0F172A',
@@ -68,7 +69,7 @@ const THEMES: Record<
   sepia: {
     name: 'Warm Sepia',
     hindi: 'सेपिया / सुगम',
-    icon: '📜',
+    iconName: 'book-outline',
     bg: '#F5EFE6',
     cardBg: '#FAF5EE',
     textColor: '#3D312A',
@@ -78,7 +79,7 @@ const THEMES: Record<
   dark: {
     name: 'Night Dark',
     hindi: 'रात / डार्क',
-    icon: '🌙',
+    iconName: 'moon-outline',
     bg: '#0F172A',
     cardBg: '#1E293B',
     textColor: '#F8FAFC',
@@ -345,7 +346,11 @@ export function ViewPdfTool({
               style={({ pressed }) => [styles.headerIconBtn, pressed && styles.btnPressed]}
               hitSlop={8}
             >
-              <Text style={[styles.headerIconText, { color: currentTheme.textColor }]}>ℹ️</Text>
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color={currentTheme.textColor}
+              />
             </Pressable>
 
             {/* Change File Button */}
@@ -356,7 +361,7 @@ export function ViewPdfTool({
               style={({ pressed }) => [styles.headerIconBtn, pressed && styles.btnPressed]}
               hitSlop={8}
             >
-              <Text style={[styles.headerIconText, { color: currentTheme.textColor }]}>📂</Text>
+              <Ionicons name="folder-open-outline" size={18} color={currentTheme.textColor} />
             </Pressable>
           </View>
 
@@ -376,16 +381,23 @@ export function ViewPdfTool({
                   },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.modeTabText,
-                    {
-                      color: viewMode === 'continuous' ? '#ffffff' : currentTheme.subTextColor,
-                    },
-                  ]}
-                >
-                  📜 Scroll
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons
+                    name="infinite-outline"
+                    size={13}
+                    color={viewMode === 'continuous' ? '#ffffff' : currentTheme.subTextColor}
+                  />
+                  <Text
+                    style={[
+                      styles.modeTabText,
+                      {
+                        color: viewMode === 'continuous' ? '#ffffff' : currentTheme.subTextColor,
+                      },
+                    ]}
+                  >
+                    Scroll
+                  </Text>
+                </View>
               </Pressable>
 
               <Pressable
@@ -400,16 +412,23 @@ export function ViewPdfTool({
                   },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.modeTabText,
-                    {
-                      color: viewMode === 'single' ? '#ffffff' : currentTheme.subTextColor,
-                    },
-                  ]}
-                >
-                  📄 Page
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons
+                    name="document-outline"
+                    size={13}
+                    color={viewMode === 'single' ? '#ffffff' : currentTheme.subTextColor}
+                  />
+                  <Text
+                    style={[
+                      styles.modeTabText,
+                      {
+                        color: viewMode === 'single' ? '#ffffff' : currentTheme.subTextColor,
+                      },
+                    ]}
+                  >
+                    Single
+                  </Text>
+                </View>
               </Pressable>
             </View>
 
@@ -427,7 +446,11 @@ export function ViewPdfTool({
                     theme === t && styles.themeBtnActive,
                   ]}
                 >
-                  <Text style={styles.themeBtnIcon}>{THEMES[t].icon}</Text>
+                  <Ionicons
+                    name={THEMES[t].iconName}
+                    size={16}
+                    color={theme === t ? colors.brand : THEMES[t].textColor}
+                  />
                 </Pressable>
               ))}
             </View>
@@ -715,7 +738,7 @@ export function ViewPdfTool({
                   }}
                   style={styles.editorActionBtn}
                 >
-                  <Text style={styles.editorActionIcon}>✏️</Text>
+                  <Ionicons name="pencil" size={14} color="#ffffff" />
                   <Text style={styles.editorActionText}>Edit Hindi Text</Text>
                 </Pressable>
               )}
@@ -740,7 +763,7 @@ export function ViewPdfTool({
                   }}
                   style={styles.translateActionBtn}
                 >
-                  <Text style={styles.translateActionIcon}>🌐</Text>
+                  <Ionicons name="language" size={14} color="#ffffff" />
                   <Text style={styles.translateActionText}>Translate</Text>
                 </Pressable>
               )}

@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { colors, radius, shadows, spacing } from '../theme';
 
@@ -9,21 +10,23 @@ export function ProfileScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Profile Header Card */}
+      {/* App Header Card with Brand Logo */}
       <View style={styles.profileCard}>
-        <View style={styles.avatarCircle}>
-          <Text style={styles.avatarIcon}>👤</Text>
-        </View>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.logoImage}
+          accessibilityLabel="Hindi PDF Editor logo"
+        />
         <View style={styles.profileDetails}>
-          <Text style={styles.userName}>Raj Kumar</Text>
-          <Text style={styles.userRole}>Hindi PDF Editor User</Text>
+          <Text style={styles.userName}>Hindi PDF Editor</Text>
+          <Text style={styles.userRole}>हिंदी पीडीएफ संपादक</Text>
         </View>
       </View>
 
       {/* Security & Offline Badge Card */}
       <View style={styles.infoCard}>
         <View style={styles.infoRow}>
-          <Text style={styles.infoIcon}>🔒</Text>
+          <Ionicons name="shield-checkmark" size={22} color={colors.brand} />
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>100% Private & On-Device</Text>
             <Text style={styles.infoDesc}>
@@ -87,18 +90,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     ...shadows.card,
   },
-  avatarCircle: {
+  logoImage: {
     width: 60,
     height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.brandWash,
-    borderWidth: 2,
-    borderColor: colors.brandTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarIcon: {
-    fontSize: 28,
+    borderRadius: radius.xl,
+    ...shadows.soft,
   },
   profileDetails: {
     flex: 1,

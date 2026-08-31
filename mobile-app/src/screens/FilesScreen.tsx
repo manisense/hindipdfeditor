@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 
@@ -36,13 +37,16 @@ type FileCategoryTab = 'all' | 'downloads' | 'whatsapp' | 'documents' | 'starred
 
 type SortOption = 'date_desc' | 'date_asc' | 'name_asc' | 'name_desc' | 'size_desc' | 'size_asc';
 
-const SORT_LABELS: Record<SortOption, { label: string; hindi: string; icon: string }> = {
-  date_desc: { label: 'Newest First', hindi: 'नवीनतम पहले', icon: '🕒↓' },
-  date_asc: { label: 'Oldest First', hindi: 'पुराने पहले', icon: '🕒↑' },
-  name_asc: { label: 'Name (A to Z)', hindi: 'नाम (A-Z)', icon: '🔤↓' },
-  name_desc: { label: 'Name (Z to A)', hindi: 'नाम (Z-A)', icon: '🔤↑' },
-  size_desc: { label: 'Largest Size', hindi: 'बड़ा साइज', icon: '💾↓' },
-  size_asc: { label: 'Smallest Size', hindi: 'छोटा साइज', icon: '💾↑' },
+const SORT_LABELS: Record<
+  SortOption,
+  { label: string; hindi: string; iconName: keyof typeof Ionicons.glyphMap }
+> = {
+  date_desc: { label: 'Newest First', hindi: 'नवीनतम पहले', iconName: 'time-outline' },
+  date_asc: { label: 'Oldest First', hindi: 'पुराने पहले', iconName: 'time' },
+  name_asc: { label: 'Name (A to Z)', hindi: 'नाम (A-Z)', iconName: 'text' },
+  name_desc: { label: 'Name (Z to A)', hindi: 'नाम (Z-A)', iconName: 'text-outline' },
+  size_desc: { label: 'Largest Size', hindi: 'बड़ा साइज', iconName: 'trending-up-outline' },
+  size_asc: { label: 'Smallest Size', hindi: 'छोटा साइज', iconName: 'trending-down-outline' },
 };
 
 function formatFileSize(bytes: number): string {
@@ -63,14 +67,16 @@ function formatDate(epochSecOrStr?: number | string): string {
   return epochSecOrStr;
 }
 
-function getFolderIcon(folderName?: string): string {
-  if (!folderName) return '📁';
+function getFolderIconName(folderName?: string): keyof typeof Ionicons.glyphMap {
+  if (!folderName) return 'folder-outline';
   const f = folderName.toLowerCase();
-  if (f.includes('download')) return '📥';
-  if (f.includes('whatsapp') || f.includes('chat') || f.includes('telegram')) return '💬';
-  if (f.includes('camscanner') || f.includes('scan') || f.includes('adobe')) return '📷';
-  if (f.includes('document')) return '📄';
-  return '📁';
+  if (f.includes('download')) return 'download-outline';
+  if (f.includes('whatsapp') || f.includes('chat') || f.includes('telegram'))
+    return 'chatbubbles-outline';
+  if (f.includes('camscanner') || f.includes('scan') || f.includes('adobe'))
+    return 'camera-outline';
+  if (f.includes('document')) return 'document-text-outline';
+  return 'folder-outline';
 }
 
 function classifyCategory(
@@ -87,6 +93,10 @@ function classifyCategory(
   return 'other';
 }
 
+// In-memory module-level cache for scanned device files to avoid rescanning on every tab switch
+let cachedScannedDeviceFiles: RecentFile[] | null = null;
+let isScanRunning = false;
+
 export function FilesScreen({ onOpenFile }: Props) {
   const [activeCategory, setActiveCategory] = useState<FileCategoryTab>('all');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -96,7 +106,7 @@ export function FilesScreen({ onOpenFile }: Props) {
   const [selectedDetailsFile, setSelectedDetailsFile] = useState<RecentFile | null>(null);
   const [activeMenuFile, setActiveMenuFile] = useState<RecentFile | null>(null);
 
-  const [deviceFiles, setDeviceFiles] = useState<RecentFile[]>([]);
+  const [deviceFiles, setDeviceFiles] = useState<RecentFile[]>(cachedScannedDeviceFiles ?? []);
   const [scanning, setScanning] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
@@ -110,14 +120,20 @@ export function FilesScreen({ onOpenFile }: Props) {
   const toggleStar = useRecentFilesStore((state) => state.toggleStar);
   const removeFile = useRecentFilesStore((state) => state.removeFile);
 
-  const scanFiles = useCallback(async () => {
+  const scanFiles = useCallback(async (force = false) => {
+    if (isScanRunning) return;
+    if (!force && cachedScannedDeviceFiles !== null) {
+      setDeviceFiles(cachedScannedDeviceFiles);
+      return;
+    }
+
+    isScanRunning = true;
     setScanning(true);
     try {
       if (Platform.OS === 'android') {
         const isGranted = await hasStoragePermission();
         setHasPermission(isGranted);
         if (!isGranted) {
-          setScanning(false);
           return;
         }
       } else {
@@ -143,13 +159,16 @@ export function FilesScreen({ onOpenFile }: Props) {
           pageCount: item.pageCount ?? 1,
           category: 'all',
           starred: false,
+          isRecent: false,
         };
       });
 
+      cachedScannedDeviceFiles = mapped;
       setDeviceFiles(mapped);
     } catch (err) {
       console.warn('Device PDF scan error', err);
     } finally {
+      isScanRunning = false;
       setScanning(false);
     }
   }, []);
@@ -159,7 +178,7 @@ export function FilesScreen({ onOpenFile }: Props) {
       const granted = await requestStoragePermission();
       setHasPermission(granted);
       if (granted) {
-        void scanFiles();
+        void scanFiles(true);
       }
     } catch (err) {
       console.warn('Permission request error', err);
@@ -169,101 +188,29 @@ export function FilesScreen({ onOpenFile }: Props) {
   useEffect(() => {
     let isMounted = true;
 
-    async function checkPermissionAndScan() {
-      if (isMounted) setScanning(true);
-      try {
-        if (Platform.OS === 'android') {
-          const isGranted = await hasStoragePermission();
-          if (isMounted) setHasPermission(isGranted);
-          if (isGranted) {
-            const scanned = await scanDevicePdfFiles();
-            const mapped: RecentFile[] = scanned.map((item) => {
-              const dateStr = formatDate(item.dateModified);
-              const folderName = item.folder ?? 'Storage';
-
-              return {
-                id: `dev-${item.uri}`,
-                name: item.name,
-                hindiName: item.name.replace(/\.pdf$/i, '') + '_हिंदी.pdf',
-                uri: item.uri,
-                sizeBytes: item.sizeBytes,
-                date: dateStr,
-                dateModified: item.dateModified,
-                folder: folderName,
-                path: item.path,
-                pageCount: item.pageCount ?? 1,
-                category: 'all',
-                starred: false,
-                isRecent: false,
-              };
-            });
-
-            if (isMounted) {
-              setDeviceFiles(mapped);
-            }
-          } else {
-            // Prompt the user for permission every time on the files screen until granted
-            try {
-              const asked = await requestStoragePermission();
-              if (isMounted) {
-                setHasPermission(asked);
-                if (asked) {
-                  const scanned = await scanDevicePdfFiles();
-                  const mapped: RecentFile[] = scanned.map((item) => ({
-                    id: `dev-${item.uri}`,
-                    name: item.name,
-                    hindiName: item.name.replace(/\.pdf$/i, '') + '_हिंदी.pdf',
-                    uri: item.uri,
-                    sizeBytes: item.sizeBytes,
-                    date: formatDate(item.dateModified),
-                    dateModified: item.dateModified,
-                    folder: item.folder ?? 'Storage',
-                    path: item.path,
-                    pageCount: item.pageCount ?? 1,
-                    category: 'all',
-                    starred: false,
-                    isRecent: false,
-                  }));
-                  setDeviceFiles(mapped);
-                }
-              }
-            } catch {
-              // ignore
-            }
+    async function initialCheck() {
+      if (Platform.OS === 'android') {
+        const isGranted = await hasStoragePermission();
+        if (isMounted) setHasPermission(isGranted);
+        if (isGranted) {
+          if (cachedScannedDeviceFiles === null) {
+            void scanFiles(false);
           }
-        } else {
-          if (isMounted) setHasPermission(true);
-          const scanned = await scanDevicePdfFiles();
-          const mapped: RecentFile[] = scanned.map((item) => ({
-            id: `dev-${item.uri}`,
-            name: item.name,
-            hindiName: item.name.replace(/\.pdf$/i, '') + '_हिंदी.pdf',
-            uri: item.uri,
-            sizeBytes: item.sizeBytes,
-            date: formatDate(item.dateModified),
-            dateModified: item.dateModified,
-            folder: item.folder ?? 'Storage',
-            path: item.path,
-            pageCount: item.pageCount ?? 1,
-            category: 'all',
-            starred: false,
-            isRecent: false,
-          }));
-          if (isMounted) setDeviceFiles(mapped);
         }
-      } catch (err) {
-        console.warn('Initial PDF scan error', err);
-      } finally {
-        if (isMounted) setScanning(false);
+      } else {
+        if (isMounted) setHasPermission(true);
+        if (cachedScannedDeviceFiles === null) {
+          void scanFiles(false);
+        }
       }
     }
 
-    void checkPermissionAndScan();
+    void initialCheck();
 
-    // Re-check every time app returns to foreground from Settings / Permission screen
+    // Only re-check permission when returning to foreground if not yet granted
     const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active') {
-        void checkPermissionAndScan();
+      if (nextAppState === 'active' && cachedScannedDeviceFiles === null) {
+        void initialCheck();
       }
     });
 
@@ -271,7 +218,7 @@ export function FilesScreen({ onOpenFile }: Props) {
       isMounted = false;
       subscription.remove();
     };
-  }, []);
+  }, [scanFiles]);
 
   // Combine recent files store + scanned device files with RECENT FILES ALWAYS ON TOP
   const mergedFiles: RecentFile[] = useMemo(() => {
@@ -478,7 +425,7 @@ export function FilesScreen({ onOpenFile }: Props) {
   const renderFileItem = ({ item: file }: { item: RecentFile }) => {
     const thumbUri = thumbnailCache[file.uri] || file.thumbnailUri;
     const pageCount = pageCountCache[file.uri] || file.pageCount || 1;
-    const folderIcon = getFolderIcon(file.folder);
+    const folderIconName = getFolderIconName(file.folder);
     const folderDisplayName = file.folder || 'Storage';
 
     // Trigger lazy thumbnail on display
@@ -533,13 +480,14 @@ export function FilesScreen({ onOpenFile }: Props) {
               {file.isRecent && (
                 <>
                   <View style={styles.recentPill}>
-                    <Text style={styles.recentPillText}>🕒 Recent</Text>
+                    <Ionicons name="time-outline" size={10} color={colors.brand} />
+                    <Text style={styles.recentPillText}>Recent</Text>
                   </View>
                   <Text style={styles.fileMetaDot}>•</Text>
                 </>
               )}
               <View style={styles.folderPill}>
-                <Text style={styles.folderPillIcon}>{folderIcon}</Text>
+                <Ionicons name={folderIconName} size={11} color={colors.textSecondary} />
                 <Text style={styles.folderPillText} numberOfLines={1}>
                   {folderDisplayName}
                 </Text>
@@ -561,9 +509,11 @@ export function FilesScreen({ onOpenFile }: Props) {
             style={({ pressed }) => [styles.starBtn, pressed && styles.actionBtnPressed]}
             hitSlop={8}
           >
-            <Text style={[styles.starIcon, file.starred && styles.starIconActive]}>
-              {file.starred ? '★' : '☆'}
-            </Text>
+            <Ionicons
+              name={file.starred ? 'star' : 'star-outline'}
+              size={18}
+              color={file.starred ? '#F59E0B' : colors.textTertiary}
+            />
           </Pressable>
 
           <Pressable
@@ -573,7 +523,7 @@ export function FilesScreen({ onOpenFile }: Props) {
             style={({ pressed }) => [styles.moreBtn, pressed && styles.actionBtnPressed]}
             hitSlop={8}
           >
-            <Text style={styles.moreBtnText}>•••</Text>
+            <Ionicons name="ellipsis-horizontal" size={18} color={colors.textSecondary} />
           </Pressable>
         </View>
       </View>
@@ -585,9 +535,11 @@ export function FilesScreen({ onOpenFile }: Props) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleRow}>
-          <View style={styles.headerLogoBadge}>
-            <Text style={styles.headerLogoHindi}>ह</Text>
-          </View>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.headerLogoImage}
+            accessibilityLabel="Hindi PDF Editor logo"
+          />
           <View style={styles.headerTextGroup}>
             <Text style={styles.headerTitle}>
               Files / <Text style={styles.headerTitleHindi}>फाइलें</Text>
@@ -605,14 +557,17 @@ export function FilesScreen({ onOpenFile }: Props) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Rescan device storage"
-            onPress={() => void scanFiles()}
+            onPress={() => void scanFiles(true)}
             disabled={scanning}
             style={({ pressed }) => [styles.rescanBtn, pressed && styles.rescanBtnPressed]}
           >
             {scanning ? (
               <ActivityIndicator size="small" color={colors.brand} />
             ) : (
-              <Text style={styles.rescanBtnText}>🔄 Rescan</Text>
+              <View style={styles.headerBtnContent}>
+                <Ionicons name="refresh-outline" size={13} color={colors.brand} />
+                <Text style={styles.rescanBtnText}>Rescan</Text>
+              </View>
             )}
           </Pressable>
 
@@ -623,7 +578,10 @@ export function FilesScreen({ onOpenFile }: Props) {
             onPress={handlePickFile}
             style={({ pressed }) => [styles.pickPdfBtn, pressed && styles.pickPdfBtnPressed]}
           >
-            <Text style={styles.pickPdfBtnText}>+ Open PDF</Text>
+            <View style={styles.headerBtnContent}>
+              <Ionicons name="add" size={15} color="#ffffff" />
+              <Text style={styles.pickPdfBtnText}>Open PDF</Text>
+            </View>
           </Pressable>
         </View>
       </View>
@@ -631,7 +589,7 @@ export function FilesScreen({ onOpenFile }: Props) {
       {/* Permission Request Alert Card if denied */}
       {hasPermission === false && (
         <View style={styles.permissionCard}>
-          <Text style={styles.permissionIcon}>⚠️</Text>
+          <Ionicons name="warning-outline" size={24} color={colors.warning} />
           <View style={styles.permissionTextGroup}>
             <Text style={styles.permissionTitle}>Device Storage Access Needed</Text>
             <Text style={styles.permissionDesc}>
@@ -652,7 +610,7 @@ export function FilesScreen({ onOpenFile }: Props) {
       {/* Search Bar & Sort Button Row */}
       <View style={styles.searchRow}>
         <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search-outline" size={16} color={colors.textTertiary} />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -663,7 +621,7 @@ export function FilesScreen({ onOpenFile }: Props) {
           />
           {searchQuery.length > 0 && (
             <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
-              <Text style={styles.clearSearchText}>✕</Text>
+              <Ionicons name="close-circle" size={16} color={colors.textTertiary} />
             </Pressable>
           )}
         </View>
@@ -675,7 +633,7 @@ export function FilesScreen({ onOpenFile }: Props) {
           onPress={() => setShowSortModal(true)}
           style={({ pressed }) => [styles.sortBtn, pressed && styles.sortBtnPressed]}
         >
-          <Text style={styles.sortBtnIcon}>{SORT_LABELS[sortBy].icon}</Text>
+          <Ionicons name={SORT_LABELS[sortBy].iconName} size={15} color={colors.brand} />
           <Text style={styles.sortBtnText}>Sort</Text>
         </Pressable>
       </View>
@@ -793,7 +751,7 @@ export function FilesScreen({ onOpenFile }: Props) {
 
           {folderStats.map(([folderName, count]) => {
             const isSelected = selectedFolder === folderName;
-            const icon = getFolderIcon(folderName);
+            const iconName = getFolderIconName(folderName);
             return (
               <Pressable
                 key={folderName}
@@ -801,7 +759,11 @@ export function FilesScreen({ onOpenFile }: Props) {
                 onPress={() => setSelectedFolder(isSelected ? null : folderName)}
                 style={[styles.folderChip, isSelected && styles.folderChipActive]}
               >
-                <Text style={styles.folderChipIcon}>{icon}</Text>
+                <Ionicons
+                  name={iconName}
+                  size={13}
+                  color={isSelected ? colors.brand : colors.textSecondary}
+                />
                 <Text
                   style={[styles.folderChipText, isSelected && styles.folderChipTextActive]}
                   numberOfLines={1}
@@ -838,7 +800,7 @@ export function FilesScreen({ onOpenFile }: Props) {
         refreshControl={
           <RefreshControl
             refreshing={scanning}
-            onRefresh={() => void scanFiles()}
+            onRefresh={() => void scanFiles(true)}
             colors={[colors.brand]}
             tintColor={colors.brand}
           />
@@ -846,7 +808,7 @@ export function FilesScreen({ onOpenFile }: Props) {
         ListEmptyComponent={
           hasPermission === false ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🔒</Text>
+              <Ionicons name="lock-closed-outline" size={44} color={colors.brand} />
               <Text style={styles.emptyTitle}>Storage Permission Required / अनुमति आवश्यक</Text>
               <Text style={styles.emptySubtitle}>
                 Allow storage permission so Hindi PDF Editor can automatically list all PDF files
@@ -857,9 +819,7 @@ export function FilesScreen({ onOpenFile }: Props) {
                 onPress={() => void handleAskPermission()}
                 style={styles.emptyPickBtn}
               >
-                <Text style={styles.emptyPickBtnText}>
-                  🔓 Grant Storage Permission / अनुमति दें
-                </Text>
+                <Text style={styles.emptyPickBtnText}>Grant Storage Permission / अनुमति दें</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -873,7 +833,7 @@ export function FilesScreen({ onOpenFile }: Props) {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📁</Text>
+              <Ionicons name="folder-open-outline" size={44} color={colors.textTertiary} />
               <Text style={styles.emptyTitle}>
                 {searchQuery ? 'No matching PDF files found' : 'No documents in this view'}
               </Text>
@@ -901,7 +861,7 @@ export function FilesScreen({ onOpenFile }: Props) {
         onPress={handlePickFile}
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Ionicons name="add" size={26} color="#ffffff" />
       </Pressable>
 
       {/* Action Menu Modal Sheet */}
@@ -929,7 +889,7 @@ export function FilesScreen({ onOpenFile }: Props) {
                   </Text>
                 </View>
                 <Pressable onPress={() => setActiveMenuFile(null)} style={styles.actionSheetClose}>
-                  <Text style={styles.actionSheetCloseText}>✕</Text>
+                  <Ionicons name="close" size={20} color={colors.textSecondary} />
                 </Pressable>
               </View>
 
@@ -943,7 +903,11 @@ export function FilesScreen({ onOpenFile }: Props) {
                     onOpenFile(file, 'viewer');
                   }}
                 >
-                  <Text style={styles.actionOptionIcon}>📖</Text>
+                  <MaterialCommunityIcons
+                    name="book-open-page-variant-outline"
+                    size={20}
+                    color={colors.success}
+                  />
                   <View style={styles.actionOptionTextGroup}>
                     <Text style={styles.actionOptionTitle}>Read / View PDF (देखें और पढ़ें)</Text>
                     <Text style={styles.actionOptionDesc}>
@@ -960,7 +924,11 @@ export function FilesScreen({ onOpenFile }: Props) {
                     onOpenFile(file, 'edit');
                   }}
                 >
-                  <Text style={styles.actionOptionIcon}>✏️</Text>
+                  <MaterialCommunityIcons
+                    name="file-document-edit-outline"
+                    size={20}
+                    color={colors.brand}
+                  />
                   <View style={styles.actionOptionTextGroup}>
                     <Text style={styles.actionOptionTitle}>Edit Hindi Text</Text>
                     <Text style={styles.actionOptionDesc}>
@@ -977,7 +945,7 @@ export function FilesScreen({ onOpenFile }: Props) {
                     onOpenFile(file, 'translate');
                   }}
                 >
-                  <Text style={styles.actionOptionIcon}>🌐</Text>
+                  <MaterialCommunityIcons name="translate" size={20} color={colors.accent} />
                   <View style={styles.actionOptionTextGroup}>
                     <Text style={styles.actionOptionTitle}>Translate Document</Text>
                     <Text style={styles.actionOptionDesc}>
@@ -994,7 +962,11 @@ export function FilesScreen({ onOpenFile }: Props) {
                     onOpenFile(file, 'compress');
                   }}
                 >
-                  <Text style={styles.actionOptionIcon}>🗜️</Text>
+                  <MaterialCommunityIcons
+                    name="archive-arrow-down-outline"
+                    size={20}
+                    color={colors.amberInk}
+                  />
                   <View style={styles.actionOptionTextGroup}>
                     <Text style={styles.actionOptionTitle}>Compress PDF</Text>
                     <Text style={styles.actionOptionDesc}>
@@ -1011,7 +983,7 @@ export function FilesScreen({ onOpenFile }: Props) {
                     onOpenFile(file, 'split');
                   }}
                 >
-                  <Text style={styles.actionOptionIcon}>✂️</Text>
+                  <MaterialCommunityIcons name="content-cut" size={20} color={colors.coral} />
                   <View style={styles.actionOptionTextGroup}>
                     <Text style={styles.actionOptionTitle}>Split Pages</Text>
                     <Text style={styles.actionOptionDesc}>
@@ -1028,7 +1000,11 @@ export function FilesScreen({ onOpenFile }: Props) {
                     onOpenFile(file, 'merge');
                   }}
                 >
-                  <Text style={styles.actionOptionIcon}>📑</Text>
+                  <MaterialCommunityIcons
+                    name="layers-triple-outline"
+                    size={20}
+                    color={colors.lavender}
+                  />
                   <View style={styles.actionOptionTextGroup}>
                     <Text style={styles.actionOptionTitle}>Merge with other PDFs</Text>
                     <Text style={styles.actionOptionDesc}>Combine multiple PDF documents</Text>
@@ -1043,7 +1019,11 @@ export function FilesScreen({ onOpenFile }: Props) {
                     void handleToggleStar(file);
                   }}
                 >
-                  <Text style={styles.actionOptionIcon}>{activeMenuFile.starred ? '★' : '☆'}</Text>
+                  <Ionicons
+                    name={activeMenuFile.starred ? 'star' : 'star-outline'}
+                    size={20}
+                    color="#F59E0B"
+                  />
                   <View style={styles.actionOptionTextGroup}>
                     <Text style={styles.actionOptionTitle}>
                       {activeMenuFile.starred ? 'Remove from Starred' : 'Add to Starred'}
@@ -1062,7 +1042,7 @@ export function FilesScreen({ onOpenFile }: Props) {
                     void handleShareFile(file);
                   }}
                 >
-                  <Text style={styles.actionOptionIcon}>📤</Text>
+                  <Ionicons name="share-outline" size={20} color={colors.textPrimary} />
                   <View style={styles.actionOptionTextGroup}>
                     <Text style={styles.actionOptionTitle}>Share PDF</Text>
                     <Text style={styles.actionOptionDesc}>
@@ -1079,7 +1059,11 @@ export function FilesScreen({ onOpenFile }: Props) {
                     setSelectedDetailsFile(file);
                   }}
                 >
-                  <Text style={styles.actionOptionIcon}>ℹ️</Text>
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={20}
+                    color={colors.textPrimary}
+                  />
                   <View style={styles.actionOptionTextGroup}>
                     <Text style={styles.actionOptionTitle}>File Details & Properties</Text>
                     <Text style={styles.actionOptionDesc}>
@@ -1096,7 +1080,7 @@ export function FilesScreen({ onOpenFile }: Props) {
                     void removeFile(file.id);
                   }}
                 >
-                  <Text style={[styles.actionOptionIcon, { color: colors.danger }]}>🗑</Text>
+                  <Ionicons name="trash-outline" size={20} color={colors.danger} />
                   <View style={styles.actionOptionTextGroup}>
                     <Text style={[styles.actionOptionTitle, { color: colors.danger }]}>
                       Remove from List
@@ -1122,7 +1106,7 @@ export function FilesScreen({ onOpenFile }: Props) {
             <View style={styles.sortModalHeader}>
               <Text style={styles.sortModalTitle}>Sort Documents / क्रमबद्ध करें</Text>
               <Pressable onPress={() => setShowSortModal(false)}>
-                <Text style={styles.actionSheetCloseText}>✕</Text>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
               </Pressable>
             </View>
 
@@ -1139,7 +1123,11 @@ export function FilesScreen({ onOpenFile }: Props) {
                     }}
                     style={[styles.sortItem, isSelected && styles.sortItemActive]}
                   >
-                    <Text style={styles.sortItemIcon}>{opt.icon}</Text>
+                    <Ionicons
+                      name={opt.iconName}
+                      size={18}
+                      color={isSelected ? colors.brand : colors.textSecondary}
+                    />
                     <View style={styles.sortItemTextGroup}>
                       <Text
                         style={[styles.sortItemLabel, isSelected && styles.sortItemLabelActive]}
@@ -1148,7 +1136,7 @@ export function FilesScreen({ onOpenFile }: Props) {
                       </Text>
                       <Text style={styles.sortItemHindi}>{opt.hindi}</Text>
                     </View>
-                    {isSelected && <Text style={styles.sortItemCheck}>✓</Text>}
+                    {isSelected && <Ionicons name="checkmark" size={18} color={colors.brand} />}
                   </Pressable>
                 );
               })}
@@ -1170,7 +1158,7 @@ export function FilesScreen({ onOpenFile }: Props) {
               <View style={styles.sortModalHeader}>
                 <Text style={styles.sortModalTitle}>Document Details / फाइल विवरण</Text>
                 <Pressable onPress={() => setSelectedDetailsFile(null)}>
-                  <Text style={styles.actionSheetCloseText}>✕</Text>
+                  <Ionicons name="close" size={20} color={colors.textSecondary} />
                 </Pressable>
               </View>
 
@@ -1189,10 +1177,16 @@ export function FilesScreen({ onOpenFile }: Props) {
 
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Folder</Text>
-                  <Text style={styles.detailValue}>
-                    {getFolderIcon(selectedDetailsFile.folder)}{' '}
-                    {selectedDetailsFile.folder ?? 'Device Storage'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Ionicons
+                      name={getFolderIconName(selectedDetailsFile.folder)}
+                      size={14}
+                      color={colors.brand}
+                    />
+                    <Text style={styles.detailValue}>
+                      {selectedDetailsFile.folder ?? 'Device Storage'}
+                    </Text>
+                  </View>
                 </View>
 
                 <View style={styles.detailRow}>
@@ -1235,7 +1229,10 @@ export function FilesScreen({ onOpenFile }: Props) {
                     onOpenFile(file, 'edit');
                   }}
                 >
-                  <Text style={styles.detailsOpenBtnText}>✏️ Open in Editor</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Ionicons name="pencil" size={14} color="#ffffff" />
+                    <Text style={styles.detailsOpenBtnText}>Open in Editor</Text>
+                  </View>
                 </Pressable>
                 <Pressable
                   style={styles.detailsShareBtn}
@@ -1245,7 +1242,10 @@ export function FilesScreen({ onOpenFile }: Props) {
                     void handleShareFile(file);
                   }}
                 >
-                  <Text style={styles.detailsShareBtnText}>📤 Share</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Ionicons name="share-outline" size={14} color={colors.textPrimary} />
+                    <Text style={styles.detailsShareBtnText}>Share</Text>
+                  </View>
                 </Pressable>
               </View>
             </View>
@@ -1273,19 +1273,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  headerLogoBadge: {
-    width: 36,
-    height: 36,
+  headerLogoImage: {
+    width: 38,
+    height: 38,
     borderRadius: radius.md,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerLogoHindi: {
-    color: '#ffffff',
-    fontSize: 21,
-    fontWeight: '900',
-    marginTop: -2,
+    ...shadows.soft,
   },
   headerTextGroup: {
     gap: 1,
@@ -1308,6 +1300,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  headerBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   rescanBtn: {
     backgroundColor: colors.brandWash,

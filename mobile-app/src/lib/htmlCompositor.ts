@@ -22,8 +22,32 @@ export function escapeHtml(text: string): string {
     .replace(/'/g, '&#39;');
 }
 
+const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+const SAFE_NAMED_COLORS = new Set(['white', 'black', 'transparent']);
+
+/**
+ * Validates and sanitizes a CSS color string to prevent CSS injection inside the print WebView.
+ * Accepts hex colors (#RGB, #RGBA, #RRGGBB, #RRGGBBAA) or safe named keywords; falls back safely.
+ */
+export function sanitizeColor(color: string, fallback = '#ffffff'): string {
+  const trimmed = color.trim().toLowerCase();
+  if (HEX_COLOR_REGEX.test(trimmed) || SAFE_NAMED_COLORS.has(trimmed)) {
+    return trimmed;
+  }
+  return fallback;
+}
+
+/**
+ * Sanitizes a font-family name to ensure it contains only safe identifier characters (a-z, 0-9, _, -).
+ */
+export function sanitizeFontFamily(family: string, fallback = 'NotoSansDevanagari'): string {
+  const cleaned = family.replace(/[^a-zA-Z0-9_-]/g, '');
+  return cleaned.length > 0 ? cleaned : fallback;
+}
+
 function maskLayerHtml(edit: MaskEdit): string {
-  return `<div style="position:absolute;left:${edit.xPt}pt;top:${edit.yPt}pt;width:${edit.wPt}pt;height:${edit.hPt}pt;background:${edit.color}"></div>`;
+  const safeColor = sanitizeColor(edit.color, '#ffffff');
+  return `<div style="position:absolute;left:${edit.xPt}pt;top:${edit.yPt}pt;width:${edit.wPt}pt;height:${edit.hPt}pt;background:${safeColor}"></div>`;
 }
 
 function textLayerHtml(edit: TextEdit): string {
@@ -38,7 +62,9 @@ function textLayerHtml(edit: TextEdit): string {
       ? 'white-space:pre'
       : `width:${edit.widthPt}pt;white-space:pre-wrap;overflow-wrap:normal;word-break:normal`;
   const weightStyle = edit.fontWeight === 'bold' ? 'font-weight:700;' : '';
-  return `<span style="display:block;position:absolute;left:${edit.xPt}pt;top:${edit.yPt}pt;font-size:${edit.fontSizePt}pt;font-family:'${edit.fontFamily}';color:${edit.color};line-height:1;writing-mode:horizontal-tb;text-orientation:mixed;direction:ltr;unicode-bidi:plaintext;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span>`;
+  const safeColor = sanitizeColor(edit.color, '#15172c');
+  const safeFamily = sanitizeFontFamily(edit.fontFamily, 'NotoSansDevanagari');
+  return `<span style="display:block;position:absolute;left:${edit.xPt}pt;top:${edit.yPt}pt;font-size:${edit.fontSizePt}pt;font-family:'${safeFamily}';color:${safeColor};line-height:1;writing-mode:horizontal-tb;text-orientation:mixed;direction:ltr;unicode-bidi:plaintext;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span>`;
 }
 
 /**
@@ -84,7 +110,7 @@ export function documentHtml(
   const fontFaces = Object.entries(embeddedFonts)
     .map(
       ([family, font]) => `@font-face {
-    font-family: '${family}';
+    font-family: '${sanitizeFontFamily(family)}';
     src: url('data:font/ttf;base64,${font.base64}') format('truetype');
     font-weight: ${font.cssFontWeight};
   }`,

@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import type { ToolId } from '../components/ToolShell';
 import { colors, radius, shadows, spacing } from '../theme';
@@ -13,7 +14,7 @@ type ToolCatalogItem = {
   titleHi: string;
   badge: string;
   desc: string;
-  icon: string;
+  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
   color: string;
 };
 
@@ -24,7 +25,7 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleHi: 'पीडीएफ पढ़ें और देखें',
     badge: 'Reading Mode',
     desc: 'Read Hindi and English PDFs comfortably with night mode and zoom.',
-    icon: '📖',
+    iconName: 'book-open-page-variant-outline',
     color: colors.success,
   },
   {
@@ -33,7 +34,7 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleHi: 'पीडीएफ संपादित करें',
     badge: 'Devanagari OCR',
     desc: 'Tap detected text to edit, add Hindi overlays, or erase lines.',
-    icon: '✏️',
+    iconName: 'file-document-edit-outline',
     color: colors.brand,
   },
   {
@@ -42,7 +43,7 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleHi: 'पीडीएफ अनुवाद',
     badge: 'Bilingual AI',
     desc: 'Full document Hindi ↔ English bilingual translation.',
-    icon: '🌐',
+    iconName: 'translate',
     color: colors.accent,
   },
   {
@@ -51,7 +52,7 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleHi: 'पीडीएफ मर्ज करें',
     badge: 'Multi-Document',
     desc: 'Combine multiple PDF documents into a single unified file.',
-    icon: '📑',
+    iconName: 'layers-triple-outline',
     color: colors.lavender,
   },
   {
@@ -60,8 +61,8 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleHi: 'पीडीएफ विभाजित करें',
     badge: 'Page Range',
     desc: 'Extract individual pages or custom page ranges visually.',
-    icon: '✂️',
-    color: colors.accent500,
+    iconName: 'content-cut',
+    color: colors.coral,
   },
   {
     id: 'compress',
@@ -69,7 +70,7 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleHi: 'पीडीएफ कंप्रेस करें',
     badge: 'Size Reducer',
     desc: 'Reduce PDF file size up to 75% while maintaining clarity.',
-    icon: '🗜️',
+    iconName: 'archive-arrow-down-outline',
     color: colors.amberInk,
   },
 ];
@@ -84,9 +85,11 @@ export function ToolsScreen({ onOpenTool }: Props) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleRow}>
-          <View style={styles.headerLogoBadge}>
-            <Text style={styles.headerLogoHindi}>ह</Text>
-          </View>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.headerLogoImage}
+            accessibilityLabel="Hindi PDF Editor logo"
+          />
           <Text style={styles.headerTitle}>
             PDF Tools / <Text style={styles.headerTitleAccent}>उपकरण</Text>
           </Text>
@@ -105,7 +108,7 @@ export function ToolsScreen({ onOpenTool }: Props) {
             style={({ pressed }) => [styles.toolCard, pressed && styles.toolCardPressed]}
           >
             <View style={[styles.iconBox, { backgroundColor: `${tool.color}15` }]}>
-              <Text style={styles.toolIcon}>{tool.icon}</Text>
+              <MaterialCommunityIcons name={tool.iconName} size={26} color={tool.color} />
             </View>
 
             <View style={styles.cardContent}>
@@ -119,7 +122,7 @@ export function ToolsScreen({ onOpenTool }: Props) {
               <Text style={styles.desc}>{tool.desc}</Text>
             </View>
 
-            <Text style={styles.arrowIcon}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </Pressable>
         ))}
       </View>
@@ -145,19 +148,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  headerLogoBadge: {
-    width: 34,
-    height: 34,
+  headerLogoImage: {
+    width: 36,
+    height: 36,
     borderRadius: radius.md,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerLogoHindi: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: '900',
-    marginTop: -2,
+    ...shadows.soft,
   },
   headerTitle: {
     fontSize: 22,
@@ -198,9 +193,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  toolIcon: {
-    fontSize: 24,
-  },
   cardContent: {
     flex: 1,
     gap: 2,
@@ -235,11 +227,5 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     lineHeight: 16,
     marginTop: 2,
-  },
-  arrowIcon: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.textTertiary,
-    paddingRight: 4,
   },
 });

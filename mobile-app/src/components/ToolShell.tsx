@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomNavBar, type MainTab } from './BottomNavBar';
@@ -16,7 +17,7 @@ export type ToolDef = {
   id: ToolId;
   name: string;
   shortName: string;
-  icon: string;
+  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
   badge: string;
   accent: string;
   tint: string;
@@ -28,7 +29,7 @@ export const TOOLS: ToolDef[] = [
     id: 'viewer',
     name: 'PDF Reader & Viewer',
     shortName: 'Reader',
-    icon: '📖',
+    iconName: 'book-open-page-variant-outline',
     badge: 'Reading Mode',
     accent: colors.success,
     tint: '#ECFDF5',
@@ -38,7 +39,7 @@ export const TOOLS: ToolDef[] = [
     id: 'edit',
     name: 'Edit Hindi PDF',
     shortName: 'Edit',
-    icon: '✏️',
+    iconName: 'file-document-edit-outline',
     badge: 'Devanagari OCR',
     accent: colors.brand,
     tint: colors.brandWash,
@@ -48,7 +49,7 @@ export const TOOLS: ToolDef[] = [
     id: 'translate',
     name: 'Translate PDF',
     shortName: 'Translate',
-    icon: '🌐',
+    iconName: 'translate',
     badge: 'Bilingual AI',
     accent: colors.accent,
     tint: colors.accentTint,
@@ -58,7 +59,7 @@ export const TOOLS: ToolDef[] = [
     id: 'merge',
     name: 'Merge PDFs',
     shortName: 'Merge',
-    icon: '📑',
+    iconName: 'layers-triple-outline',
     badge: 'Multi-Document',
     accent: colors.lavender,
     tint: colors.lavenderTint,
@@ -68,7 +69,7 @@ export const TOOLS: ToolDef[] = [
     id: 'split',
     name: 'Split PDF',
     shortName: 'Split',
-    icon: '✂️',
+    iconName: 'content-cut',
     badge: 'Page Range',
     accent: colors.coral,
     tint: '#FFEBE4',
@@ -78,7 +79,7 @@ export const TOOLS: ToolDef[] = [
     id: 'compress',
     name: 'Compress PDF',
     shortName: 'Compress',
-    icon: '🗜️',
+    iconName: 'archive-arrow-down-outline',
     badge: 'Size Reducer',
     accent: colors.amberInk,
     tint: colors.amberTint,
@@ -135,7 +136,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
               style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
               hitSlop={8}
             >
-              <Text style={styles.backArrow}>‹</Text>
+              <Ionicons name="chevron-back" size={16} color={colors.brand} />
               <Text style={styles.backLabel}>Back</Text>
             </Pressable>
 
@@ -146,7 +147,11 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
                   { backgroundColor: currentTool.tint, borderColor: currentTool.accent },
                 ]}
               >
-                <Text style={styles.activeToolIcon}>{currentTool.icon}</Text>
+                <MaterialCommunityIcons
+                  name={currentTool.iconName}
+                  size={15}
+                  color={currentTool.accent}
+                />
                 <Text style={[styles.activeToolName, { color: currentTool.accent }]}>
                   {currentTool.name}
                 </Text>
