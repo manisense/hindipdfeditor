@@ -23,6 +23,9 @@ type QuickTool = {
   badge?: string;
 };
 
+/**
+ * 6-Tool Catalog aligned strictly with design-system.md Section 2 category accents.
+ */
 const QUICK_TOOLS: QuickTool[] = [
   {
     id: 'edit',
@@ -30,8 +33,8 @@ const QUICK_TOOLS: QuickTool[] = [
     titleHi: 'संपादित करें',
     desc: 'OCR & Devanagari edits',
     iconName: 'file-document-edit-outline',
-    accent: colors.brand,
-    tint: colors.brandWash,
+    accent: colors.accentBlue,
+    tint: colors.accentBlueTint,
     badge: 'Popular',
   },
   {
@@ -40,8 +43,8 @@ const QUICK_TOOLS: QuickTool[] = [
     titleHi: 'अनुवाद करें',
     desc: 'Hindi ↔ English AI',
     iconName: 'translate',
-    accent: colors.accent,
-    tint: colors.accentTint,
+    accent: colors.accentGreen,
+    tint: colors.accentGreenTint,
     badge: 'AI',
   },
   {
@@ -50,8 +53,8 @@ const QUICK_TOOLS: QuickTool[] = [
     titleHi: 'पीडीएफ जोड़ें',
     desc: 'Combine multiple files',
     iconName: 'layers-triple-outline',
-    accent: colors.lavender,
-    tint: colors.lavenderTint,
+    accent: colors.accentPurple,
+    tint: colors.accentPurpleTint,
   },
   {
     id: 'split',
@@ -59,8 +62,8 @@ const QUICK_TOOLS: QuickTool[] = [
     titleHi: 'विभाजित करें',
     desc: 'Extract page ranges',
     iconName: 'content-cut',
-    accent: '#E05322',
-    tint: '#FFEBE4',
+    accent: colors.accentPurple,
+    tint: colors.accentPurpleTint,
   },
   {
     id: 'compress',
@@ -68,8 +71,8 @@ const QUICK_TOOLS: QuickTool[] = [
     titleHi: 'कंप्रेस करें',
     desc: 'Reduce file size',
     iconName: 'archive-arrow-down-outline',
-    accent: colors.amberInk,
-    tint: colors.amberTint,
+    accent: colors.accentOrange,
+    tint: colors.accentOrangeTint,
   },
   {
     id: 'viewer',
@@ -77,8 +80,8 @@ const QUICK_TOOLS: QuickTool[] = [
     titleHi: 'रीडर व व्यूअर',
     desc: 'Crisp page reading',
     iconName: 'book-open-page-variant-outline',
-    accent: '#0284C7',
-    tint: '#E0F2FE',
+    accent: colors.accentTeal,
+    tint: colors.accentTealTint,
   },
 ];
 
@@ -169,7 +172,7 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
             <Text style={styles.heroSubGreeting}>Welcome back</Text>
           </View>
           <View style={styles.privacyPill}>
-            <Ionicons name="shield-checkmark" size={12} color={colors.success} />
+            <Ionicons name="shield-checkmark" size={12} color={colors.accentGreen} />
             <Text style={styles.privacyText}>100% Offline</Text>
           </View>
         </View>
@@ -188,12 +191,12 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
             onPress={() => onOpenTool(tool.id)}
             style={({ pressed }) => [styles.toolCard, pressed && styles.toolCardPressed]}
           >
-            {/* Tool Icon Badge */}
+            {/* 12px Rounded Square Category Icon Chip */}
             <View style={[styles.toolIconWrapper, { backgroundColor: tool.tint }]}>
               <MaterialCommunityIcons name={tool.iconName} size={22} color={tool.accent} />
             </View>
 
-            {/* Tool Info */}
+            {/* Tool Info with Equal Devanagari Prominence */}
             <View style={styles.toolTextContainer}>
               <View style={styles.toolTitleRow}>
                 <Text style={styles.toolTitleEn} numberOfLines={1}>
@@ -306,7 +309,7 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 38,
     height: 38,
-    borderRadius: radius.md,
+    borderRadius: radius.chip,
     ...shadows.soft,
   },
   brandTextContainer: {
@@ -329,7 +332,7 @@ const styles = StyleSheet.create({
   quickPickBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.brandWash,
+    backgroundColor: colors.brandTint,
     paddingVertical: 6,
     paddingHorizontal: spacing.sm + 4,
     borderRadius: radius.full,
@@ -342,19 +345,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brandTint,
     transform: [{ scale: 0.96 }],
   },
-  quickPickIcon: {
-    fontSize: 13,
-  },
   quickPickText: {
     fontSize: 12,
     fontWeight: '800',
     color: colors.brand,
   },
   heroCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 1,
     gap: 2,
@@ -384,20 +384,16 @@ const styles = StyleSheet.create({
   privacyPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ECFDF5',
+    backgroundColor: colors.accentGreenTint,
     paddingVertical: 2,
     paddingHorizontal: 8,
     borderRadius: radius.full,
     gap: 4,
   },
-  privacyDot: {
-    fontSize: 7,
-    color: colors.success,
-  },
   privacyText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: colors.success,
+    color: colors.accentGreen,
     letterSpacing: 0.2,
   },
   heroCaption: {
@@ -417,10 +413,10 @@ const styles = StyleSheet.create({
     minHeight: 74,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.sm,
     gap: spacing.sm,
@@ -431,14 +427,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
   },
   toolIconWrapper: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.md,
+    width: 40,
+    height: 40,
+    borderRadius: radius.chip,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  toolIcon: {
-    fontSize: 19,
   },
   toolTextContainer: {
     flex: 1,
@@ -454,6 +447,7 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '800',
     color: colors.textPrimary,
+    letterSpacing: -0.2,
   },
   toolBadge: {
     paddingHorizontal: 4,
@@ -501,10 +495,10 @@ const styles = StyleSheet.create({
   recentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     gap: spacing.sm,
@@ -517,24 +511,21 @@ const styles = StyleSheet.create({
   resumeThumbWrap: {
     width: 36,
     height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.brandWash,
-    borderWidth: 1,
-    borderColor: colors.brandTint,
+    borderRadius: radius.chip,
+    backgroundColor: colors.surfaceSubtle,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
   },
   resumeThumbImage: {
     width: '100%',
     height: '100%',
   },
-  resumeThumbIcon: {
-    fontSize: 18,
-  },
   resumeDetails: {
     flex: 1,
-    gap: 2,
+    gap: 1,
   },
   resumeFileName: {
     fontSize: 12.5,
@@ -542,9 +533,8 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   resumeMeta: {
-    fontSize: 10,
-    color: colors.textTertiary,
-    fontWeight: '500',
+    fontSize: 10.5,
+    color: colors.textSecondary,
   },
   resumeArrowBtn: {
     width: 24,
@@ -554,51 +544,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  resumeArrowIcon: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.textSecondary,
-    marginTop: -2,
-  },
   quickStartCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
     ...shadows.soft,
   },
   quickStartCardPressed: {
     backgroundColor: colors.surfaceSubtle,
-    transform: [{ scale: 0.98 }],
   },
   quickStartIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.full,
-    backgroundColor: colors.brandWash,
+    width: 36,
+    height: 36,
+    borderRadius: radius.chip,
+    backgroundColor: colors.brandTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickStartIcon: {
-    fontSize: 16,
-  },
   quickStartTextGroup: {
     flex: 1,
-    gap: 1,
+    gap: 2,
   },
   quickStartTitle: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 12.5,
+    fontWeight: '700',
     color: colors.textPrimary,
   },
   quickStartSub: {
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: 10.5,
     color: colors.textSecondary,
+    lineHeight: 14,
   },
 });

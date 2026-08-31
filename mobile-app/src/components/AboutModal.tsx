@@ -11,7 +11,7 @@ import {
 
 import { AppButton } from './AppButton';
 import { APP_VERSION, PRIVACY_POLICY_URL } from '../constants/legal';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, shadows, spacing } from '../theme';
 
 type Props = {
   visible: boolean;
@@ -74,13 +74,16 @@ export function AboutModal({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(20, 22, 31, 0.6)',
     justifyContent: 'center',
     padding: spacing.xl,
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    ...shadows.popup,
   },
   cardContent: {
     padding: spacing.xl,
@@ -94,7 +97,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 48,
     height: 48,
-    borderRadius: 10,
+    borderRadius: radius.chip,
   },
   brandText: {
     flex: 1,
@@ -102,7 +105,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.textPrimary,
   },
   version: {
@@ -111,7 +114,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.textPrimary,
     marginTop: spacing.xs,
   },

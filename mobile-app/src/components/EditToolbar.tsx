@@ -4,13 +4,13 @@ import { AppButton } from './AppButton';
 import { colors, radius, shadows, spacing } from '../theme';
 import type { DevanagariFontFamily } from '../lib/fontAsset';
 
-/** Preset ink colors matching web editor palette. */
+/** Preset ink colors matching design system palette. */
 export const TEXT_COLOR_PRESETS = [
-  { label: 'Black', value: '#15172c' },
-  { label: 'White', value: '#ffffff' },
-  { label: 'Blue', value: '#1843dd' },
-  { label: 'Red', value: '#c6303e' },
-  { label: 'Green', value: '#01873e' },
+  { label: 'Black', value: '#14161F' },
+  { label: 'White', value: '#FFFFFF' },
+  { label: 'Blue', value: '#1843DD' },
+  { label: 'Red', value: '#C6303E' },
+  { label: 'Green', value: '#16A34A' },
 ] as const;
 
 type Props = {
@@ -175,9 +175,9 @@ function Chip({
 const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: 'rgba(255, 255, 255, 0.96)',
-    borderRadius: radius.xl,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
     gap: spacing.xs + 2,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     padding: 3,
     gap: 3,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
   },
   chip: {
     borderRadius: radius.full,
@@ -224,9 +224,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   chipActive: {
-    backgroundColor: colors.brandWash,
+    backgroundColor: colors.brandTint,
     borderWidth: 1,
-    borderColor: colors.brandTint,
+    borderColor: colors.brand,
   },
   chipLabel: {
     fontSize: 12,
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     gap: 2,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
   },
   sizeLabel: {
     fontSize: 12.5,

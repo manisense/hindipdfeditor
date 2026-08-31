@@ -9,6 +9,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors, radius, shadows, spacing } from '../theme';
 
@@ -38,8 +39,9 @@ type Props = {
 };
 
 /**
- * Modern pill-shaped button matching the web app design system.
- * Features tactile spring-like press response, crisp typography, and full color variants.
+ * Modern pill-shaped button matching the unified design system.
+ * Features blue→indigo gradient for primary variant, full pill shape (9999px),
+ * tactile spring press feedback, and crisp 600-weight typography.
  */
 export function AppButton({
   title,
@@ -56,6 +58,26 @@ export function AppButton({
   labelStyle,
 }: Props) {
   const isActionDisabled = disabled === true || loading === true;
+
+  const content = (
+    <View style={styles.contentRow}>
+      {loading ? (
+        <ActivityIndicator
+          size={small ? 14 : 18}
+          color={variant === 'primary' ? colors.textOnPrimary : colors.brand}
+          style={styles.spinner}
+        />
+      ) : (
+        icon && <View style={styles.iconWrapper}>{icon}</View>
+      )}
+      <Text
+        style={[styles.label, small && styles.labelSmall, labelStyles[variant], labelStyle]}
+        numberOfLines={1}
+      >
+        {title}
+      </Text>
+    </View>
+  );
 
   return (
     <Pressable
@@ -75,8 +97,8 @@ export function AppButton({
       }}
       style={({ pressed }) => [
         styles.base,
-        small ? styles.small : styles.normal,
-        variantStyles[variant],
+        variant !== 'primary' && (small ? styles.small : styles.normal),
+        variant !== 'primary' && variantStyles[variant],
         variant === 'primary' && !disabled && styles.primaryShadow,
         selected && styles.selected,
         pressed && !isActionDisabled && styles.pressed,
@@ -84,23 +106,18 @@ export function AppButton({
         style,
       ]}
     >
-      <View style={styles.contentRow}>
-        {loading ? (
-          <ActivityIndicator
-            size={small ? 14 : 18}
-            color={variant === 'primary' ? colors.textOnPrimary : colors.brand}
-            style={styles.spinner}
-          />
-        ) : (
-          icon && <View style={styles.iconWrapper}>{icon}</View>
-        )}
-        <Text
-          style={[styles.label, small && styles.labelSmall, labelStyles[variant], labelStyle]}
-          numberOfLines={1}
+      {variant === 'primary' ? (
+        <LinearGradient
+          colors={[colors.brand, colors.brandDeep]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.gradientFill, small ? styles.small : styles.normal]}
         >
-          {title}
-        </Text>
-      </View>
+          {content}
+        </LinearGradient>
+      ) : (
+        content
+      )}
     </Pressable>
   );
 }
@@ -112,9 +129,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  gradientFill: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.full,
+  },
   normal: {
-    minHeight: 46,
-    paddingVertical: spacing.sm + 2,
+    minHeight: 48,
+    paddingVertical: spacing.sm + 4,
     paddingHorizontal: spacing.xl,
   },
   small: {
@@ -141,7 +165,7 @@ const styles = StyleSheet.create({
   },
   pressed: {
     transform: [{ scale: 0.98 }],
-    opacity: 0.9,
+    opacity: 0.92,
   },
   disabled: {
     opacity: 0.45,
@@ -151,8 +175,8 @@ const styles = StyleSheet.create({
     borderColor: colors.brand,
   },
   label: {
-    fontSize: 14.5,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
     letterSpacing: -0.2,
   },
   labelSmall: {
@@ -164,18 +188,18 @@ const styles = StyleSheet.create({
 const variantStyles: Record<ButtonVariant, ViewStyle> = {
   primary: {
     backgroundColor: colors.brand,
-    borderWidth: 1,
-    borderColor: colors.brand,
+    borderWidth: 0,
   },
   secondary: {
-    backgroundColor: colors.brandWash,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.brandTint,
+    borderColor: colors.borderSubtle,
+    ...shadows.soft,
   },
   subtle: {
     backgroundColor: colors.surfaceSubtle,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
   },
   danger: {
     backgroundColor: colors.dangerSoft,
@@ -183,14 +207,14 @@ const variantStyles: Record<ButtonVariant, ViewStyle> = {
     borderColor: 'rgba(198, 48, 62, 0.2)',
   },
   success: {
-    backgroundColor: colors.accentTint,
+    backgroundColor: colors.accentGreenTint,
     borderWidth: 1,
-    borderColor: 'rgba(1, 135, 62, 0.2)',
+    borderColor: 'rgba(22, 163, 74, 0.2)',
   },
   warning: {
-    backgroundColor: colors.amberTint,
+    backgroundColor: colors.accentOrangeTint,
     borderWidth: 1,
-    borderColor: 'rgba(181, 132, 0, 0.2)',
+    borderColor: 'rgba(240, 112, 15, 0.2)',
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -200,10 +224,10 @@ const variantStyles: Record<ButtonVariant, ViewStyle> = {
 
 const labelStyles = StyleSheet.create({
   primary: { color: colors.textOnPrimary },
-  secondary: { color: colors.brandDark },
+  secondary: { color: colors.textPrimary },
   subtle: { color: colors.textPrimary },
   danger: { color: colors.danger },
-  success: { color: colors.accent },
-  warning: { color: colors.amberInk },
+  success: { color: colors.accentGreen },
+  warning: { color: colors.accentOrange },
   ghost: { color: colors.brand },
 });

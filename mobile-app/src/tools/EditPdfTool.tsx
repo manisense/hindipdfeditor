@@ -561,7 +561,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
                   onPress={() => setCurrentPageIndex((i) => Math.max(0, i - 1))}
                   style={[styles.pagerBtn, currentPageIndex === 0 && styles.pagerBtnDisabled]}
                 >
-                  <Text style={styles.pagerArrow}>‹</Text>
+                  <Ionicons name="chevron-back" size={16} color={colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.pagerText}>
                   {currentPageIndex + 1} / {document.pages.length}
@@ -577,7 +577,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
                     currentPageIndex >= document.pages.length - 1 && styles.pagerBtnDisabled,
                   ]}
                 >
-                  <Text style={styles.pagerArrow}>›</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textPrimary} />
                 </Pressable>
               </View>
 
@@ -620,7 +620,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
                   onPress={undo}
                   style={[styles.undoBtn, !canUndo && styles.undoBtnDisabled]}
                 >
-                  <Text style={styles.undoText}>↶</Text>
+                  <Ionicons name="arrow-undo-outline" size={15} color={colors.textPrimary} />
                 </Pressable>
                 <Pressable
                   accessibilityLabel="Redo"
@@ -628,7 +628,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
                   onPress={redo}
                   style={[styles.undoBtn, !canRedo && styles.undoBtnDisabled]}
                 >
-                  <Text style={styles.undoText}>↷</Text>
+                  <Ionicons name="arrow-redo-outline" size={15} color={colors.textPrimary} />
                 </Pressable>
               </View>
             </View>
@@ -840,16 +840,13 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: colors.surface,
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     gap: 5,
-  },
-  docIcon: {
-    fontSize: 12,
   },
   docNameText: {
     flex: 1,
@@ -858,7 +855,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   changePdfBtn: {
-    backgroundColor: colors.brandWash,
+    backgroundColor: colors.brandTint,
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: radius.full,
@@ -875,11 +872,11 @@ const styles = StyleSheet.create({
     color: colors.brand,
   },
   subToolbar: {
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
     padding: spacing.xs + 2,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     ...shadows.soft,
   },
   toolbarRow: {
@@ -896,7 +893,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     gap: 3,
   },
   pagerBtn: {
@@ -908,12 +905,6 @@ const styles = StyleSheet.create({
   },
   pagerBtnDisabled: {
     opacity: 0.3,
-  },
-  pagerArrow: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginTop: -2,
   },
   pagerText: {
     fontSize: 12,
@@ -928,7 +919,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     padding: 2,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     gap: 2,
   },
   modeTab: {
@@ -942,9 +933,6 @@ const styles = StyleSheet.create({
   modeTabActive: {
     backgroundColor: colors.surface,
     ...shadows.soft,
-  },
-  modeIcon: {
-    fontSize: 11,
   },
   modeLabel: {
     fontSize: 11.5,
@@ -965,24 +953,19 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: colors.surfaceSubtle,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
   undoBtnDisabled: {
     opacity: 0.35,
   },
-  undoText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
   canvasCard: {
     flex: 1,
     backgroundColor: '#EEF0F4',
-    borderRadius: radius['2xl'],
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: 'rgba(21, 23, 44, 0.08)',
+    borderColor: colors.borderSubtle,
     overflow: 'hidden',
     ...shadows.card,
   },

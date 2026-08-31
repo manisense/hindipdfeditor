@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { AppButton } from './AppButton';
 import { colors, radius, spacing } from '../theme';
@@ -26,16 +27,30 @@ export function LegacyFontWarning({
   onEnableSafeReplacement,
   onChooseUnicodeFont,
 }: Props) {
+  const isWarning = inspectionFailed || !safeReplacementEnabled;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>
-        {inspectionFailed
-          ? '⚠ Font encoding could not be verified — editing disabled on this page'
-          : safeReplacementEnabled
-            ? `✓ Unicode replacement mode enabled (${fontNames.join(', ')})`
-            : `⚠ Legacy font detected (${fontNames.join(', ')})`}
-      </Text>
-      <Text style={styles.body}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: isWarning ? colors.warningSoft : colors.accentGreenTint },
+      ]}
+    >
+      <View style={styles.headerRow}>
+        <Ionicons
+          name={isWarning ? 'warning-outline' : 'checkmark-circle-outline'}
+          size={18}
+          color={isWarning ? colors.warning : colors.accentGreen}
+        />
+        <Text style={[styles.title, { color: isWarning ? colors.warning : colors.accentGreen }]}>
+          {inspectionFailed
+            ? 'Font encoding could not be verified — editing disabled on this page'
+            : safeReplacementEnabled
+              ? `Unicode replacement mode enabled (${fontNames.join(', ')})`
+              : `Legacy font detected (${fontNames.join(', ')})`}
+        </Text>
+      </View>
+      <Text style={[styles.body, { color: isWarning ? colors.warning : colors.textPrimary }]}>
         {inspectionFailed
           ? "This page's font could not be inspected, so it can't be confirmed safe to edit. " +
             "Per this app's safety rule, an unverifiable page is treated the same as a known " +
@@ -73,22 +88,28 @@ export function LegacyFontWarning({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.warningSoft,
-    borderRadius: radius.md,
+    borderRadius: radius.card,
     padding: spacing.lg,
+    gap: spacing.xs + 2,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 108, 77, 0.2)',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 2,
   },
   title: {
-    fontWeight: '700',
-    color: colors.warning,
-    marginBottom: spacing.xs,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '800',
   },
   body: {
-    color: colors.warning,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12.5,
+    lineHeight: 18,
   },
   actions: {
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,

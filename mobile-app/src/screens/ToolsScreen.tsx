@@ -15,19 +15,14 @@ type ToolCatalogItem = {
   badge: string;
   desc: string;
   iconName: keyof typeof MaterialCommunityIcons.glyphMap;
-  color: string;
+  accent: string;
+  tint: string;
 };
 
+/**
+ * PDF Tools catalog strictly aligned with design-system.md Section 2 category accents.
+ */
 const ALL_TOOLS: ToolCatalogItem[] = [
-  {
-    id: 'viewer',
-    titleEn: 'PDF Reader & Viewer',
-    titleHi: 'पीडीएफ पढ़ें और देखें',
-    badge: 'Reading Mode',
-    desc: 'Read Hindi and English PDFs comfortably with night mode and zoom.',
-    iconName: 'book-open-page-variant-outline',
-    color: colors.success,
-  },
   {
     id: 'edit',
     titleEn: 'Edit Hindi PDF',
@@ -35,7 +30,8 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     badge: 'Devanagari OCR',
     desc: 'Tap detected text to edit, add Hindi overlays, or erase lines.',
     iconName: 'file-document-edit-outline',
-    color: colors.brand,
+    accent: colors.accentBlue,
+    tint: colors.accentBlueTint,
   },
   {
     id: 'translate',
@@ -44,7 +40,8 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     badge: 'Bilingual AI',
     desc: 'Full document Hindi ↔ English bilingual translation.',
     iconName: 'translate',
-    color: colors.accent,
+    accent: colors.accentGreen,
+    tint: colors.accentGreenTint,
   },
   {
     id: 'merge',
@@ -53,7 +50,8 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     badge: 'Multi-Document',
     desc: 'Combine multiple PDF documents into a single unified file.',
     iconName: 'layers-triple-outline',
-    color: colors.lavender,
+    accent: colors.accentPurple,
+    tint: colors.accentPurpleTint,
   },
   {
     id: 'split',
@@ -62,16 +60,28 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     badge: 'Page Range',
     desc: 'Extract individual pages or custom page ranges visually.',
     iconName: 'content-cut',
-    color: colors.coral,
+    accent: colors.accentPurple,
+    tint: colors.accentPurpleTint,
   },
   {
     id: 'compress',
     titleEn: 'Compress PDF',
     titleHi: 'पीडीएफ कंप्रेस करें',
     badge: 'Size Reducer',
-    desc: 'Reduce PDF file size up to 75% while maintaining clarity.',
+    desc: 'Reduce PDF file size while maintaining high visual clarity.',
     iconName: 'archive-arrow-down-outline',
-    color: colors.amberInk,
+    accent: colors.accentOrange,
+    tint: colors.accentOrangeTint,
+  },
+  {
+    id: 'viewer',
+    titleEn: 'PDF Reader & Viewer',
+    titleHi: 'पीडीएफ पढ़ें और देखें',
+    badge: 'Reading Mode',
+    desc: 'Read Hindi and English PDFs comfortably with night mode and zoom.',
+    iconName: 'book-open-page-variant-outline',
+    accent: colors.accentTeal,
+    tint: colors.accentTealTint,
   },
 ];
 
@@ -107,22 +117,23 @@ export function ToolsScreen({ onOpenTool }: Props) {
             onPress={() => onOpenTool(tool.id)}
             style={({ pressed }) => [styles.toolCard, pressed && styles.toolCardPressed]}
           >
-            <View style={[styles.iconBox, { backgroundColor: `${tool.color}15` }]}>
-              <MaterialCommunityIcons name={tool.iconName} size={26} color={tool.color} />
+            {/* 12px Rounded Square Category Icon Chip */}
+            <View style={[styles.iconBox, { backgroundColor: tool.tint }]}>
+              <MaterialCommunityIcons name={tool.iconName} size={24} color={tool.accent} />
             </View>
 
             <View style={styles.cardContent}>
               <View style={styles.titleRow}>
                 <Text style={styles.titleEn}>{tool.titleEn}</Text>
-                <View style={[styles.badge, { backgroundColor: `${tool.color}18` }]}>
-                  <Text style={[styles.badgeText, { color: tool.color }]}>{tool.badge}</Text>
+                <View style={[styles.badge, { backgroundColor: tool.tint }]}>
+                  <Text style={[styles.badgeText, { color: tool.accent }]}>{tool.badge}</Text>
                 </View>
               </View>
-              <Text style={styles.titleHi}>{tool.titleHi}</Text>
+              <Text style={[styles.titleHi, { color: tool.accent }]}>{tool.titleHi}</Text>
               <Text style={styles.desc}>{tool.desc}</Text>
             </View>
 
-            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
           </Pressable>
         ))}
       </View>
@@ -151,7 +162,7 @@ const styles = StyleSheet.create({
   headerLogoImage: {
     width: 36,
     height: 36,
-    borderRadius: radius.md,
+    borderRadius: radius.chip,
     ...shadows.soft,
   },
   headerTitle: {
@@ -164,32 +175,32 @@ const styles = StyleSheet.create({
     color: colors.brand,
   },
   headerSubtitle: {
-    fontSize: 13.5,
+    fontSize: 13,
     color: colors.textSecondary,
     fontWeight: '500',
   },
   toolsList: {
-    gap: spacing.md,
+    gap: spacing.sm + 2,
   },
   toolCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     padding: spacing.md,
     gap: spacing.md,
-    ...shadows.card,
+    ...shadows.soft,
   },
   toolCardPressed: {
     backgroundColor: colors.surfaceSubtle,
     transform: [{ scale: 0.98 }],
   },
   iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.lg,
+    width: 46,
+    height: 46,
+    borderRadius: radius.chip,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -206,6 +217,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: colors.textPrimary,
+    letterSpacing: -0.2,
   },
   badge: {
     paddingVertical: 2,
@@ -213,19 +225,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '800',
     letterSpacing: 0.2,
+    textTransform: 'uppercase',
   },
   titleHi: {
     fontSize: 12,
     fontWeight: '700',
-    color: colors.textSecondary,
   },
   desc: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: colors.textTertiary,
-    lineHeight: 16,
-    marginTop: 2,
+    lineHeight: 15,
+    marginTop: 1,
   },
 });

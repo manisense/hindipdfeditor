@@ -423,9 +423,9 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius['2xl'],
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     gap: spacing.lg,
     ...shadows.card,
@@ -457,15 +457,15 @@ const styles = StyleSheet.create({
   choiceChip: {
     flex: 1,
     backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.lg,
+    borderRadius: radius.chip,
     padding: spacing.sm,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     gap: 3,
   },
   choiceChipActive: {
-    backgroundColor: colors.accentTint,
-    borderColor: colors.accent,
+    backgroundColor: colors.accentGreenTint,
+    borderColor: colors.accentGreen,
   },
   choiceLabel: {
     fontSize: 13,
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   choiceLabelActive: {
-    color: colors.accent,
+    color: colors.accentGreen,
   },
   choiceSub: {
     fontSize: 11,

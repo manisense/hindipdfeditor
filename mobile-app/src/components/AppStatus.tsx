@@ -21,26 +21,26 @@ const TONE_THEMES: Record<
   }
 > = {
   loading: {
-    bg: colors.brandWash,
+    bg: colors.brandTint,
     border: colors.brandTint,
-    text: colors.brandDark,
+    text: colors.brandDeep,
   },
   info: {
-    bg: colors.brandWash,
+    bg: colors.brandTint,
     border: colors.brandTint,
-    text: colors.brandDark,
+    text: colors.brandDeep,
     iconName: 'information-circle-outline',
   },
   success: {
-    bg: colors.accentTint,
-    border: 'rgba(1, 135, 62, 0.25)',
-    text: colors.accent,
+    bg: colors.accentGreenTint,
+    border: 'rgba(22, 163, 74, 0.25)',
+    text: colors.accentGreen,
     iconName: 'checkmark-circle-outline',
   },
   warning: {
-    bg: colors.amberTint,
-    border: 'rgba(181, 132, 0, 0.25)',
-    text: colors.amberInk,
+    bg: colors.accentOrangeTint,
+    border: 'rgba(240, 112, 15, 0.25)',
+    text: colors.accentOrange,
     iconName: 'warning-outline',
   },
   error: {
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    borderRadius: radius.xl,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.md,
     ...shadows.soft,
@@ -90,9 +90,6 @@ const styles = StyleSheet.create({
     width: 32,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconText: {
-    fontSize: 18,
   },
   textColumn: {
     flex: 1,

@@ -31,25 +31,18 @@ export type ToolDef = {
   description: string;
 };
 
+/**
+ * Feature categories aligned pixel-for-pixel with design-system.md Section 2.
+ */
 export const TOOLS: ToolDef[] = [
-  {
-    id: 'viewer',
-    name: 'PDF Reader & Viewer',
-    shortName: 'Reader',
-    iconName: 'book-open-page-variant-outline',
-    badge: 'Reading Mode',
-    accent: colors.success,
-    tint: '#ECFDF5',
-    description: 'Read and view PDF documents with zoom, page navigation, and night mode.',
-  },
   {
     id: 'edit',
     name: 'Edit Hindi PDF',
     shortName: 'Edit',
     iconName: 'file-document-edit-outline',
     badge: 'Devanagari OCR',
-    accent: colors.brand,
-    tint: colors.brandWash,
+    accent: colors.accentBlue,
+    tint: colors.accentBlueTint,
     description: 'Tap to edit existing Hindi text, mask burned-in lines, or add new text.',
   },
   {
@@ -58,8 +51,8 @@ export const TOOLS: ToolDef[] = [
     shortName: 'Translate',
     iconName: 'translate',
     badge: 'Bilingual AI',
-    accent: colors.accent,
-    tint: colors.accentTint,
+    accent: colors.accentGreen,
+    tint: colors.accentGreenTint,
     description: 'Full document or per-page bilingual Hindi ↔ English translation.',
   },
   {
@@ -68,8 +61,8 @@ export const TOOLS: ToolDef[] = [
     shortName: 'Merge',
     iconName: 'layers-triple-outline',
     badge: 'Multi-Document',
-    accent: colors.lavender,
-    tint: colors.lavenderTint,
+    accent: colors.accentPurple,
+    tint: colors.accentPurpleTint,
     description: 'Combine multiple PDF documents into a single organized file.',
   },
   {
@@ -78,8 +71,8 @@ export const TOOLS: ToolDef[] = [
     shortName: 'Split',
     iconName: 'content-cut',
     badge: 'Page Range',
-    accent: colors.coral,
-    tint: '#FFEBE4',
+    accent: colors.accentPurple,
+    tint: colors.accentPurpleTint,
     description: 'Extract specific page ranges or split into separate documents.',
   },
   {
@@ -88,9 +81,19 @@ export const TOOLS: ToolDef[] = [
     shortName: 'Compress',
     iconName: 'archive-arrow-down-outline',
     badge: 'Size Reducer',
-    accent: colors.amberInk,
-    tint: colors.amberTint,
+    accent: colors.accentOrange,
+    tint: colors.accentOrangeTint,
     description: 'Reduce file size of scanned and image-heavy Hindi documents.',
+  },
+  {
+    id: 'viewer',
+    name: 'PDF Reader & Viewer',
+    shortName: 'Reader',
+    iconName: 'book-open-page-variant-outline',
+    badge: 'Reading Mode',
+    accent: colors.accentTeal,
+    tint: colors.accentTealTint,
+    description: 'Read and view PDF documents with zoom, page navigation, and night mode.',
   },
 ];
 
@@ -129,7 +132,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
       <View
         style={[
           styles.ambientAuraLeft,
-          { backgroundColor: currentTool ? currentTool.tint : colors.brandWash },
+          { backgroundColor: currentTool ? currentTool.tint : colors.brandTint },
         ]}
         pointerEvents="none"
       />
@@ -199,7 +202,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfacePage,
   },
   ambientAuraTopRight: {
     position: 'absolute',
@@ -208,7 +211,7 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 110,
-    backgroundColor: 'rgba(215, 231, 255, 0.45)',
+    backgroundColor: 'rgba(238, 242, 255, 0.7)',
   },
   ambientAuraLeft: {
     position: 'absolute',
@@ -217,7 +220,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    opacity: 0.35,
+    opacity: 0.45,
   },
   mainTabContainer: {
     flex: 1,
@@ -234,10 +237,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.94)',
-    borderRadius: radius['2xl'],
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     paddingVertical: 8,
     paddingHorizontal: spacing.md,
     marginHorizontal: spacing.md,
@@ -254,18 +257,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     gap: 4,
   },
   backButtonPressed: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.borderSubtle,
     transform: [{ scale: 0.97 }],
-  },
-  backArrow: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.brand,
-    marginTop: -2,
   },
   backLabel: {
     fontSize: 12.5,
@@ -281,12 +278,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 5,
   },
-  activeToolIcon: {
-    fontSize: 13,
-  },
   activeToolName: {
     fontSize: 12.5,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   toolWorkspace: {
     flex: 1,

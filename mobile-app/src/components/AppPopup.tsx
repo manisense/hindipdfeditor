@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { AppButton } from './AppButton';
 import { AppPopupContext, type AppPopupTone, type ShowPopupOptions } from './appPopupContext';
@@ -12,39 +13,39 @@ type PopupRequest = ShowPopupOptions & {
   resolve: (confirmed: boolean) => void;
 };
 
-const TONE_COLORS: Record<
+const TONE_CONFIG: Record<
   AppPopupTone,
-  { bar: string; iconBg: string; iconText: string; symbol: string }
+  { bar: string; iconBg: string; iconColor: string; iconName: keyof typeof Ionicons.glyphMap }
 > = {
   info: {
     bar: colors.brand,
-    iconBg: colors.brandWash,
-    iconText: colors.brand,
-    symbol: 'ℹ',
+    iconBg: colors.brandTint,
+    iconColor: colors.brand,
+    iconName: 'information-circle',
   },
   success: {
-    bar: colors.accent,
-    iconBg: colors.accentTint,
-    iconText: colors.accent,
-    symbol: '✓',
+    bar: colors.accentGreen,
+    iconBg: colors.accentGreenTint,
+    iconColor: colors.accentGreen,
+    iconName: 'checkmark-circle',
   },
   warning: {
-    bar: colors.amber,
-    iconBg: colors.amberTint,
-    iconText: colors.amberInk,
-    symbol: '⚠',
+    bar: colors.accentOrange,
+    iconBg: colors.accentOrangeTint,
+    iconColor: colors.accentOrange,
+    iconName: 'warning',
   },
   error: {
     bar: colors.danger,
     iconBg: colors.dangerSoft,
-    iconText: colors.danger,
-    symbol: '✕',
+    iconColor: colors.danger,
+    iconName: 'alert-circle',
   },
 };
 
 /**
  * Brand-consistent modal window replacing native Alert.alert across the mobile app.
- * Features top tone bar, icon squircle, eyebrow tag, and promise-based confirmation flow.
+ * Features top tone bar, 12px squircle icon chip, eyebrow tag, and promise-based confirmation flow.
  */
 export function AppPopupProvider({ children }: { children: ReactNode }) {
   const nextIdRef = useRef(0);
@@ -88,7 +89,7 @@ export function AppPopupProvider({ children }: { children: ReactNode }) {
 
   const contextValue = useMemo(() => ({ showPopup }), [showPopup]);
   const tone = active?.tone ?? 'info';
-  const toneStyle = TONE_COLORS[tone];
+  const toneStyle = TONE_CONFIG[tone];
 
   return (
     <AppPopupContext.Provider value={contextValue}>
@@ -111,9 +112,7 @@ export function AppPopupProvider({ children }: { children: ReactNode }) {
             <View style={styles.content}>
               <View style={styles.headerRow}>
                 <View style={[styles.iconBox, { backgroundColor: toneStyle.iconBg }]}>
-                  <Text style={[styles.iconSymbol, { color: toneStyle.iconText }]}>
-                    {toneStyle.symbol}
-                  </Text>
+                  <Ionicons name={toneStyle.iconName} size={24} color={toneStyle.iconColor} />
                 </View>
                 <View style={styles.titleColumn}>
                   <Text style={styles.eyebrow}>{active?.eyebrow ?? 'HINDI PDF EDITOR'}</Text>
@@ -150,7 +149,7 @@ export function AppPopupProvider({ children }: { children: ReactNode }) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(5, 8, 57, 0.58)',
+    backgroundColor: 'rgba(20, 22, 31, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
@@ -159,12 +158,14 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 380,
     backgroundColor: colors.surface,
-    borderRadius: radius['2xl'],
+    borderRadius: radius.card,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
     ...shadows.popup,
   },
   topToneBar: {
-    height: 5,
+    height: 4,
     width: '100%',
   },
   content: {
@@ -179,13 +180,9 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 44,
     height: 44,
-    borderRadius: radius.md,
+    borderRadius: radius.chip,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconSymbol: {
-    fontSize: 20,
-    fontWeight: '800',
   },
   titleColumn: {
     flex: 1,

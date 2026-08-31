@@ -21,7 +21,7 @@ type Props = {
 };
 
 /**
- * High-polish file selection dropzone matching the user's design mockups.
+ * High-polish file selection dropzone matching the unified design system.
  * Includes multi-step flow indicator (1 Select PDF -> 2 Edit -> 3 Download),
  * dashed container, cloud upload icon, and trust badges.
  */
@@ -69,9 +69,9 @@ export function DropZone({
 
       {/* Main Dashed DropZone Card */}
       <View style={styles.dashedCard}>
-        {/* Cloud Upload Icon */}
+        {/* Cloud Upload Icon Chip */}
         <View style={styles.cloudIconWrapper}>
-          <Ionicons name="cloud-upload-outline" size={48} color={badgeAccent} />
+          <Ionicons name="cloud-upload-outline" size={44} color={badgeAccent} />
         </View>
 
         <View style={styles.textBlock}>
@@ -82,12 +82,12 @@ export function DropZone({
 
         <AppButton
           title={buttonLabel}
-          icon={<Ionicons name="document-text-outline" size={18} color="#ffffff" />}
+          icon={<Ionicons name="document-text-outline" size={18} color={colors.textOnPrimary} />}
           variant="primary"
           onPress={onSelect}
           loading={loading}
           disabled={disabled}
-          style={[styles.actionBtn, { backgroundColor: badgeAccent, borderColor: badgeAccent }]}
+          style={styles.actionBtn}
         />
 
         <Text style={styles.dropHint}>or drop PDF here</Text>
@@ -95,7 +95,7 @@ export function DropZone({
         {/* Reassurance trust chips */}
         <View style={styles.trustRow}>
           <View style={styles.trustChip}>
-            <Ionicons name="shield-checkmark-outline" size={14} color={colors.success} />
+            <Ionicons name="shield-checkmark-outline" size={14} color={colors.accentGreen} />
             <Text style={styles.trustText}>Private by default</Text>
           </View>
           <View style={styles.trustChip}>
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     backgroundColor: colors.surfaceSubtle,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
   },
   stepNumberActive: {
-    color: '#ffffff',
+    color: colors.textOnPrimary,
   },
   stepLabel: {
     fontSize: 12,
@@ -163,16 +163,16 @@ const styles = StyleSheet.create({
   stepLine: {
     flex: 1,
     height: 1.5,
-    backgroundColor: colors.border,
+    backgroundColor: colors.borderSubtle,
     marginBottom: 18,
     marginHorizontal: 2,
   },
   dashedCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: radius['2xl'],
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: 'rgba(24, 67, 221, 0.35)',
+    borderColor: colors.borderSubtle,
     paddingVertical: spacing.xl + 4,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
@@ -181,32 +181,11 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   cloudIconWrapper: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
     width: 68,
     height: 60,
-  },
-  cloudIcon: {
-    fontSize: 46,
-  },
-  arrowBadge: {
-    position: 'absolute',
-    bottom: 2,
-    backgroundColor: colors.brand,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    borderRadius: radius.chip,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#ffffff',
-  },
-  arrowText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '900',
-    marginTop: -2,
   },
   textBlock: {
     alignItems: 'center',
@@ -260,11 +239,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     gap: 5,
-  },
-  trustIcon: {
-    fontSize: 12,
   },
   trustText: {
     fontSize: 11.5,

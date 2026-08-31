@@ -48,6 +48,10 @@ const TABS: {
   },
 ];
 
+/**
+ * 4-Tab Bottom Navigation Bar matching the unified design system.
+ * Features pill-shaped active state, subtle hairline top border, and equal bilingual typography.
+ */
 export function BottomNavBar({ activeTab, onSelectTab }: Props) {
   const insets = useSafeAreaInsets();
   const bottomPadding = Math.max(insets.bottom, 8);
@@ -91,9 +95,9 @@ export function BottomNavBar({ activeTab, onSelectTab }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderSubtle,
     paddingTop: 6,
     ...shadows.card,
   },
@@ -106,25 +110,17 @@ const styles = StyleSheet.create({
   tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.lg,
-    minWidth: 70,
+    paddingVertical: 5,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    minWidth: 72,
     gap: 1,
   },
   tabItemActive: {
-    backgroundColor: colors.brandWash,
+    backgroundColor: colors.brandTint,
   },
   tabItemPressed: {
     transform: [{ scale: 0.94 }],
-  },
-  tabIcon: {
-    fontSize: 20,
-    opacity: 0.65,
-  },
-  tabIconActive: {
-    opacity: 1,
-    transform: [{ scale: 1.1 }],
   },
   tabLabelEn: {
     fontSize: 11,
@@ -137,7 +133,7 @@ const styles = StyleSheet.create({
   },
   tabLabelHi: {
     fontSize: 10,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.textTertiary,
   },
   tabLabelHiActive: {

@@ -11,7 +11,7 @@ import {
 
 import { AppButton } from './AppButton';
 import { DEVANAGARI_FONT_CATALOG, type DevanagariFontFamily } from '../lib/fontAsset';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, shadows, spacing } from '../theme';
 
 type Props = {
   visible: boolean;
@@ -70,7 +70,7 @@ export function FontPickerModal({
                     <Text style={styles.description}>{font.description}</Text>
                   </View>
                   {downloading ? (
-                    <ActivityIndicator color={colors.primary} />
+                    <ActivityIndicator color={colors.brand} />
                   ) : (
                     <Text style={[styles.state, selected && styles.stateSelected]}>
                       {selected ? 'Selected' : loaded ? 'Use' : 'Download'}
@@ -95,11 +95,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: spacing.xl,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(20, 22, 31, 0.6)',
   },
   card: {
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    ...shadows.popup,
   },
   cardContent: {
     padding: spacing.xl,
@@ -125,12 +128,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
+    borderColor: colors.borderSubtle,
+    borderRadius: radius.chip,
   },
   rowSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
+    borderColor: colors.brand,
+    backgroundColor: colors.brandTint,
   },
   copy: {
     flex: 1,
@@ -147,10 +150,10 @@ const styles = StyleSheet.create({
   state: {
     fontSize: 12,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.brand,
   },
   stateSelected: {
-    color: colors.primaryDark,
+    color: colors.brandDeep,
   },
   actions: {
     alignItems: 'flex-end',

@@ -488,7 +488,7 @@ export function ViewPdfTool({
               style={[styles.actionBtn, { backgroundColor: currentTheme.bg }]}
               hitSlop={6}
             >
-              <Text style={[styles.actionBtnIcon, { color: currentTheme.textColor }]}>⛶</Text>
+              <Ionicons name="expand-outline" size={18} color={currentTheme.textColor} />
             </Pressable>
           </View>
         </View>

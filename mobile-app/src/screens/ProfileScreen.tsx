@@ -26,7 +26,7 @@ export function ProfileScreen() {
       {/* Security & Offline Badge Card */}
       <View style={styles.infoCard}>
         <View style={styles.infoRow}>
-          <Ionicons name="shield-checkmark" size={22} color={colors.brand} />
+          <Ionicons name="shield-checkmark" size={24} color={colors.accentGreen} />
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>100% Private & On-Device</Text>
             <Text style={styles.infoDesc}>
@@ -82,18 +82,18 @@ const styles = StyleSheet.create({
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: radius['2xl'],
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     gap: spacing.md,
     ...shadows.card,
   },
   logoImage: {
-    width: 60,
-    height: 60,
-    borderRadius: radius.xl,
+    width: 54,
+    height: 54,
+    borderRadius: radius.chip,
     ...shadows.soft,
   },
   profileDetails: {
@@ -112,19 +112,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   infoCard: {
-    backgroundColor: '#EEF2FF',
-    borderRadius: radius.xl,
+    backgroundColor: colors.accentGreenTint,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: 'rgba(24, 67, 221, 0.2)',
+    borderColor: 'rgba(22, 163, 74, 0.25)',
     padding: spacing.md,
   },
   infoRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  infoIcon: {
-    fontSize: 20,
-    marginTop: 2,
+    alignItems: 'flex-start',
   },
   infoTextContainer: {
     flex: 1,
@@ -133,7 +130,7 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: colors.brand,
+    color: colors.accentGreen,
   },
   infoDesc: {
     fontSize: 12,
@@ -141,20 +138,20 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   sectionCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     padding: spacing.md,
     gap: spacing.sm,
-    ...shadows.card,
+    ...shadows.soft,
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
     color: colors.textPrimary,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.borderSubtle,
     paddingBottom: spacing.xs,
   },
   settingItem: {

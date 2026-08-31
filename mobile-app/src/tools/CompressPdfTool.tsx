@@ -308,9 +308,9 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius['2xl'],
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     padding: spacing.lg,
     gap: spacing.lg,
     ...shadows.card,
@@ -342,15 +342,15 @@ const styles = StyleSheet.create({
   levelCard: {
     flex: 1,
     backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.lg,
+    borderRadius: radius.chip,
     padding: spacing.sm,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     gap: 4,
   },
   levelCardActive: {
-    backgroundColor: colors.amberTint,
-    borderColor: colors.amberInk,
+    backgroundColor: colors.accentOrangeTint,
+    borderColor: colors.accentOrange,
   },
   levelTitle: {
     fontSize: 12.5,
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   levelTitleActive: {
-    color: colors.amberInk,
+    color: colors.accentOrange,
   },
   levelDesc: {
     fontSize: 10.5,
@@ -373,10 +373,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
+    borderRadius: radius.card,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     ...shadows.soft,
   },
   statColumn: {
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   statValueGreen: {
-    color: colors.accent,
+    color: colors.accentGreen,
   },
   statArrow: {
     fontSize: 18,
