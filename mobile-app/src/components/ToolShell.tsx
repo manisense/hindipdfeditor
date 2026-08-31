@@ -1,5 +1,12 @@
 import { useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  StatusBar as RNStatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -100,6 +107,10 @@ type Props = {
  */
 export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Props) {
   const insets = useSafeAreaInsets();
+  const topInset = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 24) : 0,
+  );
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const currentTool = TOOLS.find((t) => t.id === activeTool) ?? null;
 
@@ -112,7 +123,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: topInset }]}>
       {/* Background ambient glowing orbs */}
       <View style={styles.ambientAuraTopRight} pointerEvents="none" />
       <View
