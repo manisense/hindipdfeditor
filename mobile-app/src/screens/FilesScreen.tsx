@@ -29,6 +29,7 @@ import {
   scanDevicePdfFiles,
 } from '../lib/pdfToImages';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
+import { useSettingsStore } from '../state/settingsStore';
 import { colors, radius, shadows, spacing } from '../theme';
 
 type Props = {
@@ -117,6 +118,7 @@ export function FilesScreen({ onOpenFile }: Props) {
   const [pageCountCache, setPageCountCache] = useState<Record<string, number>>({});
   const renderingRefs = useRef<Set<string>>(new Set());
 
+  const language = useSettingsStore((s) => s.language);
   const files = useRecentFilesStore((state) => state.files);
   const addFile = useRecentFilesStore((state) => state.addFile);
   const toggleStar = useRecentFilesStore((state) => state.toggleStar);
@@ -520,7 +522,13 @@ export function FilesScreen({ onOpenFile }: Props) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <ScreenHeader title="Files /" titleAccent="फाइलें" />
+      {language === 'hindi' ? (
+        <ScreenHeader title="फाइलें" />
+      ) : language === 'english' ? (
+        <ScreenHeader title="Files" />
+      ) : (
+        <ScreenHeader title="Files /" titleAccent="फाइलें" />
+      )}
 
       {/* Permission Request Alert Card if denied */}
       {hasPermission === false && (
@@ -582,12 +590,16 @@ export function FilesScreen({ onOpenFile }: Props) {
           onPress={() => setActiveCategory('all')}
           style={[styles.tabItem, activeCategory === 'all' && styles.tabItemActive]}
         >
-          <Text style={[styles.tabTextEn, activeCategory === 'all' && styles.tabTextActive]}>
-            All ({mergedFiles.length})
-          </Text>
-          <Text style={[styles.tabTextHi, activeCategory === 'all' && styles.tabTextActive]}>
-            सभी PDF
-          </Text>
+          {(language === 'bilingual' || language === 'english') && (
+            <Text style={[styles.tabTextEn, activeCategory === 'all' && styles.tabTextActive]}>
+              All ({mergedFiles.length})
+            </Text>
+          )}
+          {(language === 'bilingual' || language === 'hindi') && (
+            <Text style={[styles.tabTextHi, activeCategory === 'all' && styles.tabTextActive]}>
+              सभी PDF
+            </Text>
+          )}
         </Pressable>
 
         <Pressable
@@ -596,12 +608,20 @@ export function FilesScreen({ onOpenFile }: Props) {
           onPress={() => setActiveCategory('downloads')}
           style={[styles.tabItem, activeCategory === 'downloads' && styles.tabItemActive]}
         >
-          <Text style={[styles.tabTextEn, activeCategory === 'downloads' && styles.tabTextActive]}>
-            Downloads
-          </Text>
-          <Text style={[styles.tabTextHi, activeCategory === 'downloads' && styles.tabTextActive]}>
-            डाउनलोड
-          </Text>
+          {(language === 'bilingual' || language === 'english') && (
+            <Text
+              style={[styles.tabTextEn, activeCategory === 'downloads' && styles.tabTextActive]}
+            >
+              Downloads
+            </Text>
+          )}
+          {(language === 'bilingual' || language === 'hindi') && (
+            <Text
+              style={[styles.tabTextHi, activeCategory === 'downloads' && styles.tabTextActive]}
+            >
+              डाउनलोड
+            </Text>
+          )}
         </Pressable>
 
         <Pressable
@@ -610,12 +630,16 @@ export function FilesScreen({ onOpenFile }: Props) {
           onPress={() => setActiveCategory('whatsapp')}
           style={[styles.tabItem, activeCategory === 'whatsapp' && styles.tabItemActive]}
         >
-          <Text style={[styles.tabTextEn, activeCategory === 'whatsapp' && styles.tabTextActive]}>
-            WhatsApp
-          </Text>
-          <Text style={[styles.tabTextHi, activeCategory === 'whatsapp' && styles.tabTextActive]}>
-            व्हाट्सएप
-          </Text>
+          {(language === 'bilingual' || language === 'english') && (
+            <Text style={[styles.tabTextEn, activeCategory === 'whatsapp' && styles.tabTextActive]}>
+              WhatsApp
+            </Text>
+          )}
+          {(language === 'bilingual' || language === 'hindi') && (
+            <Text style={[styles.tabTextHi, activeCategory === 'whatsapp' && styles.tabTextActive]}>
+              व्हाट्सएप
+            </Text>
+          )}
         </Pressable>
 
         <Pressable
@@ -624,12 +648,20 @@ export function FilesScreen({ onOpenFile }: Props) {
           onPress={() => setActiveCategory('documents')}
           style={[styles.tabItem, activeCategory === 'documents' && styles.tabItemActive]}
         >
-          <Text style={[styles.tabTextEn, activeCategory === 'documents' && styles.tabTextActive]}>
-            Documents
-          </Text>
-          <Text style={[styles.tabTextHi, activeCategory === 'documents' && styles.tabTextActive]}>
-            दस्तावेज़
-          </Text>
+          {(language === 'bilingual' || language === 'english') && (
+            <Text
+              style={[styles.tabTextEn, activeCategory === 'documents' && styles.tabTextActive]}
+            >
+              Documents
+            </Text>
+          )}
+          {(language === 'bilingual' || language === 'hindi') && (
+            <Text
+              style={[styles.tabTextHi, activeCategory === 'documents' && styles.tabTextActive]}
+            >
+              दस्तावेज़
+            </Text>
+          )}
         </Pressable>
 
         <Pressable
@@ -638,12 +670,16 @@ export function FilesScreen({ onOpenFile }: Props) {
           onPress={() => setActiveCategory('starred')}
           style={[styles.tabItem, activeCategory === 'starred' && styles.tabItemActive]}
         >
-          <Text style={[styles.tabTextEn, activeCategory === 'starred' && styles.tabTextActive]}>
-            Starred
-          </Text>
-          <Text style={[styles.tabTextHi, activeCategory === 'starred' && styles.tabTextActive]}>
-            पसंदीदा
-          </Text>
+          {(language === 'bilingual' || language === 'english') && (
+            <Text style={[styles.tabTextEn, activeCategory === 'starred' && styles.tabTextActive]}>
+              Starred
+            </Text>
+          )}
+          {(language === 'bilingual' || language === 'hindi') && (
+            <Text style={[styles.tabTextHi, activeCategory === 'starred' && styles.tabTextActive]}>
+              पसंदीदा
+            </Text>
+          )}
         </Pressable>
       </View>
 

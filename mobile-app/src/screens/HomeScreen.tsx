@@ -6,6 +6,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import type { ToolId } from '../components/ToolShell';
 import { getPageCount, renderPage } from '../lib/pdfToImages';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
+import { useSettingsStore } from '../state/settingsStore';
 import { colors, radius, shadows, spacing } from '../theme';
 
 type Props = {
@@ -93,6 +94,7 @@ function formatBytes(bytes?: number): string {
 }
 
 export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
+  const language = useSettingsStore((state) => state.language);
   const recentFiles = useRecentFilesStore((state) => state.files);
   const addFile = useRecentFilesStore((state) => state.addFile);
 
@@ -136,17 +138,32 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
     }
   };
 
+  const showEn = language === 'bilingual' || language === 'english';
+  const showHi = language === 'bilingual' || language === 'hindi';
+
   return (
     <View style={styles.container}>
       {/* Brand Top Header */}
-      <ScreenHeader title="Hindi PDF" titleAccent="Editor" />
+      {language === 'hindi' ? (
+        <ScreenHeader title="हिंदी पीडीएफ" titleAccent="संपादक" />
+      ) : (
+        <ScreenHeader title="Hindi PDF" titleAccent="Editor" />
+      )}
 
       {/* Hero Welcome Banner */}
       <View style={styles.heroCard}>
         <View style={styles.heroTopRow}>
           <View style={styles.heroGreetingWrap}>
-            <Text style={styles.heroGreeting}>नमस्ते!</Text>
-            <Text style={styles.heroSubGreeting}>Welcome back</Text>
+            {language === 'bilingual' ? (
+              <>
+                <Text style={styles.heroGreeting}>नमस्ते!</Text>
+                <Text style={styles.heroSubGreeting}>Welcome back</Text>
+              </>
+            ) : language === 'hindi' ? (
+              <Text style={styles.heroGreeting}>नमस्ते!</Text>
+            ) : (
+              <Text style={styles.heroGreeting}>Welcome back!</Text>
+            )}
           </View>
           <View style={styles.privacyPill}>
             <Ionicons name="shield-checkmark" size={13} color={colors.accentGreen} />
@@ -170,12 +187,14 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
               <MaterialCommunityIcons name={tool.iconName} size={24} color={tool.accent} />
             </View>
 
-            {/* Tool Info with Equal Devanagari Prominence */}
+            {/* Tool Info with Adaptive Language Prominence */}
             <View style={styles.toolTextContainer}>
               <View style={styles.toolTitleRow}>
-                <Text style={styles.toolTitleEn} numberOfLines={1}>
-                  {tool.titleEn}
-                </Text>
+                {showEn && (
+                  <Text style={styles.toolTitleEn} numberOfLines={1}>
+                    {tool.titleEn}
+                  </Text>
+                )}
                 {tool.badge && (
                   <View style={[styles.toolBadge, { backgroundColor: tool.tint }]}>
                     <Text style={[styles.toolBadgeText, { color: tool.accent }]}>{tool.badge}</Text>
@@ -183,9 +202,18 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
                 )}
               </View>
 
-              <Text style={[styles.toolTitleHi, { color: tool.accent }]} numberOfLines={1}>
-                {tool.titleHi}
-              </Text>
+              {showHi && (
+                <Text
+                  style={[
+                    styles.toolTitleHi,
+                    { color: tool.accent },
+                    !showEn && { fontSize: 14, fontWeight: '800' },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {tool.titleHi}
+                </Text>
+              )}
             </View>
           </Pressable>
         ))}
@@ -194,7 +222,13 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
       {/* Recent Documents Section */}
       <View style={styles.recentSection}>
         <View style={styles.recentHeaderRow}>
-          <Text style={styles.recentSectionTitle}>Recent Documents / हाल की फाइलें</Text>
+          <Text style={styles.recentSectionTitle}>
+            {language === 'hindi'
+              ? 'हाल की फाइलें'
+              : language === 'english'
+                ? 'Recent Documents'
+                : 'Recent Documents / हाल की फाइलें'}
+          </Text>
           {recentFiles.length > 0 && (
             <Text style={styles.recentCountText}>{recentFiles.length} file(s)</Text>
           )}

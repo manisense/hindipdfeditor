@@ -2,6 +2,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useSettingsStore } from '../state/settingsStore';
 import { colors, radius, shadows, spacing } from '../theme';
 
 export type MainTab = 'home' | 'files' | 'tools' | 'settings';
@@ -50,11 +51,15 @@ const TABS: {
 
 /**
  * 4-Tab Bottom Navigation Bar matching the unified design system.
- * Features pill-shaped active state, subtle hairline top border, and equal bilingual typography.
+ * Dynamically adapts typography based on active Language setting (Bilingual, English, Hindi).
  */
 export function BottomNavBar({ activeTab, onSelectTab }: Props) {
   const insets = useSafeAreaInsets();
+  const language = useSettingsStore((s) => s.language);
   const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 18 : 10) + 4;
+
+  const showEn = language === 'bilingual' || language === 'english';
+  const showHi = language === 'bilingual' || language === 'hindi';
 
   return (
     <View style={[styles.container, { paddingBottom: bottomPadding }]}>
@@ -79,12 +84,16 @@ export function BottomNavBar({ activeTab, onSelectTab }: Props) {
                 size={22}
                 color={isActive ? colors.brand : colors.textSecondary}
               />
-              <Text style={[styles.tabLabelEn, isActive && styles.tabLabelEnActive]}>
-                {tab.labelEn}
-              </Text>
-              <Text style={[styles.tabLabelHi, isActive && styles.tabLabelHiActive]}>
-                {tab.labelHi}
-              </Text>
+              {showEn && (
+                <Text style={[styles.tabLabelEn, isActive && styles.tabLabelEnActive]}>
+                  {tab.labelEn}
+                </Text>
+              )}
+              {showHi && (
+                <Text style={[styles.tabLabelHi, isActive && styles.tabLabelHiActive]}>
+                  {tab.labelHi}
+                </Text>
+              )}
             </Pressable>
           );
         })}

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { AppButton } from '../components/AppButton';
+import { useAppPopup } from '../components/appPopupContext';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { APP_VERSION } from '../constants/legal';
 import { useSettingsStore, type AppLanguage, type AppTheme } from '../state/settingsStore';
@@ -17,18 +17,18 @@ type LanguageOption = {
 const LANGUAGE_OPTIONS: LanguageOption[] = [
   {
     id: 'bilingual',
-    titleEn: 'Bilingual (English + हिंदी)',
-    titleHi: 'द्विभाषी (English + हिंदी)',
+    titleEn: 'Bilingual',
+    titleHi: 'द्विभाषी',
   },
   {
     id: 'english',
-    titleEn: 'English Only',
-    titleHi: 'केवल अंग्रेज़ी',
+    titleEn: 'English',
+    titleHi: 'अंग्रेज़ी',
   },
   {
     id: 'hindi',
-    titleEn: 'हिंदी केवल (Hindi Only)',
-    titleHi: 'केवल हिंदी',
+    titleEn: 'Hindi',
+    titleHi: 'हिंदी',
   },
 ];
 
@@ -61,11 +61,11 @@ const THEME_OPTIONS: ThemeOption[] = [
 ];
 
 /**
- * SettingsScreen adhering strictly to design-system.md:
- * - Language selector (Bilingual, English, Hindi)
- * - Theme selector (Light, Dark, System)
- * - Check for Updates with live status & feedback
- * - App Version & build metadata at bottom
+ * Compact, Non-Scrollable SettingsScreen adhering strictly to design-system.md:
+ * - 3-Column Segmented Language selector (Bilingual, English, Hindi)
+ * - 3-Column Theme selector (Light, Dark, System)
+ * - Compact single-row Software Updates checker with popup feedback
+ * - App Version & 100% offline footer
  */
 export function SettingsScreen() {
   const {
@@ -73,7 +73,6 @@ export function SettingsScreen() {
     theme,
     isCheckingUpdate,
     updateStatus,
-    updateMessage,
     loaded,
     initStore,
     setLanguage,
@@ -81,88 +80,94 @@ export function SettingsScreen() {
     checkForUpdates,
   } = useSettingsStore();
 
+  const { showPopup } = useAppPopup();
+
   useEffect(() => {
     if (!loaded) {
       void initStore();
     }
   }, [loaded, initStore]);
 
+  const handleCheckUpdates = async () => {
+    const res = await checkForUpdates();
+    if (res.isLatest) {
+      void showPopup({
+        title: 'App is Up to Date / नवीनतम संस्करण',
+        message: `You are running the latest version of Hindi PDF Editor (v${APP_VERSION}). All offline engines and fonts are up to date.`,
+        tone: 'success',
+        actionLabel: 'OK / ठीक है',
+      });
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Fixed Header (Never Scrolls) */}
       <ScreenHeader title="Settings /" titleAccent="सेटिंग्स" />
 
-      {/* Scrollable Content Area */}
+      {/* High-Density Compact Settings Area */}
       <ScrollView
         style={styles.scrollArea}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
-        {/* Card 1: Language Selector */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconChip, { backgroundColor: colors.accentBlueTint }]}>
-              <MaterialCommunityIcons name="translate" size={22} color={colors.accentBlue} />
+        {/* Card 1: 3-Column Segmented Language Selector */}
+        <View style={styles.compactCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={[styles.compactIconChip, { backgroundColor: colors.accentBlueTint }]}>
+              <MaterialCommunityIcons name="translate" size={17} color={colors.accentBlue} />
             </View>
-            <View style={styles.cardHeaderTextWrap}>
-              <Text style={styles.cardTitleEn}>App Language</Text>
-              <Text style={styles.cardTitleHi}>भाषा चयन</Text>
+            <View style={styles.cardTitleGroup}>
+              <Text style={styles.compactTitleEn}>App Language</Text>
+              <Text style={styles.compactTitleHi}>भाषा चयन</Text>
             </View>
           </View>
 
-          <View style={styles.optionsList}>
+          <View style={styles.segmentedRow}>
             {LANGUAGE_OPTIONS.map((opt) => {
               const isSelected = language === opt.id;
               return (
                 <Pressable
                   key={opt.id}
-                  accessibilityRole="radio"
+                  accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
                   onPress={() => void setLanguage(opt.id)}
                   style={({ pressed }) => [
-                    styles.radioOptionItem,
-                    isSelected && styles.radioOptionItemSelected,
-                    pressed && styles.itemPressed,
+                    styles.segmentTile,
+                    isSelected && styles.segmentTileSelected,
+                    pressed && styles.tilePressed,
                   ]}
                 >
-                  <View style={styles.radioTextWrap}>
-                    <Text style={[styles.radioTitleEn, isSelected && styles.textBrand]}>
-                      {opt.titleEn}
-                    </Text>
-                    <Text style={[styles.radioTitleHi, isSelected && styles.textBrand]}>
-                      {opt.titleHi}
-                    </Text>
-                  </View>
-
-                  <View style={[styles.radioButton, isSelected && styles.radioButtonSelected]}>
-                    {isSelected && (
-                      <Ionicons name="checkmark-sharp" size={14} color={colors.surface} />
-                    )}
-                  </View>
+                  <Text style={[styles.segmentLabelEn, isSelected && styles.textBrandActive]}>
+                    {opt.titleEn}
+                  </Text>
+                  <Text style={[styles.segmentLabelHi, isSelected && styles.textBrandActive]}>
+                    {opt.titleHi}
+                  </Text>
                 </Pressable>
               );
             })}
           </View>
         </View>
 
-        {/* Card 2: Appearance & Theme */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconChip, { backgroundColor: colors.accentPurpleTint }]}>
+        {/* Card 2: 3-Column Theme Selector */}
+        <View style={styles.compactCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={[styles.compactIconChip, { backgroundColor: colors.accentPurpleTint }]}>
               <MaterialCommunityIcons
                 name="theme-light-dark"
-                size={22}
+                size={17}
                 color={colors.accentPurple}
               />
             </View>
-            <View style={styles.cardHeaderTextWrap}>
-              <Text style={styles.cardTitleEn}>Theme & Appearance</Text>
-              <Text style={styles.cardTitleHi}>थीम</Text>
+            <View style={styles.cardTitleGroup}>
+              <Text style={styles.compactTitleEn}>Theme & Appearance</Text>
+              <Text style={styles.compactTitleHi}>थीम</Text>
             </View>
           </View>
 
-          {/* 3-Column Theme Tiles */}
-          <View style={styles.themeGrid}>
+          <View style={styles.segmentedRow}>
             {THEME_OPTIONS.map((opt) => {
               const isSelected = theme === opt.id;
               return (
@@ -172,96 +177,84 @@ export function SettingsScreen() {
                   accessibilityState={{ selected: isSelected }}
                   onPress={() => void setTheme(opt.id)}
                   style={({ pressed }) => [
-                    styles.themeTile,
-                    isSelected && styles.themeTileSelected,
-                    pressed && styles.itemPressed,
+                    styles.themeSegmentTile,
+                    isSelected && styles.segmentTileSelected,
+                    pressed && styles.tilePressed,
                   ]}
                 >
-                  <View
-                    style={[styles.themeTileIconBox, isSelected && styles.themeTileIconBoxSelected]}
-                  >
-                    <Ionicons
-                      name={opt.iconName}
-                      size={20}
-                      color={isSelected ? colors.brand : colors.textSecondary}
-                    />
+                  <Ionicons
+                    name={opt.iconName}
+                    size={16}
+                    color={isSelected ? colors.brand : colors.textSecondary}
+                  />
+                  <View style={styles.themeLabelColumn}>
+                    <Text style={[styles.segmentLabelEn, isSelected && styles.textBrandActive]}>
+                      {opt.titleEn}
+                    </Text>
+                    <Text style={[styles.segmentLabelHi, isSelected && styles.textBrandActive]}>
+                      {opt.titleHi}
+                    </Text>
                   </View>
-                  <Text style={[styles.themeTileLabelEn, isSelected && styles.textBrand]}>
-                    {opt.titleEn}
-                  </Text>
-                  <Text style={[styles.themeTileLabelHi, isSelected && styles.textBrand]}>
-                    {opt.titleHi}
-                  </Text>
-
-                  {isSelected && (
-                    <View style={styles.selectedPillBadge}>
-                      <Ionicons name="checkmark" size={10} color={colors.surface} />
-                    </View>
-                  )}
                 </Pressable>
               );
             })}
           </View>
         </View>
 
-        {/* Card 3: Software Updates */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconChip, { backgroundColor: colors.accentTealTint }]}>
-              <MaterialCommunityIcons
-                name="cloud-sync-outline"
-                size={22}
-                color={colors.accentTeal}
-              />
-            </View>
-            <View style={styles.cardHeaderTextWrap}>
-              <Text style={styles.cardTitleEn}>App Updates</Text>
-              <Text style={styles.cardTitleHi}>सॉफ़्टवेयर अपडेट</Text>
-            </View>
-          </View>
-
-          {/* Status Panel */}
-          <View style={styles.updateStatusPanel}>
-            <View style={styles.updateStatusRow}>
-              <View style={styles.statusIndicatorWrapper}>
-                {isCheckingUpdate ? (
-                  <ActivityIndicator size="small" color={colors.brand} />
-                ) : updateStatus === 'latest' ? (
-                  <Ionicons name="checkmark-circle" size={20} color={colors.accentGreen} />
-                ) : (
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={20}
-                    color={colors.textSecondary}
-                  />
-                )}
-                <View style={styles.statusTextWrap}>
-                  <Text style={styles.statusTitle}>
-                    {isCheckingUpdate
-                      ? 'Checking for updates...'
-                      : (updateMessage ?? `Version ${APP_VERSION} installed`)}
-                  </Text>
+        {/* Card 3: Compact Single-Row Software Updates */}
+        <View style={styles.compactCard}>
+          <View style={styles.updateCardRow}>
+            <View style={styles.updateLeftGroup}>
+              <View style={[styles.compactIconChip, { backgroundColor: colors.accentTealTint }]}>
+                <MaterialCommunityIcons
+                  name="cloud-sync-outline"
+                  size={17}
+                  color={colors.accentTeal}
+                />
+              </View>
+              <View style={styles.updateTextColumn}>
+                <View style={styles.cardTitleGroup}>
+                  <Text style={styles.compactTitleEn}>Software Updates</Text>
+                  <Text style={styles.compactTitleHi}>अपडेट</Text>
+                </View>
+                <View style={styles.updateStatusSubRow}>
+                  {updateStatus === 'latest' && (
+                    <Ionicons name="checkmark-circle" size={13} color={colors.accentGreen} />
+                  )}
+                  <Text style={styles.updateVersionBadge}>v{APP_VERSION} (Latest)</Text>
                 </View>
               </View>
             </View>
 
-            {/* Check Button */}
-            <AppButton
-              title={isCheckingUpdate ? 'Checking...' : 'Check for Updates / अपडेट जांचें'}
-              onPress={() => void checkForUpdates()}
-              variant="primary"
-              loading={isCheckingUpdate}
-            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Check for updates"
+              onPress={() => void handleCheckUpdates()}
+              disabled={isCheckingUpdate}
+              style={({ pressed }) => [
+                styles.compactCheckButton,
+                isCheckingUpdate && styles.compactCheckButtonDisabled,
+                pressed && !isCheckingUpdate && styles.tilePressed,
+              ]}
+            >
+              {isCheckingUpdate ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text style={styles.compactCheckButtonText}>Check / जांचें</Text>
+              )}
+            </Pressable>
           </View>
         </View>
 
         {/* Bottom App Version Footer */}
-        <View style={styles.footer}>
-          <View style={styles.footerBadge}>
-            <Ionicons name="shield-checkmark" size={14} color={colors.accentGreen} />
-            <Text style={styles.footerBadgeText}>100% Offline & On-Device</Text>
+        <View style={styles.compactFooter}>
+          <View style={styles.compactFooterBadge}>
+            <Ionicons name="shield-checkmark" size={12} color={colors.accentGreen} />
+            <Text style={styles.compactFooterBadgeText}>100% Offline & On-Device</Text>
           </View>
-          <Text style={styles.footerVersionText}>Hindi PDF Editor • v{APP_VERSION} (Build 1)</Text>
+          <Text style={styles.compactFooterVersionText}>
+            Hindi PDF Editor • v{APP_VERSION} (Build 1)
+          </Text>
         </View>
       </ScrollView>
     </View>
@@ -277,205 +270,171 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    gap: spacing.md,
-    paddingBottom: 70,
+    gap: spacing.sm + 2,
+    paddingBottom: 24,
   },
-  card: {
+  compactCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
-    padding: spacing.md,
-    gap: spacing.md,
+    padding: spacing.sm + 3,
+    gap: spacing.sm,
     ...shadows.soft,
   },
-  cardHeader: {
+  cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
-  iconChip: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.chip,
+  compactIconChip: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm + 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardHeaderTextWrap: {
-    flex: 1,
+  cardTitleGroup: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: spacing.xs,
+    gap: 6,
   },
-  cardTitleEn: {
-    fontSize: 16,
+  compactTitleEn: {
+    fontSize: 14,
     fontWeight: '800',
     color: colors.textPrimary,
     letterSpacing: -0.2,
   },
-  cardTitleHi: {
-    fontSize: 13,
+  compactTitleHi: {
+    fontSize: 12,
     fontWeight: '700',
     color: colors.brand,
   },
-  optionsList: {
-    gap: spacing.xs + 2,
+  segmentedRow: {
+    flexDirection: 'row',
+    gap: 6,
   },
-  radioOptionItem: {
+  segmentTile: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceSubtle,
+    borderRadius: radius.sm + 2,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    gap: 4,
+  },
+  themeSegmentTile: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceSubtle,
+    borderRadius: radius.sm + 2,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    paddingVertical: 9,
+    paddingHorizontal: 4,
+    gap: 6,
+  },
+  themeLabelColumn: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 3,
+  },
+  segmentTileSelected: {
+    backgroundColor: colors.brandTint,
+    borderColor: colors.brand,
+  },
+  tilePressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+  segmentLabelEn: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  segmentLabelHi: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  textBrandActive: {
+    color: colors.brand,
+    fontWeight: '800',
+  },
+  updateCardRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    paddingVertical: spacing.sm + 4,
-    paddingHorizontal: spacing.md,
     gap: spacing.sm,
   },
-  radioOptionItemSelected: {
-    backgroundColor: colors.brandTint,
-    borderColor: colors.brand,
-  },
-  itemPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.99 }],
-  },
-  radioTextWrap: {
-    flex: 1,
+  updateLeftGroup: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
   },
-  radioTitleEn: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textPrimary,
+  updateTextColumn: {
+    flex: 1,
+    gap: 2,
   },
-  radioTitleHi: {
-    fontSize: 12.5,
+  updateStatusSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  updateVersionBadge: {
+    fontSize: 11,
     fontWeight: '600',
     color: colors.textSecondary,
   },
-  textBrand: {
-    color: colors.brand,
-    fontWeight: '800',
-  },
-  radioButton: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: colors.borderSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  radioButtonSelected: {
-    borderColor: colors.brand,
+  compactCheckButton: {
     backgroundColor: colors.brand,
-  },
-  themeGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  themeTile: {
-    flex: 1,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xs,
-    gap: 3,
-    position: 'relative',
+    minWidth: 88,
+    minHeight: 34,
+    ...shadows.brand,
   },
-  themeTileSelected: {
-    backgroundColor: colors.brandTint,
-    borderColor: colors.brand,
+  compactCheckButtonDisabled: {
+    opacity: 0.7,
   },
-  themeTileIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.chip,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  themeTileIconBoxSelected: {
-    backgroundColor: '#E8EDFF',
-  },
-  themeTileLabelEn: {
-    fontSize: 13,
+  compactCheckButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
     fontWeight: '700',
-    color: colors.textPrimary,
   },
-  themeTileLabelHi: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  selectedPillBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.brand,
+  compactFooter: {
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 4,
+    paddingTop: spacing.xs,
   },
-  updateStatusPanel: {
-    gap: spacing.md,
-  },
-  updateStatusRow: {
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    padding: spacing.md,
-  },
-  statusIndicatorWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  statusTextWrap: {
-    flex: 1,
-  },
-  statusTitle: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  footer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: spacing.md,
-  },
-  footerBadge: {
+  compactFooterBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.accentGreenTint,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
     borderRadius: radius.full,
-    gap: 5,
+    gap: 4,
   },
-  footerBadgeText: {
-    fontSize: 11.5,
+  compactFooterBadgeText: {
+    fontSize: 10.5,
     fontWeight: '700',
     color: colors.accentGreen,
   },
-  footerVersionText: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: colors.textSecondary,
-    letterSpacing: -0.2,
+  compactFooterVersionText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textTertiary,
   },
 });

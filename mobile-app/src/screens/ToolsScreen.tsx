@@ -3,6 +3,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { ScreenHeader } from '../components/ScreenHeader';
 import type { ToolId } from '../components/ToolShell';
+import { useSettingsStore } from '../state/settingsStore';
 import { colors, radius, shadows, spacing } from '../theme';
 
 type Props = {
@@ -87,10 +88,20 @@ const ALL_TOOLS: ToolCatalogItem[] = [
 ];
 
 export function ToolsScreen({ onOpenTool }: Props) {
+  const language = useSettingsStore((s) => s.language);
+  const showEn = language === 'bilingual' || language === 'english';
+  const showHi = language === 'bilingual' || language === 'hindi';
+
   return (
     <View style={styles.container}>
       {/* Fixed Header (Never Scrolls) */}
-      <ScreenHeader title="PDF Tools /" titleAccent="उपकरण" />
+      {language === 'hindi' ? (
+        <ScreenHeader title="पीडीएफ उपकरण" />
+      ) : language === 'english' ? (
+        <ScreenHeader title="PDF Tools" />
+      ) : (
+        <ScreenHeader title="PDF Tools /" titleAccent="उपकरण" />
+      )}
 
       {/* Scrollable Tools List */}
       <ScrollView
@@ -114,12 +125,24 @@ export function ToolsScreen({ onOpenTool }: Props) {
 
               <View style={styles.cardContent}>
                 <View style={styles.titleRow}>
-                  <Text style={styles.titleEn}>{tool.titleEn}</Text>
-                  <View style={[styles.badge, { backgroundColor: tool.tint }]}>
-                    <Text style={[styles.badgeText, { color: tool.accent }]}>{tool.badge}</Text>
-                  </View>
+                  {showEn && <Text style={styles.titleEn}>{tool.titleEn}</Text>}
+                  {tool.badge && (
+                    <View style={[styles.badge, { backgroundColor: tool.tint }]}>
+                      <Text style={[styles.badgeText, { color: tool.accent }]}>{tool.badge}</Text>
+                    </View>
+                  )}
                 </View>
-                <Text style={[styles.titleHi, { color: tool.accent }]}>{tool.titleHi}</Text>
+                {showHi && (
+                  <Text
+                    style={[
+                      styles.titleHi,
+                      { color: tool.accent },
+                      !showEn && { fontSize: 14, fontWeight: '800' },
+                    ]}
+                  >
+                    {tool.titleHi}
+                  </Text>
+                )}
               </View>
 
               <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
