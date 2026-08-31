@@ -102,7 +102,6 @@ let isScanRunning = false;
 export function FilesScreen({ onOpenFile }: Props) {
   const insets = useSafeAreaInsets();
   const [activeCategory, setActiveCategory] = useState<FileCategoryTab>('all');
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date_desc');
   const [showSortModal, setShowSortModal] = useState(false);
@@ -125,29 +124,27 @@ export function FilesScreen({ onOpenFile }: Props) {
 
   const scanFiles = useCallback(async (force = false) => {
     if (isScanRunning) return;
-    if (!force && cachedScannedDeviceFiles !== null) {
-      setDeviceFiles(cachedScannedDeviceFiles);
-      return;
-    }
-
     isScanRunning = true;
     setScanning(true);
+
     try {
-      if (Platform.OS === 'android') {
-        const isGranted = await hasStoragePermission();
-        setHasPermission(isGranted);
-        if (!isGranted) {
-          return;
-        }
-      } else {
-        setHasPermission(true);
+      if (!force && cachedScannedDeviceFiles !== null) {
+        setDeviceFiles(cachedScannedDeviceFiles);
+        return;
       }
 
-      // Query native module for all device PDF files
       const scanned = await scanDevicePdfFiles();
       const mapped: RecentFile[] = scanned.map((item) => {
-        const dateStr = formatDate(item.dateModified);
-        const folderName = item.folder ?? 'Storage';
+        const dateStr = item.dateModified
+          ? new Date(item.dateModified).toLocaleDateString('en-IN', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })
+          : 'Storage';
+        const folderName = item.path
+          ? item.path.split('/').slice(-2, -1)[0] || 'Storage'
+          : 'Storage';
 
         return {
           id: `dev-${item.uri}`,
@@ -181,78 +178,70 @@ export function FilesScreen({ onOpenFile }: Props) {
       const granted = await requestStoragePermission();
       setHasPermission(granted);
       if (granted) {
-        void scanFiles(true);
+        await scanFiles(true);
       }
     } catch (err) {
-      console.warn('Permission request error', err);
+      console.warn('Storage permission error', err);
     }
   }, [scanFiles]);
 
+  // Initial load check
   useEffect(() => {
-    let isMounted = true;
-
-    async function initialCheck() {
-      if (Platform.OS === 'android') {
-        const isGranted = await hasStoragePermission();
-        if (isMounted) setHasPermission(isGranted);
-        if (isGranted) {
-          if (cachedScannedDeviceFiles === null) {
-            void scanFiles(false);
+    let mounted = true;
+    (async () => {
+      try {
+        const has = await hasStoragePermission();
+        if (mounted) {
+          setHasPermission(has);
+          if (has) {
+            await scanFiles(false);
           }
         }
-      } else {
-        if (isMounted) setHasPermission(true);
-        if (cachedScannedDeviceFiles === null) {
-          void scanFiles(false);
-        }
+      } catch {
+        if (mounted) setHasPermission(false);
       }
-    }
-
-    void initialCheck();
-
-    // Only re-check permission when returning to foreground if not yet granted
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active' && cachedScannedDeviceFiles === null) {
-        void initialCheck();
-      }
-    });
-
+    })();
     return () => {
-      isMounted = false;
-      subscription.remove();
+      mounted = false;
     };
   }, [scanFiles]);
 
-  // Combine recent files store + scanned device files with RECENT FILES ALWAYS ON TOP
+  // Listen to app foregrounding to re-check permission if user went to settings
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void hasStoragePermission().then((has) => {
+          setHasPermission(has);
+          if (has && cachedScannedDeviceFiles === null) {
+            void scanFiles(false);
+          }
+        });
+      }
+    });
+    return () => sub.remove();
+  }, [scanFiles]);
+
+  // Combine recent files store + scanned device storage files, removing duplicates by URI
   const mergedFiles: RecentFile[] = useMemo(() => {
-    const recentUris = new Set(files.map((f) => f.uri));
-    const recentNamesAndSizes = new Set(files.map((f) => `${f.name}-${f.sizeBytes}`));
+    const recentMap = new Map<string, RecentFile>();
+    for (const f of files) {
+      recentMap.set(f.uri, { ...f, isRecent: true });
+    }
 
-    const recentList: RecentFile[] = files.map((f) => ({ ...f, isRecent: true }));
     const otherDeviceList: RecentFile[] = [];
-
-    for (const df of deviceFiles) {
-      const key = `${df.name}-${df.sizeBytes}`;
-      if (!recentUris.has(df.uri) && !recentNamesAndSizes.has(key)) {
-        otherDeviceList.push({ ...df, isRecent: false });
+    for (const f of deviceFiles) {
+      if (!recentMap.has(f.uri)) {
+        otherDeviceList.push(f);
       }
     }
+
+    const recentList = Array.from(recentMap.values());
 
     // Recent files always at top, followed by all device files
     return [...recentList, ...otherDeviceList];
   }, [files, deviceFiles]);
 
-  // Extract detected folders and their file counts
-  const folderStats = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const file of mergedFiles) {
-      const f = file.folder?.trim() || 'Storage';
-      map.set(f, (map.get(f) ?? 0) + 1);
-    }
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-  }, [mergedFiles]);
-
-  // Filter files by category, folder, and search query
+  // Filter files by category and search query
   const filteredFiles: RecentFile[] = useMemo(() => {
     return mergedFiles.filter((file) => {
       // 1. Category Filter
@@ -270,12 +259,7 @@ export function FilesScreen({ onOpenFile }: Props) {
         if (cat !== 'documents') return false;
       }
 
-      // 2. Folder filter
-      if (selectedFolder && (file.folder?.trim() || 'Storage') !== selectedFolder) {
-        return false;
-      }
-
-      // 3. Search query filter
+      // 2. Search query filter
       if (searchQuery.trim().length > 0) {
         const q = searchQuery.toLowerCase();
         const matchName = file.name.toLowerCase().includes(q);
@@ -286,7 +270,7 @@ export function FilesScreen({ onOpenFile }: Props) {
 
       return true;
     });
-  }, [mergedFiles, activeCategory, selectedFolder, searchQuery]);
+  }, [mergedFiles, activeCategory, searchQuery]);
 
   // Sort filtered files — keeping recent files at the top in default date view
   const sortedFiles: RecentFile[] = useMemo(() => {
@@ -603,10 +587,7 @@ export function FilesScreen({ onOpenFile }: Props) {
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: activeCategory === 'all' }}
-          onPress={() => {
-            setActiveCategory('all');
-            setSelectedFolder(null);
-          }}
+          onPress={() => setActiveCategory('all')}
           style={[styles.tabItem, activeCategory === 'all' && styles.tabItemActive]}
         >
           <Text style={[styles.tabTextEn, activeCategory === 'all' && styles.tabTextActive]}>
@@ -620,10 +601,7 @@ export function FilesScreen({ onOpenFile }: Props) {
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: activeCategory === 'downloads' }}
-          onPress={() => {
-            setActiveCategory('downloads');
-            setSelectedFolder(null);
-          }}
+          onPress={() => setActiveCategory('downloads')}
           style={[styles.tabItem, activeCategory === 'downloads' && styles.tabItemActive]}
         >
           <Text style={[styles.tabTextEn, activeCategory === 'downloads' && styles.tabTextActive]}>
@@ -637,10 +615,7 @@ export function FilesScreen({ onOpenFile }: Props) {
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: activeCategory === 'whatsapp' }}
-          onPress={() => {
-            setActiveCategory('whatsapp');
-            setSelectedFolder(null);
-          }}
+          onPress={() => setActiveCategory('whatsapp')}
           style={[styles.tabItem, activeCategory === 'whatsapp' && styles.tabItemActive]}
         >
           <Text style={[styles.tabTextEn, activeCategory === 'whatsapp' && styles.tabTextActive]}>
@@ -654,10 +629,7 @@ export function FilesScreen({ onOpenFile }: Props) {
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: activeCategory === 'documents' }}
-          onPress={() => {
-            setActiveCategory('documents');
-            setSelectedFolder(null);
-          }}
+          onPress={() => setActiveCategory('documents')}
           style={[styles.tabItem, activeCategory === 'documents' && styles.tabItemActive]}
         >
           <Text style={[styles.tabTextEn, activeCategory === 'documents' && styles.tabTextActive]}>
@@ -671,10 +643,7 @@ export function FilesScreen({ onOpenFile }: Props) {
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: activeCategory === 'starred' }}
-          onPress={() => {
-            setActiveCategory('starred');
-            setSelectedFolder(null);
-          }}
+          onPress={() => setActiveCategory('starred')}
           style={[styles.tabItem, activeCategory === 'starred' && styles.tabItemActive]}
         >
           <Text style={[styles.tabTextEn, activeCategory === 'starred' && styles.tabTextActive]}>
@@ -686,61 +655,10 @@ export function FilesScreen({ onOpenFile }: Props) {
         </Pressable>
       </View>
 
-      {/* Horizontal Folder Chip Filter Row */}
-      {folderStats.length > 1 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.folderChipsScroll}
-          contentContainerStyle={styles.folderChipsContent}
-        >
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setSelectedFolder(null)}
-            style={[styles.folderChip, selectedFolder === null && styles.folderChipActive]}
-          >
-            <Text
-              style={[
-                styles.folderChipText,
-                selectedFolder === null && styles.folderChipTextActive,
-              ]}
-            >
-              All Folders ({mergedFiles.length})
-            </Text>
-          </Pressable>
-
-          {folderStats.map(([folderName, count]) => {
-            const isSelected = selectedFolder === folderName;
-            const iconName = getFolderIconName(folderName);
-            return (
-              <Pressable
-                key={folderName}
-                accessibilityRole="button"
-                onPress={() => setSelectedFolder(isSelected ? null : folderName)}
-                style={[styles.folderChip, isSelected && styles.folderChipActive]}
-              >
-                <Ionicons
-                  name={iconName}
-                  size={13}
-                  color={isSelected ? colors.brand : colors.textSecondary}
-                />
-                <Text
-                  style={[styles.folderChipText, isSelected && styles.folderChipTextActive]}
-                  numberOfLines={1}
-                >
-                  {folderName} ({count})
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      )}
-
       {/* Results Subtitle Banner */}
       <View style={styles.resultStatusRow}>
         <Text style={styles.resultStatusText}>
           Showing {sortedFiles.length} of {mergedFiles.length} documents
-          {selectedFolder ? ` in "${selectedFolder}"` : ''}
           {searchQuery ? ` matching "${searchQuery}"` : ''}
         </Text>
         <Text style={styles.sortIndicatorText}>{SORT_LABELS[sortBy].label}</Text>
@@ -1368,43 +1286,6 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
   },
   tabTextActive: {
-    color: colors.brand,
-    fontWeight: '800',
-  },
-  folderChipsScroll: {
-    maxHeight: 36,
-  },
-  folderChipsContent: {
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 2,
-    paddingVertical: 2,
-    alignItems: 'center',
-  },
-  folderChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    gap: 4,
-  },
-  folderChipActive: {
-    backgroundColor: colors.brandTint,
-    borderColor: colors.brand,
-  },
-  folderChipIcon: {
-    fontSize: 12,
-  },
-  folderChipText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  folderChipTextActive: {
     color: colors.brand,
     fontWeight: '800',
   },
