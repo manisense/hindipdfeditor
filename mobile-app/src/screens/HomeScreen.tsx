@@ -2,6 +2,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 
+import { ScreenHeader } from '../components/ScreenHeader';
 import type { ToolId } from '../components/ToolShell';
 import { getPageCount, renderPage } from '../lib/pdfToImages';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
@@ -138,31 +139,7 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
   return (
     <View style={styles.container}>
       {/* Brand Top Header */}
-      <View style={styles.brandRow}>
-        <View style={styles.brandLeft}>
-          <Image
-            source={require('../../assets/icon.png')}
-            style={styles.logoImage}
-            accessibilityLabel="Hindi PDF Editor logo"
-          />
-          <View style={styles.brandTextContainer}>
-            <Text style={styles.brandTitle}>
-              Hindi PDF <Text style={styles.brandTitleAccent}>Editor</Text>
-            </Text>
-            <Text style={styles.brandSubtitle}>हिंदी पीडीएफ संपादक</Text>
-          </View>
-        </View>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open PDF document from device"
-          onPress={handlePickAndOpenPdf}
-          style={({ pressed }) => [styles.quickPickBtn, pressed && styles.quickPickBtnPressed]}
-        >
-          <Ionicons name="folder-open-outline" size={16} color={colors.brand} />
-          <Text style={styles.quickPickText}>+ Open PDF</Text>
-        </Pressable>
-      </View>
+      <ScreenHeader title="Hindi PDF" titleAccent="Editor" subtitle="हिंदी पीडीएफ संपादक" />
 
       {/* Hero Welcome Banner */}
       <View style={styles.heroCard}>
@@ -292,63 +269,8 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm + 2,
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 2,
-  },
-  brandLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingVertical: spacing.xs,
     gap: spacing.sm,
-  },
-  logoImage: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.chip,
-    ...shadows.soft,
-  },
-  brandTextContainer: {
-    gap: 1,
-  },
-  brandTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: colors.textPrimary,
-    letterSpacing: -0.4,
-  },
-  brandTitleAccent: {
-    color: colors.brand,
-  },
-  brandSubtitle: {
-    fontSize: 10.5,
-    fontWeight: '600',
-    color: colors.textTertiary,
-  },
-  quickPickBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.brandTint,
-    paddingVertical: 6,
-    paddingHorizontal: spacing.sm + 4,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.brandTint,
-    gap: 5,
-    ...shadows.soft,
-  },
-  quickPickBtnPressed: {
-    backgroundColor: colors.brandTint,
-    transform: [{ scale: 0.96 }],
-  },
-  quickPickText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.brand,
   },
   heroCard: {
     backgroundColor: colors.surface,

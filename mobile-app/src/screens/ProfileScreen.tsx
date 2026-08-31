@@ -1,6 +1,7 @@
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ScreenHeader } from '../components/ScreenHeader';
 import { colors, radius, shadows, spacing } from '../theme';
 
 export function ProfileScreen() {
@@ -10,18 +11,12 @@ export function ProfileScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* App Header Card with Brand Logo */}
-      <View style={styles.profileCard}>
-        <Image
-          source={require('../../assets/icon.png')}
-          style={styles.logoImage}
-          accessibilityLabel="Hindi PDF Editor logo"
-        />
-        <View style={styles.profileDetails}>
-          <Text style={styles.userName}>Hindi PDF Editor</Text>
-          <Text style={styles.userRole}>हिंदी पीडीएफ संपादक</Text>
-        </View>
-      </View>
+      {/* Header matching exact height and alignment of other tabs */}
+      <ScreenHeader
+        title="Profile /"
+        titleAccent="प्रोफ़ाइल"
+        subtitle="Settings & on-device engine"
+      />
 
       {/* Security & Offline Badge Card */}
       <View style={styles.infoCard}>
@@ -75,41 +70,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.xs,
     gap: spacing.md,
     paddingBottom: 60,
-  },
-  profileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    padding: spacing.lg,
-    gap: spacing.md,
-    ...shadows.card,
-  },
-  logoImage: {
-    width: 54,
-    height: 54,
-    borderRadius: radius.chip,
-    ...shadows.soft,
-  },
-  profileDetails: {
-    flex: 1,
-    gap: 2,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: colors.textPrimary,
-    letterSpacing: -0.4,
-  },
-  userRole: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '600',
   },
   infoCard: {
     backgroundColor: colors.accentGreenTint,

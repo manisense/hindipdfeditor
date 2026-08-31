@@ -1,6 +1,7 @@
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
+import { ScreenHeader } from '../components/ScreenHeader';
 import type { ToolId } from '../components/ToolShell';
 import { colors, radius, shadows, spacing } from '../theme';
 
@@ -93,19 +94,11 @@ export function ToolsScreen({ onOpenTool }: Props) {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTitleRow}>
-          <Image
-            source={require('../../assets/icon.png')}
-            style={styles.headerLogoImage}
-            accessibilityLabel="Hindi PDF Editor logo"
-          />
-          <Text style={styles.headerTitle}>
-            PDF Tools / <Text style={styles.headerTitleAccent}>उपकरण</Text>
-          </Text>
-        </View>
-        <Text style={styles.headerSubtitle}>Complete Devanagari & English PDF utility suite.</Text>
-      </View>
+      <ScreenHeader
+        title="PDF Tools /"
+        titleAccent="उपकरण"
+        subtitle="Complete Devanagari & English PDF utility suite"
+      />
 
       {/* Tools List */}
       <View style={styles.toolsList}>
@@ -146,38 +139,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingVertical: spacing.md,
-    gap: spacing.lg,
+    paddingVertical: spacing.xs,
+    gap: spacing.md,
     paddingBottom: 60,
-  },
-  header: {
-    gap: 4,
-    paddingHorizontal: 2,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  headerLogoImage: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.chip,
-    ...shadows.soft,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  headerTitleAccent: {
-    color: colors.brand,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '500',
   },
   toolsList: {
     gap: spacing.sm + 2,

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   AppState,
   FlatList,
   Image,
@@ -17,6 +16,8 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
+
+import { ScreenHeader } from '../components/ScreenHeader';
 
 import type { ToolId } from '../components/ToolShell';
 import {
@@ -533,58 +534,15 @@ export function FilesScreen({ onOpenFile }: Props) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTitleRow}>
-          <Image
-            source={require('../../assets/icon.png')}
-            style={styles.headerLogoImage}
-            accessibilityLabel="Hindi PDF Editor logo"
-          />
-          <View style={styles.headerTextGroup}>
-            <Text style={styles.headerTitle}>
-              Files / <Text style={styles.headerTitleHindi}>फाइलें</Text>
-            </Text>
-            <Text style={styles.headerSub}>
-              {scanning
-                ? 'Scanning all device folders...'
-                : `${mergedFiles.length} PDF files found on device`}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.headerActions}>
-          {/* Rescan Button */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Rescan device storage"
-            onPress={() => void scanFiles(true)}
-            disabled={scanning}
-            style={({ pressed }) => [styles.rescanBtn, pressed && styles.rescanBtnPressed]}
-          >
-            {scanning ? (
-              <ActivityIndicator size="small" color={colors.brand} />
-            ) : (
-              <View style={styles.headerBtnContent}>
-                <Ionicons name="refresh-outline" size={13} color={colors.brand} />
-                <Text style={styles.rescanBtnText}>Rescan</Text>
-              </View>
-            )}
-          </Pressable>
-
-          {/* Quick Pick PDF Button */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Import new PDF"
-            onPress={handlePickFile}
-            style={({ pressed }) => [styles.pickPdfBtn, pressed && styles.pickPdfBtnPressed]}
-          >
-            <View style={styles.headerBtnContent}>
-              <Ionicons name="add" size={15} color="#ffffff" />
-              <Text style={styles.pickPdfBtnText}>Open PDF</Text>
-            </View>
-          </Pressable>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Files /"
+        titleAccent="फाइलें"
+        subtitle={
+          scanning
+            ? 'Scanning all device folders...'
+            : `${mergedFiles.length} PDF files found on device`
+        }
+      />
 
       {/* Permission Request Alert Card if denied */}
       {hasPermission === false && (
@@ -1260,82 +1218,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     gap: spacing.xs + 2,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 2,
-    paddingTop: spacing.xs,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  headerLogoImage: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.chip,
-    ...shadows.soft,
-  },
-  headerTextGroup: {
-    gap: 1,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  headerTitleHindi: {
-    color: colors.brand,
-  },
-  headerSub: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  headerBtnContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  rescanBtn: {
-    backgroundColor: colors.brandTint,
-    paddingVertical: 5,
-    paddingHorizontal: 9,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.brandTint,
-  },
-  rescanBtnPressed: {
-    backgroundColor: colors.brandTint,
-  },
-  rescanBtnText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: colors.brand,
-  },
-  pickPdfBtn: {
-    backgroundColor: colors.brand,
-    paddingVertical: 5,
-    paddingHorizontal: 11,
-    borderRadius: radius.full,
-    ...shadows.soft,
-  },
-  pickPdfBtnPressed: {
-    opacity: 0.85,
-  },
-  pickPdfBtnText: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#ffffff',
   },
   permissionCard: {
     flexDirection: 'row',
