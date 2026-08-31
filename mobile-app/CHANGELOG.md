@@ -4,7 +4,18 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Mobile Web Parity & Architecture Overhaul
 
-### Added — 5-Tool Mobile Suite with Dedicated Workspaces & Mockup Design Implementation
+### Added — Unified Design System & Vector Icon Infrastructure
+
+- **Unified Design System (`design-system.md` & ADR `0009-unified-design-system-and-ui-tokens.md`)**:
+  - Saved `design-system.md` across repo root, `mobile-app/`, and `web-app/`.
+  - Added strict, non-negotiable design system rules in `AGENTS.md` governing color tokens, category accent chips, Devanagari equal typographic weight, component geometries, spacing scales, and zero-emoji UI standards.
+  - Aligned `mobile-app/src/theme.ts` with design system tokens (`brand.primary` `#1843DD`, `brand.primaryDeep` `#3226B8`, `brand.primaryTint` `#EEF2FF`, category chips, neutral text/surfaces, and 12px squircle chips).
+- **Vector Icons Migration**:
+  - Installed `@expo/vector-icons` and `react-native-vector-icons` with full TypeScript support.
+  - Completely replaced all emojis across every screen and component (`BottomNavBar.tsx`, `HomeScreen.tsx`, `FilesScreen.tsx`, `ToolsScreen.tsx`, `ToolShell.tsx`, `DropZone.tsx`, `AppStatus.tsx`, `EditPdfTool.tsx`, `ViewPdfTool.tsx`, `MergePdfTool.tsx`, `SplitPdfTool.tsx`, `CompressPdfTool.tsx`, `TranslatePdfTool.tsx`, `ProfileScreen.tsx`) with crisp vector icons.
+- **Top Safe Area & Status Bar Resolution**:
+  - Dynamically resolved `topInset` on Android using `Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0)` in `ToolShell.tsx`.
+  - Configured status bar transparency in `App.tsx` preventing camera punch-hole / notch clipping on modern Android devices.
 
 - **Mockup Design Screens Implementation**:
   - **Screen 1: Home Dashboard (`src/screens/HomeScreen.tsx`)**: Matches `hindi_pdf_editor_home_dashboard.png` with brand header (`ह Hindi PDF Editor`), `नमस्ते!` hero greeting, 6-tool grid (`Edit PDF`, `Translate`, `Merge`, `Split`, `Compress`, `PDF Viewer`), and recent documents list with thumbnail previews.

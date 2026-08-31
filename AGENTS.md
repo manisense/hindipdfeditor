@@ -1,6 +1,55 @@
 # AGENTS.md — Hindi PDF Editor
 
-Read `mobile-app/hindi-pdf-editor-spec.md` first before touching the mobile app — it has the architecture, the phased build plan, data models, and module specs. This file governs _how_ to work, not _what_ to build. It is reloaded fresh at the start of every session — it has no memory of past sessions and will not learn new rules on its own. If a rule here needs to change permanently, edit this file directly; a verbal correction in one session will not persist to the next.
+Read `design-system.md` and `mobile-app/hindi-pdf-editor-spec.md` first before touching any UI, web app, or mobile app code — `design-system.md` defines the unified brand design system, tokens, colors, and components, while the spec has the architecture, data models, and pipeline specs. This file governs _how_ to work, not _what_ to build. It is reloaded fresh at the start of every session — it has no memory of past sessions and will not learn new rules on its own. If a rule here needs to change permanently, edit this file directly; a verbal correction in one session will not persist to the next.
+
+## Strict Design System & UI/UX Non-Negotiable Rules
+
+All AI agents, subagents, and sessions must strictly and explicitly follow `design-system.md` across both `mobile-app` and `web-app`. These rules are binding, invariant, and non-negotiable:
+
+1. **Strict Token Adherence (Single Source of Truth: `design-system.md`)**:
+   - **Brand Primary**: `#1843DD` (Primary CTAs, links, active states, brand mark).
+   - **Brand Primary Deep**: `#3226B8` (Gradient end for primary buttons: `#1843DD` → `#3226B8`).
+   - **Brand Primary Tint**: `#EEF2FF` (Selected/highlighted backgrounds).
+   - **Category Accent Chips**:
+     - Editing / core tools: `#1843DD` on `#E8EDFF`
+     - Translation & privacy: `#16A34A` on `#E6F7EC`
+     - Merge & split: `#7C3AED` on `#F1EAFE`
+     - Compression & Sarkari tools: `#F0700F` on `#FFF1E4`
+     - OCR / detection: `#0D9488` on `#E3F6F4`
+   - **Neutrals**:
+     - `text.primary`: `#14161F` (High emphasis)
+     - `text.secondary`: `#5B6472` (Body copy, descriptions)
+     - `text.muted`: `#94A0B2` (Captions, meta)
+     - `border.subtle`: `#E7E8F1` (Card borders, dividers)
+     - `surface.white`: `#FFFFFF` (Cards, primary surface)
+     - `surface.page`: `#FBFBFE` (Default page background)
+     - `surface.cream`: `#FAF6EC` (Alternating section backgrounds)
+   - **Semantic**: Success `#16A34A`, Warning/Negative `#EF6C4D`.
+
+2. **Zero Emojis in UI**:
+   - Never use raw emojis (e.g. 📄, ✂️, ✏️, 🗜️, 🌐, ℹ️, ➕, ☀️, 🌙, ⭐, etc.) as UI icons or glyphs anywhere in the app or web UI.
+   - Always use vector icons (`@expo/vector-icons` / `react-native-vector-icons` Ionicons and MaterialCommunityIcons on mobile, Lucide/SVG on web).
+
+3. **Devanagari Equal Typographic Weight**:
+   - Devanagari headline text (e.g., "हिंदी दस्तावेज़।", "संपादित करें") must sit with equal visual weight next to or directly below English headlines, never as smaller, greyed-out, or secondary afterthought text.
+   - Latin typeface: Inter / Manrope / Plus Jakarta Sans.
+   - Devanagari typeface: Noto Sans Devanagari (Variable).
+
+4. **Component Geometries & Radius**:
+   - Buttons: Full pill (`borderRadius: 9999` / `full`). Height ~48dp.
+   - Icon chips: `12px` / `12dp` rounded square (not circles), 40–48dp size, pastel tinted background from category accent table with solid-color centered vector icon.
+   - Cards: `16–20px` / `16–20dp` border radius, hairline `1px solid #E7E8F1` on white, soft elevation (`0px 8px 24px rgba(20, 22, 31, 0.06)`).
+   - Badges / tags: Full pill (`9999`).
+
+5. **Spacing Scale**:
+   - Strict spacing scale: `4 / 8 / 12 / 16 / 24 / 32 / 48 / 64` (dp/px).
+   - No arbitrary margins/gaps or uncontrolled `space-between` vertical stretching that creates awkward gaps on tall screens.
+
+6. **Home Screen Responsiveness**:
+   - Mobile home screen must be clean, responsive, adaptable to varying screen sizes, and fixed (non-scrollable), utilizing vertical space intentionally without large dead gaps.
+
+7. **One Brand Color, Many Category Tints**:
+   - Category accent colors must never compete with `brand.primary` (`#1843DD`) for primary action buttons. Accents label categories; `#1843DD` drives action.
 
 ## Non-negotiable architecture rules
 
@@ -54,7 +103,7 @@ Every real change gets recorded in more than just the diff — a future session 
 
 1. **Git + Conventional Commits.** Prefix every commit: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`. Costs nothing, and it's machine-parseable — a changelog can be generated from commit history later, and `git log --oneline` tells you what kind of change each commit was without opening it.
 2. **`mobile-app/CHANGELOG.md`, Keep a Changelog format.** A running, human-readable log grouped by version or by phase (matching the spec's Phase 0–5 structure works well here — "Phase 1: viewer + tap-to-edit + Plan A export" as a heading, bullets underneath). This is what gets read in six months when it's forgotten what shipped when, without spelunking through `git log`.
-3. **`mobile-app/docs/decisions/` — lightweight ADRs.** This is the actual fix for the "AGENTS.md has no memory" gap noted above. One short markdown file per real architectural call — `0001-render-and-print-over-glyph-injection.md`, `0002-expo-custom-dev-client.md` — each just: what was decided, why, what was rejected and why. When a future session wonders "why aren't we just using pdf-lib directly," the answer already exists instead of getting re-litigated or re-discovered the hard way.
+3. **`mobile-app/docs/decisions/` — lightweight ADRs.** This is the actual fix for the "AGENTS.md has no memory" gap noted above. One short markdown file per real architectural call — `0001-render-and-print-over-glyph-injection.md`, `0002-expo-custom-dev-client.md`, `0009-unified-design-system-and-ui-tokens.md` — each just: what was decided, why, what was rejected and why. When a future session wonders "why aren't we just using pdf-lib directly," the answer already exists instead of getting re-litigated or re-discovered the hard way.
 
 **The discipline that matters more than any of the three tools above:** update `mobile-app/hindi-pdf-editor-spec.md` and this file in the _same commit_ that changes the behavior they describe, not as a separate cleanup pass later. A spec that's stale by even one phase is worse than no spec, because it will be trusted.
 
