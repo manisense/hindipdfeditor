@@ -1,11 +1,15 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import {
   Platform,
   Pressable,
+  ScrollView,
   StatusBar as RNStatusBar,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,79 +27,78 @@ export type ToolId = 'edit' | 'translate' | 'merge' | 'split' | 'compress' | 'vi
 export type ToolDef = {
   id: ToolId;
   name: string;
-  shortName: string;
-  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
+  hindiName: string;
+  desc: string;
   badge: string;
+  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
   accent: string;
   tint: string;
-  description: string;
 };
 
-/**
- * Feature categories aligned pixel-for-pixel with design-system.md Section 2.
- */
 export const TOOLS: ToolDef[] = [
   {
     id: 'edit',
     name: 'Edit Hindi PDF',
-    shortName: 'Edit',
-    iconName: 'file-document-edit-outline',
+    hindiName: 'संपादित करें',
     badge: 'Devanagari OCR',
+    desc: 'Tap detected text to edit, add Hindi overlays, or erase lines.',
+    iconName: 'file-document-edit-outline',
     accent: colors.accentBlue,
     tint: colors.accentBlueTint,
-    description: 'Tap to edit existing Hindi text, mask burned-in lines, or add new text.',
   },
   {
     id: 'translate',
     name: 'Translate PDF',
-    shortName: 'Translate',
-    iconName: 'translate',
+    hindiName: 'अनुवाद',
     badge: 'Bilingual AI',
+    desc: 'Full document Hindi ↔ English bilingual translation.',
+    iconName: 'translate',
     accent: colors.accentGreen,
     tint: colors.accentGreenTint,
-    description: 'Full document or per-page bilingual Hindi ↔ English translation.',
   },
   {
     id: 'merge',
     name: 'Merge PDFs',
-    shortName: 'Merge',
-    iconName: 'layers-triple-outline',
+    hindiName: 'मर्ज करें',
     badge: 'Multi-Document',
+    desc: 'Combine multiple PDF documents into a single unified file.',
+    iconName: 'layers-triple-outline',
     accent: colors.accentPurple,
     tint: colors.accentPurpleTint,
-    description: 'Combine multiple PDF documents into a single organized file.',
   },
   {
     id: 'split',
     name: 'Split PDF',
-    shortName: 'Split',
-    iconName: 'content-cut',
+    hindiName: 'विभाजित करें',
     badge: 'Page Range',
+    desc: 'Extract individual pages or custom page ranges visually.',
+    iconName: 'content-cut',
     accent: colors.accentPurple,
     tint: colors.accentPurpleTint,
-    description: 'Extract specific page ranges or split into separate documents.',
   },
   {
     id: 'compress',
     name: 'Compress PDF',
-    shortName: 'Compress',
-    iconName: 'archive-arrow-down-outline',
+    hindiName: 'कंप्रेस करें',
     badge: 'Size Reducer',
+    desc: 'Reduce PDF file size while maintaining high visual clarity.',
+    iconName: 'archive-arrow-down-outline',
     accent: colors.accentOrange,
     tint: colors.accentOrangeTint,
-    description: 'Reduce file size of scanned and image-heavy Hindi documents.',
   },
   {
     id: 'viewer',
-    name: 'PDF Reader & Viewer',
-    shortName: 'Reader',
-    iconName: 'book-open-page-variant-outline',
+    name: 'PDF Reader',
+    hindiName: 'पढ़ें और देखें',
     badge: 'Reading Mode',
+    desc: 'Read Hindi and English PDFs comfortably with night mode and zoom.',
+    iconName: 'book-open-page-variant-outline',
     accent: colors.accentTeal,
     tint: colors.accentTealTint,
-    description: 'Read and view PDF documents with zoom, page navigation, and night mode.',
   },
 ];
+
+const CORE_TABS: MainTab[] = ['home', 'files', 'tools', 'profile'];
 
 type Props = {
   activeTool: ToolId | null;
@@ -105,11 +108,14 @@ type Props = {
 };
 
 /**
- * Modern ToolShell architecture supporting 4 bottom tabs (Home, Files, Tools, Profile)
+ * Modern ToolShell architecture supporting 4 slidable/swipeable bottom tabs (Home, Files, Tools, Profile)
  * and immersive full-screen tool workspaces.
  */
 export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Props) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+  const pagerRef = useRef<ScrollView>(null);
+
   const topInset = Math.max(
     insets.top,
     Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 24) : 0,
@@ -123,6 +129,23 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
       onOpenFile(file, toolId);
     } else {
       onSelectTool(toolId ?? 'edit');
+    }
+  };
+
+  const handleSelectTab = (tab: MainTab) => {
+    setActiveTab(tab);
+    const index = CORE_TABS.indexOf(tab);
+    if (index >= 0 && pagerRef.current) {
+      pagerRef.current.scrollTo({ x: index * windowWidth, animated: true });
+    }
+  };
+
+  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const pageIndex = Math.round(offsetX / windowWidth);
+    const tab = CORE_TABS[pageIndex];
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
     }
   };
 
@@ -179,19 +202,34 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
           </View>
         </View>
       ) : (
-        /* Main 4-Tab Screen with Bottom Navigation Bar */
+        /* Main 4-Tab Screen with Slidable Horizontal Pager and Bottom Navigation Bar */
         <View style={styles.mainTabContainer}>
-          <View style={styles.tabContentArea}>
-            {activeTab === 'home' && (
+          <ScrollView
+            ref={pagerRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            bounces={false}
+            onMomentumScrollEnd={handleScrollEnd}
+            style={styles.pagerScrollView}
+            scrollEventThrottle={16}
+          >
+            <View style={[styles.tabPage, { width: windowWidth }]}>
               <HomeScreen onOpenTool={onSelectTool} onOpenFile={handleOpenFile} />
-            )}
-            {activeTab === 'files' && <FilesScreen onOpenFile={handleOpenFile} />}
-            {activeTab === 'tools' && <ToolsScreen onOpenTool={onSelectTool} />}
-            {activeTab === 'profile' && <ProfileScreen />}
-          </View>
+            </View>
+            <View style={[styles.tabPage, { width: windowWidth }]}>
+              <FilesScreen onOpenFile={handleOpenFile} />
+            </View>
+            <View style={[styles.tabPage, { width: windowWidth }]}>
+              <ToolsScreen onOpenTool={onSelectTool} />
+            </View>
+            <View style={[styles.tabPage, { width: windowWidth }]}>
+              <ProfileScreen />
+            </View>
+          </ScrollView>
 
           {/* 4-Tab Bottom Navigation Bar */}
-          <BottomNavBar activeTab={activeTab} onSelectTab={setActiveTab} />
+          <BottomNavBar activeTab={activeTab} onSelectTab={handleSelectTab} />
         </View>
       )}
     </View>
@@ -225,7 +263,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
   },
-  tabContentArea: {
+  pagerScrollView: {
+    flex: 1,
+  },
+  tabPage: {
     flex: 1,
     paddingHorizontal: spacing.md,
   },
