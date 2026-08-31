@@ -114,6 +114,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
     insets.top,
     Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 24) : 0,
   );
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 18 : 10);
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const currentTool = TOOLS.find((t) => t.id === activeTool) ?? null;
 
@@ -173,9 +174,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
             )}
           </View>
 
-          <View
-            style={[styles.toolWorkspace, { paddingBottom: Math.max(insets.bottom, spacing.xs) }]}
-          >
+          <View style={[styles.toolWorkspace, { paddingBottom: bottomInset + spacing.xs }]}>
             {children}
           </View>
         </View>

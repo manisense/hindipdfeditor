@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '../components/AppButton';
 import { useAppPopup } from '../components/appPopupContext';
@@ -81,6 +82,7 @@ type Props = {
  * Supports smart tap-to-edit with OCR detection, new text placement, and drag-to-erase masks.
  */
 export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
+  const insets = useSafeAreaInsets();
   const { showPopup } = useAppPopup();
   const [opening, setOpening] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -711,7 +713,14 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
 
           {/* Contextual Edit Toolbar */}
           {focusedEdit && (
-            <View style={styles.floatingToolbarContainer}>
+            <View
+              style={[
+                styles.floatingToolbarContainer,
+                {
+                  bottom: Math.max(insets.bottom, Platform.OS === 'android' ? 18 : 10) + 52,
+                },
+              ]}
+            >
               <EditToolbar
                 fontSizePt={focusedEdit.fontSizePt}
                 fontFamily={focusedEdit.fontFamily}
@@ -737,7 +746,14 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
           )}
 
           {/* Bottom Action Row */}
-          <View style={styles.bottomActionRow}>
+          <View
+            style={[
+              styles.bottomActionRow,
+              {
+                paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 6),
+              },
+            ]}
+          >
             <AppButton title="+ Blank Page" small variant="subtle" onPress={handleInsertBlank} />
             <AppButton
               title={saving ? 'Exporting...' : 'Export PDF'}

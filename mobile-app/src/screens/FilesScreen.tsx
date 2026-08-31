@@ -16,6 +16,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '../components/ScreenHeader';
 
@@ -99,6 +100,7 @@ let cachedScannedDeviceFiles: RecentFile[] | null = null;
 let isScanRunning = false;
 
 export function FilesScreen({ onOpenFile }: Props) {
+  const insets = useSafeAreaInsets();
   const [activeCategory, setActiveCategory] = useState<FileCategoryTab>('all');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -749,7 +751,12 @@ export function FilesScreen({ onOpenFile }: Props) {
         data={sortedFiles}
         keyExtractor={(item) => item.id}
         renderItem={renderFileItem}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          {
+            paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16) + 110,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
         initialNumToRender={12}
         maxToRenderPerBatch={10}
@@ -817,7 +824,11 @@ export function FilesScreen({ onOpenFile }: Props) {
         accessibilityRole="button"
         accessibilityLabel="Import new PDF"
         onPress={handlePickFile}
-        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: Math.max(insets.bottom, Platform.OS === 'android' ? 18 : 10) + 16 },
+          pressed && styles.fabPressed,
+        ]}
       >
         <Ionicons name="add" size={26} color="#ffffff" />
       </Pressable>
@@ -831,7 +842,15 @@ export function FilesScreen({ onOpenFile }: Props) {
           onRequestClose={() => setActiveMenuFile(null)}
         >
           <Pressable style={styles.modalOverlay} onPress={() => setActiveMenuFile(null)}>
-            <View style={styles.actionSheetContainer}>
+            <View
+              style={[
+                styles.actionSheetContainer,
+                {
+                  paddingBottom:
+                    Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16) + spacing.lg,
+                },
+              ]}
+            >
               {/* Sheet Header */}
               <View style={styles.actionSheetHeader}>
                 <View style={styles.actionSheetThumb}>
@@ -1060,7 +1079,15 @@ export function FilesScreen({ onOpenFile }: Props) {
         onRequestClose={() => setShowSortModal(false)}
       >
         <Pressable style={styles.modalOverlay} onPress={() => setShowSortModal(false)}>
-          <View style={styles.sortModalCard}>
+          <View
+            style={[
+              styles.sortModalCard,
+              {
+                paddingBottom:
+                  Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16) + spacing.lg,
+              },
+            ]}
+          >
             <View style={styles.sortModalHeader}>
               <Text style={styles.sortModalTitle}>Sort Documents / क्रमबद्ध करें</Text>
               <Pressable onPress={() => setShowSortModal(false)}>

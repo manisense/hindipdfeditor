@@ -5,6 +5,7 @@ import {
   FlatList,
   Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '../components/AppButton';
 import { useAppPopup } from '../components/appPopupContext';
@@ -94,6 +96,7 @@ export function ViewPdfTool({
   onOpenEditor,
   onOpenTranslate,
 }: Props) {
+  const insets = useSafeAreaInsets();
   const { showPopup } = useAppPopup();
   const addFile = useRecentFilesStore((state) => state.addFile);
 
@@ -629,7 +632,16 @@ export function ViewPdfTool({
       )}
 
       {/* Floating Bottom Navigation & Action Island */}
-      <View style={styles.floatingBottomContainer} pointerEvents="box-none">
+      <View
+        style={[
+          styles.floatingBottomContainer,
+          {
+            paddingBottom:
+              Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 14) + spacing.xs,
+          },
+        ]}
+        pointerEvents="box-none"
+      >
         {/* Page Scrubber Pill */}
         <View
           style={[

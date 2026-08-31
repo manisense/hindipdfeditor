@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -54,7 +54,7 @@ const TABS: {
  */
 export function BottomNavBar({ activeTab, onSelectTab }: Props) {
   const insets = useSafeAreaInsets();
-  const bottomPadding = Math.max(insets.bottom, 8);
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 18 : 10) + 4;
 
   return (
     <View style={[styles.container, { paddingBottom: bottomPadding }]}>
