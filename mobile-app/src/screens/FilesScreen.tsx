@@ -19,8 +19,8 @@ import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '../components/ScreenHeader';
-
 import type { ToolId } from '../components/ToolShell';
+import { useThemedStyles } from '../hooks/useAppTheme';
 import {
   getPageCount,
   hasStoragePermission,
@@ -30,10 +30,11 @@ import {
 } from '../lib/pdfToImages';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
 import { useSettingsStore } from '../state/settingsStore';
-import { colors, radius, shadows, spacing } from '../theme';
+import { type Theme, colors, radius, shadows, spacing } from '../theme';
 
 type Props = {
   onOpenFile: (file: RecentFile, toolId?: ToolId) => void;
+  onOpenTool?: (tool: ToolId | null) => void;
 };
 
 type FileCategoryTab = 'all' | 'downloads' | 'whatsapp' | 'documents' | 'starred';
@@ -102,6 +103,7 @@ let isScanRunning = false;
 
 export function FilesScreen({ onOpenFile }: Props) {
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(getStyles);
   const [activeCategory, setActiveCategory] = useState<FileCategoryTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date_desc');
@@ -414,8 +416,6 @@ export function FilesScreen({ onOpenFile }: Props) {
   const renderFileItem = ({ item: file }: { item: RecentFile }) => {
     const thumbUri = thumbnailCache[file.uri] || file.thumbnailUri;
     const pageCount = pageCountCache[file.uri] || file.pageCount || 1;
-    const folderIconName = getFolderIconName(file.folder);
-    const folderDisplayName = file.folder || 'Storage';
 
     // Trigger lazy thumbnail on display
     if (!thumbUri && file.uri) {
@@ -436,85 +436,36 @@ export function FilesScreen({ onOpenFile }: Props) {
               <Image source={{ uri: thumbUri }} style={styles.thumbImage} resizeMode="cover" />
             ) : (
               <View style={styles.thumbPlaceholder}>
-                <Text style={styles.thumbPdfText}>PDF</Text>
-                <View style={styles.thumbLines}>
-                  <View style={styles.thumbLine} />
-                  <View style={[styles.thumbLine, { width: '60%' }]} />
-                  <View style={[styles.thumbLine, { width: '80%' }]} />
-                </View>
+                <Ionicons name="document-text" size={22} color={colors.brand} />
               </View>
             )}
-
-            {/* Page Count Badge on Thumbnail */}
-            <View style={styles.thumbPageBadge}>
-              <Text style={styles.thumbPageBadgeText}>
-                {pageCount} {pageCount === 1 ? 'pg' : 'pgs'}
-              </Text>
-            </View>
           </View>
 
-          {/* Details */}
+          {/* Clean Details */}
           <View style={styles.fileDetails}>
-            <Text style={styles.fileNameEn} numberOfLines={2}>
+            <Text style={styles.fileNameEn} numberOfLines={1}>
               {file.name}
             </Text>
-            {file.hindiName && (
-              <Text style={styles.fileNameHi} numberOfLines={1}>
-                {file.hindiName}
-              </Text>
-            )}
-
-            {/* Tag Pills Row */}
             <View style={styles.fileMetaRow}>
-              {file.isRecent && (
-                <>
-                  <View style={styles.recentPill}>
-                    <Ionicons name="time-outline" size={10} color={colors.brand} />
-                    <Text style={styles.recentPillText}>Recent</Text>
-                  </View>
-                  <Text style={styles.fileMetaDot}>•</Text>
-                </>
-              )}
-              <View style={styles.folderPill}>
-                <Ionicons name={folderIconName} size={11} color={colors.textSecondary} />
-                <Text style={styles.folderPillText} numberOfLines={1}>
-                  {folderDisplayName}
-                </Text>
-              </View>
-              <Text style={styles.fileMetaDot}>•</Text>
-              <Text style={styles.fileMetaText}>{formatFileSize(file.sizeBytes)}</Text>
-              <Text style={styles.fileMetaDot}>•</Text>
-              <Text style={styles.fileMetaText}>{file.date}</Text>
+              {file.starred && <Ionicons name="star" size={11} color="#F59E0B" />}
+              <Text style={styles.fileMetaText}>
+                {pageCount > 0 ? `${pageCount} pg • ` : ''}
+                {formatFileSize(file.sizeBytes)} • {file.date}
+              </Text>
             </View>
           </View>
         </Pressable>
 
-        {/* Right Side Quick Actions: Star + More Menu */}
-        <View style={styles.cardActionsRight}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={file.starred ? 'Unstar file' : 'Star file'}
-            onPress={() => void handleToggleStar(file)}
-            style={({ pressed }) => [styles.starBtn, pressed && styles.actionBtnPressed]}
-            hitSlop={8}
-          >
-            <Ionicons
-              name={file.starred ? 'star' : 'star-outline'}
-              size={18}
-              color={file.starred ? '#F59E0B' : colors.textTertiary}
-            />
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="File actions"
-            onPress={() => setActiveMenuFile(file)}
-            style={({ pressed }) => [styles.moreBtn, pressed && styles.actionBtnPressed]}
-            hitSlop={8}
-          >
-            <Ionicons name="ellipsis-horizontal" size={18} color={colors.textSecondary} />
-          </Pressable>
-        </View>
+        {/* Right Side Quick Actions: More Menu */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="File actions"
+          onPress={() => setActiveMenuFile(file)}
+          style={({ pressed }) => [styles.moreBtn, pressed && styles.actionBtnPressed]}
+          hitSlop={10}
+        >
+          <Ionicons name="ellipsis-vertical" size={18} color={colors.textSecondary} />
+        </Pressable>
       </View>
     );
   };
@@ -756,20 +707,6 @@ export function FilesScreen({ onOpenFile }: Props) {
         }
       />
 
-      {/* Floating Action Button (+) */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Import new PDF"
-        onPress={handlePickFile}
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: Math.max(insets.bottom, Platform.OS === 'android' ? 18 : 10) + 16 },
-          pressed && styles.fabPressed,
-        ]}
-      >
-        <Ionicons name="add" size={26} color="#ffffff" />
-      </Pressable>
-
       {/* Action Menu Modal Sheet */}
       {activeMenuFile && (
         <Modal
@@ -810,197 +747,211 @@ export function FilesScreen({ onOpenFile }: Props) {
               {/* Action Options */}
               <View style={styles.actionSheetMenu}>
                 <Pressable
-                  style={styles.actionOption}
+                  style={({ pressed }) => [
+                    styles.actionOption,
+                    pressed && styles.actionOptionPressed,
+                  ]}
                   onPress={() => {
                     const file = activeMenuFile;
                     setActiveMenuFile(null);
                     onOpenFile(file, 'viewer');
                   }}
                 >
-                  <MaterialCommunityIcons
-                    name="book-open-page-variant-outline"
-                    size={20}
-                    color={colors.success}
-                  />
-                  <View style={styles.actionOptionTextGroup}>
-                    <Text style={styles.actionOptionTitle}>Read / View PDF (देखें और पढ़ें)</Text>
-                    <Text style={styles.actionOptionDesc}>
-                      Read comfortably with zoom, page navigation, and night mode
-                    </Text>
+                  <View style={[styles.actionIconBox, { backgroundColor: colors.accentTealTint }]}>
+                    <MaterialCommunityIcons
+                      name="book-open-page-variant-outline"
+                      size={18}
+                      color={colors.accentTeal}
+                    />
                   </View>
+                  <Text style={styles.actionOptionTitle}>Read & View PDF (देखें और पढ़ें)</Text>
                 </Pressable>
 
                 <Pressable
-                  style={styles.actionOption}
+                  style={({ pressed }) => [
+                    styles.actionOption,
+                    pressed && styles.actionOptionPressed,
+                  ]}
                   onPress={() => {
                     const file = activeMenuFile;
                     setActiveMenuFile(null);
                     onOpenFile(file, 'edit');
                   }}
                 >
-                  <MaterialCommunityIcons
-                    name="file-document-edit-outline"
-                    size={20}
-                    color={colors.brand}
-                  />
-                  <View style={styles.actionOptionTextGroup}>
-                    <Text style={styles.actionOptionTitle}>Edit Hindi Text</Text>
-                    <Text style={styles.actionOptionDesc}>
-                      Edit existing Hindi words, mask lines, or add new text
-                    </Text>
+                  <View style={[styles.actionIconBox, { backgroundColor: colors.accentBlueTint }]}>
+                    <MaterialCommunityIcons
+                      name="file-document-edit-outline"
+                      size={18}
+                      color={colors.accentBlue}
+                    />
                   </View>
+                  <Text style={styles.actionOptionTitle}>Edit Hindi Text (संपादित करें)</Text>
                 </Pressable>
 
                 <Pressable
-                  style={styles.actionOption}
+                  style={({ pressed }) => [
+                    styles.actionOption,
+                    pressed && styles.actionOptionPressed,
+                  ]}
                   onPress={() => {
                     const file = activeMenuFile;
                     setActiveMenuFile(null);
                     onOpenFile(file, 'translate');
                   }}
                 >
-                  <MaterialCommunityIcons name="translate" size={20} color={colors.accent} />
-                  <View style={styles.actionOptionTextGroup}>
-                    <Text style={styles.actionOptionTitle}>Translate Document</Text>
-                    <Text style={styles.actionOptionDesc}>
-                      Bilingual Hindi ↔ English AI translation
-                    </Text>
+                  <View style={[styles.actionIconBox, { backgroundColor: colors.accentGreenTint }]}>
+                    <MaterialCommunityIcons name="translate" size={18} color={colors.accentGreen} />
                   </View>
+                  <Text style={styles.actionOptionTitle}>Translate Document (अनुवाद)</Text>
                 </Pressable>
 
                 <Pressable
-                  style={styles.actionOption}
+                  style={({ pressed }) => [
+                    styles.actionOption,
+                    pressed && styles.actionOptionPressed,
+                  ]}
                   onPress={() => {
                     const file = activeMenuFile;
                     setActiveMenuFile(null);
                     onOpenFile(file, 'compress');
                   }}
                 >
-                  <MaterialCommunityIcons
-                    name="archive-arrow-down-outline"
-                    size={20}
-                    color={colors.amberInk}
-                  />
-                  <View style={styles.actionOptionTextGroup}>
-                    <Text style={styles.actionOptionTitle}>Compress PDF</Text>
-                    <Text style={styles.actionOptionDesc}>
-                      Reduce file size while preserving Hindi readability
-                    </Text>
+                  <View
+                    style={[styles.actionIconBox, { backgroundColor: colors.accentOrangeTint }]}
+                  >
+                    <MaterialCommunityIcons
+                      name="archive-arrow-down-outline"
+                      size={18}
+                      color={colors.accentOrange}
+                    />
                   </View>
+                  <Text style={styles.actionOptionTitle}>Compress PDF (कंप्रेस करें)</Text>
                 </Pressable>
 
                 <Pressable
-                  style={styles.actionOption}
+                  style={({ pressed }) => [
+                    styles.actionOption,
+                    pressed && styles.actionOptionPressed,
+                  ]}
                   onPress={() => {
                     const file = activeMenuFile;
                     setActiveMenuFile(null);
                     onOpenFile(file, 'split');
                   }}
                 >
-                  <MaterialCommunityIcons name="content-cut" size={20} color={colors.coral} />
-                  <View style={styles.actionOptionTextGroup}>
-                    <Text style={styles.actionOptionTitle}>Split Pages</Text>
-                    <Text style={styles.actionOptionDesc}>
-                      Extract page ranges or individual pages
-                    </Text>
+                  <View
+                    style={[styles.actionIconBox, { backgroundColor: colors.accentPurpleTint }]}
+                  >
+                    <MaterialCommunityIcons
+                      name="content-cut"
+                      size={18}
+                      color={colors.accentPurple}
+                    />
                   </View>
+                  <Text style={styles.actionOptionTitle}>Split Pages (विभाजित करें)</Text>
                 </Pressable>
 
                 <Pressable
-                  style={styles.actionOption}
+                  style={({ pressed }) => [
+                    styles.actionOption,
+                    pressed && styles.actionOptionPressed,
+                  ]}
                   onPress={() => {
                     const file = activeMenuFile;
                     setActiveMenuFile(null);
                     onOpenFile(file, 'merge');
                   }}
                 >
-                  <MaterialCommunityIcons
-                    name="layers-triple-outline"
-                    size={20}
-                    color={colors.lavender}
-                  />
-                  <View style={styles.actionOptionTextGroup}>
-                    <Text style={styles.actionOptionTitle}>Merge with other PDFs</Text>
-                    <Text style={styles.actionOptionDesc}>Combine multiple PDF documents</Text>
+                  <View
+                    style={[styles.actionIconBox, { backgroundColor: colors.accentPurpleTint }]}
+                  >
+                    <MaterialCommunityIcons
+                      name="layers-triple-outline"
+                      size={18}
+                      color={colors.accentPurple}
+                    />
                   </View>
+                  <Text style={styles.actionOptionTitle}>Merge PDFs (मर्ज करें)</Text>
                 </Pressable>
 
                 <Pressable
-                  style={styles.actionOption}
+                  style={({ pressed }) => [
+                    styles.actionOption,
+                    pressed && styles.actionOptionPressed,
+                  ]}
                   onPress={() => {
                     const file = activeMenuFile;
                     setActiveMenuFile(null);
                     void handleToggleStar(file);
                   }}
                 >
-                  <Ionicons
-                    name={activeMenuFile.starred ? 'star' : 'star-outline'}
-                    size={20}
-                    color="#F59E0B"
-                  />
-                  <View style={styles.actionOptionTextGroup}>
-                    <Text style={styles.actionOptionTitle}>
-                      {activeMenuFile.starred ? 'Remove from Starred' : 'Add to Starred'}
-                    </Text>
-                    <Text style={styles.actionOptionDesc}>
-                      Quick access in Starred favorites tab
-                    </Text>
+                  <View style={[styles.actionIconBox, { backgroundColor: '#FEF3C7' }]}>
+                    <Ionicons
+                      name={activeMenuFile.starred ? 'star' : 'star-outline'}
+                      size={18}
+                      color="#D97706"
+                    />
                   </View>
+                  <Text style={styles.actionOptionTitle}>
+                    {activeMenuFile.starred ? 'Remove from Starred' : 'Add to Starred'}
+                  </Text>
                 </Pressable>
 
                 <Pressable
-                  style={styles.actionOption}
+                  style={({ pressed }) => [
+                    styles.actionOption,
+                    pressed && styles.actionOptionPressed,
+                  ]}
                   onPress={() => {
                     const file = activeMenuFile;
                     setActiveMenuFile(null);
                     void handleShareFile(file);
                   }}
                 >
-                  <Ionicons name="share-outline" size={20} color={colors.textPrimary} />
-                  <View style={styles.actionOptionTextGroup}>
-                    <Text style={styles.actionOptionTitle}>Share PDF</Text>
-                    <Text style={styles.actionOptionDesc}>
-                      Send to WhatsApp, Email, Drive, etc.
-                    </Text>
+                  <View style={[styles.actionIconBox, { backgroundColor: colors.surfaceSubtle }]}>
+                    <Ionicons name="share-outline" size={18} color={colors.textPrimary} />
                   </View>
+                  <Text style={styles.actionOptionTitle}>Share PDF (शेयर करें)</Text>
                 </Pressable>
 
                 <Pressable
-                  style={styles.actionOption}
+                  style={({ pressed }) => [
+                    styles.actionOption,
+                    pressed && styles.actionOptionPressed,
+                  ]}
                   onPress={() => {
                     const file = activeMenuFile;
                     setActiveMenuFile(null);
                     setSelectedDetailsFile(file);
                   }}
                 >
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={20}
-                    color={colors.textPrimary}
-                  />
-                  <View style={styles.actionOptionTextGroup}>
-                    <Text style={styles.actionOptionTitle}>File Details & Properties</Text>
-                    <Text style={styles.actionOptionDesc}>
-                      View path, page count, modified timestamp
-                    </Text>
+                  <View style={[styles.actionIconBox, { backgroundColor: colors.surfaceSubtle }]}>
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={18}
+                      color={colors.textPrimary}
+                    />
                   </View>
+                  <Text style={styles.actionOptionTitle}>File Details & Info</Text>
                 </Pressable>
 
                 <Pressable
-                  style={styles.actionOption}
+                  style={({ pressed }) => [
+                    styles.actionOption,
+                    pressed && styles.actionOptionPressed,
+                  ]}
                   onPress={() => {
                     const file = activeMenuFile;
                     setActiveMenuFile(null);
                     void removeFile(file.id);
                   }}
                 >
-                  <Ionicons name="trash-outline" size={20} color={colors.danger} />
-                  <View style={styles.actionOptionTextGroup}>
-                    <Text style={[styles.actionOptionTitle, { color: colors.danger }]}>
-                      Remove from List
-                    </Text>
-                    <Text style={styles.actionOptionDesc}>Remove from recent files view</Text>
+                  <View style={[styles.actionIconBox, { backgroundColor: '#FEE2E2' }]}>
+                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
                   </View>
+                  <Text style={[styles.actionOptionTitle, { color: colors.danger }]}>
+                    Remove from List (हटाएं)
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -1178,614 +1129,499 @@ export function FilesScreen({ onOpenFile }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  permissionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFBEB',
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    padding: spacing.sm,
-    gap: spacing.sm,
-  },
-  permissionIcon: {
-    fontSize: 20,
-  },
-  permissionTextGroup: {
-    flex: 1,
-  },
-  permissionTitle: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: '#92400E',
-  },
-  permissionDesc: {
-    fontSize: 11,
-    color: '#B45309',
-    lineHeight: 14,
-  },
-  permissionBtn: {
-    backgroundColor: colors.brand,
-    paddingVertical: 5,
-    paddingHorizontal: 11,
-    borderRadius: radius.full,
-  },
-  permissionBtnText: {
-    color: '#ffffff',
-    fontSize: 11.5,
-    fontWeight: '800',
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs + 2,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 1,
-    gap: spacing.xs,
-    ...shadows.soft,
-  },
-  searchIcon: {
-    fontSize: 14,
-    opacity: 0.6,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 13.5,
-    color: colors.textPrimary,
-    paddingVertical: 2,
-  },
-  clearSearchText: {
-    fontSize: 13,
-    color: colors.textTertiary,
-    fontWeight: '700',
-    paddingHorizontal: 4,
-  },
-  sortBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    paddingVertical: spacing.xs + 3,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    gap: 4,
-    ...shadows.soft,
-  },
-  sortBtnPressed: {
-    backgroundColor: colors.surfaceSubtle,
-  },
-  sortBtnIcon: {
-    fontSize: 13,
-  },
-  sortBtnText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  tabRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSubtle,
-    paddingHorizontal: 2,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.xs + 1,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-    gap: 1,
-  },
-  tabItemActive: {
-    borderBottomColor: colors.brand,
-  },
-  tabTextEn: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: colors.textTertiary,
-  },
-  tabTextHi: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.textTertiary,
-  },
-  tabTextActive: {
-    color: colors.brand,
-    fontWeight: '800',
-  },
-  resultStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 4,
-    paddingTop: 2,
-  },
-  resultStatusText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textTertiary,
-    flex: 1,
-  },
-  sortIndicatorText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: colors.brand,
-  },
-  listContent: {
-    gap: spacing.xs + 3,
-    paddingVertical: spacing.xs,
-    paddingBottom: 85,
-  },
-  fileCard: {
-    position: 'relative',
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.sm + 2,
-    ...shadows.soft,
-  },
-  fileCardBody: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  fileCardPressed: {
-    opacity: 0.8,
-  },
-  fileThumbnail: {
-    width: 48,
-    height: 60,
-    borderRadius: radius.chip,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  thumbImage: {
-    width: '100%',
-    height: '100%',
-  },
-  thumbPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    padding: 3,
-    gap: 2,
-  },
-  thumbPdfText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: colors.brand,
-    letterSpacing: 0.5,
-  },
-  thumbLines: {
-    width: '100%',
-    gap: 2,
-    alignItems: 'center',
-  },
-  thumbLine: {
-    width: '80%',
-    height: 2,
-    backgroundColor: 'rgba(21, 23, 44, 0.15)',
-    borderRadius: 1,
-  },
-  thumbPageBadge: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.72)',
-    paddingVertical: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  thumbPageBadgeText: {
-    color: '#ffffff',
-    fontSize: 8.5,
-    fontWeight: '800',
-  },
-  fileDetails: {
-    flex: 1,
-    gap: 3,
-  },
-  fileNameEn: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    lineHeight: 18,
-  },
-  fileNameHi: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  fileMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: 2,
-  },
-  recentPill: {
-    backgroundColor: '#EEF2FF',
-    paddingVertical: 1,
-    paddingHorizontal: 6,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
-  },
-  recentPillText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.brand,
-  },
-  folderPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    paddingVertical: 1,
-    paddingHorizontal: 6,
-    borderRadius: radius.sm,
-    gap: 3,
-    maxWidth: 110,
-  },
-  folderPillIcon: {
-    fontSize: 9.5,
-  },
-  folderPillText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  fileMetaDot: {
-    fontSize: 9,
-    color: colors.textTertiary,
-  },
-  fileMetaText: {
-    fontSize: 11,
-    color: colors.textTertiary,
-    fontWeight: '500',
-  },
-  cardActionsRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingLeft: 4,
-  },
-  starBtn: {
-    padding: 6,
-  },
-  starIcon: {
-    fontSize: 18,
-    color: colors.textTertiary,
-  },
-  starIconActive: {
-    color: '#F59E0B',
-  },
-  moreBtn: {
-    padding: 6,
-  },
-  moreBtnText: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: colors.textTertiary,
-    letterSpacing: 1,
-  },
-  actionBtnPressed: {
-    opacity: 0.6,
-  },
-  fab: {
-    position: 'absolute',
-    right: spacing.md,
-    bottom: spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.card,
-    zIndex: 100,
-  },
-  fabPressed: {
-    transform: [{ scale: 0.92 }],
-  },
-  fabIcon: {
-    color: '#ffffff',
-    fontSize: 32,
-    fontWeight: '300',
-    marginTop: -2,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl * 2,
-    gap: spacing.xs + 2,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    opacity: 0.5,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    maxWidth: 260,
-    lineHeight: 18,
-  },
-  emptyPickBtn: {
-    backgroundColor: colors.brand,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.full,
-    marginTop: spacing.xs,
-  },
-  emptyPickBtnText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  emptyPickSecondaryBtn: {
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginTop: 6,
-  },
-  emptyPickSecondaryBtnText: {
-    color: colors.textPrimary,
-    fontWeight: '700',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    justifyContent: 'flex-end',
-  },
-  actionSheetContainer: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: radius['2xl'],
-    borderTopRightRadius: radius['2xl'],
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    maxHeight: '85%',
-    ...shadows.card,
-  },
-  actionSheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.sm,
-  },
-  actionSheetThumb: {
-    width: 38,
-    height: 48,
-    borderRadius: radius.sm,
-    backgroundColor: colors.brandWash,
-    borderWidth: 1,
-    borderColor: colors.brandTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionSheetPdfBadge: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: colors.brand,
-  },
-  actionSheetHeaderDetails: {
-    flex: 1,
-    gap: 2,
-  },
-  actionSheetTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  actionSheetSub: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  actionSheetClose: {
-    padding: 6,
-  },
-  actionSheetCloseText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.textTertiary,
-  },
-  actionSheetMenu: {
-    paddingTop: spacing.sm,
-    gap: 4,
-  },
-  actionOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
-    borderRadius: radius.md,
-    gap: spacing.md,
-  },
-  actionOptionIcon: {
-    fontSize: 20,
-    width: 28,
-    textAlign: 'center',
-  },
-  actionOptionTextGroup: {
-    flex: 1,
-    gap: 1,
-  },
-  actionOptionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  actionOptionDesc: {
-    fontSize: 11,
-    color: colors.textTertiary,
-  },
-  sortModalCard: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: radius['2xl'],
-    borderTopRightRadius: radius['2xl'],
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
-    ...shadows.card,
-  },
-  sortModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  sortModalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  sortOptionsList: {
-    gap: 6,
-  },
-  sortItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    gap: spacing.sm,
-  },
-  sortItemActive: {
-    backgroundColor: colors.brandWash,
-    borderColor: colors.brandTint,
-  },
-  sortItemIcon: {
-    fontSize: 16,
-  },
-  sortItemTextGroup: {
-    flex: 1,
-    gap: 1,
-  },
-  sortItemLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  sortItemLabelActive: {
-    color: colors.brand,
-  },
-  sortItemHindi: {
-    fontSize: 11,
-    color: colors.textTertiary,
-  },
-  sortItemCheck: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: colors.brand,
-  },
-  detailsModalCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: radius['2xl'],
-    margin: spacing.lg,
-    padding: spacing.lg,
-    maxHeight: '80%',
-    alignSelf: 'center',
-    width: '90%',
-    gap: spacing.md,
-    ...shadows.card,
-  },
-  detailsBody: {
-    maxHeight: 320,
-  },
-  detailRow: {
-    paddingVertical: spacing.xs + 2,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceSubtle,
-    gap: 2,
-  },
-  detailLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-  },
-  detailValue: {
-    fontSize: 13.5,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  detailValueMono: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    backgroundColor: '#F8FAFC',
-    padding: 4,
-    borderRadius: 4,
-  },
-  detailsActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingTop: spacing.xs,
-  },
-  detailsOpenBtn: {
-    flex: 1,
-    backgroundColor: colors.brand,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detailsOpenBtnText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  detailsShareBtn: {
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detailsShareBtnText: {
-    color: colors.textPrimary,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      gap: spacing.xs,
+      backgroundColor: theme.colors.background,
+    },
+    permissionCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.warningSoft,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: theme.colors.warning,
+      padding: spacing.sm,
+      gap: spacing.sm,
+    },
+    permissionIcon: {
+      fontSize: 20,
+    },
+    permissionTextGroup: {
+      flex: 1,
+    },
+    permissionTitle: {
+      fontSize: 12.5,
+      fontWeight: '800',
+      color: theme.colors.warning,
+    },
+    permissionDesc: {
+      fontSize: 11,
+      color: theme.colors.textSecondary,
+      lineHeight: 14,
+    },
+    permissionBtn: {
+      backgroundColor: theme.colors.brand,
+      paddingVertical: 5,
+      paddingHorizontal: 11,
+      borderRadius: radius.full,
+    },
+    permissionBtnText: {
+      color: '#ffffff',
+      fontSize: 11.5,
+      fontWeight: '800',
+    },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs + 2,
+    },
+    searchBar: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs + 1,
+      gap: spacing.xs,
+      ...shadows.soft,
+    },
+    searchIcon: {
+      fontSize: 14,
+      opacity: 0.6,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 13.5,
+      color: theme.colors.textPrimary,
+      paddingVertical: 2,
+    },
+    clearSearchText: {
+      fontSize: 13,
+      color: theme.colors.textTertiary,
+      fontWeight: '700',
+      paddingHorizontal: 4,
+    },
+    sortBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      paddingVertical: spacing.xs + 3,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: 4,
+      ...shadows.soft,
+    },
+    sortBtnPressed: {
+      backgroundColor: theme.colors.surfaceSubtle,
+    },
+    sortBtnIcon: {
+      fontSize: 13,
+    },
+    sortBtnText: {
+      fontSize: 12.5,
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+    },
+    tabRow: {
+      flexDirection: 'row',
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      paddingHorizontal: 2,
+    },
+    tabItem: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.xs + 1,
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
+      gap: 1,
+    },
+    tabItemActive: {
+      borderBottomColor: theme.colors.brand,
+    },
+    tabTextEn: {
+      fontSize: 11.5,
+      fontWeight: '700',
+      color: theme.colors.textTertiary,
+    },
+    tabTextHi: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: theme.colors.textTertiary,
+    },
+    tabTextActive: {
+      color: theme.colors.brand,
+      fontWeight: '800',
+    },
+    resultStatusRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 4,
+      paddingTop: 2,
+    },
+    resultStatusText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.textTertiary,
+      flex: 1,
+    },
+    sortIndicatorText: {
+      fontSize: 10.5,
+      fontWeight: '700',
+      color: theme.colors.brand,
+    },
+    listContent: {
+      gap: spacing.xs + 3,
+      paddingVertical: spacing.xs,
+      paddingBottom: 85,
+    },
+    fileCard: {
+      position: 'relative',
+      backgroundColor: theme.colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: spacing.sm + 2,
+      ...shadows.soft,
+    },
+    fileCardBody: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    fileCardPressed: {
+      opacity: 0.8,
+    },
+    fileThumbnail: {
+      width: 44,
+      height: 52,
+      borderRadius: radius.chip,
+      backgroundColor: theme.colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    thumbImage: {
+      width: '100%',
+      height: '100%',
+    },
+    thumbPlaceholder: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      height: '100%',
+    },
+    fileDetails: {
+      flex: 1,
+      justifyContent: 'center',
+      gap: 3,
+    },
+    fileNameEn: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+      lineHeight: 18,
+    },
+    fileMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    fileMetaText: {
+      fontSize: 11.5,
+      color: theme.colors.textSecondary,
+      fontWeight: '500',
+    },
+    moreBtn: {
+      padding: 8,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionBtnPressed: {
+      opacity: 0.6,
+    },
+    emptyState: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.xl * 2,
+      gap: spacing.xs + 2,
+    },
+    emptyIcon: {
+      fontSize: 48,
+      opacity: 0.5,
+    },
+    emptyTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+    },
+    emptySubtitle: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+      maxWidth: 260,
+      lineHeight: 18,
+    },
+    emptyPickBtn: {
+      backgroundColor: theme.colors.brand,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radius.full,
+      marginTop: spacing.xs,
+    },
+    emptyPickBtnText: {
+      color: '#ffffff',
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    emptyPickSecondaryBtn: {
+      backgroundColor: theme.colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginTop: 6,
+    },
+    emptyPickSecondaryBtnText: {
+      color: theme.colors.textPrimary,
+      fontWeight: '700',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.55)',
+      justifyContent: 'flex-end',
+    },
+    actionSheetContainer: {
+      backgroundColor: theme.colors.surface,
+      borderTopLeftRadius: radius['2xl'],
+      borderTopRightRadius: radius['2xl'],
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xl,
+      paddingHorizontal: spacing.lg,
+      maxHeight: '85%',
+      ...shadows.card,
+    },
+    actionSheetHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingBottom: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      gap: spacing.sm,
+    },
+    actionSheetThumb: {
+      width: 38,
+      height: 48,
+      borderRadius: radius.sm,
+      backgroundColor: theme.colors.brandWash,
+      borderWidth: 1,
+      borderColor: theme.colors.brandTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionSheetPdfBadge: {
+      fontSize: 10,
+      fontWeight: '900',
+      color: theme.colors.brand,
+    },
+    actionSheetHeaderDetails: {
+      flex: 1,
+      gap: 2,
+    },
+    actionSheetTitle: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: theme.colors.textPrimary,
+    },
+    actionSheetSub: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      fontWeight: '500',
+    },
+    actionSheetClose: {
+      padding: 6,
+    },
+    actionSheetCloseText: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: theme.colors.textTertiary,
+    },
+    actionSheetMenu: {
+      paddingTop: spacing.sm,
+      gap: 4,
+    },
+    actionOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 9,
+      paddingHorizontal: spacing.xs,
+      borderRadius: radius.md,
+      gap: spacing.sm + 2,
+    },
+    actionOptionPressed: {
+      backgroundColor: theme.colors.surfaceSubtle,
+      transform: [{ scale: 0.98 }],
+    },
+    actionIconBox: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.chip,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionOptionTitle: {
+      fontSize: 13.5,
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+      flex: 1,
+    },
+    sortModalCard: {
+      backgroundColor: theme.colors.surface,
+      borderTopLeftRadius: radius['2xl'],
+      borderTopRightRadius: radius['2xl'],
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xl,
+      paddingHorizontal: spacing.lg,
+      gap: spacing.md,
+      ...shadows.card,
+    },
+    sortModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingBottom: spacing.xs,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    sortModalTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: theme.colors.textPrimary,
+    },
+    sortOptionsList: {
+      gap: 6,
+    },
+    sortItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: 'transparent',
+      gap: spacing.sm,
+    },
+    sortItemActive: {
+      backgroundColor: theme.colors.brandWash,
+      borderColor: theme.colors.brandTint,
+    },
+    sortItemIcon: {
+      fontSize: 16,
+    },
+    sortItemTextGroup: {
+      flex: 1,
+      gap: 1,
+    },
+    sortItemLabel: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+    },
+    sortItemLabelActive: {
+      color: theme.colors.brand,
+    },
+    sortItemHindi: {
+      fontSize: 11,
+      color: theme.colors.textTertiary,
+    },
+    sortItemCheck: {
+      fontSize: 16,
+      fontWeight: '900',
+      color: theme.colors.brand,
+    },
+    detailsModalCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: radius['2xl'],
+      margin: spacing.lg,
+      padding: spacing.lg,
+      maxHeight: '80%',
+      alignSelf: 'center',
+      width: '90%',
+      gap: spacing.md,
+      ...shadows.card,
+    },
+    detailsBody: {
+      maxHeight: 320,
+    },
+    detailRow: {
+      paddingVertical: spacing.xs + 2,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.surfaceSubtle,
+      gap: 2,
+    },
+    detailLabel: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: theme.colors.textTertiary,
+      textTransform: 'uppercase',
+    },
+    detailValue: {
+      fontSize: 13.5,
+      fontWeight: '600',
+      color: theme.colors.textPrimary,
+    },
+    detailValueMono: {
+      fontSize: 11,
+      color: theme.colors.textSecondary,
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+      backgroundColor: theme.colors.surfaceSubtle,
+      padding: 4,
+      borderRadius: 4,
+    },
+    detailsActions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingTop: spacing.xs,
+    },
+    detailsOpenBtn: {
+      flex: 1,
+      backgroundColor: theme.colors.brand,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    detailsOpenBtnText: {
+      color: '#ffffff',
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    detailsShareBtn: {
+      backgroundColor: theme.colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    detailsShareBtnText: {
+      color: theme.colors.textPrimary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+  });

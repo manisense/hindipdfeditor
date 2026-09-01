@@ -19,8 +19,9 @@ import { FilesScreen } from '../screens/FilesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { ToolsScreen } from '../screens/ToolsScreen';
+import { useAppTheme, useThemedStyles } from '../hooks/useAppTheme';
 import type { RecentFile } from '../state/recentFilesStore';
-import { colors, radius, shadows, spacing } from '../theme';
+import { colors, radius, shadows, spacing, type Theme } from '../theme';
 
 export type ToolId = 'edit' | 'translate' | 'merge' | 'split' | 'compress' | 'viewer';
 
@@ -115,12 +116,13 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const pagerRef = useRef<ScrollView>(null);
+  const theme = useAppTheme();
+  const styles = useThemedStyles(getStyles);
 
   const topInset = Math.max(
     insets.top,
     Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 24) : 0,
   );
-  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 18 : 10);
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const currentTool = TOOLS.find((t) => t.id === activeTool) ?? null;
 
@@ -156,7 +158,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
       <View
         style={[
           styles.ambientAuraLeft,
-          { backgroundColor: currentTool ? currentTool.tint : colors.brandTint },
+          { backgroundColor: currentTool ? currentTool.tint : theme.colors.brandTint },
         ]}
         pointerEvents="none"
       />
@@ -174,7 +176,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
               style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
               hitSlop={8}
             >
-              <Ionicons name="chevron-back" size={16} color={colors.brand} />
+              <Ionicons name="chevron-back" size={16} color={theme.colors.brand} />
               <Text style={styles.backLabel}>Back</Text>
             </Pressable>
 
@@ -182,12 +184,15 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
               <View
                 style={[
                   styles.activeToolBadge,
-                  { backgroundColor: currentTool.tint, borderColor: currentTool.accent },
+                  {
+                    backgroundColor: currentTool.tint,
+                    borderColor: currentTool.accent,
+                  },
                 ]}
               >
                 <MaterialCommunityIcons
                   name={currentTool.iconName}
-                  size={15}
+                  size={16}
                   color={currentTool.accent}
                 />
                 <Text style={[styles.activeToolName, { color: currentTool.accent }]}>
@@ -197,12 +202,11 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
             )}
           </View>
 
-          <View style={[styles.toolWorkspace, { paddingBottom: bottomInset + spacing.xs }]}>
-            {children}
-          </View>
+          {/* Active Tool Body */}
+          <View style={styles.toolWorkspace}>{children}</View>
         </View>
       ) : (
-        /* Main 4-Tab Screen with Slidable Horizontal Pager and Bottom Navigation Bar */
+        /* Swipeable / Slideable 4-Tab Interface (Home, Files, Tools, Settings) */
         <View style={styles.mainTabContainer}>
           <ScrollView
             ref={pagerRef}
@@ -210,19 +214,26 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             bounces={false}
+            scrollEventThrottle={16}
             onMomentumScrollEnd={handleScrollEnd}
             style={styles.pagerScrollView}
-            scrollEventThrottle={16}
           >
+            {/* Tab 1: Home */}
             <View style={[styles.tabPage, { width: windowWidth }]}>
               <HomeScreen onOpenTool={onSelectTool} onOpenFile={handleOpenFile} />
             </View>
+
+            {/* Tab 2: Files */}
             <View style={[styles.tabPage, { width: windowWidth }]}>
-              <FilesScreen onOpenFile={handleOpenFile} />
+              <FilesScreen onOpenTool={onSelectTool} onOpenFile={handleOpenFile} />
             </View>
+
+            {/* Tab 3: Tools */}
             <View style={[styles.tabPage, { width: windowWidth }]}>
               <ToolsScreen onOpenTool={onSelectTool} />
             </View>
+
+            {/* Tab 4: Settings */}
             <View style={[styles.tabPage, { width: windowWidth }]}>
               <SettingsScreen />
             </View>
@@ -236,94 +247,95 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.surfacePage,
-  },
-  ambientAuraTopRight: {
-    position: 'absolute',
-    top: -50,
-    right: -50,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: 'rgba(238, 242, 255, 0.7)',
-  },
-  ambientAuraLeft: {
-    position: 'absolute',
-    top: 180,
-    left: -70,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    opacity: 0.45,
-  },
-  mainTabContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  pagerScrollView: {
-    flex: 1,
-  },
-  tabPage: {
-    flex: 1,
-    paddingHorizontal: spacing.md,
-  },
-  fullScreenToolContainer: {
-    flex: 1,
-  },
-  activeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.md,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.sm + 2,
-    marginBottom: spacing.sm + 2,
-    ...shadows.soft,
-    zIndex: 10,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceSubtle,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    gap: 4,
-  },
-  backButtonPressed: {
-    backgroundColor: colors.borderSubtle,
-    transform: [{ scale: 0.97 }],
-  },
-  backLabel: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  activeToolBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 11,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    gap: 5,
-  },
-  activeToolName: {
-    fontSize: 12.5,
-    fontWeight: '700',
-  },
-  toolWorkspace: {
-    flex: 1,
-    paddingHorizontal: spacing.md,
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    ambientAuraTopRight: {
+      position: 'absolute',
+      top: -50,
+      right: -50,
+      width: 220,
+      height: 220,
+      borderRadius: 110,
+      backgroundColor: theme.colors.auraTopRight,
+    },
+    ambientAuraLeft: {
+      position: 'absolute',
+      top: 180,
+      left: -70,
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      opacity: 0.45,
+    },
+    mainTabContainer: {
+      flex: 1,
+      justifyContent: 'space-between',
+    },
+    pagerScrollView: {
+      flex: 1,
+    },
+    tabPage: {
+      flex: 1,
+      paddingHorizontal: spacing.md,
+    },
+    fullScreenToolContainer: {
+      flex: 1,
+    },
+    activeHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: theme.colors.activeHeaderBg,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingVertical: 8,
+      paddingHorizontal: spacing.md,
+      marginHorizontal: spacing.md,
+      marginTop: spacing.sm + 2,
+      marginBottom: spacing.sm + 2,
+      ...shadows.soft,
+      zIndex: 10,
+    },
+    backButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceSubtle,
+      paddingVertical: 5,
+      paddingHorizontal: 12,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: 4,
+    },
+    backButtonPressed: {
+      backgroundColor: theme.colors.borderStrong,
+      transform: [{ scale: 0.97 }],
+    },
+    backLabel: {
+      fontSize: 12.5,
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+    },
+    activeToolBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 5,
+      paddingHorizontal: 11,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      gap: 5,
+    },
+    activeToolName: {
+      fontSize: 12.5,
+      fontWeight: '700',
+    },
+    toolWorkspace: {
+      flex: 1,
+      paddingHorizontal: spacing.md,
+    },
+  });

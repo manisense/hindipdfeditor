@@ -9,9 +9,10 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
-import { AppButton } from './AppButton';
+import { useThemedStyles, useAppTheme } from '../hooks/useAppTheme';
 import { DEVANAGARI_FONT_CATALOG, type DevanagariFontFamily } from '../lib/fontAsset';
-import { colors, radius, shadows, spacing } from '../theme';
+import { type Theme, radius, shadows, spacing } from '../theme';
+import { AppButton } from './AppButton';
 
 type Props = {
   visible: boolean;
@@ -32,6 +33,9 @@ export function FontPickerModal({
   onClose,
 }: Props) {
   const { height } = useWindowDimensions();
+  const theme = useAppTheme();
+  const styles = useThemedStyles(getStyles);
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
@@ -70,7 +74,7 @@ export function FontPickerModal({
                     <Text style={styles.description}>{font.description}</Text>
                   </View>
                   {downloading ? (
-                    <ActivityIndicator color={colors.brand} />
+                    <ActivityIndicator color={theme.colors.brand} />
                   ) : (
                     <Text style={[styles.state, selected && styles.stateSelected]}>
                       {selected ? 'Selected' : loaded ? 'Use' : 'Download'}
@@ -90,72 +94,73 @@ export function FontPickerModal({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: spacing.xl,
-    backgroundColor: 'rgba(20, 22, 31, 0.6)',
-  },
-  card: {
-    borderRadius: radius.card,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    ...shadows.popup,
-  },
-  cardContent: {
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  body: {
-    fontSize: 12.5,
-    lineHeight: 18,
-    color: colors.textSecondary,
-  },
-  list: {
-    gap: spacing.sm,
-  },
-  row: {
-    minHeight: 68,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    borderRadius: radius.chip,
-  },
-  rowSelected: {
-    borderColor: colors.brand,
-    backgroundColor: colors.brandTint,
-  },
-  copy: {
-    flex: 1,
-  },
-  fontName: {
-    fontSize: 16,
-    color: colors.textPrimary,
-  },
-  description: {
-    marginTop: 2,
-    fontSize: 11.5,
-    color: colors.textSecondary,
-  },
-  state: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.brand,
-  },
-  stateSelected: {
-    color: colors.brandDeep,
-  },
-  actions: {
-    alignItems: 'flex-end',
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      justifyContent: 'center',
+      padding: spacing.xl,
+      backgroundColor: 'rgba(20, 22, 31, 0.65)',
+    },
+    card: {
+      borderRadius: radius.card,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...shadows.popup,
+    },
+    cardContent: {
+      padding: spacing.xl,
+      gap: spacing.md,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: theme.colors.textPrimary,
+    },
+    body: {
+      fontSize: 12.5,
+      lineHeight: 18,
+      color: theme.colors.textSecondary,
+    },
+    list: {
+      gap: spacing.sm,
+    },
+    row: {
+      minHeight: 68,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radius.chip,
+    },
+    rowSelected: {
+      borderColor: theme.colors.brand,
+      backgroundColor: theme.colors.brandTint,
+    },
+    copy: {
+      flex: 1,
+    },
+    fontName: {
+      fontSize: 16,
+      color: theme.colors.textPrimary,
+    },
+    description: {
+      marginTop: 2,
+      fontSize: 11.5,
+      color: theme.colors.textSecondary,
+    },
+    state: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: theme.colors.brand,
+    },
+    stateSelected: {
+      color: theme.colors.brandDeep,
+    },
+    actions: {
+      alignItems: 'flex-end',
+    },
+  });

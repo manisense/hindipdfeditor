@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useAppTheme, useThemedStyles } from '../hooks/useAppTheme';
+import { type Theme, radius, shadows, spacing } from '../theme';
 import { AppButton } from './AppButton';
-import { AppPopupContext, type AppPopupTone, type ShowPopupOptions } from './appPopupContext';
-import { colors, radius, shadows, spacing } from '../theme';
+import { AppPopupContext, type ShowPopupOptions } from './appPopupContext';
 
 export type { AppPopupTone, ShowPopupOptions } from './appPopupContext';
 
@@ -13,45 +14,40 @@ type PopupRequest = ShowPopupOptions & {
   resolve: (confirmed: boolean) => void;
 };
 
-const TONE_CONFIG: Record<
-  AppPopupTone,
-  { bar: string; iconBg: string; iconColor: string; iconName: keyof typeof Ionicons.glyphMap }
-> = {
+const getToneConfig = (theme: Theme) => ({
   info: {
-    bar: colors.brand,
-    iconBg: colors.brandTint,
-    iconColor: colors.brand,
-    iconName: 'information-circle',
+    iconName: 'information-circle' as const,
+    iconColor: theme.colors.brand,
+    iconBg: theme.colors.brandTint,
+    bar: theme.colors.brand,
   },
   success: {
-    bar: colors.accentGreen,
-    iconBg: colors.accentGreenTint,
-    iconColor: colors.accentGreen,
-    iconName: 'checkmark-circle',
+    iconName: 'checkmark-circle' as const,
+    iconColor: theme.colors.accentGreen,
+    iconBg: theme.colors.accentGreenTint,
+    bar: theme.colors.accentGreen,
   },
   warning: {
-    bar: colors.accentOrange,
-    iconBg: colors.accentOrangeTint,
-    iconColor: colors.accentOrange,
-    iconName: 'warning',
+    iconName: 'warning' as const,
+    iconColor: theme.colors.accentOrange,
+    iconBg: theme.colors.accentOrangeTint,
+    bar: theme.colors.accentOrange,
   },
   error: {
-    bar: colors.danger,
-    iconBg: colors.dangerSoft,
-    iconColor: colors.danger,
-    iconName: 'alert-circle',
+    iconName: 'alert-circle' as const,
+    iconColor: theme.colors.danger,
+    iconBg: theme.colors.dangerSoft,
+    bar: theme.colors.danger,
   },
-};
+});
 
-/**
- * Brand-consistent modal window replacing native Alert.alert across the mobile app.
- * Features top tone bar, 12px squircle icon chip, eyebrow tag, and promise-based confirmation flow.
- */
 export function AppPopupProvider({ children }: { children: ReactNode }) {
   const nextIdRef = useRef(0);
   const queueRef = useRef<PopupRequest[]>([]);
   const activeRef = useRef<PopupRequest | null>(null);
   const [active, setActive] = useState<PopupRequest | null>(null);
+  const theme = useAppTheme();
+  const styles = useThemedStyles(getStyles);
 
   const showPopup = useCallback((options: ShowPopupOptions): Promise<boolean> => {
     return new Promise<boolean>((resolve) => {
@@ -89,7 +85,8 @@ export function AppPopupProvider({ children }: { children: ReactNode }) {
 
   const contextValue = useMemo(() => ({ showPopup }), [showPopup]);
   const tone = active?.tone ?? 'info';
-  const toneStyle = TONE_CONFIG[tone];
+  const toneConfig = getToneConfig(theme);
+  const toneStyle = toneConfig[tone];
 
   return (
     <AppPopupContext.Provider value={contextValue}>
@@ -146,75 +143,76 @@ export function AppPopupProvider({ children }: { children: ReactNode }) {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(20, 22, 31, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 380,
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    ...shadows.popup,
-  },
-  topToneBar: {
-    height: 4,
-    width: '100%',
-  },
-  content: {
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.chip,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleColumn: {
-    flex: 1,
-    gap: 2,
-  },
-  eyebrow: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: colors.textSecondary,
-    letterSpacing: 1.1,
-    textTransform: 'uppercase',
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    letterSpacing: -0.3,
-  },
-  message: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginTop: 2,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  actionBtn: {
-    flex: 1,
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(20, 22, 31, 0.65)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+    },
+    card: {
+      width: '100%',
+      maxWidth: 380,
+      backgroundColor: theme.colors.surface,
+      borderRadius: radius.card,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...shadows.popup,
+    },
+    topToneBar: {
+      height: 4,
+      width: '100%',
+    },
+    content: {
+      padding: spacing.xl,
+      gap: spacing.md,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    iconBox: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.chip,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    titleColumn: {
+      flex: 1,
+      gap: 2,
+    },
+    eyebrow: {
+      fontSize: 10.5,
+      fontWeight: '800',
+      color: theme.colors.textSecondary,
+      letterSpacing: 1.1,
+      textTransform: 'uppercase',
+    },
+    title: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+      letterSpacing: -0.3,
+    },
+    message: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+      marginTop: 2,
+    },
+    actionsRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    actionBtn: {
+      flex: 1,
+    },
+  });

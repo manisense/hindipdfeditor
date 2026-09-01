@@ -10,7 +10,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, radius, shadows, spacing } from '../theme';
+import { useAppTheme } from '../hooks/useAppTheme';
+import { type Theme, radius, shadows, spacing } from '../theme';
 
 export type ButtonVariant =
   'primary' | 'secondary' | 'danger' | 'ghost' | 'success' | 'subtle' | 'warning';
@@ -40,7 +41,7 @@ type Props = {
 /**
  * Modern pill-shaped button matching the unified design system.
  * Features brand primary (#1843DD), full pill shape (9999px),
- * tactile spring press feedback, and crisp 600-weight typography.
+ * tactile spring press feedback, dynamic theme awareness, and crisp 600-weight typography.
  */
 export function AppButton({
   title,
@@ -56,21 +57,25 @@ export function AppButton({
   style,
   labelStyle,
 }: Props) {
+  const theme = useAppTheme();
   const isActionDisabled = disabled === true || loading === true;
+
+  const variantStyle = getVariantStyle(theme, variant);
+  const labelColor = getLabelColor(theme, variant);
 
   const content = (
     <View style={styles.contentRow}>
       {loading ? (
         <ActivityIndicator
           size={small ? 14 : 18}
-          color={variant === 'primary' ? colors.textOnPrimary : colors.brand}
+          color={variant === 'primary' ? theme.colors.textOnPrimary : theme.colors.brand}
           style={styles.spinner}
         />
       ) : (
         icon && <View style={styles.iconWrapper}>{icon}</View>
       )}
       <Text
-        style={[styles.label, small && styles.labelSmall, labelStyles[variant], labelStyle]}
+        style={[styles.label, small && styles.labelSmall, { color: labelColor }, labelStyle]}
         numberOfLines={1}
       >
         {title}
@@ -97,9 +102,9 @@ export function AppButton({
       style={({ pressed }) => [
         styles.base,
         small ? styles.small : styles.normal,
-        variantStyles[variant],
+        variantStyle,
         variant === 'primary' && !disabled && styles.primaryShadow,
-        selected && styles.selected,
+        selected && { borderWidth: 2, borderColor: theme.colors.brand },
         pressed && !isActionDisabled && styles.pressed,
         isActionDisabled && styles.disabled,
         style,
@@ -109,6 +114,70 @@ export function AppButton({
     </Pressable>
   );
 }
+
+const getVariantStyle = (theme: Theme, variant: ButtonVariant): ViewStyle => {
+  switch (variant) {
+    case 'primary':
+      return {
+        backgroundColor: theme.colors.brand,
+        borderWidth: 0,
+      };
+    case 'secondary':
+      return {
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        ...shadows.soft,
+      };
+    case 'subtle':
+      return {
+        backgroundColor: theme.colors.surfaceSubtle,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+      };
+    case 'danger':
+      return {
+        backgroundColor: theme.colors.dangerSoft,
+        borderWidth: 1,
+        borderColor: 'rgba(198, 48, 62, 0.25)',
+      };
+    case 'success':
+      return {
+        backgroundColor: theme.colors.accentGreenTint,
+        borderWidth: 1,
+        borderColor: 'rgba(22, 163, 74, 0.25)',
+      };
+    case 'warning':
+      return {
+        backgroundColor: theme.colors.accentOrangeTint,
+        borderWidth: 1,
+        borderColor: 'rgba(240, 112, 15, 0.25)',
+      };
+    case 'ghost':
+      return {
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+      };
+  }
+};
+
+const getLabelColor = (theme: Theme, variant: ButtonVariant): string => {
+  switch (variant) {
+    case 'primary':
+      return theme.colors.textOnPrimary;
+    case 'secondary':
+    case 'subtle':
+      return theme.colors.textPrimary;
+    case 'danger':
+      return theme.colors.danger;
+    case 'success':
+      return theme.colors.accentGreen;
+    case 'warning':
+      return theme.colors.accentOrange;
+    case 'ghost':
+      return theme.colors.brand;
+  }
+};
 
 const styles = StyleSheet.create({
   base: {
@@ -151,10 +220,6 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.45,
   },
-  selected: {
-    borderWidth: 2,
-    borderColor: colors.brand,
-  },
   label: {
     fontSize: 15,
     fontWeight: '600',
@@ -164,51 +229,4 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '600',
   },
-});
-
-const variantStyles: Record<ButtonVariant, ViewStyle> = {
-  primary: {
-    backgroundColor: colors.brand,
-    borderWidth: 0,
-  },
-  secondary: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    ...shadows.soft,
-  },
-  subtle: {
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-  },
-  danger: {
-    backgroundColor: colors.dangerSoft,
-    borderWidth: 1,
-    borderColor: 'rgba(198, 48, 62, 0.2)',
-  },
-  success: {
-    backgroundColor: colors.accentGreenTint,
-    borderWidth: 1,
-    borderColor: 'rgba(22, 163, 74, 0.2)',
-  },
-  warning: {
-    backgroundColor: colors.accentOrangeTint,
-    borderWidth: 1,
-    borderColor: 'rgba(240, 112, 15, 0.2)',
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-  },
-};
-
-const labelStyles = StyleSheet.create({
-  primary: { color: colors.textOnPrimary },
-  secondary: { color: colors.textPrimary },
-  subtle: { color: colors.textPrimary },
-  danger: { color: colors.danger },
-  success: { color: colors.accentGreen },
-  warning: { color: colors.accentOrange },
-  ghost: { color: colors.brand },
 });

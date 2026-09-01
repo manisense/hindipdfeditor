@@ -3,8 +3,9 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { ScreenHeader } from '../components/ScreenHeader';
 import type { ToolId } from '../components/ToolShell';
+import { useAppTheme, useThemedStyles } from '../hooks/useAppTheme';
 import { useSettingsStore } from '../state/settingsStore';
-import { colors, radius, shadows, spacing } from '../theme';
+import { type Theme, colors, radius, shadows, spacing } from '../theme';
 
 type Props = {
   onOpenTool: (toolId: ToolId) => void;
@@ -15,7 +16,6 @@ type ToolCatalogItem = {
   titleEn: string;
   titleHi: string;
   badge: string;
-  desc: string;
   iconName: keyof typeof MaterialCommunityIcons.glyphMap;
   accent: string;
   tint: string;
@@ -30,7 +30,6 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleEn: 'Edit Hindi PDF',
     titleHi: 'पीडीएफ संपादित करें',
     badge: 'Devanagari OCR',
-    desc: 'Tap detected text to edit, add Hindi overlays, or erase lines.',
     iconName: 'file-document-edit-outline',
     accent: colors.accentBlue,
     tint: colors.accentBlueTint,
@@ -40,7 +39,6 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleEn: 'Translate PDF',
     titleHi: 'पीडीएफ अनुवाद',
     badge: 'Bilingual AI',
-    desc: 'Full document Hindi ↔ English bilingual translation.',
     iconName: 'translate',
     accent: colors.accentGreen,
     tint: colors.accentGreenTint,
@@ -50,7 +48,6 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleEn: 'Merge PDFs',
     titleHi: 'पीडीएफ मर्ज करें',
     badge: 'Multi-Document',
-    desc: 'Combine multiple PDF documents into a single unified file.',
     iconName: 'layers-triple-outline',
     accent: colors.accentPurple,
     tint: colors.accentPurpleTint,
@@ -60,7 +57,6 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleEn: 'Split PDF',
     titleHi: 'पीडीएफ विभाजित करें',
     badge: 'Page Range',
-    desc: 'Extract individual pages or custom page ranges visually.',
     iconName: 'content-cut',
     accent: colors.accentPurple,
     tint: colors.accentPurpleTint,
@@ -70,7 +66,6 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleEn: 'Compress PDF',
     titleHi: 'पीडीएफ कंप्रेस करें',
     badge: 'Size Reducer',
-    desc: 'Reduce PDF file size while maintaining high visual clarity.',
     iconName: 'archive-arrow-down-outline',
     accent: colors.accentOrange,
     tint: colors.accentOrangeTint,
@@ -80,7 +75,6 @@ const ALL_TOOLS: ToolCatalogItem[] = [
     titleEn: 'PDF Reader & Viewer',
     titleHi: 'पीडीएफ पढ़ें और देखें',
     badge: 'Reading Mode',
-    desc: 'Read Hindi and English PDFs comfortably with night mode and zoom.',
     iconName: 'book-open-page-variant-outline',
     accent: colors.accentTeal,
     tint: colors.accentTealTint,
@@ -88,6 +82,8 @@ const ALL_TOOLS: ToolCatalogItem[] = [
 ];
 
 export function ToolsScreen({ onOpenTool }: Props) {
+  const theme = useAppTheme();
+  const styles = useThemedStyles(getStyles);
   const language = useSettingsStore((s) => s.language);
   const showEn = language === 'bilingual' || language === 'english';
   const showHi = language === 'bilingual' || language === 'hindi';
@@ -145,7 +141,7 @@ export function ToolsScreen({ onOpenTool }: Props) {
                 )}
               </View>
 
-              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
             </Pressable>
           ))}
         </View>
@@ -154,76 +150,71 @@ export function ToolsScreen({ onOpenTool }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  scrollArea: {
-    flex: 1,
-  },
-  content: {
-    paddingBottom: 60,
-  },
-  toolsList: {
-    gap: spacing.sm + 2,
-  },
-  toolCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    padding: spacing.md,
-    gap: spacing.md,
-    ...shadows.soft,
-  },
-  toolCardPressed: {
-    backgroundColor: colors.surfaceSubtle,
-    transform: [{ scale: 0.98 }],
-  },
-  iconBox: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.chip,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardContent: {
-    flex: 1,
-    gap: 2,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  titleEn: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.2,
-  },
-  badge: {
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: radius.full,
-  },
-  badgeText: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-  },
-  titleHi: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  desc: {
-    fontSize: 11.5,
-    color: colors.textTertiary,
-    lineHeight: 15,
-    marginTop: 1,
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    scrollArea: {
+      flex: 1,
+    },
+    content: {
+      paddingBottom: 95,
+    },
+    toolsList: {
+      gap: spacing.sm + 2,
+    },
+    toolCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: spacing.md,
+      gap: spacing.md,
+      ...shadows.soft,
+    },
+    toolCardPressed: {
+      backgroundColor: theme.colors.surfaceSubtle,
+      transform: [{ scale: 0.98 }],
+    },
+    iconBox: {
+      width: 46,
+      height: 46,
+      borderRadius: radius.chip,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cardContent: {
+      flex: 1,
+      gap: 2,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    titleEn: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: theme.colors.textPrimary,
+      letterSpacing: -0.2,
+    },
+    badge: {
+      paddingVertical: 2,
+      paddingHorizontal: 6,
+      borderRadius: radius.full,
+    },
+    badgeText: {
+      fontSize: 9.5,
+      fontWeight: '800',
+      letterSpacing: 0.2,
+      textTransform: 'uppercase',
+    },
+    titleHi: {
+      fontSize: 12,
+      fontWeight: '700',
+    },
+  });

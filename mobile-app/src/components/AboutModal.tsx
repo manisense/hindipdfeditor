@@ -9,9 +9,10 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
-import { AppButton } from './AppButton';
+import { useThemedStyles } from '../hooks/useAppTheme';
 import { APP_VERSION, PRIVACY_POLICY_URL } from '../constants/legal';
-import { colors, radius, shadows, spacing } from '../theme';
+import { type Theme, radius, shadows, spacing } from '../theme';
+import { AppButton } from './AppButton';
 
 type Props = {
   visible: boolean;
@@ -24,6 +25,8 @@ type Props = {
  */
 export function AboutModal({ visible, onClose }: Props) {
   const { height } = useWindowDimensions();
+  const styles = useThemedStyles(getStyles);
+
   const openPrivacy = () => {
     Linking.openURL(PRIVACY_POLICY_URL).catch(() => {
       // No network or no handler — user can try again later.
@@ -71,56 +74,57 @@ export function AboutModal({ visible, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(20, 22, 31, 0.6)',
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    ...shadows.popup,
-  },
-  cardContent: {
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  logo: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.chip,
-  },
-  brandText: {
-    flex: 1,
-    gap: 2,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  version: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginTop: spacing.xs,
-  },
-  body: {
-    fontSize: 13,
-    lineHeight: 20,
-    color: colors.textSecondary,
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(20, 22, 31, 0.65)',
+      justifyContent: 'center',
+      padding: spacing.xl,
+    },
+    card: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...shadows.popup,
+    },
+    cardContent: {
+      padding: spacing.xl,
+      gap: spacing.md,
+    },
+    brandRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    logo: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.chip,
+    },
+    brandText: {
+      flex: 1,
+      gap: 2,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: theme.colors.textPrimary,
+    },
+    version: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+    },
+    sectionTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+      marginTop: spacing.xs,
+    },
+    body: {
+      fontSize: 13,
+      lineHeight: 20,
+      color: theme.colors.textSecondary,
+    },
+  });

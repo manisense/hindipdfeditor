@@ -1,9 +1,10 @@
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useAppTheme, useThemedStyles } from '../hooks/useAppTheme';
 import { useSettingsStore } from '../state/settingsStore';
-import { colors, radius, shadows, spacing } from '../theme';
+import { type Theme, radius, spacing } from '../theme';
 
 export type MainTab = 'home' | 'files' | 'tools' | 'settings';
 
@@ -50,20 +51,26 @@ const TABS: {
 ];
 
 /**
- * 4-Tab Bottom Navigation Bar matching the unified design system.
- * Dynamically adapts typography based on active Language setting (Bilingual, English, Hindi).
+ * 4-Tab iOS-Style Floating Dock Navigation Bar.
+ * Strictly adheres to design-system.md:
+ * - Brand Primary (#1843DD) & Brand Tint (#EEF2FF)
+ * - Full-pill active segment highlight with vector icons
+ * - Equal typographic weight for Latin & Devanagari labels
+ * - Soft layered elevation shadow
  */
 export function BottomNavBar({ activeTab, onSelectTab }: Props) {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
+  const styles = useThemedStyles(getStyles);
   const language = useSettingsStore((s) => s.language);
-  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 18 : 10) + 4;
+  const bottomPadding = Math.max(insets.bottom, 10);
 
   const showEn = language === 'bilingual' || language === 'english';
   const showHi = language === 'bilingual' || language === 'hindi';
 
   return (
     <View style={[styles.container, { paddingBottom: bottomPadding }]}>
-      <View style={styles.bar}>
+      <View style={styles.floatingDock}>
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -81,19 +88,22 @@ export function BottomNavBar({ activeTab, onSelectTab }: Props) {
             >
               <Ionicons
                 name={isActive ? tab.iconActiveName : tab.iconName}
-                size={22}
-                color={isActive ? colors.brand : colors.textSecondary}
+                size={21}
+                color={isActive ? theme.colors.brand : theme.colors.textSecondary}
               />
-              {showEn && (
-                <Text style={[styles.tabLabelEn, isActive && styles.tabLabelEnActive]}>
-                  {tab.labelEn}
-                </Text>
-              )}
-              {showHi && (
-                <Text style={[styles.tabLabelHi, isActive && styles.tabLabelHiActive]}>
-                  {tab.labelHi}
-                </Text>
-              )}
+              <View style={styles.labelWrapper}>
+                {showEn && (
+                  <Text style={[styles.tabLabelEn, isActive && styles.tabLabelEnActive]}>
+                    {tab.labelEn}
+                  </Text>
+                )}
+                {showHi && (
+                  <Text style={[styles.tabLabelHi, isActive && styles.tabLabelHiActive]}>
+                    {tab.labelHi}
+                  </Text>
+                )}
+              </View>
+              {isActive && <View style={styles.activeDot} />}
             </Pressable>
           );
         })}
@@ -102,51 +112,80 @@ export function BottomNavBar({ activeTab, onSelectTab }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSubtle,
-    paddingTop: 6,
-    ...shadows.card,
-  },
-  bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: spacing.sm,
-  },
-  tabItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    minWidth: 72,
-    gap: 1,
-  },
-  tabItemActive: {
-    backgroundColor: colors.brandTint,
-  },
-  tabItemPressed: {
-    transform: [{ scale: 0.94 }],
-  },
-  tabLabelEn: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  tabLabelEnActive: {
-    color: colors.brand,
-    fontWeight: '800',
-  },
-  tabLabelHi: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.textTertiary,
-  },
-  tabLabelHiActive: {
-    color: colors.brand,
-    fontWeight: '700',
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      paddingHorizontal: spacing.md,
+      paddingTop: 4,
+      backgroundColor: 'transparent',
+      zIndex: 100,
+    },
+    floatingDock: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: theme.colors.surface,
+      borderRadius: 30,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingVertical: 5,
+      paddingHorizontal: 6,
+      shadowColor: '#14161F',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.12,
+      shadowRadius: 20,
+      elevation: 10,
+    },
+    tabItem: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 6,
+      paddingHorizontal: 4,
+      borderRadius: radius.full,
+      gap: 1,
+      minHeight: 52,
+    },
+    tabItemActive: {
+      backgroundColor: theme.colors.brandTint,
+    },
+    tabItemPressed: {
+      transform: [{ scale: 0.94 }],
+      opacity: 0.85,
+    },
+    labelWrapper: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tabLabelEn: {
+      fontSize: 10.5,
+      fontWeight: '600',
+      color: theme.colors.textSecondary,
+      lineHeight: 13,
+    },
+    tabLabelEnActive: {
+      color: theme.colors.brand,
+      fontWeight: '800',
+    },
+    tabLabelHi: {
+      fontSize: 9.5,
+      fontWeight: '600',
+      color: theme.colors.textTertiary,
+      lineHeight: 12,
+    },
+    tabLabelHiActive: {
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    activeDot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: theme.colors.brand,
+      marginTop: 2,
+    },
+  });

@@ -7,6 +7,7 @@ import type { ExpoConfig } from 'expo/config';
 const config: ExpoConfig = {
   name: 'Hindi PDF Editor',
   slug: 'hindipdfeditor',
+  owner: 'hindipdf',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -14,7 +15,7 @@ const config: ExpoConfig = {
   scheme: 'hindipdfeditor',
   android: {
     package: 'com.hindipdfeditor.app',
-    versionCode: 5,
+    versionCode: 6,
     allowBackup: false,
     adaptiveIcon: {
       backgroundColor: '#1843DD',
@@ -38,6 +39,12 @@ const config: ExpoConfig = {
     ],
     playStoreUrl: 'https://play.google.com/store/apps/details?id=com.hindipdfeditor.app',
   },
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
+  updates: {
+    url: 'https://u.expo.dev/4dfa75b3-300a-4f72-bdf5-2def8f613298',
+  },
   plugins: [
     [
       'expo-splash-screen',
@@ -53,6 +60,7 @@ const config: ExpoConfig = {
     'expo-asset',
     'expo-sharing',
     'expo-font',
+    'expo-updates',
     [
       'expo-build-properties',
       {

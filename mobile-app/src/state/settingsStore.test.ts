@@ -1,12 +1,22 @@
 const mockWriteAsStringAsync = jest.fn();
 const mockReadAsStringAsync = jest.fn();
 const mockGetInfoAsync = jest.fn();
+const mockCheckForUpdateAsync = jest.fn();
+const mockFetchUpdateAsync = jest.fn();
+const mockReloadAsync = jest.fn();
 
 jest.mock('expo-file-system/legacy', () => ({
   documentDirectory: 'file:///data/user/0/com.hindipdfeditor.app/files/',
   writeAsStringAsync: (...args: unknown[]) => mockWriteAsStringAsync(...args),
   readAsStringAsync: (...args: unknown[]) => mockReadAsStringAsync(...args),
   getInfoAsync: (...args: unknown[]) => mockGetInfoAsync(...args),
+}));
+
+jest.mock('expo-updates', () => ({
+  isEnabled: false,
+  checkForUpdateAsync: () => mockCheckForUpdateAsync(),
+  fetchUpdateAsync: () => mockFetchUpdateAsync(),
+  reloadAsync: () => mockReloadAsync(),
 }));
 
 // Imported after native module mocks.

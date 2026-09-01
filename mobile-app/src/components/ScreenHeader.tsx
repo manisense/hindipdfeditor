@@ -1,5 +1,6 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, shadows, spacing } from '../theme';
+import { useThemedStyles } from '../hooks/useAppTheme';
+import { type Theme, radius, shadows, spacing } from '../theme';
 
 type Props = {
   title: string;
@@ -13,6 +14,8 @@ type Props = {
  * Completely free of buttons and immune to scroll events.
  */
 export function ScreenHeader({ title, titleAccent, subtitle }: Props) {
+  const styles = useThemedStyles(getStyles);
+
   return (
     <View style={styles.header}>
       <View style={styles.leftRow}>
@@ -37,45 +40,46 @@ export function ScreenHeader({ title, titleAccent, subtitle }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    height: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 2,
-    marginTop: spacing.md,
-    marginBottom: spacing.md + 2,
-  },
-  leftRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm + 2,
-    flex: 1,
-  },
-  logo: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.chip,
-    ...shadows.soft,
-  },
-  textContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 18.5,
-    fontWeight: '900',
-    color: colors.textPrimary,
-    letterSpacing: -0.4,
-  },
-  titleAccent: {
-    color: colors.brand,
-  },
-  subtitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginTop: 1,
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    header: {
+      height: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 2,
+      marginTop: spacing.md,
+      marginBottom: spacing.md + 2,
+    },
+    leftRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm + 2,
+      flex: 1,
+    },
+    logo: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.chip,
+      ...shadows.soft,
+    },
+    textContainer: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    title: {
+      fontSize: 18.5,
+      fontWeight: '900',
+      color: theme.colors.textPrimary,
+      letterSpacing: -0.4,
+    },
+    titleAccent: {
+      color: theme.colors.brand,
+    },
+    subtitle: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.textSecondary,
+      marginTop: 1,
+    },
+  });

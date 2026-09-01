@@ -1,8 +1,10 @@
 /**
- * Hindi PDF Editor — Unified Design System Tokens
+ * Hindi PDF Editor — Unified Design System Tokens & Restyle Theme
  * Strictly aligned with `design-system.md` (Web & Mobile).
  */
-export const colors = {
+import { createTheme } from '@shopify/restyle';
+
+export const rawColors = {
   // Brand Foundation (design-system.md Section 2)
   brand: '#1843DD',
   brandDeep: '#3226B8',
@@ -65,7 +67,10 @@ export const colors = {
   warningSoft: '#FFF1E4',
   danger: '#C6303E',
   dangerSoft: '#FBEAEC',
-} as const;
+};
+
+// Backward compatibility export
+export const colors = rawColors;
 
 /**
  * Spacing scale strictly aligned with design-system.md Section 5:
@@ -139,3 +144,142 @@ export const shadows = {
     elevation: 10,
   },
 } as const;
+
+/**
+ * Light Theme (Shopify Restyle)
+ */
+export const lightTheme = {
+  ...createTheme({
+    colors: {
+      ...rawColors,
+      navBar: rawColors.surface,
+      auraTopRight: 'rgba(238,242,255,0.7)',
+      activeHeaderBg: 'rgba(255,255,255,0.95)',
+      cardBg: rawColors.surface,
+      inputBg: rawColors.surfaceSubtle,
+      segmentBg: rawColors.surfaceSubtle,
+      segmentSelected: rawColors.brandTint,
+    },
+    spacing,
+    radius,
+    shadows,
+    breakpoints: {
+      phone: 0,
+      tablet: 768,
+    },
+    textVariants: {
+      defaults: {
+        color: 'textPrimary',
+        fontSize: 14,
+      },
+      header: {
+        fontWeight: 'bold',
+        fontSize: 22,
+        color: 'textPrimary',
+      },
+      subheader: {
+        fontWeight: '600',
+        fontSize: 16,
+        color: 'textPrimary',
+      },
+      body: {
+        fontSize: 14,
+        color: 'textSecondary',
+      },
+      caption: {
+        fontSize: 12,
+        color: 'textTertiary',
+      },
+    },
+    cardVariants: {
+      defaults: {
+        backgroundColor: 'surface',
+        borderRadius: 'card',
+        borderColor: 'borderSubtle',
+        borderWidth: 1,
+      },
+    },
+  }),
+  isDark: false as boolean,
+};
+
+export type Theme = typeof lightTheme;
+
+/**
+ * Dark Theme (Shopify Restyle)
+ */
+export const darkTheme: Theme = {
+  ...lightTheme,
+  isDark: true,
+  colors: {
+    ...lightTheme.colors,
+    brand: '#2E5BFF',
+    brandDeep: '#1843DD',
+    brandDark: '#1843DD',
+    brand500: '#2E5BFF',
+    brandTint: 'rgba(46,91,255,0.18)',
+    brandWash: 'rgba(46,91,255,0.10)',
+
+    accent: '#22C55E',
+    accentTint: 'rgba(34,197,94,0.16)',
+    accentGreen: '#22C55E',
+    accentGreenTint: 'rgba(34,197,94,0.16)',
+    accentBlue: '#2E5BFF',
+    accentBlueTint: 'rgba(46,91,255,0.18)',
+    accentPurple: '#A855F7',
+    accentPurpleTint: 'rgba(168,85,247,0.16)',
+    accentOrange: '#FB923C',
+    accentOrangeTint: 'rgba(251,146,60,0.16)',
+    accentTeal: '#14B8A6',
+    accentTealTint: 'rgba(20,184,166,0.16)',
+
+    lavender: '#A855F7',
+    lavenderTint: 'rgba(168,85,247,0.16)',
+    amber: '#FB923C',
+    amberInk: '#FB923C',
+    amberTint: 'rgba(251,146,60,0.16)',
+    coral: '#F87171',
+    coralTint: 'rgba(248,113,113,0.16)',
+
+    // Surfaces & Backgrounds
+    background: '#0E0E14',
+    surface: '#181924',
+    surfacePage: '#0E0E14',
+    surfaceCream: '#12131C',
+    surfaceSubtle: '#222433',
+
+    // Borders
+    border: '#2D3042',
+    borderSubtle: '#2D3042',
+    borderStrong: '#3D4158',
+
+    // Typography Neutrals
+    textPrimary: '#E8EAF0',
+    textSecondary: '#8E96A8',
+    textTertiary: '#5C6478',
+    textMuted: '#5C6478',
+    textOnPrimary: '#FFFFFF',
+
+    // Semantic
+    primary: '#2E5BFF',
+    primaryDeep: '#1843DD',
+    primaryDark: '#1843DD',
+    primaryTint: 'rgba(46,91,255,0.18)',
+    primarySoft: 'rgba(46,91,255,0.18)',
+    success: '#22C55E',
+    successSoft: 'rgba(34,197,94,0.16)',
+    warning: '#FB923C',
+    warningSoft: 'rgba(251,146,60,0.16)',
+    danger: '#F87171',
+    dangerSoft: 'rgba(248,113,113,0.16)',
+
+    // Component-level tokens
+    navBar: '#181924',
+    auraTopRight: 'rgba(46,91,255,0.06)',
+    activeHeaderBg: 'rgba(24,25,36,0.96)',
+    cardBg: '#181924',
+    inputBg: '#222433',
+    segmentBg: '#222433',
+    segmentSelected: 'rgba(46,91,255,0.22)',
+  },
+};

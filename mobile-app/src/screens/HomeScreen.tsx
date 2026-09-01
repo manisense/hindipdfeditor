@@ -4,10 +4,11 @@ import * as DocumentPicker from 'expo-document-picker';
 
 import { ScreenHeader } from '../components/ScreenHeader';
 import type { ToolId } from '../components/ToolShell';
+import { useThemedStyles } from '../hooks/useAppTheme';
 import { getPageCount, renderPage } from '../lib/pdfToImages';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
 import { useSettingsStore } from '../state/settingsStore';
-import { colors, radius, shadows, spacing } from '../theme';
+import { type Theme, colors, radius, shadows, spacing } from '../theme';
 
 type Props = {
   onOpenTool: (toolId: ToolId) => void;
@@ -94,6 +95,7 @@ function formatBytes(bytes?: number): string {
 }
 
 export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
+  const styles = useThemedStyles(getStyles);
   const language = useSettingsStore((state) => state.language);
   const recentFiles = useRecentFilesStore((state) => state.files);
   const addFile = useRecentFilesStore((state) => state.addFile);
@@ -291,240 +293,242 @@ export function HomeScreen({ onOpenTool, onOpenFile }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  heroCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 1,
-    gap: 2,
-    ...shadows.soft,
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  heroGreetingWrap: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-  },
-  heroGreeting: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: colors.textPrimary,
-    letterSpacing: -0.4,
-  },
-  heroSubGreeting: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  privacyPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.accentGreenTint,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    borderRadius: radius.full,
-    gap: 4,
-  },
-  privacyText: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: colors.accentGreen,
-    letterSpacing: 0.2,
-  },
-  heroCaption: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: colors.textSecondary,
-    lineHeight: 14,
-  },
-  toolsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    justifyContent: 'space-between',
-  },
-  toolCard: {
-    width: '48.3%',
-    minHeight: 74,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-    ...shadows.soft,
-  },
-  toolCardPressed: {
-    transform: [{ scale: 0.97 }],
-    backgroundColor: colors.surfaceSubtle,
-  },
-  toolIconWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.chip,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toolTextContainer: {
-    flex: 1,
-    gap: 1,
-  },
-  toolTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 2,
-  },
-  toolTitleEn: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.2,
-  },
-  toolBadge: {
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: radius.full,
-  },
-  toolBadgeText: {
-    fontSize: 8,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-  },
-  toolTitleHi: {
-    fontSize: 10.5,
-    fontWeight: '700',
-  },
-  toolDesc: {
-    fontSize: 9,
-    color: colors.textTertiary,
-    lineHeight: 11,
-  },
-  recentSection: {
-    flex: 1,
-    gap: spacing.xs + 2,
-  },
-  recentHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 2,
-  },
-  recentSectionTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.2,
-  },
-  recentCountText: {
-    fontSize: 11,
-    color: colors.textTertiary,
-    fontWeight: '600',
-  },
-  recentList: {
-    gap: spacing.xs + 2,
-  },
-  recentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-    ...shadows.soft,
-  },
-  recentCardPressed: {
-    backgroundColor: colors.surfaceSubtle,
-    transform: [{ scale: 0.98 }],
-  },
-  resumeThumbWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.chip,
-    backgroundColor: colors.surfaceSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-  },
-  resumeThumbImage: {
-    width: '100%',
-    height: '100%',
-  },
-  resumeDetails: {
-    flex: 1,
-    gap: 1,
-  },
-  resumeFileName: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  resumeMeta: {
-    fontSize: 10.5,
-    color: colors.textSecondary,
-  },
-  resumeArrowBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickStartCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-    ...shadows.soft,
-  },
-  quickStartCardPressed: {
-    backgroundColor: colors.surfaceSubtle,
-  },
-  quickStartIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.chip,
-    backgroundColor: colors.brandTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickStartTextGroup: {
-    flex: 1,
-    gap: 2,
-  },
-  quickStartTitle: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  quickStartSub: {
-    fontSize: 10.5,
-    color: colors.textSecondary,
-    lineHeight: 14,
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      gap: spacing.xs,
+      paddingBottom: 85,
+    },
+    heroCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 1,
+      gap: 2,
+      ...shadows.soft,
+    },
+    heroTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    heroGreetingWrap: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 6,
+    },
+    heroGreeting: {
+      fontSize: 18,
+      fontWeight: '900',
+      color: theme.colors.textPrimary,
+      letterSpacing: -0.4,
+    },
+    heroSubGreeting: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: theme.colors.textSecondary,
+    },
+    privacyPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.accentGreenTint,
+      paddingVertical: 2,
+      paddingHorizontal: 8,
+      borderRadius: radius.full,
+      gap: 4,
+    },
+    privacyText: {
+      fontSize: 9.5,
+      fontWeight: '800',
+      color: theme.colors.accentGreen,
+      letterSpacing: 0.2,
+    },
+    heroCaption: {
+      fontSize: 11,
+      fontWeight: '500',
+      color: theme.colors.textSecondary,
+      lineHeight: 14,
+    },
+    toolsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      justifyContent: 'space-between',
+    },
+    toolCard: {
+      width: '48.3%',
+      minHeight: 74,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
+      ...shadows.soft,
+    },
+    toolCardPressed: {
+      transform: [{ scale: 0.97 }],
+      backgroundColor: theme.colors.surfaceSubtle,
+    },
+    toolIconWrapper: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.chip,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    toolTextContainer: {
+      flex: 1,
+      gap: 1,
+    },
+    toolTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 2,
+    },
+    toolTitleEn: {
+      fontSize: 12.5,
+      fontWeight: '800',
+      color: theme.colors.textPrimary,
+      letterSpacing: -0.2,
+    },
+    toolBadge: {
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+      borderRadius: radius.full,
+    },
+    toolBadgeText: {
+      fontSize: 8,
+      fontWeight: '900',
+      textTransform: 'uppercase',
+    },
+    toolTitleHi: {
+      fontSize: 10.5,
+      fontWeight: '700',
+    },
+    toolDesc: {
+      fontSize: 9,
+      color: theme.colors.textTertiary,
+      lineHeight: 11,
+    },
+    recentSection: {
+      flex: 1,
+      gap: spacing.xs + 2,
+    },
+    recentHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 2,
+    },
+    recentSectionTitle: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: theme.colors.textPrimary,
+      letterSpacing: -0.2,
+    },
+    recentCountText: {
+      fontSize: 11,
+      color: theme.colors.textTertiary,
+      fontWeight: '600',
+    },
+    recentList: {
+      gap: spacing.xs + 2,
+    },
+    recentCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
+      ...shadows.soft,
+    },
+    recentCardPressed: {
+      backgroundColor: theme.colors.surfaceSubtle,
+      transform: [{ scale: 0.98 }],
+    },
+    resumeThumbWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.chip,
+      backgroundColor: theme.colors.surfaceSubtle,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    resumeThumbImage: {
+      width: '100%',
+      height: '100%',
+    },
+    resumeDetails: {
+      flex: 1,
+      gap: 1,
+    },
+    resumeFileName: {
+      fontSize: 12.5,
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+    },
+    resumeMeta: {
+      fontSize: 10.5,
+      color: theme.colors.textSecondary,
+    },
+    resumeArrowBtn: {
+      width: 24,
+      height: 24,
+      borderRadius: radius.full,
+      backgroundColor: theme.colors.surfaceSubtle,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    quickStartCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+      ...shadows.soft,
+    },
+    quickStartCardPressed: {
+      backgroundColor: theme.colors.surfaceSubtle,
+    },
+    quickStartIconCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.chip,
+      backgroundColor: theme.colors.brandTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    quickStartTextGroup: {
+      flex: 1,
+      gap: 2,
+    },
+    quickStartTitle: {
+      fontSize: 12.5,
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+    },
+    quickStartSub: {
+      fontSize: 10.5,
+      color: theme.colors.textSecondary,
+      lineHeight: 14,
+    },
+  });
