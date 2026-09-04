@@ -184,3 +184,23 @@
     inset: 9px;
   }
 }
+
+/* ─── Dark mode overrides ────────────────────────────────────────────────── */
+.dark .drop-zone {
+  background:
+    radial-gradient(circle at 50% -15%, color-mix(in srgb, var(--drop-accent) 22%, transparent), transparent 55%),
+    var(--surface);
+  border-color: color-mix(in srgb, var(--drop-accent) 24%, var(--line));
+}
+
+.dark .drop-zone__icon {
+  background: color-mix(in srgb, var(--drop-accent) 22%, var(--surface-subtle));
+  border-color: color-mix(in srgb, var(--drop-accent) 30%, transparent);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.dark .drop-zone__assurances span {
+  background: var(--surface-subtle);
+  border-color: var(--line);
+}
+

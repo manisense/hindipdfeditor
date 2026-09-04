@@ -53,3 +53,57 @@
   --radius-xl: 24px;
   --radius-2xl: 30px;
 }
+
+/* ─── Dark mode — next-themes adds class="dark" to <html> ──────────────────
+   Only the semantic/surface tokens change; brand blue stays the same.
+   All existing components automatically adapt via var() references.        */
+.dark {
+  /* Brand — stays #1843dd but tint/wash dim slightly for dark backgrounds */
+  --brand-tint: #1e2d5c;
+  --brand-wash: #16204a;
+
+  /* Accent green */
+  --accent: #22c55e;
+  --accent-500: #4ade80;
+  --accent-tint: #14291f;
+
+  /* Navy — lighten on dark bg */
+  --navy: #e8eaf0;
+  --navy-800: #c9ccd8;
+
+  /* Ink / text */
+  --ink: #e8eaf0;
+  --muted: #94a0b2;
+
+  /* Surfaces */
+  --cream: #0f1117;
+  --background: #0f1117;
+  --surface: #181b26;
+  --surface-subtle: #1e2130;
+
+  /* Borders */
+  --line: #282c3e;
+  --line-strong: #323650;
+
+  /* Pop colours — muted versions for dark */
+  --pop-yellow: #b89227;
+  --pop-yellow-tint: #23200c;
+  --pop-lav: #2a274a;
+  --pop-lav-ink: #a89cf5;
+  --pop-coral: #c4603a;
+  --pop-yellow-ink: #c9a438;
+
+  /* Semantic */
+  --danger: #f87171;
+  --danger-soft: #2a1116;
+  --success: #4ade80;
+  --success-soft: #12291c;
+  --warning: #fbbf24;
+  --warning-soft: #221a09;
+
+  /* Shadows — heavier on dark to preserve depth */
+  --shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.45);
+  --shadow-brand: 0 14px 34px rgba(24, 67, 221, 0.35);
+  --shadow-card: 0 20px 60px rgba(0, 0, 0, 0.55);
+  --shadow-float: 0 8px 30px rgba(0, 0, 0, 0.40);
+}

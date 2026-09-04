@@ -224,3 +224,16 @@
     animation: none;
   }
 }
+
+/* ─── Dark mode overrides ────────────────────────────────────────────────── */
+.dark .app-popup__panel {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 32px 90px rgba(0, 0, 0, 0.6),
+    0 8px 28px rgba(24, 67, 221, 0.2);
+}
+
+.dark .app-popup__actions {
+  background: color-mix(in srgb, var(--popup-soft) 42%, var(--surface));
+}
+

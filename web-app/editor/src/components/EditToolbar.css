@@ -158,3 +158,11 @@
     flex: 1;
   }
 }
+
+/* ─── Dark mode overrides ────────────────────────────────────────────────── */
+.dark .edit-toolbar {
+  background: rgba(24, 27, 38, 0.96);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+}
+
