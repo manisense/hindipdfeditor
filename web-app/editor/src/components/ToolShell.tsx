@@ -12,7 +12,6 @@ import type { ReactNode } from 'react';
 
 import { useLanguage } from '../lib/i18n';
 import { TOOLS, toolHref, type ToolId, type ToolMeta } from '../lib/tools';
-import { ThemeToggle } from './ThemeToggle';
 import './ToolShell.css';
 
 type Step = { label: string; active?: boolean; done?: boolean };
@@ -98,8 +97,6 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
               <Globe size={13} style={{ color: 'var(--brand)' }} />
               <span className="tool-shell__lang-text">{isHindi ? 'English' : 'हिन्दी'}</span>
             </button>
-
-            <ThemeToggle size="sm" />
 
             <a className="tool-shell__all-tools" href="/edit/#features">
               <Grid2X2 size={16} strokeWidth={2.2} aria-hidden="true" />

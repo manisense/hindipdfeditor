@@ -318,10 +318,4 @@
   }
 }
 
-/* ─── Dark mode overrides ────────────────────────────────────────────────── */
-.dark .utility-tool__panel {
-  background: rgba(24, 27, 38, 0.95);
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
-}
 

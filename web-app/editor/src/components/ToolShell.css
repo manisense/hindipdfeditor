@@ -461,41 +461,4 @@
   }
 }
 
-/* ─── Dark mode glassmorphism & background overrides ─────────────────────── */
-.dark .tool-shell {
-  background:
-    linear-gradient(to right, rgba(24, 67, 221, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(24, 67, 221, 0.06) 1px, transparent 1px),
-    var(--cream);
-  background-size: 44px 44px;
-}
-
-.dark .tool-shell__ambient span:nth-child(1) {
-  opacity: 0.45;
-}
-
-.dark .tool-shell__ambient span:nth-child(2) {
-  opacity: 0.35;
-}
-
-.dark .tool-shell__header {
-  background: rgba(24, 27, 38, 0.88);
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
-}
-
-.dark .tool-shell__tool-switcher {
-  background: rgba(24, 27, 38, 0.78);
-  border-color: rgba(255, 255, 255, 0.07);
-}
-
-.dark .tool-shell__tool-switcher a:hover {
-  background: var(--surface-subtle);
-  color: var(--ink);
-}
-
-.dark .tool-shell__footer {
-  background: rgba(24, 27, 38, 0.90);
-  border-top-color: var(--line);
-}
 

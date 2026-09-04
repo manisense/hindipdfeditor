@@ -101,51 +101,7 @@
   padding-inline: 24px;
 }
 
-/* ─── Dark mode overrides for home page ────────────────────────────────────
-   Tailwind utility classes that use hardcoded colours (e.g. bg-white,
-   bg-[#f4f5f7]) need a targeted override because @theme vars alone can't
-   reach into Tailwind's utility classes.                                   */
-.dark .home-root {
-  background: var(--color-cream, #0f1117);
-  color: var(--color-ink, #e8eaf0);
-}
-
-/* Tailwind @theme dark-mode variable aliases — these feed Tailwind utilities
-   like text-ink, bg-cream, bg-line, etc. */
-@layer base {
-  .dark {
-    --color-ink: #e8eaf0;
-    --color-muted: #94a0b2;
-    --color-cream: #0f1117;
-    --color-line: #282c3e;
-    --color-brand-tint: #1e2d5c;
-    --color-brand-wash: #16204a;
-    --color-accent-tint: #14291f;
-    --color-pop-yellow-tint: #23200c;
-    --color-pop-lav: #2a274a;
-  }
-}
-
-/* Hardcoded bg-white surfaces inside hero cards → dark surface */
-.dark .home-root .rounded-2xl.bg-\[#f4f5f7\],
-.dark .home-root [class*="bg-[#f4f5f7]"],
-.dark .home-root [class*="bg-[#f7f8fa]"] {
-  background-color: var(--color-surface-subtle, #1e2130) !important;
-}
-
-.dark .home-root [class*="bg-white"],
-.dark .home-root .bg-white {
-  background-color: var(--color-surface, #181b26) !important;
-  border-color: var(--color-line, #282c3e);
-}
-
-/* Nav glassmorphism on dark */
-.dark .home-root header.backdrop-blur-xl {
-  background: rgba(24, 27, 38, 0.82) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
-}
-
-/* Mobile nav menu animation & dark mode */
+/* Mobile nav menu animation */
 @keyframes mobileMenuSlideDown {
   from {
     opacity: 0;
@@ -161,17 +117,8 @@
   animation: mobileMenuSlideDown 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.dark .home-root #mobile-nav-menu {
-  background: rgba(24, 27, 38, 0.96) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
 [id] {
   scroll-margin-top: 80px;
 }
 
-/* Hero gradient radial — flip to dark tint */
-.dark .home-root [style*="radial-gradient"] {
-  --radial-start: #0f1425;
-}
 

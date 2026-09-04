@@ -35,8 +35,4 @@
   position: relative;
 }
 
-/* ─── Dark mode overrides ────────────────────────────────────────────────── */
-.dark .pdf-page-viewer__scroll {
-  background: #141722;
-}
 
