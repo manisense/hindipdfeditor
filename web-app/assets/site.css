@@ -841,12 +841,37 @@ td {
 
 @media (max-width: 560px) {
   .nav {
-    min-height: 56px;
-    padding: 0 16px;
+    min-height: 54px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .brand {
+    gap: 8px;
+    font-size: 15px;
+  }
+
+  .brand img {
+    height: 28px;
+    width: 28px;
   }
 
   .brand span {
-    font-size: 16px;
+    font-size: 15px;
+  }
+
+  .nav-actions {
+    gap: 8px;
+  }
+
+  .nav-actions .nav-support {
+    display: none;
+  }
+
+  .button {
+    min-height: 36px;
+    padding: 6px 14px;
+    font-size: 13px;
   }
 
   .hero-tools {

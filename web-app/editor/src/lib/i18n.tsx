@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export type Language = 'en' | 'hi';
@@ -19,7 +20,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'nav.guides': 'Guides',
     'nav.openEditor': 'Open editor',
     'nav.googlePlay': 'Google Play',
-    'nav.switchLang': '🇮🇳 हिन्दी',
+    'nav.switchLang': 'हिन्दी',
 
     // Hero
     'hero.badge': 'Free to use · runs locally · no account',
@@ -162,7 +163,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'nav.guides': 'गाइड्स और लेख',
     'nav.openEditor': 'एडिटर खोलें',
     'nav.googlePlay': 'गूगल प्ले',
-    'nav.switchLang': '🇬🇧 English',
+    'nav.switchLang': 'English',
 
     // Hero
     'hero.badge': '100% फ्री · सीधे ब्राउज़र में · कोई खाता नहीं',

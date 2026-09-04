@@ -575,6 +575,33 @@
           gap: 28px;
         }
       }
+
+      @media (max-width: 560px) {
+        .header-wrapper {
+          padding: 0 10px;
+          top: 8px;
+        }
+        .nav-container {
+          height: 54px;
+          padding: 0 8px 0 12px;
+          gap: 8px;
+        }
+        .brand-logo {
+          font-size: 15px;
+          gap: 8px;
+        }
+        .brand-logo img {
+          width: 28px;
+          height: 28px;
+        }
+        .btn-play {
+          display: none;
+        }
+        .btn-editor {
+          padding: 8px 14px;
+          font-size: 13px;
+        }
+      }
     </style>
 
     <script type="application/ld+json">
@@ -677,9 +704,9 @@
 
           <!-- Language & Category Filter Tabs -->
           <div class="filter-tabs" role="tablist" style="margin-bottom: 12px;">
-            <button class="tab-btn active" data-lang-filter="all" role="tab">🌐 All Languages (सभी)</button>
-            <button class="tab-btn" data-lang-filter="hi" role="tab">🇮🇳 हिन्दी गाइड्स</button>
-            <button class="tab-btn" data-lang-filter="en" role="tab">🇬🇧 English Guides</button>
+            <button class="tab-btn active" data-lang-filter="all" role="tab">All Languages (सभी)</button>
+            <button class="tab-btn" data-lang-filter="hi" role="tab">हिन्दी गाइड्स</button>
+            <button class="tab-btn" data-lang-filter="en" role="tab">English Guides</button>
           </div>
 
           <div class="filter-tabs" role="tablist">
@@ -697,27 +724,24 @@
         <!-- Featured Flagship Article -->
         <a href="/articles/hindi-pdf-kaise-edit-kare/" class="featured-card" data-category="typography" data-lang="hi">
           <div>
-            <span class="badge-tag tag-blue">विशेष गाइड · 🇮🇳 हिन्दी</span>
+            <span class="badge-tag tag-blue">विशेष गाइड · हिन्दी</span>
             <h2>हिंदी पीडीएफ कैसे एडिट करें — PDF में हिंदी लिखने और बदलने का आसान तरीका</h2>
             <p>
               जानिए कैसे बिना फॉन्ट टूटे या मात्रा खराब हुए अपने मोबाइल या कंप्यूटर पर शुद्ध देवनागरी यूनिकोड के साथ सरकारी फॉर्म और पीडीएफ एडिट करें।
             </p>
             <div class="card-footer" style="border: none; padding-top: 18px; margin-top: 10px;">
-              <span>⏱️ 5 min read · अपडेटेड 2026</span>
+              <span>5 min read · अपडेटेड 2026</span>
               <span class="card-link-text">पूरी गाइड पढ़ें →</span>
             </div>
           </div>
-          <div class="benchmark-box">
-            <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em;">
-              Ligature Shaping Benchmark
-            </div>
+          <div class="benchmark-preview">
             <div class="benchmark-row benchmark-row-fail">
-              <span>Canva / Acrobat:</span>
-              <span style="font-family: monospace;">क + ् + ष ➔ क ् ष ❌</span>
+              <span>Standard PDF Tools:</span>
+              <span style="font-family: monospace; font-size: 13px;">क ् ष ➔ कष (Detached)</span>
             </div>
             <div class="benchmark-row benchmark-row-pass">
               <span>Hindi PDF Editor:</span>
-              <span style="font-family: 'Noto Sans Devanagari', sans-serif; font-size: 15px;">क + ् + ष ➔ क्ष ✅</span>
+              <span style="font-family: 'Noto Sans Devanagari', sans-serif; font-size: 15px;">क + ् + ष ➔ क्ष</span>
             </div>
           </div>
         </a>
@@ -832,14 +856,14 @@
           <!-- Hindi Article 1: Kaise Edit Kare -->
           <a href="/articles/hindi-pdf-kaise-edit-kare/" class="guide-card" data-category="typography" data-lang="hi">
             <div>
-              <span class="badge-tag tag-blue">🇮🇳 हिन्दी · टाइपोग्राफी</span>
+              <span class="badge-tag tag-blue">हिन्दी · टाइपोग्राफी</span>
               <h3>हिंदी पीडीएफ कैसे एडिट करें (PDF में हिंदी टाइपिंग और सुधार)</h3>
               <p>
                 मोबाइल और कंप्यूटर पर बिना किसी सॉफ्टवेयर इंस्टालेशन के सीधे ब्राउज़र में देवनागरी टेक्स्ट लिखने और बदलने की गाइड।
               </p>
             </div>
             <div class="card-footer">
-              <span>⏱️ 4 min read</span>
+              <span>4 min read</span>
               <span class="card-link-text">गाइड पढ़ें →</span>
             </div>
           </a>
@@ -847,14 +871,14 @@
           <!-- Hindi Article 2: Kruti Dev Unicode -->
           <a href="/articles/kruti-dev-pdf-unicode-converter-hindi/" class="guide-card" data-category="typography" data-lang="hi">
             <div>
-              <span class="badge-tag tag-blue">🇮🇳 हिन्दी · फॉन्ट कन्वर्जन</span>
+              <span class="badge-tag tag-blue">हिन्दी · फॉन्ट कन्वर्जन</span>
               <h3>कृति देव 010 पीडीएफ को यूनिकोड में कैसे बदलें और एडिट करें</h3>
               <p>
                 पुरानी कृति देव फाइलों में दिखने वाले 'd`fr nso' जैसे अजीब अंग्रेजी अक्षरों को ठीक करें और मोबाइल में पढ़ने योग्य शुद्ध यूनिकोड में बदलें।
               </p>
             </div>
             <div class="card-footer">
-              <span>⏱️ 5 min read</span>
+              <span>5 min read</span>
               <span class="card-link-text">गाइड पढ़ें →</span>
             </div>
           </a>
@@ -862,14 +886,14 @@
           <!-- Hindi Article 3: Sarkari Admit Card Affidavit -->
           <a href="/articles/sarkari-admit-card-name-correction-affidavit-hindi/" class="guide-card" data-category="govt" data-lang="hi">
             <div>
-              <span class="badge-tag tag-green">🇮🇳 हिन्दी · सरकारी भर्ती</span>
+              <span class="badge-tag tag-green">हिन्दी · सरकारी भर्ती</span>
               <h3>एडमिट कार्ड और सरकारी फॉर्म में नाम सुधार शपथ पत्र (Affidavit) कैसे बनाएं</h3>
               <p>
                 UP Police, BPSC, SSC GD और रेलवे भर्ती परीक्षाओं के लिए नाम और पिता के नाम में स्पेलिंग गलती सुधारने का शपथ पत्र प्रारूप।
               </p>
             </div>
             <div class="card-footer">
-              <span>⏱️ 4 min read</span>
+              <span>4 min read</span>
               <span class="card-link-text">गाइड पढ़ें →</span>
             </div>
           </a>
@@ -877,14 +901,14 @@
           <!-- Hindi Article 4: Bhulekh Khasra Khatauni -->
           <a href="/articles/khasra-khatauni-bhulekh-sudhar-hindi-pdf/" class="guide-card" data-category="govt" data-lang="hi">
             <div>
-              <span class="badge-tag tag-green">🇮🇳 हिन्दी · भूलेख और राजस्व</span>
+              <span class="badge-tag tag-green">हिन्दी · भूलेख और राजस्व</span>
               <h3>भूलेख खसरा-खतौनी और परिमार्जन पीडीएफ में नाम सुधार कैसे करें</h3>
               <p>
                 उत्तर प्रदेश (UP Bhulekh), बिहार परिमार्जन और मध्य प्रदेश भूलेख खतौनी में नाम, रकबा या गाटा संख्या सुधार के लिए पीडीएफ तैयार करने की विधि।
               </p>
             </div>
             <div class="card-footer">
-              <span>⏱️ 4 min read</span>
+              <span>4 min read</span>
               <span class="card-link-text">गाइड पढ़ें →</span>
             </div>
           </a>

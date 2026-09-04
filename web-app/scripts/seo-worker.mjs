@@ -456,6 +456,15 @@ function generateArticleHtml(item) {
         .nav-menu { display: none; }
         .foot-grid { grid-template-columns: 1fr; gap: 28px; }
       }
+
+      @media (max-width: 560px) {
+        .header-wrapper { padding: 0 10px; top: 8px; }
+        .nav-container { height: 54px; padding: 0 8px 0 12px; gap: 8px; }
+        .brand-logo { font-size: 15px; gap: 8px; }
+        .brand-logo img { width: 28px; height: 28px; }
+        .btn-play { display: none; }
+        .btn-editor { padding: 8px 14px; font-size: 13px; }
+      }
     </style>
 
     <script type="application/ld+json">
@@ -636,7 +645,7 @@ function updateArticlesHub(item) {
   };
 
   const meta = categoryMap[item.category] || { tone: 'tag-blue', filter: 'all' };
-  const badgeLabel = isHindi ? `🇮🇳 हिन्दी · ${item.category}` : item.category;
+  const badgeLabel = isHindi ? `हिन्दी · ${item.category}` : item.category;
 
   const cardHtml = `
           <!-- Article: ${item.slug} -->

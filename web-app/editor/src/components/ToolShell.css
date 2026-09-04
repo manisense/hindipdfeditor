@@ -155,6 +155,28 @@
   color: var(--ink);
 }
 
+.tool-shell__lang-btn {
+  align-items: center;
+  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  gap: 5px;
+  padding: 5px 10px;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.tool-shell__lang-btn:hover {
+  background: var(--brand-wash);
+  border-color: color-mix(in srgb, var(--brand) 25%, transparent);
+  color: var(--brand);
+}
+
 .tool-shell__main {
   flex: 1;
   margin: 0 auto;
@@ -364,6 +386,14 @@
     display: none;
   }
 
+  .tool-shell__lang-text {
+    display: none;
+  }
+
+  .tool-shell__lang-btn {
+    padding: 6px 9px;
+  }
+
   .tool-shell__all-tools {
     padding-inline: 11px;
   }
@@ -430,3 +460,42 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ─── Dark mode glassmorphism & background overrides ─────────────────────── */
+.dark .tool-shell {
+  background:
+    linear-gradient(to right, rgba(24, 67, 221, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(24, 67, 221, 0.06) 1px, transparent 1px),
+    var(--cream);
+  background-size: 44px 44px;
+}
+
+.dark .tool-shell__ambient span:nth-child(1) {
+  opacity: 0.45;
+}
+
+.dark .tool-shell__ambient span:nth-child(2) {
+  opacity: 0.35;
+}
+
+.dark .tool-shell__header {
+  background: rgba(24, 27, 38, 0.88);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+}
+
+.dark .tool-shell__tool-switcher {
+  background: rgba(24, 27, 38, 0.78);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.dark .tool-shell__tool-switcher a:hover {
+  background: var(--surface-subtle);
+  color: var(--ink);
+}
+
+.dark .tool-shell__footer {
+  background: rgba(24, 27, 38, 0.90);
+  border-top-color: var(--line);
+}
+

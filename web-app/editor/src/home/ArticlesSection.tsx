@@ -34,7 +34,7 @@ export function ArticlesSection() {
 
   const articlesHi = [
     {
-      category: '🇮🇳 टाइपोग्राफी',
+      category: 'टाइपोग्राफी',
       title: 'हिंदी पीडीएफ कैसे एडिट करें — PDF में हिंदी लिखने और बदलने का आसान तरीका',
       desc: 'जानिए कैसे बिना फॉन्ट टूटे या मात्रा बिखरे अपने मोबाइल या कंप्यूटर पर शुद्ध देवनागरी यूनिकोड के साथ सरकारी फॉर्म और पीडीएफ एडिट करें।',
       href: '/articles/hindi-pdf-kaise-edit-kare/',
@@ -42,7 +42,7 @@ export function ArticlesSection() {
       readTime: '5 मिनट',
     },
     {
-      category: '🇮🇳 सरकारी भर्ती',
+      category: 'सरकारी भर्ती',
       title: 'एडमिट कार्ड और सरकारी फॉर्म में नाम सुधार शपथ पत्र (Affidavit) कैसे बनाएं',
       desc: 'UP Police, BPSC, SSC GD और रेलवे भर्ती परीक्षाओं के लिए नाम और पिता के नाम में स्पेलिंग गलती सुधारने का पूरा फॉर्मेट।',
       href: '/articles/sarkari-admit-card-name-correction-affidavit-hindi/',
@@ -50,7 +50,7 @@ export function ArticlesSection() {
       readTime: '4 मिनट',
     },
     {
-      category: '🇮🇳 फॉन्ट कन्वर्जन',
+      category: 'फॉन्ट कन्वर्जन',
       title: 'कृति देव 010 पीडीएफ को यूनिकोड में कैसे बदलें और एडिट करें',
       desc: 'पुरानी कृति देव फाइलों में दिखने वाले अजीब अंग्रेजी अक्षरों (d`fr nso) को ठीक करें और मोबाइल में पढ़ने योग्य शुद्ध यूनिकोड में बदलें।',
       href: '/articles/kruti-dev-pdf-unicode-converter-hindi/',
