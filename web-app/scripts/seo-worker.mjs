@@ -463,6 +463,12 @@ function generateArticleHtml(item) {
         .btn-play { display: none; }
         .btn-editor { padding: 8px 14px; font-size: 13px; }
       }
+      @media (max-width: 520px) {
+        .nav-container { padding: 0 8px 0 14px; gap: 8px; }
+        .brand-logo { font-size: 15px; gap: 8px; }
+        .btn-play { display: none; }
+        .btn-editor { padding: 8px 14px; font-size: 13px; }
+      }
     </style>
 
     <script type="application/ld+json">
