@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { useTx } from "../lib/i18n";
 import { AppStatus } from "./AppStatus";
 import "./TurnstileWidget.css";
 
@@ -32,13 +33,14 @@ export function TurnstileWidget({
   onToken: (token: string | null) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
+  const tx = useTx();
+  const [error, setError] = useState<"unconfigured" | "failed" | null>(null);
 
   useEffect(() => {
     const sitekey = import.meta.env.VITE_TURNSTILE_SITE_KEY as
       string | undefined;
     if (!sitekey) {
-      setError("AI security configuration is unavailable.");
+      setError("unconfigured");
       onToken(null);
       return;
     }
@@ -54,7 +56,7 @@ export function TurnstileWidget({
         "expired-callback": () => onToken(null),
         "error-callback": () => {
           onToken(null);
-          setError("Security check failed. Reload and try again.");
+          setError("failed");
         },
         theme: "light",
       });
@@ -82,7 +84,13 @@ export function TurnstileWidget({
   return (
     <div className="turnstile-widget">
       <div className="turnstile-widget__frame" ref={containerRef} aria-label="Security check" />
-      {error && <AppStatus tone="error">{error}</AppStatus>}
+      {error && (
+        <AppStatus tone="error">
+          {error === "unconfigured"
+            ? tx("AI security configuration is unavailable.", "AI सुरक्षा सेटिंग उपलब्ध नहीं है।")
+            : tx("Security check failed. Reload and try again.", "सुरक्षा चेक विफल रहा। पेज रीलोड करके फिर कोशिश करें।")}
+        </AppStatus>
+      )}
     </div>
   );
 }

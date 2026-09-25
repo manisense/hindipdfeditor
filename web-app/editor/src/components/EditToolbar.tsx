@@ -1,13 +1,14 @@
 import { AppButton } from './AppButton';
 import { Check, Trash2 } from 'lucide-react';
 import type { DevanagariFontFamily } from '../lib/fontAsset';
+import { useTx } from '../lib/i18n';
 import './EditToolbar.css';
 
 export const TEXT_COLOR_PRESETS = [
-  { label: 'Black', value: '#15172c' },
-  { label: 'Blue', value: '#1843dd' },
-  { label: 'Red', value: '#c6303e' },
-  { label: 'Green', value: '#01873e' },
+  { label: 'Black', labelHi: 'काला', value: '#15172c' },
+  { label: 'Blue', labelHi: 'नीला', value: '#1843dd' },
+  { label: 'Red', labelHi: 'लाल', value: '#c6303e' },
+  { label: 'Green', labelHi: 'हरा', value: '#01873e' },
 ] as const;
 
 type Props = {
@@ -38,14 +39,15 @@ export function EditToolbar({
   onDelete,
   onDone,
 }: Props) {
+  const tx = useTx();
   return (
     <div className="edit-toolbar">
       <div className="edit-toolbar__heading">
-        <strong>Text style</strong>
-        <span>Changes apply to the selected text</span>
+        <strong>{tx('Text style', 'टेक्स्ट स्टाइल')}</strong>
+        <span>{tx('Changes apply to the selected text', 'बदलाव चुने हुए टेक्स्ट पर लागू होंगे')}</span>
       </div>
       <div className="edit-toolbar__row">
-        <div className="edit-toolbar__group" aria-label="Typeface">
+        <div className="edit-toolbar__group" aria-label={tx('Typeface', 'फॉन्ट')}>
           <button
             type="button"
             className={`edit-toolbar__chip ${fontFamily === 'NotoSansDevanagari' ? 'active' : ''}`}
@@ -62,14 +64,14 @@ export function EditToolbar({
           </button>
           <button
             type="button"
-            aria-label="Toggle bold"
+            aria-label={tx('Toggle bold', 'बोल्ड चालू/बंद')}
             className={`edit-toolbar__chip edit-toolbar__chip--bold ${fontWeight === 'bold' ? 'active' : ''}`}
             onClick={() => onFontWeightChange(fontWeight === 'bold' ? 'normal' : 'bold')}
           >
             B
           </button>
         </div>
-        <div className="edit-toolbar__group edit-toolbar__group--size" aria-label="Font size">
+        <div className="edit-toolbar__group edit-toolbar__group--size" aria-label={tx('Font size', 'फॉन्ट साइज')}>
           <AppButton
             title="A−"
             small
@@ -86,12 +88,12 @@ export function EditToolbar({
             onClick={() => onFontSizeChange(Math.min(MAX_FONT_SIZE_PT, fontSizePt + 1))}
           />
         </div>
-        <div className="edit-toolbar__group edit-toolbar__group--colors" aria-label="Text color">
+        <div className="edit-toolbar__group edit-toolbar__group--colors" aria-label={tx('Text color', 'टेक्स्ट का रंग')}>
           {TEXT_COLOR_PRESETS.map((preset) => (
             <button
               key={preset.value}
               type="button"
-              aria-label={preset.label}
+              aria-label={tx(preset.label, preset.labelHi)}
               className={`edit-toolbar__swatch ${color.toLowerCase() === preset.value ? 'active' : ''}`}
               style={{ backgroundColor: preset.value }}
               onClick={() => onColorChange(preset.value)}
@@ -101,14 +103,14 @@ export function EditToolbar({
       </div>
       <div className="edit-toolbar__actions">
         <AppButton
-          title="Delete"
+          title={tx('Delete', 'हटाएं')}
           icon={<Trash2 size={15} aria-hidden="true" />}
           small
           variant="danger"
           onClick={onDelete}
         />
         <AppButton
-          title="Done"
+          title={tx('Done', 'हो गया')}
           icon={<Check size={15} aria-hidden="true" />}
           small
           onClick={onDone}

@@ -355,3 +355,9 @@ export function LanguageProvider({ lang, pathFor, children }: LanguageProviderPr
 export function useLanguage() {
   return useContext(I18nContext);
 }
+
+/** Returns a picker for inline bilingual UI strings: `tx('Merge', 'जोड़ें')`. */
+export function useTx(): (en: string, hi: string) => string {
+  const { isHindi } = useLanguage();
+  return (en, hi) => (isHindi ? hi : en);
+}

@@ -6,12 +6,14 @@ import { DropZone } from '../components/DropZone';
 import { SelectedFileSummary } from '../components/SelectedFileSummary';
 import { ToolShell } from '../components/ToolShell';
 import { downloadPdfBytes, mergePdfFiles } from '../lib/pdfOps';
+import { useTx } from '../lib/i18n';
 import { getTool } from '../lib/tools';
 import './UtilityTool.css';
 
 const tool = getTool('merge')!;
 
 export function MergePdfTool() {
+  const tx = useTx();
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,9 +42,9 @@ export function MergePdfTool() {
       tool={tool}
       compact={files.length > 0}
       steps={[
-        { label: 'Select PDFs', active: step === 1, done: step > 1 },
-        { label: 'Merge', active: step === 2, done: step > 2 },
-        { label: 'Download', active: step === 3, done: step === 3 },
+        { label: tx('Select PDFs', 'पीडीएफ चुनें'), active: step === 1, done: step > 1 },
+        { label: tx('Merge', 'जोड़ें'), active: step === 2, done: step > 2 },
+        { label: tx('Download', 'डाउनलोड'), active: step === 3, done: step === 3 },
       ]}
     >
       <div className="utility-tool">
@@ -50,9 +52,9 @@ export function MergePdfTool() {
           <DropZone
             multiple
             accent={tool.accent}
-            title="Merge PDF files"
-            subtitle="Choose two or more PDFs. They stay on your device."
-            buttonLabel="Select PDF files"
+            title={tx('Merge PDF files', 'पीडीएफ फाइलें जोड़ें')}
+            subtitle={tx('Choose two or more PDFs. They stay on your device.', 'दो या ज्यादा पीडीएफ चुनें। फाइलें आपके डिवाइस पर ही रहती हैं।')}
+            buttonLabel={tx('Select PDF files', 'पीडीएफ फाइलें चुनें')}
             onFiles={(next) => {
               setFiles(next);
               setDoneName(null);
@@ -63,9 +65,9 @@ export function MergePdfTool() {
           <div className="utility-tool__panel">
             <SelectedFileSummary
               multiple
-              label="Merge queue"
-              name={`${files.length} PDF${files.length === 1 ? '' : 's'} ready`}
-              meta="Files will be combined in the order shown below"
+              label={tx('Merge queue', 'जोड़ने की सूची')}
+              name={tx(`${files.length} PDF${files.length === 1 ? '' : 's'} ready`, `${files.length} पीडीएफ तैयार`)}
+              meta={tx('Files will be combined in the order shown below', 'फाइलें नीचे दिखाए क्रम में जुड़ेंगी')}
             />
             <ol className="utility-tool__list">
               {files.map((file, index) => (
@@ -77,7 +79,7 @@ export function MergePdfTool() {
                     className="utility-tool__remove"
                     onClick={() => setFiles((prev) => prev.filter((_, i) => i !== index))}
                   >
-                    Remove
+                    {tx('Remove', 'हटाएं')}
                   </button>
                 </li>
               ))}
@@ -86,14 +88,14 @@ export function MergePdfTool() {
               multiple
               compact
               accent={tool.accent}
-              title="Add more PDFs"
-              subtitle="Drop additional files to append."
-              buttonLabel="Add PDFs"
+              title={tx('Add more PDFs', 'और पीडीएफ जोड़ें')}
+              subtitle={tx('Drop additional files to append.', 'और फाइलें यहाँ छोड़ें, वे आखिर में जुड़ेंगी।')}
+              buttonLabel={tx('Add PDFs', 'पीडीएफ जोड़ें')}
               onFiles={(next) => setFiles((prev) => [...prev, ...next])}
             />
             <div className="utility-tool__actions">
               <AppButton
-                title="Clear"
+                title={tx('Clear', 'सब हटाएं')}
                 variant="ghost"
                 small
                 onClick={() => {
@@ -103,17 +105,17 @@ export function MergePdfTool() {
                 }}
               />
               <AppButton
-                title={busy ? 'Merging…' : 'Merge & download'}
+                title={busy ? tx('Merging…', 'जोड़ रहे हैं…') : tx('Merge & download', 'जोड़ें और डाउनलोड करें')}
                 onClick={() => void runMerge()}
                 disabled={busy || files.length < 2}
               />
             </div>
           </div>
         )}
-        {error && <AppStatus tone="error" title="Merge failed">{error}</AppStatus>}
+        {error && <AppStatus tone="error" title={tx('Merge failed', 'जोड़ना नहीं हो पाया')}>{error}</AppStatus>}
         {doneName && (
-          <AppStatus tone="success" title="Merged PDF ready">
-            Downloaded {doneName}
+          <AppStatus tone="success" title={tx('Merged PDF ready', 'जुड़ी हुई पीडीएफ तैयार')}>
+            {tx('Downloaded', 'डाउनलोड हुई:')} {doneName}
           </AppStatus>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { FileType2, Files, ShieldCheck, UploadCloud } from 'lucide-react';
 
+import { useTx } from '../lib/i18n';
 import { AppButton } from './AppButton';
 import './DropZone.css';
 
@@ -30,12 +31,13 @@ export function DropZone({
   disabled,
   title,
   subtitle,
-  buttonLabel = 'Select PDF files',
+  buttonLabel,
   accent = '#1843dd',
   onFiles,
   children,
   compact = false,
 }: Props) {
+  const tx = useTx();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -80,23 +82,23 @@ export function DropZone({
         {multiple ? <Files size={30} strokeWidth={1.9} /> : <UploadCloud size={30} strokeWidth={1.9} />}
       </div>
       <div className="drop-zone__copy">
-        <span className="drop-zone__eyebrow">Ready when you are</span>
+        <span className="drop-zone__eyebrow">{tx('Ready when you are', 'तैयार हैं')}</span>
         <h2 className="drop-zone__title">{title}</h2>
         {subtitle && <p className="drop-zone__subtitle">{subtitle}</p>}
       </div>
       <AppButton
-        title={buttonLabel}
+        title={buttonLabel ?? tx('Select PDF files', 'पीडीएफ फाइलें चुनें')}
         icon={<UploadCloud size={17} aria-hidden="true" />}
         onClick={() => inputRef.current?.click()}
         disabled={disabled}
       />
-      <p className="drop-zone__hint">or drop PDF{multiple ? 's' : ''} here</p>
-      <div className="drop-zone__assurances" aria-label="File handling details">
+      <p className="drop-zone__hint">{tx(`or drop PDF${multiple ? 's' : ''} here`, 'या पीडीएफ यहाँ छोड़ें')}</p>
+      <div className="drop-zone__assurances" aria-label={tx('File handling details', 'फाइल की जानकारी')}>
         <span>
-          <ShieldCheck size={14} aria-hidden="true" /> Private by default
+          <ShieldCheck size={14} aria-hidden="true" /> {tx('Private by default', 'डिफ़ॉल्ट रूप से प्राइवेट')}
         </span>
         <span>
-          <FileType2 size={14} aria-hidden="true" /> PDF files only
+          <FileType2 size={14} aria-hidden="true" /> {tx('PDF files only', 'सिर्फ पीडीएफ फाइलें')}
         </span>
       </div>
       {children}

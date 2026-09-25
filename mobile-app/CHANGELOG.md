@@ -45,6 +45,13 @@ All notable changes to this project are documented here, grouped by phase (see `
     - The Kruti Dev guide now has a Hindi version.
   - Removed claims about features that do not exist: "Portal Safe (100KB)" and "e-Stamp" presets, and the translate tool's supposed manual choice of direction.
   - Article pages no longer scroll sideways on phones.
+- **Hindi tool UI**: on `/hi/` pages, every tool's labels, steps, buttons, popups, hints and warnings are now in Hindi, through a small `useTx(en, hi)` helper in `lib/i18n.tsx`. Pipeline progress messages and the error-recovery screen stay English for now.
+- **Legacy-font copy corrected**: the articles and FAQs had described the Android app's replacement mode as a web feature. The web editor blocks editing on legacy-font pages.
+- **Headers and sitemap**:
+  - Unhashed `/assets/*` now revalidate daily instead of being cached immutably for a year.
+  - HSTS is added.
+  - The daily article bot is paused.
+  - The build syncs each article's `dateModified` into the sitemap `lastmod`.
 
 ### Added — Unified Design System & Vector Icon Infrastructure
 

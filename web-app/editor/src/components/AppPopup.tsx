@@ -10,6 +10,7 @@ import {
 import { createPortal } from 'react-dom';
 import { CircleCheck, CircleX, Info, TriangleAlert, X } from 'lucide-react';
 
+import { useTx } from '../lib/i18n';
 import { AppButton } from './AppButton';
 import {
   AppPopupContext,
@@ -60,8 +61,9 @@ export function AppPopup({
   eyebrow = 'Hindi PDF Editor',
   tone = 'info',
   onClose,
-  closeLabel = 'Close popup',
+  closeLabel,
 }: AppPopupProps) {
+  const tx = useTx();
   const titleId = useId();
   const bodyId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -154,7 +156,7 @@ export function AppPopup({
             <button
               type="button"
               className="app-popup__close"
-              aria-label={closeLabel}
+              aria-label={closeLabel ?? tx('Close popup', 'पॉपअप बंद करें')}
               onClick={onClose}
             >
               <X size={19} aria-hidden="true" />
@@ -178,6 +180,7 @@ type PopupRequest = ShowPopupOptions & {
 
 /** Provides a queued, promise-based replacement for native browser alert windows. */
 export function AppPopupProvider({ children }: { children: ReactNode }) {
+  const tx = useTx();
   const nextIdRef = useRef(0);
   const queueRef = useRef<PopupRequest[]>([]);
   const activeRef = useRef<PopupRequest | null>(null);
@@ -233,7 +236,7 @@ export function AppPopupProvider({ children }: { children: ReactNode }) {
         <p>{active?.message}</p>
         <div className="app-popup__inline-action">
           <AppButton
-            title={active?.actionLabel ?? 'Got it'}
+            title={active?.actionLabel ?? tx('Got it', 'ठीक है')}
             onClick={closeActive}
             data-popup-initial-focus
           />
