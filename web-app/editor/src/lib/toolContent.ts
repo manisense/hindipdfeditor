@@ -41,7 +41,7 @@ export const TOOL_COPY: Record<ToolId, Record<Language, ToolCopy>> = {
         },
         {
           q: 'Can it edit PDFs made with Kruti Dev or other legacy fonts?',
-          a: 'The editor detects common legacy Hindi fonts such as Kruti Dev, DevLys and Chanakya and warns you first. It does not convert them to Unicode; new text you add is typed in a Unicode Devanagari font.',
+          a: 'The editor detects legacy Hindi fonts such as Kruti Dev, DevLys and Chanakya and turns editing off on those pages, because their text cannot be changed safely. The Android app offers a replacement mode for them after you confirm. Neither converts the old text to Unicode.',
         },
       ],
     },
@@ -68,7 +68,7 @@ export const TOOL_COPY: Record<ToolId, Record<Language, ToolCopy>> = {
         },
         {
           q: 'क्या यह कृति देव (Kruti Dev) जैसे पुराने फॉन्ट वाली पीडीएफ एडिट कर सकता है?',
-          a: 'एडिटर कृति देव, DevLys और चाणक्य जैसे पुराने हिंदी फॉन्ट पहचानकर पहले चेतावनी देता है। यह उन्हें यूनिकोड में कन्वर्ट नहीं करता; आप जो नया टेक्स्ट जोड़ते हैं वह यूनिकोड देवनागरी फॉन्ट में होता है।',
+          a: 'एडिटर कृति देव, DevLys और चाणक्य जैसे पुराने हिंदी फॉन्ट पहचानता है और उन पेजों पर एडिटिंग बंद कर देता है, क्योंकि उनका टेक्स्ट सुरक्षित रूप से नहीं बदला जा सकता। एंड्रॉयड ऐप में पुष्टि के बाद ऐसे पेज पर नया टेक्स्ट जोड़ा जा सकता है। पुराना टेक्स्ट यूनिकोड में नहीं बदलता।',
         },
       ],
     },

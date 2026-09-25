@@ -80,7 +80,7 @@ Hindi PDF Editor does not edit the PDF's glyphs. Instead:
 **A:** Many editors change existing Hindi text without running it through a shaping engine, so matras land in the wrong place and conjuncts split. Hindi PDF Editor has the browser shape every new line of Hindi text.
 
 ### Q: Can it convert Kruti Dev PDFs to Unicode?
-**A:** No. It detects Kruti Dev and other legacy fonts and warns the user. The user can then cover old text and add new text in a Unicode font. The existing legacy text is not converted.
+**A:** No. It detects Kruti Dev and other legacy fonts. The web editor turns editing off on those pages. The Android app can, after the user confirms, keep such a page as an image and add new text in a Unicode font. The existing legacy text is never converted.
 
 ### Q: Is it safe for government documents?
 **A:** Editing happens on the device and the file is not uploaded unless the user chooses an AI feature. Use it for forms, affidavits and applications you are allowed to fill in. Do not alter issued documents such as admit cards or land records; corrections to those come from the issuing office.

@@ -404,7 +404,7 @@
           "name": "Does Hindi PDF Editor convert Kruti Dev to Unicode?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "No. It detects Kruti Dev and similar fonts and warns you, then lets you cover old text and type new text in a Unicode font. The existing Kruti Dev text on the page is not converted."
+            "text": "No. It detects Kruti Dev and similar fonts. On the web, editing is switched off for those pages. The Android app can replace text on them in a Unicode font after you confirm. In both cases the existing Kruti Dev text is not converted."
           }
         },
         {
@@ -468,7 +468,7 @@
         <p class="article-meta">Updated 25 September 2026 · about 5 minutes to read</p>
         <div class="direct-answer">
           <h4>Short answer</h4>
-          <p>Kruti Dev stores Hindi shapes on ordinary English keyboard letters, so without the font you see the English letters underneath. To get real Hindi text, copy it out and run it through a Kruti Dev–to–Unicode converter, then proofread. To change just a few words on the PDF, cover the old line and type the new one in a Unicode font. <a href="/edit-hindi-pdf/">Hindi PDF Editor</a> detects Kruti Dev and handles this case, but it doesn't convert the old text.</p>
+          <p>Kruti Dev stores Hindi shapes on ordinary English keyboard letters, so without the font you see the English letters underneath. To get real Hindi text, copy it out and run it through a Kruti Dev–to–Unicode converter, then proofread. To change just a few words on the PDF itself, use the Hindi PDF Editor Android app's replacement mode. The web editor detects Kruti Dev and switches editing off for that page.</p>
         </div>
 
         <h2>Why Kruti Dev turns into "d`fr nso"</h2>
@@ -496,22 +496,25 @@
 
         <h2>Option 3: Change a few words on the PDF itself</h2>
         <p>Sometimes rebuilding makes no sense. You just need one date or one name changed on a notice, and the rest has to stay exactly as it is.</p>
+        <p><strong>On the web:</strong> <a href="/edit-hindi-pdf/">Hindi PDF Editor</a> checks the fonts when you open a PDF. If a page uses Kruti Dev or another legacy font, it tells you which one and switches editing off for that page. The text there can't be edited safely, and guessing would put garbled letters into your document.</p>
+        <p><strong>In the Android app:</strong> there is a safe replacement mode for pages with a positively identified legacy font.</p>
         <div class="step-card">
-          <h4>1. Open the PDF</h4>
-          <p>Open it in <a href="/edit-hindi-pdf/">Hindi PDF Editor</a>. The editor spots Kruti Dev and similar legacy fonts and warns you before you edit, because their text can't be read reliably.</p>
+          <h4>1. Open the PDF in the app</h4>
+          <p>Open the file in the <a href="https://play.google.com/store/apps/details?id=com.hindipdfeditor.app">Hindi PDF Editor Android app</a>. It warns you that the page uses a legacy font.</p>
         </div>
         <div class="step-card">
-          <h4>2. Confirm and cover the old words</h4>
-          <p>After you confirm, the page is kept as an image exactly as it looks. Use "Erase box" to cover the words you want to replace.</p>
+          <h4>2. Turn on replacement for that page</h4>
+          <p>After you confirm, the original page is kept as an image, exactly as it looks, and can no longer be changed underneath.</p>
         </div>
         <div class="step-card">
-          <h4>3. Type the new text in Unicode Hindi</h4>
-          <p>Use "Add text" and type with any Unicode Hindi keyboard. Pick size, weight and colour to blend in. Your new words are in Noto Sans or Noto Serif Devanagari, not Kruti Dev, so they will look slightly different from the surrounding text.</p>
+          <h4>3. Cover the old words and type the new ones</h4>
+          <p>Cover the words you want to replace and type the new text in Unicode Hindi. It is set in a Unicode font, not Kruti Dev, so it will look slightly different from the surrounding text.</p>
         </div>
         <div class="step-card">
           <h4>4. Export a new PDF</h4>
-          <p>Download the result. It looks the same on every device, but, like the original page, its text can't be copied as Unicode. The original file is left untouched.</p>
+          <p>You get a new file that looks the same on every device. The original is left untouched, and the old Kruti Dev text is still not converted.</p>
         </div>
+        <p>If the app can't identify the font at all, it treats the page as unsafe and keeps editing off. It never assumes the text is fine.</p>
 
         <h2>Stop creating new Kruti Dev files</h2>
         <p>If your office still types in Kruti Dev, you don't have to relearn the keyboard. Windows includes a Hindi keyboard, and Google Input Tools and Gboard do too. Unicode typing tools also offer a Remington-style layout (sometimes called Remington GAIL or CBI), so typists keep their muscle memory and every new file is Unicode.</p>
@@ -524,7 +527,7 @@
 
         <div class="step-card">
           <h4>Does Hindi PDF Editor convert Kruti Dev to Unicode?</h4>
-          <p>No. It detects Kruti Dev and similar fonts and warns you, then lets you cover old text and type new text in a Unicode font. The existing Kruti Dev text on the page is not converted.</p>
+          <p>No. It detects Kruti Dev and similar fonts. On the web, editing is switched off for those pages. The Android app can replace text on them in a Unicode font after you confirm. In both cases the existing Kruti Dev text is not converted.</p>
         </div>
 
         <div class="step-card">
@@ -533,8 +536,8 @@
         </div>
 
         <div class="article-cta-box">
-          <h3>Only need to change a few words?</h3>
-          <p>Open the Kruti Dev PDF, cover the old line and type the new one in Unicode Hindi. Free, no sign-up, and the file stays on your device.</p>
+          <h3>Is your PDF in Kruti Dev?</h3>
+          <p>Open it in the editor to check. It tells you which pages use a legacy font. For Unicode PDFs you can edit the Hindi text right away, free and without uploading.</p>
           <a href="/edit-hindi-pdf/" class="btn-editor" style="font-size: 15px; padding: 12px 28px;">
             Open the editor →
           </a>

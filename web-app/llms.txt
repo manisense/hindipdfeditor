@@ -43,7 +43,7 @@
 - **Web export format**: The web editor exports each page as a high-resolution image. The result looks identical everywhere, but its text is not selectable or searchable.
 - **Privacy**: Opening, editing, merging, splitting and compressing run in the browser; the PDF is not uploaded. Translation sends detected text lines, and AI text recognition sends page images of scanned pages, to a server-side Gemini proxy — only after the user confirms.
 - **Original files**: Source PDFs are never modified. Every export is a new file.
-- **Legacy fonts**: Kruti Dev, DevLys, Chanakya and similar legacy fonts are detected and the user is warned. Existing legacy text is not converted to Unicode; new text is added in a Unicode font.
+- **Legacy fonts**: Kruti Dev, DevLys, Chanakya and similar legacy fonts are detected. The web editor turns editing off on those pages, and so does the app for pages whose font cannot be identified. The Android app offers an opt-in replacement mode for identified legacy-font pages: the page is kept as an image and new text is added in a Unicode font. Existing legacy text is never converted to Unicode.
 - **Compression**: Pages are re-encoded as JPEG with a quality slider. There is no exact-size target; users lower quality until the file fits a portal limit.
 - **Cost**: Free, no watermark, no registration.
 
