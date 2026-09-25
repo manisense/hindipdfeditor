@@ -28,6 +28,21 @@ const STATIC_ENTRIES = [
   'hi',
 ];
 
+/** Sets each article's sitemap <lastmod> to the dateModified in its own JSON-LD. */
+function syncArticleLastmod() {
+  const sitemapPath = path.join(distDir, 'sitemap.xml');
+  const sitemap = readFileSync(sitemapPath, 'utf8').replace(
+    /(<loc>https:\/\/hindipdfeditor\.com\/articles\/([^<]+)\/<\/loc>\s*<lastmod>)[^<]*(<\/lastmod>)/g,
+    (whole, open, slug, close) => {
+      const file = path.join(distDir, 'articles', slug, 'index.html');
+      if (!existsSync(file)) return whole;
+      const modified = readFileSync(file, 'utf8').match(/"dateModified":\s*"([^"]+)"/)?.[1];
+      return modified ? `${open}${modified}${close}` : whole;
+    },
+  );
+  writeFileSync(sitemapPath, sitemap);
+}
+
 function copyEntry(name) {
   const from = path.join(webAppRoot, name);
   if (!existsSync(from)) {
@@ -76,4 +91,5 @@ for (const page of renderAllRoutes()) {
 
 console.log(`prepare-publish: wrote ${distDir} (${statSync(path.join(distDir, 'index.html')).size} bytes at /)`);
 
+syncArticleLastmod();
 checkSeo(distDir);

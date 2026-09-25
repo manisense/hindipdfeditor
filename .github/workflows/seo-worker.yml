@@ -1,9 +1,9 @@
 name: 24-Hour Autonomous SEO, GEO & AEO Worker
 
+# Schedule paused: daily templated articles risk Google's scaled-content policy.
+# New guides are researched and written by hand; run manually only if a reviewed
+# item is queued.
 on:
-  schedule:
-    # Runs every 24 hours at 04:00 UTC (09:30 AM IST)
-    - cron: '0 4 * * *'
   workflow_dispatch:
     # Allows manual 1-click execution anytime from GitHub Actions tab
 
