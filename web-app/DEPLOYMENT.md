@@ -135,10 +135,27 @@ After each meaningful content deploy, use **URL Inspection → Request indexing*
 
 ### 4. SEO / AEO / AISEO already in the site
 
-- Titles, descriptions, canonicals, Open Graph, Twitter cards
-- JSON-LD: Organization, WebSite, SoftwareApplication, FAQPage
-- SPA head updates when switching tools (`SeoHead`)
-- `llms.txt` for LLM / answer-engine discoverability
-- `robots.txt` allows major search + AI crawlers
+- Every home and tool page is prerendered in English and Hindi (`/hi/`), with its own title, description, canonical and reciprocal hreflang. The build fails if these drift (`scripts/check-seo.mjs`).
+- JSON-LD: Organization, WebSite, WebApplication, BreadcrumbList, FAQPage
+- `llms.txt` for LLM / answer-engine discoverability (no measured effect; keep it accurate, don't invest more)
+- `robots.txt` allows major search + AI crawlers, but Cloudflare can block them before robots.txt is read — see below
 
 You cannot finish Search Console verification from this repo alone — the DNS TXT step must be done in Cloudflare + Search Console UI.
+
+## AI crawler access (check in Cloudflare)
+
+`robots.txt` allows AI search crawlers, but Cloudflare's bot settings apply first. Secondary reports say Cloudflare changed free-plan defaults on 15 September 2026 to block AI training crawlers and some user-triggered fetchers such as ChatGPT-User. This was not confirmed against Cloudflare's own docs, and it is unclear whether it applies to Pages sites. Check the dashboard rather than assuming. Menu names change, so search the dashboard for "AI" if these moved.
+
+1. **Security → Bots** (or **AI Crawl Control**) for the `hindipdfeditor.com` zone:
+   - Is "Block AI bots" / "Block AI scrapers and crawlers" on?
+   - Which categories are blocked?
+2. Allow at least the **AI search** crawlers and the **user-triggered fetchers**:
+   - AI search: OAI-SearchBot, Claude-SearchBot, PerplexityBot.
+   - User-triggered: ChatGPT-User, Claude-User, Perplexity-User.
+   These are what get the site cited in ChatGPT, Claude and Perplexity answers. Blocking training-only crawlers (GPTBot, ClaudeBot, Google-Extended) is a separate choice. It does not remove the site from Google AI Overviews, which use Googlebot.
+3. If **Managed robots.txt** is on, compare `https://hindipdfeditor.com/robots.txt` with `web-app/robots.txt`. Cloudflare can prepend its own rules.
+4. In the AI crawler analytics view, check for requests from the bots above that are marked blocked or challenged.
+5. Add the site to **Bing Webmaster Tools** (import from Search Console). ChatGPT search and Copilot rely on Bing's index. Its AI Performance report shows which pages Copilot cites.
+
+Recheck after any Cloudflare plan or security-setting change.
+

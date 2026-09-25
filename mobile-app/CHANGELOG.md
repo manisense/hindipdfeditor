@@ -20,6 +20,7 @@ All notable changes to this project are documented here, grouped by phase (see `
   - Removed "vector PDF", "100% local / zero uploads", "HarfBuzz", "Mangal" and "convert Kruti Dev to Unicode" from the site, articles and `llms*.txt`. Web export is page images, and AI OCR and translation send data after the user consents.
   - The comparison table no longer makes unsourced claims about named competitors.
 - **Removed forgery-adjacent guides**: three articles told readers to change names, roll numbers, exam dates and plot details on issued admit cards and land records. They were deleted and 301-redirected to the affidavit and Bhulekh guides. Those two guides were rewritten around the legitimate process: a notarised affidavit, or a correction application to the issuing office.
+- `web-app/DEPLOYMENT.md` has a checklist for Cloudflare's AI-crawler settings, which can block answer-engine bots before `robots.txt` applies. It also covers Bing Webmaster Tools.
 
 ### Added — Unified Design System & Vector Icon Infrastructure
 
