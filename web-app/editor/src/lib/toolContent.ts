@@ -19,10 +19,10 @@ export type ToolCopy = {
 export const TOOL_COPY: Record<ToolId, Record<Language, ToolCopy>> = {
   edit: {
     en: {
-      heading: 'Edit Hindi PDF online',
-      metaTitle: 'Edit Hindi PDF Online Free — Devanagari Text Without Broken Matras',
+      heading: 'Edit Hindi text in PDF online',
+      metaTitle: 'Edit Hindi PDF Online Free — Change Hindi Text Without Font Problems',
       metaDescription:
-        'Replace or add Hindi (Devanagari) text in a PDF in your browser. Matras and conjuncts are shaped by the browser text engine. Free, no account, the PDF stays on your device.',
+        'Edit Hindi text in a PDF online: replace or add Devanagari text in a Hindi font, with matras and conjuncts intact. Free, no sign-up, and the PDF stays on your device.',
       intro:
         'Open a PDF, tap detected Hindi or English text to replace it, add new text boxes, or erase text baked into the page. New Hindi text is typed in Unicode and shaped by the browser, so matras like ि and conjuncts like क्ष stay joined.',
       steps: [
@@ -36,14 +36,18 @@ export const TOOL_COPY: Record<ToolId, Record<Language, ToolCopy>> = {
           a: 'Not in the web editor. Each page is exported as a high-resolution image so Devanagari always looks exactly as it did on screen. If you need selectable text, keep the original alongside the edited copy.',
         },
         {
+          q: 'Which Hindi font does it use?',
+          a: 'New text is written in Noto Sans Devanagari or Noto Serif Devanagari, Unicode Hindi fonts that work on every device. You can pick sans or serif, bold, size and colour to match the text around it. The exact font of the original PDF is not reused.',
+        },
+        {
           q: 'Can it edit PDFs made with Kruti Dev or other legacy fonts?',
           a: 'The editor detects common legacy Hindi fonts such as Kruti Dev, DevLys and Chanakya and warns you first. It does not convert them to Unicode; new text you add is typed in a Unicode Devanagari font.',
         },
       ],
     },
     hi: {
-      heading: 'हिंदी पीडीएफ ऑनलाइन एडिट करें',
-      metaTitle: 'हिंदी पीडीएफ एडिट करें — मात्राएं टूटे बिना देवनागरी टेक्स्ट बदलें',
+      heading: 'पीडीएफ में हिंदी टेक्स्ट ऑनलाइन एडिट करें',
+      metaTitle: 'हिंदी पीडीएफ एडिट करें ऑनलाइन फ्री — बिना फॉन्ट टूटे हिंदी टेक्स्ट बदलें',
       metaDescription:
         'ब्राउज़र में पीडीएफ का हिंदी टेक्स्ट बदलें या नया जोड़ें। मात्राएं और संयुक्ताक्षर सही जुड़े रहते हैं। फ्री, बिना अकाउंट, फाइल आपके डिवाइस पर ही रहती है।',
       intro:
@@ -57,6 +61,10 @@ export const TOOL_COPY: Record<ToolId, Record<Language, ToolCopy>> = {
         {
           q: 'क्या एक्सपोर्ट की गई पीडीएफ में टेक्स्ट सर्च हो सकता है?',
           a: 'वेब एडिटर में नहीं। हर पेज हाई-रेजोल्यूशन इमेज के रूप में सेव होता है ताकि देवनागरी बिल्कुल वैसी ही दिखे जैसी स्क्रीन पर थी। सर्च होने वाला टेक्स्ट चाहिए तो मूल फाइल भी संभालकर रखें।',
+        },
+        {
+          q: 'इसमें कौन सा हिंदी फॉन्ट इस्तेमाल होता है?',
+          a: 'नया टेक्स्ट Noto Sans Devanagari या Noto Serif Devanagari में लिखा जाता है — ये यूनिकोड हिंदी फॉन्ट हर डिवाइस पर चलते हैं। आसपास के टेक्स्ट से मिलाने के लिए आप सैंस या सेरिफ, बोल्ड, साइज और रंग चुन सकते हैं। मूल पीडीएफ का फॉन्ट दोबारा इस्तेमाल नहीं होता।',
         },
         {
           q: 'क्या यह कृति देव (Kruti Dev) जैसे पुराने फॉन्ट वाली पीडीएफ एडिट कर सकता है?',

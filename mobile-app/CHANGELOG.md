@@ -21,6 +21,10 @@ All notable changes to this project are documented here, grouped by phase (see `
   - The comparison table no longer makes unsourced claims about named competitors.
 - **Removed forgery-adjacent guides**: three articles told readers to change names, roll numbers, exam dates and plot details on issued admit cards and land records. They were deleted and 301-redirected to the affidavit and Bhulekh guides. Those two guides were rewritten around the legitimate process: a notarised affidavit, or a correction application to the issuing office.
 - `web-app/DEPLOYMENT.md` has a checklist for Cloudflare's AI-crawler settings, which can block answer-engine bots before `robots.txt` applies. It also covers Bing Webmaster Tools.
+- **Search Console follow-up**: `/edit/` earned about 275 of roughly 330 clicks, mostly for "hindi pdf editor" searches.
+  - A Pages Function (`web-app/functions/edit/index.js`) now 301s `/edit/` and `/edit/?tool=…` straight to `/` or the matching tool page. `_redirects` cannot match query strings.
+  - The home title and H1 now lead with "Hindi PDF Editor" and target "online free" and "Hindi font".
+  - The edit page targets "edit Hindi text in PDF" and has a new FAQ on which Hindi font is used.
 
 ### Added — Unified Design System & Vector Icon Infrastructure
 

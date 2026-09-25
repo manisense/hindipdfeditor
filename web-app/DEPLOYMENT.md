@@ -22,6 +22,8 @@ If the root directory is still `web-app/editor`, keep deploy as
 `npx wrangler deploy` — the editor `wrangler.toml` publishes `../dist` as
 static assets after `npm run build`.
 
+`web-app/functions/` holds a Pages Function that 301-redirects the old `/edit/?tool=…` URLs; it is deployed automatically when the root directory is `web-app`.
+
 Do **not** use bare `npx wrangler deploy` against the Pages project without an
 `[assets]` directory (that is what caused the missing entry-point error).
 

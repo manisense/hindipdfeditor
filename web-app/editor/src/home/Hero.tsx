@@ -90,23 +90,23 @@ export function Hero() {
 
             <Fade delay={0.05}>
               <h1 className="mt-6 font-display text-[clamp(34px,4.6vw,56px)] font-extrabold leading-[1.05] tracking-tight text-ink">
-                <span className="block font-semibold text-muted">{t('hero.titlePre')}</span>
+                <span className="block text-ink">{t('hero.titlePre')}</span>
                 <TypewriterCycle
                   className="text-ink"
                   caretClassName="bg-brand"
                   phrases={
                     isHindi
                       ? [
-                          { text: 'सही देवनागरी में।' },
+                          { text: 'हिंदी टेक्स्ट एडिट करें।' },
                           { text: 'बिना फॉन्ट टूटे।' },
                           { text: 'सरकारी फॉर्म हेतु।' },
-                          { text: 'आपके ब्राउज़र में।' },
+                          { text: 'फ्री, बिना साइन-अप।' },
                         ]
                       : [
-                          { text: 'Hindi PDFs.' },
+                          { text: 'Edit Hindi text online.' },
+                          { text: 'No broken Hindi fonts.' },
                           { text: 'हिंदी दस्तावेज़।' },
-                          { text: 'your paperwork.' },
-                          { text: 'हर हिंदी फ़ाइल।' },
+                          { text: 'Free, no sign-up.' },
                         ]
                   }
                 />

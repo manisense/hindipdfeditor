@@ -24,7 +24,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Hero
     'hero.badge': 'Free to use · runs locally · no account',
-    'hero.titlePre': 'Every tool for',
+    'hero.titlePre': 'Hindi PDF Editor',
     'hero.title1': 'Hindi PDFs.',
     'hero.title2': 'हिंदी दस्तावेज़।',
     'hero.title3': 'Bilingual edits.',
@@ -165,7 +165,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Hero
     'hero.badge': 'फ्री · सीधे ब्राउज़र में · कोई खाता नहीं',
-    'hero.titlePre': 'हिंदी पीडीएफ के सभी टूल्स,',
+    'hero.titlePre': 'हिंदी पीडीएफ एडिटर',
     'hero.title1': 'सही देवनागरी में।',
     'hero.title2': 'बिना फॉन्ट टूटे।',
     'hero.title3': 'सरकारी फॉर्म हेतु।',

@@ -16,14 +16,14 @@ const ROBOTS = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-pr
 
 const HOME_META: Record<Language, { title: string; description: string }> = {
   en: {
-    title: 'Hindi PDF Editor — Edit, Translate & Manage Hindi PDFs Online',
+    title: 'Hindi PDF Editor Online Free — Edit Hindi Text & Font in PDF',
     description:
-      'Free Hindi PDF tools in your browser: edit Devanagari text without broken matras, translate Hindi ↔ English, merge, split and compress. No account, no watermark.',
+      'Free Hindi PDF editor online: edit Hindi text in any PDF without broken matras or font problems, translate Hindi ↔ English, merge, split and compress. No sign-up, no watermark.',
   },
   hi: {
-    title: 'हिंदी पीडीएफ एडिटर — हिंदी पीडीएफ एडिट, अनुवाद, मर्ज और कंप्रेस करें',
+    title: 'हिंदी पीडीएफ एडिटर ऑनलाइन फ्री — पीडीएफ में हिंदी टेक्स्ट एडिट करें',
     description:
-      'ब्राउज़र में फ्री हिंदी पीडीएफ टूल्स: मात्राएं टूटे बिना देवनागरी टेक्स्ट एडिट करें, हिंदी ↔ अंग्रेजी अनुवाद, मर्ज, स्प्लिट और कंप्रेस। बिना अकाउंट, बिना वॉटरमार्क।',
+      'फ्री हिंदी पीडीएफ एडिटर: किसी भी पीडीएफ में हिंदी टेक्स्ट बिना मात्रा या फॉन्ट टूटे एडिट करें, हिंदी ↔ अंग्रेजी अनुवाद, मर्ज, स्प्लिट और कंप्रेस करें। बिना साइन-अप, बिना वॉटरमार्क।',
   },
 };
 
