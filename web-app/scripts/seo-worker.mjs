@@ -545,7 +545,7 @@ function generateArticleHtml(item) {
 
         <div class="article-cta-box">
           <h3>${isHindi ? 'अभी हिंदी पीडीएफ एडिट करना शुरू करें' : 'Try Hindi PDF Editor Free'}</h3>
-          <p>${isHindi ? '100% प्राइवेट · कोई सर्वर अपलोड नहीं · सही देवनागरी मात्राएं' : 'Zero server uploads · 100% Client-Side Private · Flawless Devanagari Shaping'}</p>
+          <p>${isHindi ? 'फ्री · कोई अकाउंट नहीं · एडिटिंग आपके डिवाइस पर' : 'Free · No account · Edits stay on your device'}</p>
           <a href="${toolPrefix}/edit-hindi-pdf/" class="btn-editor" style="font-size: 15px; padding: 12px 28px;">
             ${isHindi ? 'एडिटर खोलें →' : 'Open Editor Now →'}
           </a>
@@ -562,7 +562,7 @@ function generateArticleHtml(item) {
             <span>Hindi PDF <span style="color: var(--brand);">Editor</span></span>
           </a>
           <p style="color: var(--muted); font-size: 14px; line-height: 1.55;">
-            ${isHindi ? 'भारत का पहला लोकल-फर्स्ट हिंदी पीडीएफ एडिटर।' : 'Local-first Hindi PDF tools with flawless Devanagari shaping.'}
+            ${isHindi ? 'भारत का पहला लोकल-फर्स्ट हिंदी पीडीएफ एडिटर।' : 'Free Hindi PDF tools that run in your browser.'}
           </p>
         </div>
         <div class="foot-col">
@@ -583,7 +583,7 @@ function generateArticleHtml(item) {
       </div>
       <div class="foot-bottom">
         <p>© 2026 Hindi PDF Editor. All rights reserved.</p>
-        <p>100% Client-Side Processing · Zero Server Storage</p>
+        <p>Editing runs in your browser · No account needed</p>
       </div>
     </footer>
   </body>

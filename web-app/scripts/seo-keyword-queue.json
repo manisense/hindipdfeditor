@@ -9,7 +9,7 @@
   },
   {
     "slug": "kruti-dev-pdf-unicode-converter-hindi",
-    "title": "कृति देव 010 पीडीएफ को यूनिकोड में कैसे बदलें और एडिट करें",
+    "title": "कृति देव 010 पीडीएफ कैसे एडिट करें (यूनिकोड हिंदी टेक्स्ट के साथ)",
     "category": "फॉन्ट कन्वर्जन",
     "language": "hi",
     "status": "published",
@@ -25,7 +25,7 @@
   },
   {
     "slug": "khasra-khatauni-bhulekh-sudhar-hindi-pdf",
-    "title": "भूलेख खसरा-खतौनी और परिमार्जन पीडीएफ में नाम सुधार कैसे करें",
+    "title": "भूलेख खसरा-खतौनी में नाम सुधार का आवेदन कैसे करें",
     "category": "भूलेख और राजस्व",
     "language": "hi",
     "status": "published",
@@ -40,14 +40,6 @@
     "publishedDate": "2026-08-18"
   },
   {
-    "slug": "edit-sarkari-admit-card-hindi-pdf",
-    "title": "How to Edit Hindi Admit Card & Sarkari Exam PDF Forms (BPSC, UPPSC, SSC)",
-    "category": "Govt & Exams",
-    "language": "en",
-    "status": "published",
-    "publishedDate": "2026-08-18"
-  },
-  {
     "slug": "translate-hindi-pdf-to-english",
     "title": "How to Translate Hindi PDF to English Online Without Losing Page Formatting",
     "category": "Translation & AI",
@@ -57,7 +49,7 @@
   },
   {
     "slug": "kruti-dev-to-unicode-hindi-pdf-editor",
-    "title": "How to Edit Kruti Dev 010 Hindi PDF and Convert to Unicode Online",
+    "title": "How to Edit a Kruti Dev 010 Hindi PDF With New Unicode Text",
     "category": "Typography & Fonts",
     "language": "en",
     "status": "published",
@@ -132,7 +124,7 @@
       },
       {
         "title": "दस्तावेज एक्सपोर्ट करें",
-        "desc": "CO लॉगिन पर सबमिट करने के लिए क्लियर वेक्टर पीडीएफ डाउनलोड करें।"
+        "desc": "CO लॉगिन पर सबमिट करने के लिए साफ, नई पीडीएफ डाउनलोड करें।"
       }
     ],
     "faqs": [
@@ -226,102 +218,12 @@
     "publishedDate": "2026-08-22"
   },
   {
-    "slug": "khasra-khatauni-land-record-hindi-pdf-edit",
-    "title": "How to Edit Hindi Khasra-Khatauni & Land Record (Bhulekh) PDF Documents",
-    "category": "Govt & Legal",
-    "language": "en",
-    "metaDescription": "Step-by-step tutorial on how to edit and correct Hindi text, plot numbers, and owner names in Bhulekh Khasra-Khatauni land record PDFs safely.",
-    "directAnswer": "To edit a Hindi Khasra-Khatauni (Bhulekh) land record PDF, open it in Hindi PDF Editor at hindipdfeditor.com/edit-hindi-pdf/. Mask the outdated plot number, farmer name, or acreage field, and type the updated details in Unicode Hindi. Because all editing runs 100% locally in your browser, sensitive land ownership records are never uploaded to cloud servers.",
-    "readTime": "4 min read",
-    "badgeTone": "tag-green",
-    "sections": [
-      {
-        "heading": "Common Land Record Corrections (UP, MP, Bihar Bhulekh)",
-        "paragraphs": [
-          "State land records (Bhulekh) in Uttar Pradesh, Bihar, Madhya Pradesh, and Rajasthan often contain typographical mistakes in Hindi names (e.g., father's name, village Tehsil spelling, or Gata/Khasra numbers).",
-          "Correcting draft applications before revenue court or Tehsil registry requires clean Devanagari typography that matches the original government land record style."
-        ]
-      }
-    ],
-    "steps": [
-      {
-        "title": "Upload Bhulekh PDF Locally",
-        "desc": "Load your land record PDF into the editor. WebAssembly parses the pages on your device without server transmission."
-      },
-      {
-        "title": "Mask Name or Khasra Number",
-        "desc": "Click on the land record entry that needs modification to place an automatic background mask."
-      },
-      {
-        "title": "Enter Correct Hindi Details",
-        "desc": "Type the corrected Hindi name or numeric digits. Select font size to match the original document table."
-      },
-      {
-        "title": "Download Clean Vector PDF",
-        "desc": "Export the updated PDF instantly with crisp text suitable for printing and submission."
-      }
-    ],
-    "faqs": [
-      {
-        "q": "Are my land records uploaded to your server?",
-        "a": "No. Hindi PDF Editor is 100% local-first. Documents are processed in your browser memory and never uploaded to any remote database."
-      }
-    ],
-    "status": "published",
-    "publishedDate": "2026-08-18"
-  },
-  {
-    "slug": "up-police-bharti-admit-card-hindi-pdf-edit",
-    "title": "How to Edit UP Police Bharti & Constable Exam Admit Card Hindi PDF",
-    "category": "Govt & Exams",
-    "language": "en",
-    "metaDescription": "Guide to editing UP Police Constable recruitment admit cards, fixing Hindi name typos, examination center details, and photo signatures safely.",
-    "directAnswer": "To edit or correct details on a UP Police Constable admit card PDF, load the file into Hindi PDF Editor. Select the candidate name, roll number, or exam date line to mask and type the corrected text in Unicode Hindi. Export the vector PDF immediately with 100% correct Devanagari matras.",
-    "readTime": "4 min read",
-    "badgeTone": "tag-green",
-    "sections": [
-      {
-        "heading": "Handling Admit Card Typographical Errors",
-        "paragraphs": [
-          "During state recruitment drives like UPPRPB Constable & SI exams, applicants frequently spot typographical mismatches between their Aadhaar and admit cards (such as missing halants or split vowel matras).",
-          "Hindi PDF Editor allows candidates to prepare corrected verification drafts locally with zero privacy risk."
-        ]
-      }
-    ],
-    "steps": [
-      {
-        "title": "Open Admit Card",
-        "desc": "Select your UP Police recruitment PDF from your device."
-      },
-      {
-        "title": "Select Correction Area",
-        "desc": "Click on the candidate details box to mask the typo."
-      },
-      {
-        "title": "Type Hindi Unicode Text",
-        "desc": "Enter your correct name or father's name with perfect conjunct rendering."
-      },
-      {
-        "title": "Save Corrected PDF",
-        "desc": "Click Export PDF to download your high-resolution vector document."
-      }
-    ],
-    "faqs": [
-      {
-        "q": "Can I edit PDF on my Android mobile?",
-        "a": "Yes. Hindi PDF Editor is fully responsive on mobile browsers and also offers a free native Android companion app on Google Play."
-      }
-    ],
-    "status": "published",
-    "publishedDate": "2026-08-23"
-  },
-  {
     "slug": "merge-multiple-hindi-pdf-files-online",
-    "title": "How to Merge Multiple Hindi PDF Files Online in Order (100% Free & Private)",
+    "title": "How to Merge Multiple Hindi PDF Files Online in Order (Free, No Upload)",
     "category": "Document Management",
     "language": "en",
     "metaDescription": "Learn how to combine and merge multiple Hindi PDF files into a single document in sequential order for free without file size limits or server uploads.",
-    "directAnswer": "To merge multiple Hindi PDF files, visit hindipdfeditor.com/merge-pdf/. Select or drag multiple PDF documents, arrange their sequence using the drag handles or arrow buttons, and click Merge PDFs. The files are combined 100% locally in your browser memory without uploading any data to external servers.",
+    "directAnswer": "To merge multiple Hindi PDF files, visit hindipdfeditor.com/merge-pdf/. Select the PDF documents in the order you want them combined (remove one and add it again to change its place), then click Merge. The files are combined in your browser and are not uploaded.",
     "readTime": "3 min read",
     "badgeTone": "tag-amber",
     "sections": [
@@ -329,7 +231,7 @@
         "heading": "Why Local PDF Merging is Safer",
         "paragraphs": [
           "Most online PDF merging tools require uploading all your PDF pages to cloud servers where they are processed remotely. For sensitive legal briefs, certificates, or financial records, this represents a significant data safety risk.",
-          "Hindi PDF Editor processes PDF merging directly inside your browser memory using WebAssembly, ensuring complete confidentiality."
+          "Hindi PDF Editor merges the files inside your browser, so they are never uploaded."
         ]
       }
     ],

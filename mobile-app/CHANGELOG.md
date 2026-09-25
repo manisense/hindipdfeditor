@@ -16,6 +16,10 @@ All notable changes to this project are documented here, grouped by phase (see `
   - Articles no longer declare false alternates: they had pointed `en`/`hi` at themselves or at unrelated articles. The article generator no longer emits them either.
   - The build (`scripts/check-seo.mjs`) now fails if a page's canonical is not its own URL, or if an hreflang set is not reciprocal.
 - **Real 404 page**: `web-app/404.html` is a bilingual, `noindex` page linking to the tools. Without a top-level `404.html`, Cloudflare Pages treated the site as a single-page app and answered unknown URLs with a 200. Checked with `wrangler pages dev`: unknown paths now return 404.
+- **Claims match the product**:
+  - Removed "vector PDF", "100% local / zero uploads", "HarfBuzz", "Mangal" and "convert Kruti Dev to Unicode" from the site, articles and `llms*.txt`. Web export is page images, and AI OCR and translation send data after the user consents.
+  - The comparison table no longer makes unsourced claims about named competitors.
+- **Removed forgery-adjacent guides**: three articles told readers to change names, roll numbers, exam dates and plot details on issued admit cards and land records. They were deleted and 301-redirected to the affidavit and Bhulekh guides. Those two guides were rewritten around the legitimate process: a notarised affidavit, or a correction application to the issuing office.
 
 ### Added — Unified Design System & Vector Icon Infrastructure
 
