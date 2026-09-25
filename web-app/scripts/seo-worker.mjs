@@ -37,6 +37,7 @@ function generateArticleHtml(item) {
   const directAnswer = escapeHtml(item.directAnswer);
 
   const isHindi = item.language === 'hi' || /[\u0900-\u097F]/.test(item.title);
+  const toolPrefix = isHindi ? '/hi' : '';
 
   const sectionsHtml = (item.sections || [])
     .map(
@@ -495,7 +496,7 @@ function generateArticleHtml(item) {
           >
             Google Play
           </a>
-          <a class="btn-editor" href="/edit/?tool=edit">
+          <a class="btn-editor" href="${toolPrefix}/edit-hindi-pdf/">
             ${isHindi ? 'एडिटर खोलें' : 'Open editor'}
           </a>
         </div>
@@ -548,7 +549,7 @@ function generateArticleHtml(item) {
         <div class="article-cta-box">
           <h3>${isHindi ? 'अभी हिंदी पीडीएफ एडिट करना शुरू करें' : 'Try Hindi PDF Editor Free'}</h3>
           <p>${isHindi ? '100% प्राइवेट · कोई सर्वर अपलोड नहीं · सही देवनागरी मात्राएं' : 'Zero server uploads · 100% Client-Side Private · Flawless Devanagari Shaping'}</p>
-          <a href="/edit/?tool=edit" class="btn-editor" style="font-size: 15px; padding: 12px 28px;">
+          <a href="${toolPrefix}/edit-hindi-pdf/" class="btn-editor" style="font-size: 15px; padding: 12px 28px;">
             ${isHindi ? 'एडिटर खोलें →' : 'Open Editor Now →'}
           </a>
         </div>
@@ -569,11 +570,11 @@ function generateArticleHtml(item) {
         </div>
         <div class="foot-col">
           <h4>${isHindi ? 'टूल्स' : 'Tools'}</h4>
-          <a href="/edit/?tool=edit">${isHindi ? 'हिंदी पीडीएफ एडिट करें' : 'Edit Hindi PDF'}</a>
-          <a href="/edit/?tool=translate">${isHindi ? 'हिंदी अनुवाद' : 'Translate Hindi ↔ English'}</a>
-          <a href="/edit/?tool=merge">${isHindi ? 'पीडीएफ जोड़ें' : 'Merge PDF'}</a>
-          <a href="/edit/?tool=split">${isHindi ? 'पीडीएफ अलग करें' : 'Split PDF'}</a>
-          <a href="/edit/?tool=compress">${isHindi ? 'साइज कम करें' : 'Compress PDF'}</a>
+          <a href="${toolPrefix}/edit-hindi-pdf/">${isHindi ? 'हिंदी पीडीएफ एडिट करें' : 'Edit Hindi PDF'}</a>
+          <a href="${toolPrefix}/translate-hindi-pdf/">${isHindi ? 'हिंदी अनुवाद' : 'Translate Hindi ↔ English'}</a>
+          <a href="${toolPrefix}/merge-pdf/">${isHindi ? 'पीडीएफ जोड़ें' : 'Merge PDF'}</a>
+          <a href="${toolPrefix}/split-pdf/">${isHindi ? 'पीडीएफ अलग करें' : 'Split PDF'}</a>
+          <a href="${toolPrefix}/compress-pdf/">${isHindi ? 'साइज कम करें' : 'Compress PDF'}</a>
         </div>
         <div class="foot-col">
           <h4>${isHindi ? 'गाइड्स और नीतियां' : 'Resources'}</h4>

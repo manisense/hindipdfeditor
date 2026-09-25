@@ -113,7 +113,7 @@ function OrganizeVisual() {
 }
 
 export function Features() {
-  const { t, isHindi } = useLanguage();
+  const { lang, t, isHindi } = useLanguage();
 
   return (
     <section id="features" className="bg-cream py-24">
@@ -131,7 +131,7 @@ export function Features() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-6">
-          <Card className="md:col-span-4" href={toolHref('edit')}>
+          <Card className="md:col-span-4" href={toolHref('edit', lang)}>
             <Ico icon={Pencil} tone="bg-brand-tint text-brand" />
             <h3 className="text-xl font-bold text-ink">{t('feat.editHeading')}</h3>
             <p className="mt-2 max-w-md text-[15px] text-muted">
@@ -140,7 +140,7 @@ export function Features() {
             <EditVisual />
           </Card>
 
-          <Card className="md:col-span-2" href={toolHref('translate')}>
+          <Card className="md:col-span-2" href={toolHref('translate', lang)}>
             <Ico icon={Languages} tone="bg-accent-tint text-accent" />
             <h3 className="text-xl font-bold text-ink">{t('feat.translateHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">
@@ -149,7 +149,7 @@ export function Features() {
             <TranslateVisual />
           </Card>
 
-          <Card className="md:col-span-2" href={toolHref('edit')}>
+          <Card className="md:col-span-2" href={toolHref('edit', lang)}>
             <Ico icon={ScanText} tone="bg-pop-yellow-tint text-[#B58400]" />
             <h3 className="text-xl font-bold text-ink">{t('feat.ocrHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">
@@ -158,7 +158,7 @@ export function Features() {
             <OcrVisual />
           </Card>
 
-          <Card className="md:col-span-2" href={toolHref('merge')}>
+          <Card className="md:col-span-2" href={toolHref('merge', lang)}>
             <Ico icon={Layers} tone="bg-pop-lav text-[#5B4BD6]" />
             <h3 className="text-xl font-bold text-ink">{isHindi ? 'पीडीएफ जोड़ें, अलग करें व क्रम बदलें' : 'Merge, split & reorder'}</h3>
             <p className="mt-2 text-[15px] text-muted">
@@ -167,7 +167,7 @@ export function Features() {
             <OrganizeVisual />
           </Card>
 
-          <Card className="md:col-span-2" href={toolHref('compress')}>
+          <Card className="md:col-span-2" href={toolHref('compress', lang)}>
             <Ico icon={FileArchive} tone="bg-brand-tint text-brand" />
             <h3 className="text-xl font-bold text-ink">{t('feat.compressHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">
@@ -185,7 +185,7 @@ export function Features() {
             </div>
           </Card>
 
-          <Card className="md:col-span-2" href={toolHref('edit')}>
+          <Card className="md:col-span-2" href={toolHref('edit', lang)}>
             <Ico icon={ShieldCheck} tone="bg-accent-tint text-accent" />
             <h3 className="text-xl font-bold text-ink">{t('feat.privacyHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">

@@ -19,7 +19,8 @@ export function TypewriterCycle({
   pause?: number;
 }) {
   const [index, setIndex] = useState(0);
-  const [sub, setSub] = useState('');
+  // Start fully typed so the prerendered heading carries real text.
+  const [sub, setSub] = useState(() => phrases[0]?.text ?? '');
   const [deleting, setDeleting] = useState(false);
 
   const current = phrases[index % phrases.length];

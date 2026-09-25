@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 
 export type Language = 'en' | 'hi';
 
@@ -306,29 +306,41 @@ const I18nContext = createContext<I18nContextType>({
   isHindi: false,
 });
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Language>(() => {
-    if (typeof window === 'undefined') return 'en';
-    const params = new URLSearchParams(window.location.search);
-    const urlLang = params.get('lang');
-    if (urlLang === 'hi' || urlLang === 'en') return urlLang;
-    const saved = localStorage.getItem('preferred_language');
-    if (saved === 'hi' || saved === 'en') return saved;
-    if (navigator.language && navigator.language.startsWith('hi')) return 'hi';
-    return 'en';
-  });
+export const LANGUAGE_PREFERENCE_KEY = 'preferred_language';
 
+/** Reads the visitor's explicit language choice; storage can be unavailable in private modes. */
+export function readLanguagePreference(): Language | null {
+  try {
+    const saved = localStorage.getItem(LANGUAGE_PREFERENCE_KEY);
+    return saved === 'hi' || saved === 'en' ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveLanguagePreference(lang: Language): void {
+  try {
+    localStorage.setItem(LANGUAGE_PREFERENCE_KEY, lang);
+  } catch {
+    // Storage blocked: the URL still carries the language, so nothing is lost.
+  }
+}
+
+type LanguageProviderProps = {
+  /** Language of the current URL (`/hi/...` is Hindi); each language has its own page. */
+  lang: Language;
+  /** Returns the path of the current page in another language. */
+  pathFor: (lang: Language) => string;
+  children: ReactNode;
+};
+
+export function LanguageProvider({ lang, pathFor, children }: LanguageProviderProps) {
   const setLang = (newLang: Language) => {
-    setLangState(newLang);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('preferred_language', newLang);
-      document.documentElement.lang = newLang;
+    saveLanguagePreference(newLang);
+    if (newLang !== lang) {
+      window.location.assign(`${pathFor(newLang)}${window.location.search}${window.location.hash}`);
     }
   };
-
-  useEffect(() => {
-    document.documentElement.lang = lang;
-  }, [lang]);
 
   const t = (key: string, defaultText?: string): string => {
     const langDict = translations[lang] || translations.en;

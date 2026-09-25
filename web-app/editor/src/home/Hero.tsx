@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import { ChevronRight, Pencil, Languages, ScanText, Layers, FileArchive } from 'lucide-react';
 import { Btn } from './ui/button';
 import { GooglePlayLink } from './ui/google-play-link';
@@ -18,20 +17,17 @@ function Fade({
   delay?: number;
   className?: string;
 }) {
+  // CSS animation, not motion: it starts as soon as the prerendered HTML paints instead of
+  // keeping the hero invisible until JavaScript hydrates.
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] }}
-      className={className}
-    >
+    <div className={`hero-rise ${className}`.trim()} style={{ animationDelay: `${delay}s` }}>
       {children}
-    </motion.div>
+    </div>
   );
 }
 
 export function Hero() {
-  const { t, isHindi } = useLanguage();
+  const { lang, t, isHindi } = useLanguage();
 
   const tools = [
     {
@@ -39,35 +35,35 @@ export function Hero() {
       name: t('tool.edit'),
       detail: t('tool.editSub'),
       tone: 'bg-brand-tint text-brand',
-      href: toolHref('edit'),
+      href: toolHref('edit', lang),
     },
     {
       icon: Languages,
       name: t('tool.translate'),
       detail: t('tool.translateSub'),
       tone: 'bg-accent-tint text-accent',
-      href: toolHref('translate'),
+      href: toolHref('translate', lang),
     },
     {
       icon: ScanText,
       name: t('tool.ocr'),
       detail: t('tool.ocrSub'),
       tone: 'bg-pop-yellow-tint text-[#B58400]',
-      href: toolHref('edit'),
+      href: toolHref('edit', lang),
     },
     {
       icon: Layers,
       name: t('tool.merge'),
       detail: t('tool.mergeSub'),
       tone: 'bg-pop-lav text-[#5B4BD6]',
-      href: toolHref('merge'),
+      href: toolHref('merge', lang),
     },
     {
       icon: FileArchive,
       name: t('tool.compress'),
       detail: t('tool.compressSub'),
       tone: 'bg-pop-yellow-tint text-[#B58400]',
-      href: toolHref('compress'),
+      href: toolHref('compress', lang),
     },
   ];
 
@@ -141,7 +137,7 @@ export function Hero() {
 
             <Fade delay={0.15}>
               <div className="mt-7 flex flex-wrap items-center gap-3">
-                <Btn size="lg" href={toolHref('edit')}>
+                <Btn size="lg" href={toolHref('edit', lang)}>
                   {t('hero.ctaPrimary')}
                 </Btn>
                 <GooglePlayLink size="lg" variant="subtle" />
@@ -156,11 +152,9 @@ export function Hero() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <motion.div
-              initial={{ opacity: 0, y: 22 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className="rounded-2xl border border-black/[0.05] bg-[#f4f5f7] p-5"
+            <div
+              className="hero-rise rounded-2xl border border-black/[0.05] bg-[#f4f5f7] p-5"
+              style={{ animationDelay: '0.15s' }}
             >
               <div className="mb-3.5 flex items-center gap-2.5">
                 <span className="grid size-8 place-items-center rounded-lg bg-brand-tint text-brand">
@@ -193,13 +187,11 @@ export function Hero() {
                 </div>
                 <div className="h-2.5 w-2/3 rounded bg-accent-tint" />
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 22 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="rounded-2xl border border-black/[0.05] bg-[#f4f5f7] p-5"
+            <div
+              className="hero-rise rounded-2xl border border-black/[0.05] bg-[#f4f5f7] p-5"
+              style={{ animationDelay: '0.25s' }}
             >
               <div className="mb-3 flex items-center justify-between">
                 <div className="font-display text-[14.5px] font-bold text-ink">
@@ -231,7 +223,7 @@ export function Hero() {
                   </a>
                 ))}
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>

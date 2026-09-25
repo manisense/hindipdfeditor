@@ -6,7 +6,7 @@ import { useLanguage } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
 
 export function WorkYourWay() {
-  const { t, isHindi } = useLanguage();
+  const { lang, t, isHindi } = useLanguage();
 
   const feats = [
     {
@@ -50,7 +50,7 @@ export function WorkYourWay() {
             ))}
           </div>
           <div className="mt-8 flex flex-wrap gap-3.5">
-            <Btn href={toolHref('edit')}>{isHindi ? 'एडिटर खोलें →' : 'Open the editor →'}</Btn>
+            <Btn href={toolHref('edit', lang)}>{isHindi ? 'एडिटर खोलें →' : 'Open the editor →'}</Btn>
             <GooglePlayLink variant="ghost" />
           </div>
         </div>
@@ -81,31 +81,31 @@ export function WorkYourWay() {
             <div className="h-2.5 w-2/3 rounded bg-slate-100" />
             <div className="mt-4 flex flex-wrap gap-2">
               <a
-                href={toolHref('edit')}
+                href={toolHref('edit', lang)}
                 className="rounded-full bg-brand px-3 py-1.5 font-display text-[13px] font-semibold text-white"
               >
                 Edit
               </a>
               <a
-                href={toolHref('translate')}
+                href={toolHref('translate', lang)}
                 className="rounded-full bg-accent px-3 py-1.5 font-display text-[13px] font-semibold text-white"
               >
                 Translate
               </a>
               <a
-                href={toolHref('merge')}
+                href={toolHref('merge', lang)}
                 className="rounded-full border border-line bg-white px-3 py-1.5 font-display text-[13px] font-semibold text-ink"
               >
                 Merge
               </a>
               <a
-                href={toolHref('split')}
+                href={toolHref('split', lang)}
                 className="rounded-full border border-line bg-white px-3 py-1.5 font-display text-[13px] font-semibold text-ink"
               >
                 Split
               </a>
               <a
-                href={toolHref('compress')}
+                href={toolHref('compress', lang)}
                 className="rounded-full border border-line bg-white px-3 py-1.5 font-display text-[13px] font-semibold text-ink"
               >
                 Compress

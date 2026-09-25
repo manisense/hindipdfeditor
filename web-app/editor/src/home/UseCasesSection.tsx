@@ -4,7 +4,7 @@ import { useLanguage } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
 
 export function UseCasesSection() {
-  const { t, isHindi } = useLanguage();
+  const { lang, t, isHindi } = useLanguage();
 
   const useCases = [
     {
@@ -13,7 +13,7 @@ export function UseCasesSection() {
       queryEn: 'Edit Hindi Admit Card PDF',
       queryHi: 'सरकारी एडमिट कार्ड में नाम या रोल नंबर सुधारें',
       desc: t('use.admitCardDesc'),
-      link: toolHref('edit'),
+      link: toolHref('edit', lang),
     },
     {
       icon: Scale,
@@ -21,7 +21,7 @@ export function UseCasesSection() {
       queryEn: 'Edit Hindi Legal Notice / Affidavit',
       queryHi: 'शपथ पत्र और अनुबंध पत्र पीडीएफ एडिट करें',
       desc: t('use.legalDesc'),
-      link: toolHref('edit'),
+      link: toolHref('edit', lang),
     },
     {
       icon: FileText,
@@ -29,7 +29,7 @@ export function UseCasesSection() {
       queryEn: 'Khasra Khatauni Hindi PDF Edit',
       queryHi: 'खसरा खतौनी और भूमि अभिलेख पीडीएफ सुधार',
       desc: t('use.landDesc'),
-      link: toolHref('edit'),
+      link: toolHref('edit', lang),
     },
     {
       icon: GraduationCap,
@@ -37,7 +37,7 @@ export function UseCasesSection() {
       queryEn: 'Hindi Question Paper & Assignment PDF',
       queryHi: 'हिंदी प्रश्न पत्र और वर्कशीट तैयार करें',
       desc: t('use.academicDesc'),
-      link: toolHref('translate'),
+      link: toolHref('translate', lang),
     },
   ];
 

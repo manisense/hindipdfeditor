@@ -3,7 +3,9 @@
 The public site lives in `web-app/` and deploys as a Cloudflare Pages project for
 `hindipdfeditor.com`. The browser PDF tools build from `web-app/editor/` into
 `web-app/edit/`, then `npm run build` assembles a clean publish folder at
-`web-app/dist/`.
+`web-app/dist/`. That step also prerenders the home page and every tool page, in
+English and under `/hi/`, from the editor's SSR bundle (`editor/dist-ssr/`), so
+each URL is served as complete HTML (see ADR 0010).
 
 ## Cloudflare dashboard settings (required)
 
@@ -46,7 +48,7 @@ cd services/ai-api
 npx wrangler secret put GEMINI_API_KEY
 ```
 
-Then smoke-test Hindi → English and English → Hindi from `/edit/?tool=translate` and the
+Then smoke-test Hindi → English and English → Hindi from `/translate-hindi-pdf/` and the
 Edit PDF **Translate** button. Keep Worker translation/OCR flags off until that smoke test is
 ready if the site deploy must happen first.
 
@@ -126,10 +128,10 @@ Also publicly available:
 | --- | --- |
 | **Performance** | Queries, clicks, impressions, average position |
 | **Page indexing** | Crawl/index errors after deploy |
-| **URL Inspection** | Test a single URL (e.g. `/edit/?tool=translate`) |
+| **URL Inspection** | Test a single URL (e.g. `/translate-hindi-pdf/`) |
 | **Enhancements / rich results** | FAQ / SoftwareApplication structured data (when eligible) |
 
-After each meaningful content deploy, use **URL Inspection → Request indexing** on `/edit/` and key tool URLs if they are new or heavily changed.
+After each meaningful content deploy, use **URL Inspection → Request indexing** on `/`, `/hi/` and key tool URLs if they are new or heavily changed.
 
 ### 4. SEO / AEO / AISEO already in the site
 

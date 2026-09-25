@@ -1,281 +1,199 @@
-import type { ToolId } from './tools';
-import { getTool } from './tools';
 import { SITE_FAQS } from '../home/faqData';
+import type { Language } from './i18n';
+import { LANGUAGES, routePath, type Route } from './routes';
+import { TOOL_COPY } from './toolContent';
 
 export const SITE_ORIGIN = 'https://hindipdfeditor.com';
-export const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/assets/app-icon.png`;
+const SITE_NAME = 'Hindi PDF Editor';
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.hindipdfeditor.app';
+const OG_IMAGE = {
+  url: `${SITE_ORIGIN}/assets/play-store/hindi-pdf-editor-tablet.png`,
+  width: 2560,
+  height: 1440,
+  alt: 'Hindi PDF Editor showing Devanagari editing on a tablet',
+};
+const ROBOTS = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1';
+
+const HOME_META: Record<Language, { title: string; description: string }> = {
+  en: {
+    title: 'Hindi PDF Editor — Edit, Translate & Manage Hindi PDFs Online',
+    description:
+      'Free Hindi PDF tools in your browser: edit Devanagari text without broken matras, translate Hindi ↔ English, merge, split and compress. No account, no watermark.',
+  },
+  hi: {
+    title: 'हिंदी पीडीएफ एडिटर — हिंदी पीडीएफ एडिट, अनुवाद, मर्ज और कंप्रेस करें',
+    description:
+      'ब्राउज़र में फ्री हिंदी पीडीएफ टूल्स: मात्राएं टूटे बिना देवनागरी टेक्स्ट एडिट करें, हिंदी ↔ अंग्रेजी अनुवाद, मर्ज, स्प्लिट और कंप्रेस। बिना अकाउंट, बिना वॉटरमार्क।',
+  },
+};
 
 export type SeoPayload = {
   title: string;
   description: string;
-  canonicalPath: string;
-  /** Optional robots directive, e.g. "index,follow". */
-  robots?: string;
+  /** Absolute canonical URL of the page. */
+  canonical: string;
 };
 
-const HOME: SeoPayload = {
-  title: 'Hindi PDF Editor — Edit, Translate & Manage Hindi PDFs Online',
-  description:
-    'Local-first Hindi PDF tools: edit Devanagari with correct shaping, translate Hindi and English in either direction, merge, split, compress, and OCR. No account.',
-  canonicalPath: '/edit/',
-  robots: 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
-};
+/** Absolute URL of a route. */
+export function routeUrl(route: Route): string {
+  return `${SITE_ORIGIN}${routePath(route)}`;
+}
 
-/**
- * Returns title/description/canonical for the current tool (or home hub).
- * Units: paths are URL path+query strings for the public site.
- */
-export function seoForTool(toolId: ToolId | null): SeoPayload {
-  if (!toolId) return HOME;
-  const tool = getTool(toolId);
-  if (!tool) return HOME;
+/** Title, description and canonical URL for a prerendered route. */
+export function seoFor(route: Route): SeoPayload {
+  const canonical = routeUrl(route);
+  if (!route.toolId) return { ...HOME_META[route.lang], canonical };
+  const copy = TOOL_COPY[route.toolId][route.lang];
   return {
-    title: `${tool.title} — Free Online | Hindi PDF Editor`,
-    description: tool.description,
-    canonicalPath: `/edit/?tool=${tool.id}`,
-    robots: HOME.robots,
+    title: `${copy.metaTitle} | ${SITE_NAME}`,
+    description: copy.metaDescription,
+    canonical,
   };
 }
 
-function upsertMeta(attr: 'name' | 'property', key: string, content: string): void {
-  let el = document.head.querySelector(`meta[${attr}="${key}"]`);
-  if (!el) {
-    el = document.createElement('meta');
-    el.setAttribute(attr, key);
-    document.head.appendChild(el);
+function escapeAttr(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/** JSON for a `<script type="application/ld+json">` body; `<` is escaped so text can't close the tag. */
+function jsonLdScript(data: unknown): string {
+  return `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
+}
+
+/** Organization + WebSite + app graph for a home page, plus the FAQ shown on that page. */
+function homeGraph(route: Route): unknown {
+  const url = routeUrl(route);
+  const graph: unknown[] = [
+    {
+      '@type': 'Organization',
+      '@id': `${SITE_ORIGIN}/#organization`,
+      name: SITE_NAME,
+      url: `${SITE_ORIGIN}/`,
+      logo: { '@type': 'ImageObject', url: `${SITE_ORIGIN}/assets/app-icon.png` },
+      sameAs: [PLAY_STORE_URL],
+      contactPoint: {
+        '@type': 'ContactPoint',
+        email: 'support@hindipdfeditor.com',
+        contactType: 'customer support',
+      },
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_ORIGIN}/#website`,
+      url: `${SITE_ORIGIN}/`,
+      name: SITE_NAME,
+      inLanguage: ['en', 'hi'],
+      publisher: { '@id': `${SITE_ORIGIN}/#organization` },
+    },
+    {
+      '@type': 'WebApplication',
+      '@id': `${SITE_ORIGIN}/#app`,
+      name: SITE_NAME,
+      url,
+      applicationCategory: 'UtilitiesApplication',
+      operatingSystem: 'Any (web browser), Android',
+      browserRequirements: 'Requires JavaScript and a modern browser',
+      description: HOME_META[route.lang].description,
+      inLanguage: route.lang,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+      publisher: { '@id': `${SITE_ORIGIN}/#organization` },
+    },
+  ];
+  if (route.lang === 'en') {
+    graph.push({
+      '@type': 'FAQPage',
+      '@id': `${url}#faq`,
+      mainEntity: SITE_FAQS.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    });
   }
-  el.setAttribute('content', content);
+  return { '@context': 'https://schema.org', '@graph': graph };
 }
 
-function upsertLink(rel: string, href: string): void {
-  let el = document.head.querySelector(`link[rel="${rel}"]`);
-  if (!el) {
-    el = document.createElement('link');
-    el.setAttribute('rel', rel);
-    document.head.appendChild(el);
-  }
-  el.setAttribute('href', href);
-}
-
-function upsertJsonLd(id: string, data: unknown): void {
-  let el = document.getElementById(id) as HTMLScriptElement | null;
-  if (!el) {
-    el = document.createElement('script');
-    el.type = 'application/ld+json';
-    el.id = id;
-    document.head.appendChild(el);
-  }
-  el.textContent = JSON.stringify(data);
-}
-
-/** Applies document title, social tags, and canonical for the active SPA route. */
-export function applySeo(payload: SeoPayload): void {
-  const url = `${SITE_ORIGIN}${payload.canonicalPath}`;
-  document.title = payload.title;
-  upsertMeta('name', 'description', payload.description);
-  if (payload.robots) upsertMeta('name', 'robots', payload.robots);
-  upsertMeta('name', 'googlebot', payload.robots ?? 'index,follow');
-  upsertLink('canonical', url);
-
-  upsertMeta('property', 'og:type', 'website');
-  upsertMeta('property', 'og:site_name', 'Hindi PDF Editor');
-  upsertMeta('property', 'og:locale', 'en_US');
-  upsertMeta('property', 'og:title', payload.title);
-  upsertMeta('property', 'og:description', payload.description);
-  upsertMeta('property', 'og:url', url);
-  upsertMeta('property', 'og:image', DEFAULT_OG_IMAGE);
-
-  upsertMeta('name', 'twitter:card', 'summary');
-  upsertMeta('name', 'twitter:title', payload.title);
-  upsertMeta('name', 'twitter:description', payload.description);
-  upsertMeta('name', 'twitter:image', DEFAULT_OG_IMAGE);
-}
-
-/** Organization + WebSite + SoftwareApplication + HowTo + FAQPage graph for the marketing hub. */
-export function siteGraphJsonLd(): unknown {
+/** WebApplication + breadcrumb + visible FAQ graph for a tool page. */
+function toolGraph(route: Route & { toolId: NonNullable<Route['toolId']> }): unknown {
+  const url = routeUrl(route);
+  const copy = TOOL_COPY[route.toolId][route.lang];
+  const home = routeUrl({ lang: route.lang, toolId: null });
   return {
     '@context': 'https://schema.org',
     '@graph': [
       {
-        '@type': 'Organization',
-        '@id': `${SITE_ORIGIN}/#organization`,
-        name: 'Hindi PDF Editor',
-        url: SITE_ORIGIN,
-        logo: {
-          '@type': 'ImageObject',
-          url: DEFAULT_OG_IMAGE,
-        },
-        sameAs: [
-          'https://play.google.com/store/apps/details?id=com.hindipdfeditor.app',
-        ],
-        contactPoint: {
-          '@type': 'ContactPoint',
-          email: 'support@hindipdfeditor.com',
-          contactType: 'customer support',
-        },
-      },
-      {
-        '@type': 'WebSite',
-        '@id': `${SITE_ORIGIN}/#website`,
-        url: SITE_ORIGIN,
-        name: 'Hindi PDF Editor',
-        description: HOME.description,
-        publisher: { '@id': `${SITE_ORIGIN}/#organization` },
-        inLanguage: ['en', 'hi'],
-      },
-      {
-        '@type': 'SoftwareApplication',
-        '@id': `${SITE_ORIGIN}/#app`,
-        name: 'Hindi PDF Editor',
-        applicationCategory: 'ProductivityApplication',
-        applicationSubCategory: 'PDF Editor',
-        operatingSystem: 'Android, Web, Windows, macOS, Linux, iOS',
-        url: `${SITE_ORIGIN}/edit/`,
-        downloadUrl: 'https://play.google.com/store/apps/details?id=com.hindipdfeditor.app',
-        image: DEFAULT_OG_IMAGE,
-        description: HOME.description,
-        featureList: [
-          'Flawless Devanagari OpenType text shaping with correct conjuncts and matras',
-          '100% Client-side local processing with zero server uploads',
-          'Bidirectional Hindi to English and English to Hindi PDF translation',
-          'Built-in OCR text detection for scanned Hindi and English documents',
-          'Merge, split, and compress PDF documents locally',
-          'Non-destructive editing: source PDFs are never overwritten',
-        ],
-        browserRequirements: 'Requires modern browser with WebAssembly and Canvas support (Chrome, Firefox, Safari, Edge)',
-        offers: {
-          '@type': 'Offer',
-          price: '0',
-          priceCurrency: 'USD',
-        },
-        privacyPolicy: `${SITE_ORIGIN}/privacy/`,
-        publisher: { '@id': `${SITE_ORIGIN}/#organization` },
-      },
-      {
-        '@type': 'HowTo',
-        '@id': `${SITE_ORIGIN}/edit/#howto`,
-        name: 'How to Edit Hindi PDF Online with Correct Fonts & Shaping',
-        description:
-          'Step-by-step guide to add or replace Hindi Devanagari text in a PDF document with flawless character shaping and complete local privacy.',
-        step: [
-          {
-            '@type': 'HowToStep',
-            position: 1,
-            name: 'Open your PDF file',
-            text: 'Open or drag your PDF document into the local browser editor. The file is processed locally on your device without server uploads.',
-          },
-          {
-            '@type': 'HowToStep',
-            position: 2,
-            name: 'Select or mask text',
-            text: 'Click on existing Hindi text to mask and replace, or tap anywhere to create a new text box.',
-          },
-          {
-            '@type': 'HowToStep',
-            position: 3,
-            name: 'Type in Hindi',
-            text: 'Type your text using Unicode Hindi keyboards or Google Input Tools. Conjuncts and matras render with 100% font accuracy.',
-          },
-          {
-            '@type': 'HowToStep',
-            position: 4,
-            name: 'Export fresh PDF',
-            text: 'Click Export PDF to download your newly shaped vector PDF document. Your original file remains untouched.',
-          },
-        ],
+        '@type': 'WebApplication',
+        '@id': `${url}#app`,
+        name: copy.heading,
+        url,
+        applicationCategory: 'UtilitiesApplication',
+        operatingSystem: 'Any (web browser)',
+        description: copy.metaDescription,
+        inLanguage: route.lang,
+        isPartOf: { '@id': `${SITE_ORIGIN}/#website` },
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
       },
       {
         '@type': 'BreadcrumbList',
-        '@id': `${SITE_ORIGIN}/edit/#breadcrumb`,
+        '@id': `${url}#breadcrumb`,
         itemListElement: [
-          {
-            '@type': 'ListItem',
-            position: 1,
-            name: 'Home',
-            item: `${SITE_ORIGIN}/`,
-          },
-          {
-            '@type': 'ListItem',
-            position: 2,
-            name: 'Hindi PDF Tools',
-            item: `${SITE_ORIGIN}/edit/`,
-          },
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: home },
+          { '@type': 'ListItem', position: 2, name: copy.heading, item: url },
         ],
       },
       {
         '@type': 'FAQPage',
-        '@id': `${SITE_ORIGIN}/edit/#faq`,
-        mainEntity: SITE_FAQS.map((f) => ({
+        '@id': `${url}#faq`,
+        mainEntity: copy.faqs.map((f) => ({
           '@type': 'Question',
           name: f.q,
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: f.a,
-          },
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
         })),
       },
     ],
   };
 }
 
-/** Injects (or refreshes) the hub JSON-LD graph when the home route is active. */
-export function applyHomeJsonLd(): void {
-  upsertJsonLd('seo-site-graph', siteGraphJsonLd());
+/**
+ * Full set of per-page `<head>` tags for a prerendered route: title, description, canonical,
+ * reciprocal hreflang, Open Graph/Twitter and JSON-LD.
+ */
+export function headTags(route: Route): string {
+  const seo = seoFor(route);
+  const alternates = LANGUAGES.map(
+    (lang) =>
+      `<link rel="alternate" hreflang="${lang}" href="${routeUrl({ ...route, lang })}" />`,
+  );
+  alternates.push(
+    `<link rel="alternate" hreflang="x-default" href="${routeUrl({ ...route, lang: 'en' })}" />`,
+  );
+  const title = escapeAttr(seo.title);
+  const description = escapeAttr(seo.description);
+  const graph = route.toolId ? toolGraph({ ...route, toolId: route.toolId }) : homeGraph(route);
+  return [
+    `<title>${title}</title>`,
+    `<meta name="description" content="${description}" />`,
+    `<meta name="robots" content="${ROBOTS}" />`,
+    `<link rel="canonical" href="${seo.canonical}" />`,
+    ...alternates,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:site_name" content="${SITE_NAME}" />`,
+    `<meta property="og:locale" content="${route.lang === 'hi' ? 'hi_IN' : 'en_IN'}" />`,
+    `<meta property="og:title" content="${title}" />`,
+    `<meta property="og:description" content="${description}" />`,
+    `<meta property="og:url" content="${seo.canonical}" />`,
+    `<meta property="og:image" content="${OG_IMAGE.url}" />`,
+    `<meta property="og:image:width" content="${OG_IMAGE.width}" />`,
+    `<meta property="og:image:height" content="${OG_IMAGE.height}" />`,
+    `<meta property="og:image:alt" content="${escapeAttr(OG_IMAGE.alt)}" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<meta name="twitter:title" content="${title}" />`,
+    `<meta name="twitter:description" content="${description}" />`,
+    `<meta name="twitter:image" content="${OG_IMAGE.url}" />`,
+    jsonLdScript(graph),
+  ].join('\n    ');
 }
-
-/** Removes hub FAQ graph when viewing a tool page (tool pages use SoftwareApplication only). */
-export function clearHomeJsonLd(): void {
-  document.getElementById('seo-site-graph')?.remove();
-}
-
-/** Lightweight SoftwareApplication node for an individual tool URL. */
-export function applyToolJsonLd(toolId: ToolId): void {
-  const tool = getTool(toolId);
-  if (!tool) return;
-  upsertJsonLd('seo-tool-graph', {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'SoftwareApplication',
-        '@id': `${SITE_ORIGIN}/edit/?tool=${tool.id}#app`,
-        name: `${tool.title} — Hindi PDF Editor`,
-        applicationCategory: 'ProductivityApplication',
-        applicationSubCategory: 'PDF Tool',
-        operatingSystem: 'Web, Android, Windows, macOS, Linux, iOS',
-        url: `${SITE_ORIGIN}/edit/?tool=${tool.id}`,
-        description: tool.description,
-        isPartOf: { '@id': `${SITE_ORIGIN}/#app` },
-        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-      },
-      {
-        '@type': 'BreadcrumbList',
-        '@id': `${SITE_ORIGIN}/edit/?tool=${tool.id}#breadcrumb`,
-        itemListElement: [
-          {
-            '@type': 'ListItem',
-            position: 1,
-            name: 'Home',
-            item: `${SITE_ORIGIN}/`,
-          },
-          {
-            '@type': 'ListItem',
-            position: 2,
-            name: 'Tools',
-            item: `${SITE_ORIGIN}/edit/`,
-          },
-          {
-            '@type': 'ListItem',
-            position: 3,
-            name: tool.title,
-            item: `${SITE_ORIGIN}/edit/?tool=${tool.id}`,
-          },
-        ],
-      },
-    ],
-  });
-}
-
-export function clearToolJsonLd(): void {
-  document.getElementById('seo-tool-graph')?.remove();
-}
-

@@ -5,7 +5,7 @@ import { useLanguage } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
 
 export function HowItWorks() {
-  const { t, isHindi } = useLanguage();
+  const { lang, t, isHindi } = useLanguage();
 
   const steps = [
     {
@@ -84,7 +84,7 @@ export function HowItWorks() {
         </ol>
 
         <div className="mt-12 text-center">
-          <Btn href={toolHref('edit')}>
+          <Btn href={toolHref('edit', lang)}>
             {isHindi ? 'अभी हिंदी पीडीएफ एडिट करना शुरू करें →' : 'Start Editing Hindi PDF Now →'}
           </Btn>
         </div>

@@ -152,7 +152,7 @@ export function Nav() {
           {/* Open Editor CTA */}
           <Btn
             className="text-[12.5px] min-[380px]:text-[13px] sm:text-[14px] px-3 min-[380px]:px-4 sm:px-5 py-1.5 sm:py-2.5 shadow-sm shrink-0"
-            href={toolHref('edit')}
+            href={toolHref('edit', lang)}
           >
             <span className="hidden min-[440px]:inline">{t('nav.openEditor')}</span>
             <span className="min-[440px]:hidden">{isHindi ? 'एडिटर' : 'Editor'}</span>
@@ -210,7 +210,7 @@ export function Nav() {
                 {toolShortcuts.map((tool) => (
                   <a
                     key={tool.id}
-                    href={toolHref(tool.id)}
+                    href={toolHref(tool.id, lang)}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center gap-2.5 rounded-xl p-2.5 text-[13.5px] font-medium text-ink transition-colors hover:bg-brand-wash"
                   >

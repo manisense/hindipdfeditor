@@ -14,7 +14,7 @@ Last verified: 2026-07-24.
 - [x] `hindipdfeditor.com` → `hindipdfeditor` (custom domain enabled)
 - [x] `www.hindipdfeditor.com` → `hindipdfeditor` (custom domain enabled)
 - [x] `api.hindipdfeditor.com` → `hindipdfeditor-ai-api` (custom domain enabled)
-- [x] Public pages respond: `/` (302→`/edit/`), `/edit/`, `/privacy/`, `/support/`
+- [x] Public pages respond: `/` (prerendered home), `/hi/`, tool pages such as `/edit-hindi-pdf/`, `/privacy/`, `/support/`
 
 ## AI API
 

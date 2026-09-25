@@ -31,7 +31,7 @@ Instead of writing a custom glyph math library (which is notoriously error-prone
 Because all editing, merging, splitting, and compression happen entirely client-side inside the browser, **zero files are uploaded to our servers**. This makes it safe for sensitive Indian documents (Sarkari exam admit cards, land records, Aadhaar updates, and legal affidavits).
 
 We made the web tool 100% free with no sign-up, no subscriptions, and no watermarks:
-🔗 **Web App:** https://hindipdfeditor.com/edit/
+🔗 **Web App:** https://hindipdfeditor.com/
 📱 **Android App:** https://play.google.com/store/apps/details?id=com.hindipdfeditor.app
 
 Would love your feedback on the Devanagari typography rendering and edge cases!
@@ -53,7 +53,7 @@ The problem with tools like Canva or Acrobat is:
 1. They corrupt Hindi matras and conjuncts (text looks broken like `क ् ष` instead of `क्ष`).
 2. Most online PDF tools upload your sensitive IDs and documents to their cloud servers.
 
-To solve this, we built **Hindi PDF Editor** (https://hindipdfeditor.com/edit/):
+To solve this, we built **Hindi PDF Editor** (https://hindipdfeditor.com/):
 - ✅ **100% Correct Hindi Typing**: Shapes all Hindi conjuncts, half-letters, and matras cleanly in real time.
 - 🔒 **Complete Privacy**: Runs 100% inside your phone/computer browser — your document is NEVER uploaded to any server.
 - 🌐 **Free Translation**: Translate Hindi PDFs to English and vice versa without losing formatting.
@@ -70,7 +70,7 @@ Hope this helps anyone dealing with official Hindi paperwork!
 ### Script 1: "The Hindi PDF Problem vs Fix" (30 Seconds)
 * **Visual 0-5s**: Screen recording showing Canva/Acrobat breaking Hindi text (`अनुबंध` showing broken matra).
 * **Audio**: *"Ever tried editing a Hindi PDF and ended up with broken, disconnected matras like this?"*
-* **Visual 6-15s**: Open `hindipdfeditor.com/edit/`, tap the text, type in Hindi with instant clean ligature shaping.
+* **Visual 6-15s**: Open `hindipdfeditor.com/`, tap the text, type in Hindi with instant clean ligature shaping.
 * **Audio**: *"Stop using generic tools. Hindi PDF Editor uses real OpenType layout rendering so every conjunct and matra stays 100% perfect."*
 * **Visual 16-25s**: Show "Download PDF" button, open exported PDF, zoom in on crisp text.
 * **Audio**: *"Plus, it's 100% private — your files never leave your phone or computer. Link in bio!"*

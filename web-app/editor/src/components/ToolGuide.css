@@ -1,0 +1,119 @@
+.tool-guide-intro {
+  margin: 0 auto 16px;
+  max-width: 760px;
+  text-align: center;
+}
+
+.tool-guide-intro h1 {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(24px, 4vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 0 0 8px;
+}
+
+.tool-guide-intro p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tool-shell--compact .tool-guide-intro {
+  display: none;
+}
+
+.tool-guide {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 48px auto 0;
+  max-width: 1120px;
+  width: 100%;
+}
+
+.tool-guide__card,
+.tool-guide__related {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(20, 22, 31, 0.06);
+  padding: 24px;
+}
+
+.tool-guide h2 {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.tool-guide__steps {
+  color: var(--muted);
+  display: grid;
+  gap: 8px;
+  line-height: 1.6;
+  margin: 0;
+  padding-left: 24px;
+}
+
+.tool-guide__faqs {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+}
+
+.tool-guide__faqs dt {
+  color: var(--ink);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.tool-guide__faqs dd {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tool-guide__related {
+  grid-column: 1 / -1;
+}
+
+.tool-guide__related ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tool-guide__related a {
+  background: var(--brand-wash);
+  border-radius: 9999px;
+  color: var(--brand);
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  text-decoration: none;
+}
+
+.tool-guide__related a:hover {
+  background: var(--brand-tint);
+}
+
+@media (max-width: 720px) {
+  .tool-guide {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 32px;
+  }
+
+  .tool-guide__card,
+  .tool-guide__related {
+    padding: 16px;
+  }
+}

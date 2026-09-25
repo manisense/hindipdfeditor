@@ -4,12 +4,12 @@
 
 ## Core URLs
 
-- Home & Tools Hub: https://hindipdfeditor.com/edit/
-- Edit Hindi PDF (Live Text & Masking): https://hindipdfeditor.com/edit/?tool=edit
-- Translate Hindi ↔ English: https://hindipdfeditor.com/edit/?tool=translate
-- Merge Multiple PDFs: https://hindipdfeditor.com/edit/?tool=merge
-- Split & Extract Pages: https://hindipdfeditor.com/edit/?tool=split
-- Compress & Shrink Scanned PDFs: https://hindipdfeditor.com/edit/?tool=compress
+- Home & Tools Hub: https://hindipdfeditor.com/
+- Edit Hindi PDF (Live Text & Masking): https://hindipdfeditor.com/edit-hindi-pdf/
+- Translate Hindi ↔ English: https://hindipdfeditor.com/translate-hindi-pdf/
+- Merge Multiple PDFs: https://hindipdfeditor.com/merge-pdf/
+- Split & Extract Pages: https://hindipdfeditor.com/split-pdf/
+- Compress & Shrink Scanned PDFs: https://hindipdfeditor.com/compress-pdf/
 - Articles & Guides Hub: https://hindipdfeditor.com/articles/
 - Guide: Hindi PDF Kaise Edit Kare: https://hindipdfeditor.com/articles/hindi-pdf-kaise-edit-kare/
 - Guide: Kruti Dev 010 PDF Unicode Converter: https://hindipdfeditor.com/articles/kruti-dev-pdf-unicode-converter-hindi/
@@ -53,7 +53,7 @@
 
 - **Why do Hindi fonts break in other PDF editors?** Devanagari requires GSUB and GPOS OpenType substitution tables. Naive tools detach vowel matras. Hindi PDF Editor solves this via browser-native font rendering.
 - **Is it safe for Aadhaar, PAN, and Government documents?** Yes, because files are processed entirely on-device without cloud uploads.
-- **How to edit Hindi text?** Open PDF at https://hindipdfeditor.com/edit/?tool=edit, tap text to edit/mask, type with standard Hindi Unicode, and export.
+- **How to edit Hindi text?** Open PDF at https://hindipdfeditor.com/edit-hindi-pdf/, tap text to edit/mask, type with standard Hindi Unicode, and export.
 
 ## Contact
 

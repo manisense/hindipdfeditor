@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="error-boundary">
           <div className="error-boundary__card">
-            <a className="error-boundary__brand" href="/edit/">
+            <a className="error-boundary__brand" href="/">
               <img src="/assets/app-icon.png" alt="" width={36} height={36} />
               Hindi PDF <strong>Editor</strong>
             </a>
@@ -66,7 +66,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={() => window.location.reload()}
               />
             </div>
-            <a className="error-boundary__home" href="/edit/">
+            <a className="error-boundary__home" href="/">
               <House size={15} aria-hidden="true" /> Back to all tools
             </a>
           </div>

@@ -4,7 +4,7 @@ import { useLanguage } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
 
 export function CTA() {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
 
   return (
     <section className="relative overflow-hidden bg-cream py-24 text-center">
@@ -28,7 +28,7 @@ export function CTA() {
           {t('cta.subtitle')}
         </p>
         <div className="mt-7 flex flex-wrap justify-center gap-3.5">
-          <Btn size="lg" href={toolHref('edit')}>
+          <Btn size="lg" href={toolHref('edit', lang)}>
             {t('cta.open')}
           </Btn>
           <GooglePlayLink size="lg" variant="ghost" />

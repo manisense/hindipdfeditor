@@ -4,6 +4,14 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Mobile Web Parity & Architecture Overhaul
 
+### Changed — Website SEO: crawlable pages
+
+- **Prerendered website pages (ADR `0010-prerendered-web-pages-and-path-urls.md`)**: the home page and each tool are now static HTML at build time, in English and Hindi. There is one URL per tool and language (`/merge-pdf/`, `/hi/merge-pdf/`, …), with per-page titles, canonicals, reciprocal hreflang and JSON-LD.
+- `/` is now the canonical home (previously a 302 to `/edit/`). `/edit/` returns a 301 to `/`, and old `?tool=`/`?lang=` links forward to the new paths.
+- Each tool page has a visible H1, intro, how-to steps and FAQ that describe only what the tool does.
+- The hero no longer starts invisible until JavaScript loads.
+- The internal SEO playbook is no longer published with the site.
+
 ### Added — Unified Design System & Vector Icon Infrastructure
 
 - **Unified Design System (`design-system.md` & ADR `0009-unified-design-system-and-ui-tokens.md`)**:

@@ -61,23 +61,18 @@ export function getTool(id: string | null): ToolMeta | null {
   return TOOLS.find((t) => t.id === id) ?? null;
 }
 
-export function toolHref(id: ToolId): string {
-  return `/edit/?tool=${id}`;
-}
+/** URL slug (no slashes) of each tool's public page, shared by both languages. */
+export const TOOL_SLUGS: Record<ToolId, string> = {
+  edit: "edit-hindi-pdf",
+  translate: "translate-hindi-pdf",
+  merge: "merge-pdf",
+  split: "split-pdf",
+  compress: "compress-pdf",
+};
 
-export function readToolIdFromLocation(): ToolId | null {
-  const params = new URLSearchParams(window.location.search);
-  const raw = params.get("tool");
-  if (
-    raw === "edit" ||
-    raw === "merge" ||
-    raw === "split" ||
-    raw === "compress" ||
-    raw === "translate"
-  ) {
-    return raw;
-  }
-  return null;
+/** Public path of a tool page, e.g. `/merge-pdf/` or `/hi/merge-pdf/`. */
+export function toolHref(id: ToolId, lang: "en" | "hi" = "en"): string {
+  return `${lang === "hi" ? "/hi" : ""}/${TOOL_SLUGS[id]}/`;
 }
 
 export function readEditModeFromLocation(): "edit" | "addText" | "erase" {

@@ -150,7 +150,7 @@
     "category": "पीडीएफ टूल्स",
     "language": "hi",
     "metaDescription": "UPSC, SSC, BPSC, और UP Police सरकारी नौकरी फॉर्म में अपलोड करने के लिए पीडीएफ साइज 50KB, 100KB या 200KB में बिना लिखावट धुंधली किए कंप्रेस करें।",
-    "directAnswer": "सरकारी फॉर्म के लिए पीडीएफ साइज कम करने के लिए hindipdfeditor.com/edit/?tool=compress पर जाएं। फाइल चुनें, 'Portal Safe (100KB)' या 'Standard (200KB)' विकल्प चुनें और Compress PDF दबाएं। आपकी हिंदी लिखावट बिल्कुल साफ रहेगी और फाइल साइज तुरंत कम हो जाएगा।",
+    "directAnswer": "सरकारी फॉर्म के लिए पीडीएफ साइज कम करने के लिए hindipdfeditor.com/compress-pdf/ पर जाएं। फाइल चुनें, 'Portal Safe (100KB)' या 'Standard (200KB)' विकल्प चुनें और Compress PDF दबाएं। आपकी हिंदी लिखावट बिल्कुल साफ रहेगी और फाइल साइज तुरंत कम हो जाएगा।",
     "readTime": "3 min read",
     "badgeTone": "tag-amber",
     "sections": [
@@ -231,7 +231,7 @@
     "category": "Govt & Legal",
     "language": "en",
     "metaDescription": "Step-by-step tutorial on how to edit and correct Hindi text, plot numbers, and owner names in Bhulekh Khasra-Khatauni land record PDFs safely.",
-    "directAnswer": "To edit a Hindi Khasra-Khatauni (Bhulekh) land record PDF, open it in Hindi PDF Editor at hindipdfeditor.com/edit/. Mask the outdated plot number, farmer name, or acreage field, and type the updated details in Unicode Hindi. Because all editing runs 100% locally in your browser, sensitive land ownership records are never uploaded to cloud servers.",
+    "directAnswer": "To edit a Hindi Khasra-Khatauni (Bhulekh) land record PDF, open it in Hindi PDF Editor at hindipdfeditor.com/edit-hindi-pdf/. Mask the outdated plot number, farmer name, or acreage field, and type the updated details in Unicode Hindi. Because all editing runs 100% locally in your browser, sensitive land ownership records are never uploaded to cloud servers.",
     "readTime": "4 min read",
     "badgeTone": "tag-green",
     "sections": [
@@ -321,7 +321,7 @@
     "category": "Document Management",
     "language": "en",
     "metaDescription": "Learn how to combine and merge multiple Hindi PDF files into a single document in sequential order for free without file size limits or server uploads.",
-    "directAnswer": "To merge multiple Hindi PDF files, visit hindipdfeditor.com/edit/?tool=merge. Select or drag multiple PDF documents, arrange their sequence using the drag handles or arrow buttons, and click Merge PDFs. The files are combined 100% locally in your browser memory without uploading any data to external servers.",
+    "directAnswer": "To merge multiple Hindi PDF files, visit hindipdfeditor.com/merge-pdf/. Select or drag multiple PDF documents, arrange their sequence using the drag handles or arrow buttons, and click Merge PDFs. The files are combined 100% locally in your browser memory without uploading any data to external servers.",
     "readTime": "3 min read",
     "badgeTone": "tag-amber",
     "sections": [
@@ -336,7 +336,7 @@
     "steps": [
       {
         "title": "Open Merge Tool",
-        "desc": "Go to the Merge PDF workspace at hindipdfeditor.com/edit/?tool=merge."
+        "desc": "Go to the Merge PDF workspace at hindipdfeditor.com/merge-pdf/."
       },
       {
         "title": "Add Multiple PDFs",
@@ -366,7 +366,7 @@
     "category": "Document Management",
     "language": "en",
     "metaDescription": "Learn how to reduce scanned Hindi PDF file size below 100KB, 200KB, or 500KB for government job portals without making Hindi matras blurry.",
-    "directAnswer": "To compress a large scanned Hindi PDF, open hindipdfeditor.com/edit/?tool=compress. Choose your preferred compression mode (Balanced, Strong, or Maximum Compression), and click Compress PDF. The tool optimizes image streams and removes redundant metadata while keeping Devanagari text razor-sharp for portal uploads.",
+    "directAnswer": "To compress a large scanned Hindi PDF, open hindipdfeditor.com/compress-pdf/. Choose your preferred compression mode (Balanced, Strong, or Maximum Compression), and click Compress PDF. The tool optimizes image streams and removes redundant metadata while keeping Devanagari text razor-sharp for portal uploads.",
     "readTime": "3 min read",
     "badgeTone": "tag-coral",
     "sections": [

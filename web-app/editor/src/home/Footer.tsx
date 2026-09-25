@@ -3,25 +3,25 @@ import { useLanguage } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
 
 export function Footer() {
-  const { t, isHindi } = useLanguage();
+  const { lang, t, isHindi } = useLanguage();
 
   const cols = [
     {
       title: t('footer.editOcr'),
       links: [
-        { label: isHindi ? 'हिंदी पीडीएफ एडिट करें' : 'Edit Hindi PDF', href: toolHref('edit') },
-        { label: isHindi ? 'हिंदी ↔ अंग्रेजी अनुवाद' : 'Hindi ↔ English', href: toolHref('translate') },
-        { label: isHindi ? 'टेक्स्ट बदलें व मास्क करें' : 'Replace text', href: `${toolHref('edit')}&mode=erase` },
-        { label: isHindi ? 'नया टेक्स्ट जोड़ें' : 'Add text', href: `${toolHref('edit')}&mode=addText` },
+        { label: isHindi ? 'हिंदी पीडीएफ एडिट करें' : 'Edit Hindi PDF', href: toolHref('edit', lang) },
+        { label: isHindi ? 'हिंदी ↔ अंग्रेजी अनुवाद' : 'Hindi ↔ English', href: toolHref('translate', lang) },
+        { label: isHindi ? 'टेक्स्ट बदलें व मास्क करें' : 'Replace text', href: `${toolHref('edit', lang)}?mode=erase` },
+        { label: isHindi ? 'नया टेक्स्ट जोड़ें' : 'Add text', href: `${toolHref('edit', lang)}?mode=addText` },
       ],
     },
     {
       title: t('footer.organize'),
       links: [
-        { label: isHindi ? 'पीडीएफ फाइलें जोड़ें (Merge)' : 'Merge PDF', href: toolHref('merge') },
-        { label: isHindi ? 'पेज अलग करें (Split)' : 'Split PDF', href: toolHref('split') },
-        { label: isHindi ? 'साइज कम करें (Compress)' : 'Compress PDF', href: toolHref('compress') },
-        { label: isHindi ? 'स्मार्ट OCR डिटेक्शन' : 'OCR detection', href: toolHref('edit') },
+        { label: isHindi ? 'पीडीएफ फाइलें जोड़ें (Merge)' : 'Merge PDF', href: toolHref('merge', lang) },
+        { label: isHindi ? 'पेज अलग करें (Split)' : 'Split PDF', href: toolHref('split', lang) },
+        { label: isHindi ? 'साइज कम करें (Compress)' : 'Compress PDF', href: toolHref('compress', lang) },
+        { label: isHindi ? 'स्मार्ट OCR डिटेक्शन' : 'OCR detection', href: toolHref('edit', lang) },
       ],
     },
     {
@@ -32,10 +32,10 @@ export function Footer() {
         { label: isHindi ? 'टूल्स की तुलना (Compare)' : 'Compare vs Acrobat/Canva', href: '#compare' },
         { label: isHindi ? 'दस्तावेज उपयोग' : 'Document use cases', href: '#use-cases' },
         { label: isHindi ? 'अक्सर पूछे जाने वाले सवाल (FAQ)' : 'FAQ', href: '#faq' },
-        { label: isHindi ? 'प्राइवेसी पॉलिसी' : 'Privacy Policy', href: '/privacy/' },
-        { label: isHindi ? 'डेटा सुरक्षा' : 'Data Safety', href: '/data-safety/' },
-        { label: isHindi ? 'नियम और शर्तें' : 'Terms of Service', href: '/terms/' },
-        { label: isHindi ? 'सहायता और संपर्क' : 'Support', href: '/support/' },
+        { label: isHindi ? 'प्राइवेसी पॉलिसी' : 'Privacy Policy', href: `${isHindi ? '/hi' : ''}/privacy/` },
+        { label: isHindi ? 'डेटा सुरक्षा' : 'Data Safety', href: `${isHindi ? '/hi' : ''}/data-safety/` },
+        { label: isHindi ? 'नियम और शर्तें' : 'Terms of Service', href: `${isHindi ? '/hi' : ''}/terms/` },
+        { label: isHindi ? 'सहायता और संपर्क' : 'Support', href: `${isHindi ? '/hi' : ''}/support/` },
         { label: isHindi ? 'एंड्रॉयड ऐप (गूगल प्ले)' : 'Android App', href: PLAY_STORE_URL },
       ],
     },

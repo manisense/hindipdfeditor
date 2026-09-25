@@ -29,6 +29,7 @@ mobile-app/*.tsbuildinfo
 # Web editor local/generated state
 web-app/editor/node_modules/
 web-app/editor/tsconfig.tsbuildinfo
+web-app/editor/dist-ssr/
 web-app/edit/
 web-app/dist/
 web-app/node_modules/

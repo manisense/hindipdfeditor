@@ -11,7 +11,9 @@ import {
 import type { ReactNode } from 'react';
 
 import { useLanguage } from '../lib/i18n';
+import { routePath } from '../lib/routes';
 import { TOOLS, toolHref, type ToolId, type ToolMeta } from '../lib/tools';
+import { ToolGuide, ToolIntro } from './ToolGuide';
 import './ToolShell.css';
 
 type Step = { label: string; active?: boolean; done?: boolean };
@@ -43,6 +45,8 @@ const toolHindiNames: Record<ToolId, string> = {
 export function ToolShell({ tool, steps, actions, compact = false, children }: Props) {
   const { lang, setLang, isHindi } = useLanguage();
   const ActiveIcon = tool ? toolIcons[tool.id] : Grid2X2;
+  const homeHref = routePath({ lang, toolId: null });
+  const legalPrefix = isHindi ? '/hi' : '';
 
   const toggleLanguage = () => {
     setLang(lang === 'en' ? 'hi' : 'en');
@@ -67,7 +71,7 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
 
       <div className="tool-shell__nav-wrap">
         <header className="tool-shell__header">
-          <a href="/edit/" className="tool-shell__logo-link">
+          <a href={homeHref} className="tool-shell__logo-link">
             <img
               className="tool-shell__logo"
               src="/assets/app-icon.png"
@@ -98,7 +102,7 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
               <span className="tool-shell__lang-text">{isHindi ? 'English' : 'हिन्दी'}</span>
             </button>
 
-            <a className="tool-shell__all-tools" href="/edit/#features">
+            <a className="tool-shell__all-tools" href={`${homeHref}#features`}>
               <Grid2X2 size={16} strokeWidth={2.2} aria-hidden="true" />
               <span>{isHindi ? 'सभी टूल्स' : 'All tools'}</span>
             </a>
@@ -116,7 +120,7 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
               return (
                 <a
                   key={item.id}
-                  href={toolHref(item.id)}
+                  href={toolHref(item.id, lang)}
                   className={item.id === tool.id ? 'is-active' : ''}
                   aria-current={item.id === tool.id ? 'page' : undefined}
                 >
@@ -127,6 +131,8 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
             })}
           </nav>
         )}
+
+        {tool && <ToolIntro toolId={tool.id} />}
 
         {steps && steps.length > 0 && (
           <ol className="tool-shell__steps" aria-label="Progress">
@@ -144,6 +150,8 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
         )}
 
         <div className="tool-shell__body">{children}</div>
+
+        {tool && <ToolGuide toolId={tool.id} />}
       </main>
 
       <footer className="tool-shell__footer">
@@ -153,9 +161,9 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
           <span>{isHindi ? '100% सुरक्षित देवनागरी एडिटर' : 'Made for Devanagari · हिंदी'}</span>
         </div>
         <nav aria-label="Legal and support">
-          <a href="/privacy/">{isHindi ? 'प्राइवेसी' : 'Privacy'}</a>
-          <a href="/support/">{isHindi ? 'सपोर्ट' : 'Support'}</a>
-          <a href="/terms/">{isHindi ? 'शर्तें' : 'Terms'}</a>
+          <a href={`${legalPrefix}/privacy/`}>{isHindi ? 'प्राइवेसी' : 'Privacy'}</a>
+          <a href={`${legalPrefix}/support/`}>{isHindi ? 'सपोर्ट' : 'Support'}</a>
+          <a href={`${legalPrefix}/terms/`}>{isHindi ? 'शर्तें' : 'Terms'}</a>
         </nav>
       </footer>
     </div>

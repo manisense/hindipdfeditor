@@ -2,10 +2,11 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 
 import { AppPopupProvider } from './components/AppPopup';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { SeoHead } from './components/SeoHead';
+import { ToolShell } from './components/ToolShell';
 import { HomePage } from './home/HomePage';
-import { LanguageProvider } from './lib/i18n';
-import { readToolIdFromLocation, type ToolId } from './lib/tools';
+import { LanguageProvider, type Language } from './lib/i18n';
+import { routePath, type Route } from './lib/routes';
+import { getTool, type ToolId } from './lib/tools';
 import './App.css';
 
 const CompressPdfTool = lazy(() =>
@@ -24,58 +25,55 @@ const TranslatePdfTool = lazy(() =>
   import('./tools/TranslatePdfTool').then((module) => ({ default: module.TranslatePdfTool })),
 );
 
-function useToolId(): ToolId | null {
-  const [toolId, setToolId] = useState<ToolId | null>(() => readToolIdFromLocation());
-
-  useEffect(() => {
-    const onNav = () => {
-      setToolId(readToolIdFromLocation());
-      // Client-side tool switches (popstate) need an explicit page_view; first load
-      // is already counted by analytics.js gtag('config', ...).
-      const path = `${window.location.pathname}${window.location.search}`;
-      window.gtag?.('event', 'page_view', {
-        page_path: path,
-        page_location: window.location.href,
-        page_title: document.title,
-      });
-    };
-    window.addEventListener('popstate', onNav);
-    return () => window.removeEventListener('popstate', onNav);
-  }, []);
-
-  return toolId;
+/**
+ * Tool page as prerendered and as first hydrated: the shell with its intro and guide, and a
+ * loading slot where the interactive tool mounts once the browser has taken over.
+ */
+function ToolPlaceholder({ toolId }: { toolId: ToolId }) {
+  return (
+    <ToolShell tool={getTool(toolId)}>
+      <div className="app-loading" role="status" aria-live="polite">
+        Loading PDF tool…
+      </div>
+    </ToolShell>
+  );
 }
 
-export default function App() {
-  const toolId = useToolId();
+function ToolRoute({ toolId }: { toolId: ToolId }) {
+  // The tools use browser-only APIs, so they are never prerendered; the placeholder is
+  // rendered for the server HTML and the hydration pass, then swapped for the real tool.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+
+  const placeholder = <ToolPlaceholder toolId={toolId} />;
+  if (!hydrated) return placeholder;
 
   return (
-    <LanguageProvider>
+    <Suspense fallback={placeholder}>
+      {toolId === 'edit' ? (
+        <EditPdfTool />
+      ) : toolId === 'translate' ? (
+        <ErrorBoundary label="Translate">
+          <TranslatePdfTool />
+        </ErrorBoundary>
+      ) : toolId === 'merge' ? (
+        <MergePdfTool />
+      ) : toolId === 'split' ? (
+        <SplitPdfTool />
+      ) : (
+        <CompressPdfTool />
+      )}
+    </Suspense>
+  );
+}
+
+export default function App({ route }: { route: Route }) {
+  const pathFor = (lang: Language) => routePath({ ...route, lang });
+
+  return (
+    <LanguageProvider lang={route.lang} pathFor={pathFor}>
       <AppPopupProvider>
-        <SeoHead toolId={toolId} />
-        <Suspense
-          fallback={
-            <div className="app-loading" role="status" aria-live="polite">
-              Loading PDF tool…
-            </div>
-          }
-        >
-          {toolId === 'edit' ? (
-            <EditPdfTool />
-          ) : toolId === 'translate' ? (
-            <ErrorBoundary label="Translate">
-              <TranslatePdfTool />
-            </ErrorBoundary>
-          ) : toolId === 'merge' ? (
-            <MergePdfTool />
-          ) : toolId === 'split' ? (
-            <SplitPdfTool />
-          ) : toolId === 'compress' ? (
-            <CompressPdfTool />
-          ) : (
-            <HomePage />
-          )}
-        </Suspense>
+        {route.toolId ? <ToolRoute toolId={route.toolId} /> : <HomePage />}
       </AppPopupProvider>
     </LanguageProvider>
   );
