@@ -34,6 +34,17 @@ All notable changes to this project are documented here, grouped by phase (see `
     - "Fix broken Hindi fonts" is now a guide to four different failure modes: scattered matras, empty boxes, copy-paste gibberish, and legacy fonts.
     - "हिंदी पीडीएफ कैसे एडिट करें" now covers Gboard Hindi and Hinglish setup, the editing steps, and what not to edit.
     - The English Kruti Dev guide explains why the text shows as gibberish, and gives three routes: convert, rebuild, or overlay.
+  - The remaining eight articles were rewritten, all researched and with new titles:
+    - The 100KB guide covers scan settings and step-wise compression, plus photo and signature KB limits for SSC, UPSSSC and UPSC.
+    - The e-District self-declaration guide is corrected: no notary is needed, and the IPC reference is gone.
+    - The e-stamp guide explains how to measure your own certificate instead of trusting a fixed 4.5-inch margin.
+    - The UP Bhulekh guide now follows the Section 38 UP Revenue Code 2006 process.
+    - The translate guide covers four approaches.
+    - The merge guide covers document order and staying under size limits.
+    - The compress-scanned guide covers legibility checks.
+    - The Kruti Dev guide now has a Hindi version.
+  - Removed claims about features that do not exist: "Portal Safe (100KB)" and "e-Stamp" presets, and the translate tool's supposed manual choice of direction.
+  - Article pages no longer scroll sideways on phones.
 
 ### Added — Unified Design System & Vector Icon Infrastructure
 

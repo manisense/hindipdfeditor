@@ -83,7 +83,7 @@ export const TOOL_COPY: Record<ToolId, Record<Language, ToolCopy>> = {
         'The tool detects Hindi or English lines in your PDF, translates them in either direction, and writes the translation back in place of the original lines. Nothing is sent to our translation service until you confirm.',
       steps: [
         'Open a PDF. Text lines are read from the file in your browser.',
-        'Choose the direction (Hindi → English or English → Hindi) and confirm sending the text for translation.',
+        'The direction (Hindi → English or English → Hindi) is detected automatically. Pass the quick security check and confirm sending the text for translation.',
         'Review the translated lines on the page and download a new PDF.',
       ],
       faqs: [
@@ -106,7 +106,7 @@ export const TOOL_COPY: Record<ToolId, Record<Language, ToolCopy>> = {
         'यह टूल आपकी पीडीएफ की हिंदी या अंग्रेजी लाइनें पहचानता है, उनका अनुवाद करता है और अनुवाद को मूल लाइन की जगह लगा देता है। आपकी पुष्टि से पहले अनुवाद सर्विस को कुछ नहीं भेजा जाता।',
       steps: [
         'पीडीएफ खोलें। टेक्स्ट लाइनें आपके ब्राउज़र में ही पहचानी जाती हैं।',
-        'दिशा चुनें (हिंदी → अंग्रेजी या अंग्रेजी → हिंदी) और टेक्स्ट भेजने की पुष्टि करें।',
+        'दिशा (हिंदी → अंग्रेजी या अंग्रेजी → हिंदी) अपने-आप पहचानी जाती है। छोटा सुरक्षा चेक पूरा करें और टेक्स्ट भेजने की पुष्टि करें।',
         'पेज पर अनुवाद जांचें और नई पीडीएफ डाउनलोड करें।',
       ],
       faqs: [

@@ -12,18 +12,18 @@
 - Compress & Shrink Scanned PDFs: https://hindipdfeditor.com/compress-pdf/
 - Articles & Guides Hub: https://hindipdfeditor.com/articles/
 - Guide: हिंदी पीडीएफ कैसे एडिट करें — मोबाइल और कंप्यूटर पर, बिना मात्रा टूटे (2026): https://hindipdfeditor.com/articles/hindi-pdf-kaise-edit-kare/
-- Guide: Kruti Dev 010 PDF Editing (Hindi): https://hindipdfeditor.com/articles/kruti-dev-pdf-unicode-converter-hindi/
+- Guide: कृति देव वाली पीडीएफ में 'd`fr nso' क्यों दिखता है — पढ़ें, यूनिकोड में बदलें या एडिट करें: https://hindipdfeditor.com/articles/kruti-dev-pdf-unicode-converter-hindi/
 - Guide: 'One and the same person' affidavit for name spelling mismatch: https://hindipdfeditor.com/articles/sarkari-admit-card-name-correction-affidavit-hindi/
-- Guide: Bhulekh Khasra-Khatauni Correction Application: https://hindipdfeditor.com/articles/khasra-khatauni-bhulekh-sudhar-hindi-pdf/
+- Guide: खतौनी में नाम गलत है? उत्तर प्रदेश में भूलेख सुधार का आवेदन कैसे करें (धारा 38 की प्रक्रिया): https://hindipdfeditor.com/articles/khasra-khatauni-bhulekh-sudhar-hindi-pdf/
 - Guide: Hindi Text Broken in a PDF? 4 Different Problems and How to Fix Each One: https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/
-- Guide: Translate Hindi PDF to English: https://hindipdfeditor.com/articles/translate-hindi-pdf-to-english/
+- Guide: How to Translate a Hindi PDF to English (and Keep the Layout): https://hindipdfeditor.com/articles/translate-hindi-pdf-to-english/
 - Guide: Kruti Dev PDF Showing Gibberish? How to Read, Convert or Edit It: https://hindipdfeditor.com/articles/kruti-dev-to-unicode-hindi-pdf-editor/
-- Guide: e-District UP स्वप्रमाणित घोषणा पत्र PDF कैसे भरें और डाउनलोड करें (जाति, आय, निवास): https://hindipdfeditor.com/articles/swapramanit-ghoshna-patra-edistrict-hindi-pdf/
+- Guide: e-District UP स्वप्रमाणित घोषणा पत्र कैसे भरें — जाति, आय और निवास प्रमाण पत्र के लिए (2026): https://hindipdfeditor.com/articles/swapramanit-ghoshna-patra-edistrict-hindi-pdf/
 - Guide: Parimarjan Plus — correcting name, khata-khesra or rakba in Bihar jamabandi: https://hindipdfeditor.com/articles/bihar-bhumi-parimarjan-plus-shapath-patra-pdf/
-- Guide: सरकारी फॉर्म के लिए PDF साइज कम कैसे करें (100KB और 200KB में बदलें): https://hindipdfeditor.com/articles/pdf-size-kam-kaise-kare-100kb-sarkari-form/
-- Guide: e-Stamp पेपर पर हिंदी शपथ पत्र (Affidavit) प्रिंट करने का सही मार्जिन तरीका: https://hindipdfeditor.com/articles/e-stamp-paper-par-hindi-matter-print-margin-guide/
-- Guide: How to Merge Multiple Hindi PDF Files Online in Order (Free, No Upload): https://hindipdfeditor.com/articles/merge-multiple-hindi-pdf-files-online/
-- Guide: How to Compress Large Scanned Hindi PDFs Without Quality Loss: https://hindipdfeditor.com/articles/compress-scanned-hindi-pdf-without-blur/
+- Guide: सरकारी फॉर्म के लिए PDF का साइज 100KB या 200KB कैसे करें — बिना अक्षर धुंधले किए: https://hindipdfeditor.com/articles/pdf-size-kam-kaise-kare-100kb-sarkari-form/
+- Guide: ई-स्टांप पेपर पर शपथ पत्र कैसे प्रिंट करें — सही मार्जिन नापने का तरीका, ताकि स्टांप खराब न हो: https://hindipdfeditor.com/articles/e-stamp-paper-par-hindi-matter-print-margin-guide/
+- Guide: How to Merge Hindi PDF Files Into One (in the Right Order, Without Uploading Them): https://hindipdfeditor.com/articles/merge-multiple-hindi-pdf-files-online/
+- Guide: How to Shrink a Scanned Hindi PDF Without Making the Text Unreadable: https://hindipdfeditor.com/articles/compress-scanned-hindi-pdf-without-blur/
 - Extended Documentation & Full LLM Specs: https://hindipdfeditor.com/llms-full.txt
 - Android App on Google Play: https://play.google.com/store/apps/details?id=com.hindipdfeditor.app
 - XML Sitemap: https://hindipdfeditor.com/sitemap.xml
