@@ -11,6 +11,10 @@ All notable changes to this project are documented here, grouped by phase (see `
 - Each tool page has a visible H1, intro, how-to steps and FAQ that describe only what the tool does.
 - The hero no longer starts invisible until JavaScript loads.
 - The internal SEO playbook is no longer published with the site.
+- **hreflang fixed site-wide**:
+  - The English legal pages now link reciprocally with their `/hi/` versions.
+  - Articles no longer declare false alternates: they had pointed `en`/`hi` at themselves or at unrelated articles. The article generator no longer emits them either.
+  - The build (`scripts/check-seo.mjs`) now fails if a page's canonical is not its own URL, or if an hreflang set is not reciprocal.
 
 ### Added — Unified Design System & Vector Icon Infrastructure
 

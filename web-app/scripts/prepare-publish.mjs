@@ -2,6 +2,8 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFil
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { checkSeo } from './check-seo.mjs';
+
 const webAppRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const distDir = path.join(webAppRoot, 'dist');
 const editDir = path.join(webAppRoot, 'edit');
@@ -71,3 +73,5 @@ for (const page of renderAllRoutes()) {
 }
 
 console.log(`prepare-publish: wrote ${distDir} (${statSync(path.join(distDir, 'index.html')).size} bytes at /)`);
+
+checkSeo(distDir);

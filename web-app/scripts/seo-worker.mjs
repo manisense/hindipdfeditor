@@ -141,9 +141,6 @@ function generateArticleHtml(item) {
     <title>${title} — Hindi PDF Editor</title>
     <meta name="description" content="${metaDesc}" />
     <link rel="canonical" href="${canonicalUrl}" />
-    <link rel="alternate" hreflang="en" href="${canonicalUrl}" />
-    <link rel="alternate" hreflang="hi" href="${canonicalUrl}" />
-    <link rel="alternate" hreflang="x-default" href="${canonicalUrl}" />
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${metaDesc}" />
     <meta property="og:url" content="${canonicalUrl}" />
