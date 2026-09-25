@@ -8,8 +8,8 @@ export function ArticlesSection() {
   const articlesEn = [
     {
       category: 'Typography & Fonts',
-      title: 'Why Hindi Fonts & Matras Break in PDF Editors (and How to Fix Them)',
-      desc: 'Why matras and conjuncts break when PDF tools edit Hindi, and how to add Hindi text that stays joined.',
+      title: "Hindi Text Broken in a PDF? 4 Different Problems and How to Fix Each One",
+      desc: "Scattered matras, empty boxes, copy-paste gibberish or \"d`fr nso\"? Find which of four problems you have and fix it.",
       href: '/articles/fix-broken-hindi-fonts-in-pdf/',
       badgeTone: 'bg-brand-tint text-brand',
       readTime: '5 min read',
@@ -35,24 +35,24 @@ export function ArticlesSection() {
   const articlesHi = [
     {
       category: 'टाइपोग्राफी',
-      title: 'हिंदी पीडीएफ कैसे एडिट करें — PDF में हिंदी लिखने और बदलने का आसान तरीका',
-      desc: 'जानिए कैसे बिना फॉन्ट टूटे या मात्रा बिखरे अपने मोबाइल या कंप्यूटर पर शुद्ध देवनागरी यूनिकोड के साथ सरकारी फॉर्म और पीडीएफ एडिट करें।',
+      title: "हिंदी पीडीएफ कैसे एडिट करें — मोबाइल और कंप्यूटर पर, बिना मात्रा टूटे (2026)",
+      desc: "मोबाइल पर हिंदी टाइपिंग सेट करने से लेकर मात्राएं सही रखने और नई पीडीएफ डाउनलोड करने तक, पूरा तरीका।",
       href: '/articles/hindi-pdf-kaise-edit-kare/',
       badgeTone: 'bg-brand-tint text-brand',
       readTime: '5 मिनट',
     },
     {
       category: 'सरकारी भर्ती',
-      title: "नाम की स्पेलिंग अलग होने पर 'एक ही व्यक्ति' शपथ पत्र कैसे बनवाएं",
-      desc: 'UP Police, BPSC, SSC GD और रेलवे भर्ती परीक्षाओं के लिए नाम और पिता के नाम में स्पेलिंग गलती सुधारने का पूरा फॉर्मेट।',
+      title: "नाम में स्पेलिंग अलग है? सरकारी भर्ती के लिए 'एक ही व्यक्ति' शपथ पत्र कैसे बनवाएं (प्रारूप सहित)",
+      desc: "मार्कशीट, आधार और भर्ती फॉर्म में नाम अलग है? शपथ पत्र का प्रारूप, बनवाने का तरीका और कब यह काफी नहीं होता।",
       href: '/articles/sarkari-admit-card-name-correction-affidavit-hindi/',
       badgeTone: 'bg-accent-tint text-accent',
       readTime: '4 मिनट',
     },
     {
       category: 'फॉन्ट कन्वर्जन',
-      title: 'कृति देव 010 पीडीएफ को यूनिकोड में कैसे बदलें और एडिट करें',
-      desc: 'पुरानी कृति देव फाइलों में दिखने वाले अजीब अंग्रेजी अक्षरों (d`fr nso) को ठीक करें और मोबाइल में पढ़ने योग्य शुद्ध यूनिकोड में बदलें।',
+      title: "कृति देव 010 पीडीएफ कैसे एडिट करें (यूनिकोड हिंदी टेक्स्ट के साथ)",
+      desc: "कृति देव वाली पीडीएफ में \"d`fr nso\" जैसे अक्षर क्यों दिखते हैं, और उसमें यूनिकोड हिंदी में नया टेक्स्ट कैसे जोड़ें।",
       href: '/articles/kruti-dev-pdf-unicode-converter-hindi/',
       badgeTone: 'bg-pop-lav text-[#5B4BD6]',
       readTime: '5 मिनट',

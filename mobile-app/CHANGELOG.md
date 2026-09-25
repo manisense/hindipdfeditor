@@ -30,6 +30,10 @@ All notable changes to this project are documented here, grouped by phase (see `
   - The Parimarjan Plus guide went from about 150 to 850 words. It covers the two application types, documents, the self-declaration, why applications get reverted, and status and helpline.
   - The name-mismatch affidavit guide went from about 300 to 800 words. It covers the correction window, what the affidavit must say, the process, and when an affidavit is not enough.
   - Both have new titles for click-through, visible FAQs that match their JSON-LD, an Article image, and no emoji.
+  - Three more rewrites:
+    - "Fix broken Hindi fonts" is now a guide to four different failure modes: scattered matras, empty boxes, copy-paste gibberish, and legacy fonts.
+    - "हिंदी पीडीएफ कैसे एडिट करें" now covers Gboard Hindi and Hinglish setup, the editing steps, and what not to edit.
+    - The English Kruti Dev guide explains why the text shows as gibberish, and gives three routes: convert, rebuild, or overlay.
 
 ### Added — Unified Design System & Vector Icon Infrastructure
 
