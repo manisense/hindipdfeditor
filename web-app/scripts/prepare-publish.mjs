@@ -10,6 +10,7 @@ const editDir = path.join(webAppRoot, 'edit');
 const ssrEntry = path.join(webAppRoot, 'editor', 'dist-ssr', 'entry-server.js');
 
 const STATIC_ENTRIES = [
+  '404.html',
   'favicon.ico',
   'robots.txt',
   'sitemap.xml',

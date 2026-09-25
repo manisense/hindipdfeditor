@@ -15,6 +15,7 @@ All notable changes to this project are documented here, grouped by phase (see `
   - The English legal pages now link reciprocally with their `/hi/` versions.
   - Articles no longer declare false alternates: they had pointed `en`/`hi` at themselves or at unrelated articles. The article generator no longer emits them either.
   - The build (`scripts/check-seo.mjs`) now fails if a page's canonical is not its own URL, or if an hreflang set is not reciprocal.
+- **Real 404 page**: `web-app/404.html` is a bilingual, `noindex` page linking to the tools. Without a top-level `404.html`, Cloudflare Pages treated the site as a single-page app and answered unknown URLs with a 200. Checked with `wrangler pages dev`: unknown paths now return 404.
 
 ### Added — Unified Design System & Vector Icon Infrastructure
 
