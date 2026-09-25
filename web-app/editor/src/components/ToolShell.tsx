@@ -158,7 +158,7 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
         <div>
           <span>© 2026 Hindi PDF Editor</span>
           <span className="tool-shell__footer-dot" aria-hidden="true">·</span>
-          <span>{isHindi ? '100% सुरक्षित देवनागरी एडिटर' : 'Made for Devanagari · हिंदी'}</span>
+          <span>{isHindi ? 'देवनागरी के लिए बना एडिटर' : 'Made for Devanagari · हिंदी'}</span>
         </div>
         <nav aria-label="Legal and support">
           <a href={`${legalPrefix}/privacy/`}>{isHindi ? 'प्राइवेसी' : 'Privacy'}</a>

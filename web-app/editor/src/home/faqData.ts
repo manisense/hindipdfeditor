@@ -7,27 +7,27 @@ export interface FaqItem {
 export const SITE_FAQS: readonly FaqItem[] = [
   {
     q: "Are my files uploaded to a server?",
-    a: "No. Core editing, text replacement, merging, splitting, and compression run 100% locally in your browser via WebAssembly and Canvas. Your private documents, government forms, and IDs never leave your device.",
+    a: "Not for editing. Opening, editing, merging, splitting and compressing run in your browser, and the PDF stays on your device. Two optional AI features send data to our server, only after you confirm: translation sends the detected text, and AI text recognition sends page images of scanned pages.",
   },
   {
     q: "Why do Hindi letters and matras break in other PDF editors?",
-    a: "Devanagari is an abugida script requiring OpenType substitution (GSUB) and positioning (GPOS) tables to combine consonants and vowel matras into conjunct glyphs. Standard tools like Canva or Adobe Acrobat often use naive 1:1 character mapping, detaching matras. Hindi PDF Editor renders via a Chromium HarfBuzz pipeline, guaranteeing 100% correct ligature shaping.",
+    a: "Devanagari needs a text-shaping engine to join consonants and vowel signs into conjuncts and matras. When a PDF tool edits existing Hindi text without that shaping, matras land in the wrong place or split off. Hindi PDF Editor has the browser's own shaping engine draw every new line of Hindi text, the same one that renders Hindi web pages, so conjuncts and matras come out joined.",
   },
   {
     q: "How do I type Hindi in a PDF without broken fonts?",
-    a: "Open your PDF in Hindi PDF Editor, tap on any text line or blank area, and type using standard Unicode Devanagari (via Google Input Tools, InScript keyboard, or mobile Hindi keyboard). The editor automatically shapes conjuncts like 'क्ष', 'त्र', 'ज्ञ' and complex matras in real time.",
+    a: "Open your PDF in Hindi PDF Editor, tap a text line or a blank area, and type in Unicode Devanagari with Google Input Tools, an InScript keyboard or your phone's Hindi keyboard. Conjuncts such as 'क्ष', 'त्र', 'ज्ञ' and matras are shaped as you type.",
   },
   {
-    q: "Can I edit Government exam admit cards, land records, or legal affidavits?",
-    a: "Yes. Hindi PDF Editor is designed for official Hindi documents including Sarkari admit cards (BPSC, UPPSC, SSC), land records (Khasra-Khatauni), legal affidavits, marks sheets, and office circulars without corrupting font layouts.",
+    q: "Can I use it for government forms and affidavits?",
+    a: "Use it for documents you are entitled to change: filling in blank forms, preparing affidavits and applications, and fixing your own drafts. Do not alter documents issued by an authority, such as admit cards, mark sheets or land records. A correction to those has to come from the issuing office, and an edited copy can be treated as forgery.",
   },
   {
     q: "How does Hindi ↔ English PDF translation work?",
-    a: "Select the Translate tool to detect Hindi or English text. The lines are processed through our secure Gemini AI proxy only after your explicit confirmation. The translation is aligned back onto your PDF layout, and your original document is never overwritten.",
+    a: "Open the Translate tool. It reads the Hindi or English text on each page, and after you confirm, sends those lines to our Gemini-based translation service. The translation is placed back onto the page, and your original file is never modified.",
   },
   {
     q: "Can I edit scanned or image-based Hindi PDFs?",
-    a: "Yes. Use our built-in OCR detection tool to recognize printed Hindi (Devanagari) and English text inside scanned PDF pages and images, allowing you to copy, edit, or translate the content directly.",
+    a: "Yes. Scanned pages are read with text recognition in your browser. For hard-to-read pages you can choose AI text recognition, which sends the page image to our server after you confirm.",
   },
   {
     q: "Does Hindi PDF Editor overwrite my original PDF file?",
@@ -39,34 +39,34 @@ export const SITE_FAQS: readonly FaqItem[] = [
   },
   {
     q: "Is Hindi PDF Editor free?",
-    a: "Yes, the full suite of PDF editing, translation, merging, splitting, and compression tools is 100% free with no account, subscription, or watermark required.",
+    a: "Yes. Editing, translation, merging, splitting and compression are free, with no account, subscription or watermark.",
   },
 ] as const;
 
 export const SITE_FAQS_HI: readonly FaqItem[] = [
   {
     q: "क्या मेरी फाइलें किसी सर्वर पर अपलोड होती हैं?",
-    a: "नहीं। पीडीएफ एडिट करना, टेक्स्ट बदलना, फाइलों को जोड़ना (Merge), अलग करना (Split) और कंप्रेस करना 100% आपके अपने ब्राउज़र में WebAssembly और Canvas के माध्यम से लोकली होता है। आपके निजी दस्तावेज, सरकारी फॉर्म और पहचान पत्र कभी आपके डिवाइस से बाहर नहीं जाते।",
+    a: "एडिटिंग के लिए नहीं। फाइल खोलना, एडिट, मर्ज, स्प्लिट और कंप्रेस आपके ब्राउज़र में होते हैं और पीडीएफ आपके डिवाइस पर ही रहती है। दो वैकल्पिक AI फीचर आपकी पुष्टि के बाद ही हमारे सर्वर को डेटा भेजते हैं: अनुवाद पहचाना गया टेक्स्ट भेजता है, और AI टेक्स्ट पहचान स्कैन पेज की इमेज भेजती है।",
   },
   {
     q: "अन्य पीडीएफ एडिटर्स में हिंदी के अक्षर और मात्राएं क्यों टूट जाती हैं?",
-    a: "देवनागरी लिपि में व्यंजनों और स्वर मात्राओं को जोड़ने के लिए OpenType GSUB और GPOS टेबल्स की आवश्यकता होती है। Canva या Adobe जैसे सामान्य टूल्स 1:1 कैरेक्टर मैपिंग करते हैं, जिससे मात्राएं अलग हो जाती हैं या उल्टी दिखने लगती हैं। Hindi PDF Editor सीधे Chromium HarfBuzz रेंडरिंग का उपयोग करता है, जिससे 'क्ष', 'त्र', 'ज्ञ' और 'कि' जैसी मात्राएं 100% सही बनती हैं।",
+    a: "देवनागरी में व्यंजनों और मात्राओं को जोड़कर संयुक्ताक्षर बनाने के लिए टेक्स्ट-शेपिंग इंजन चाहिए। जब कोई पीडीएफ टूल बिना इस शेपिंग के मौजूदा हिंदी टेक्स्ट एडिट करता है, तो मात्राएं गलत जगह चली जाती हैं या अलग हो जाती हैं। Hindi PDF Editor में हर नई हिंदी लाइन ब्राउज़र का वही शेपिंग इंजन बनाता है जो हिंदी वेब पेज दिखाता है, इसलिए 'क्ष', 'त्र', 'ज्ञ' और 'कि' जुड़े हुए बनते हैं।",
   },
   {
     q: "पीडीएफ में सही हिंदी टाइपिंग कैसे करें?",
-    a: "Hindi PDF Editor में अपनी पीडीएफ खोलें, किसी भी टेक्स्ट लाइन पर क्लिक करें या खाली जगह पर टैप करें। इसके बाद अपने फोन या कंप्यूटर के किसी भी मानक हिंदी कीबोर्ड (Google Input Tools, Mangal, InScript) से टाइप करें। एडिटर रीयल-टाइम में सही देवनागरी फोंट रेंडर करता है।",
+    a: "Hindi PDF Editor में अपनी पीडीएफ खोलें, किसी टेक्स्ट लाइन या खाली जगह पर टैप करें और किसी भी यूनिकोड हिंदी कीबोर्ड (Google Input Tools, InScript या फोन का हिंदी कीबोर्ड) से टाइप करें। टाइप करते समय ही अक्षर सही आकार में जुड़ते हैं।",
   },
   {
-    q: "क्या मैं सरकारी एडमिट कार्ड, खसरा-खतौनी या कोर्ट एफिडेविट एडिट कर सकता हूं?",
-    a: "हाँ। यह एडिटर विशेष रूप से भारतीय सरकारी और कानूनी दस्तावेजों जैसे BPSC, UP Police, SSC के एडमिट कार्ड, भूलेख खसरा-खतौनी, शपथ पत्र और अंक तालिकाओं में बिना फॉन्ट खराब किए सुधार करने के लिए बनाया गया है।",
+    q: "क्या मैं इसे सरकारी फॉर्म और शपथ पत्र के लिए इस्तेमाल कर सकता हूं?",
+    a: "इसे उन दस्तावेजों के लिए इस्तेमाल करें जिन्हें बदलने का आपको अधिकार है: खाली फॉर्म भरना, शपथ पत्र और आवेदन तैयार करना, और अपने ड्राफ्ट सुधारना। एडमिट कार्ड, अंक तालिका या भूलेख जैसे किसी विभाग द्वारा जारी दस्तावेज में बदलाव न करें। उनमें सुधार जारी करने वाले कार्यालय से ही होता है, और बदली हुई कॉपी जालसाजी मानी जा सकती है।",
   },
   {
     q: "हिंदी ↔ अंग्रेजी पीडीएफ अनुवाद कैसे काम करता है?",
-    a: "ट्रांसलेट टूल चुनें। एडिटर पेज के टेक्स्ट की पहचान करता है और आपकी सहमति के बाद सुरक्षित AI प्रॉक्सी के जरिए अनुवाद करता है। अनुवाद मूल पीडीएफ के लेआउट में बिल्कुल सटीक जगह पर सेट होता है।",
+    a: "ट्रांसलेट टूल खोलें। यह हर पेज का हिंदी या अंग्रेजी टेक्स्ट पढ़ता है और आपकी पुष्टि के बाद उन लाइनों को Gemini आधारित अनुवाद सर्विस को भेजता है। अनुवाद पेज पर वापस लगाया जाता है और मूल फाइल कभी नहीं बदलती।",
   },
   {
     q: "क्या मैं स्कैन किए गए हिंदी पीडीएफ एडिट कर सकता हूं?",
-    a: "हाँ। इन-बिल्ट स्मार्ट OCR टूल के जरिए स्कैन किए गए पेजों और फोटो में से हिंदी और अंग्रेजी टेक्स्ट को आसानी से पहचानें और एडिट करें।",
+    a: "हाँ। स्कैन पेज का टेक्स्ट आपके ब्राउज़र में पहचाना जाता है। मुश्किल पेजों के लिए आप AI टेक्स्ट पहचान चुन सकते हैं, जो आपकी पुष्टि के बाद पेज की इमेज हमारे सर्वर को भेजती है।",
   },
   {
     q: "क्या यह मेरी मूल (ओरिजिनल) पीडीएफ फाइल को ओवरराइट करता है?",
@@ -78,7 +78,7 @@ export const SITE_FAQS_HI: readonly FaqItem[] = [
   },
   {
     q: "क्या Hindi PDF Editor पूरी तरह फ्री है?",
-    a: "हाँ, पीडीएफ एडिटिंग, ट्रांसलेशन, मर्ज, स्प्लिट और कंप्रेशन के सभी टूल्स 100% फ्री हैं। कोई वाटरमार्क, कोई खाता और कोई शुल्क नहीं है।",
+    a: "हाँ। एडिटिंग, अनुवाद, मर्ज, स्प्लिट और कंप्रेशन फ्री हैं। कोई वॉटरमार्क, खाता या शुल्क नहीं।",
   },
 ] as const;
 

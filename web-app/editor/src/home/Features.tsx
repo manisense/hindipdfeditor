@@ -174,7 +174,7 @@ export function Features() {
               {t('feat.compressDesc')}
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              {(isHindi ? ['छोटी फाइल', '100% लोकल', 'नया एक्सपोर्ट'] : ['Smaller files', 'Local-only', 'New export']).map((text) => (
+              {(isHindi ? ['छोटी फाइल', 'ब्राउज़र में', 'नया एक्सपोर्ट'] : ['Smaller files', 'Local-only', 'New export']).map((text) => (
                 <span
                   key={text}
                   className="rounded-full border border-line bg-white px-3 py-1 font-display text-[13px] font-semibold text-ink"

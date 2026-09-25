@@ -10,8 +10,8 @@ export function UseCasesSection() {
     {
       icon: Award,
       title: t('use.admitCard'),
-      queryEn: 'Edit Hindi Admit Card PDF',
-      queryHi: 'सरकारी एडमिट कार्ड में नाम या रोल नंबर सुधारें',
+      queryEn: 'Fill Hindi Sarkari Application Form PDF',
+      queryHi: 'सरकारी आवेदन फॉर्म पीडीएफ हिंदी में भरें',
       desc: t('use.admitCardDesc'),
       link: toolHref('edit', lang),
     },
@@ -26,8 +26,8 @@ export function UseCasesSection() {
     {
       icon: FileText,
       title: t('use.land'),
-      queryEn: 'Khasra Khatauni Hindi PDF Edit',
-      queryHi: 'खसरा खतौनी और भूमि अभिलेख पीडीएफ सुधार',
+      queryEn: 'Bhulekh Correction Application in Hindi',
+      queryHi: 'भूलेख सुधार आवेदन हिंदी में भरें',
       desc: t('use.landDesc'),
       link: toolHref('edit', lang),
     },

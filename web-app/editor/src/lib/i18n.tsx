@@ -31,11 +31,11 @@ export const translations: Record<Language, Record<string, string>> = {
     'hero.title4': 'Sarkari forms.',
     'hero.titlePost': 'Devanagari-safe.',
     'hero.subtitle':
-      'Edit Devanagari text with correct font shaping, translate Hindi ↔ English, merge, split, compress, and detect OCR. 100% private in your browser or Android app.',
+      'Edit Devanagari text without broken matras, translate Hindi ↔ English, merge, split and compress. Editing runs in your browser or the Android app; AI features ask before sending anything.',
     'hero.ctaPrimary': 'Open the editor →',
     'hero.ctaSecondary': 'Get the Android app',
     'hero.tryDemo': 'Try interactive demo',
-    'hero.demoNotice': 'Runs 100% locally. Zero server uploads.',
+    'hero.demoNotice': 'Runs in your browser. Nothing is uploaded unless you choose an AI feature.',
 
     // Tool Items in Hero
     'tool.edit': 'Edit Hindi PDF',
@@ -54,55 +54,53 @@ export const translations: Record<Language, Record<string, string>> = {
     'feat.title': 'Built for Hindi PDFs, not English afterthoughts',
     'feat.subtitle':
       'General-purpose PDF editors break Devanagari matras, conjuncts, and vowel placements. Hindi PDF Editor is engineered from scratch for Indic typography.',
-    'feat.editHeading': 'Flawless Devanagari Font Shaping',
+    'feat.editHeading': 'Devanagari That Stays Joined',
     'feat.editDesc':
-      'Type Hindi directly with HarfBuzz OpenType layout. Conjuncts (क्ष, त्र, ज्ञ) and short-i matras (कि, पि) never detach or invert.',
+      'New Hindi text is typed in Unicode and shaped by the browser text engine, so conjuncts (क्ष, त्र, ज्ञ) and the short-i matra (कि, पि) render joined, as they do on web pages.',
     'feat.translateHeading': 'Bilingual Document Translation',
     'feat.translateDesc':
       'Translate English contracts, notices, and manuals to Hindi while preserving exact tables, fonts, and bounding boxes.',
     'feat.ocrHeading': 'Smart Hindi + English OCR',
     'feat.ocrDesc':
       'Detect printed Devanagari text inside scanned revenue records, admit cards, and certificates with local browser OCR.',
-    'feat.privacyHeading': '100% Local-First Privacy',
+    'feat.privacyHeading': 'Local-First Privacy',
     'feat.privacyDesc':
-      'Your files never leave your device. All rendering, masking, merging, and compression run inside WebAssembly memory.',
-    'feat.compressHeading': 'Sarkari Portal 100KB Compressor',
+      'Opening, editing, merging, splitting and compressing happen in your browser. AI text recognition and translation send data to our server only after you confirm.',
+    'feat.compressHeading': 'Shrink PDFs for Sarkari Portals',
     'feat.compressDesc':
-      'Reduce scanned PDF sizes under 100KB–200KB for government job portals (UP Police, BPSC, SSC) without blurry text.',
+      'Re-encode scanned pages with a quality slider to get under government portal upload limits (SSC, UP Police, BPSC). Lower quality means a smaller file.',
 
     // How It Works
     'how.eyebrow': 'Simple 4-Step Process',
     'how.title': 'How Hindi PDF Editor Works',
-    'how.subtitle': 'No software installation, no account creation, and zero server uploads.',
+    'how.subtitle': 'No installation and no account. Your file opens in the browser.',
     'how.step1Title': 'Open PDF Locally',
     'how.step1Desc': 'Drag and drop your PDF into your browser. It opens in high-resolution client-side canvas.',
     'how.step2Title': 'Select or Mask Text',
     'how.step2Desc': 'Click on existing text to mask it with matching background, or tap anywhere to create a new text box.',
     'how.step3Title': 'Type in Unicode Hindi',
-    'how.step3Desc': 'Type using any standard Hindi keyboard (Gboard, InScript, Mangal). Fonts shape accurately in real time.',
-    'how.step4Title': 'Export Vector PDF',
-    'how.step4Desc': 'Download a brand-new, print-ready PDF readable on every smartphone and PC without font errors.',
+    'how.step3Desc': 'Type using any Unicode Hindi keyboard (Gboard, Google Input Tools, InScript). The browser shapes the text as you type.',
+    'how.step4Title': 'Export a New PDF',
+    'how.step4Desc': 'Download a new PDF with your edits. Pages are saved as high-resolution images, so the Hindi looks the same on every phone and PC. Your original file is not changed.',
 
     // Comparison
-    'comp.eyebrow': 'Comparison & Benchmark',
-    'comp.title': 'Why Hindi PDF Editor Beats Standard Tools',
-    'comp.subtitle': 'See how our native Devanagari layout engine compares to general-purpose PDF software.',
+    'comp.eyebrow': 'Comparison',
+    'comp.title': 'How It Differs From General PDF Editors',
+    'comp.subtitle': 'What Hindi PDF Editor does, next to what users often run into with general-purpose PDF tools.',
     'comp.thFeature': 'Key Feature',
     'comp.thOur': 'Hindi PDF Editor',
-    'comp.thAdobe': 'Adobe Acrobat',
-    'comp.thCanva': 'Canva PDF',
-    'comp.thSmallpdf': 'Smallpdf / iLovePDF',
+    'comp.thTypical': 'General PDF editors',
 
     // Use Cases
     'use.eyebrow': 'Solutions by Document',
     'use.title': 'Built for Real-World Hindi Documents',
-    'use.subtitle': 'From government job applications to legal notices and land records — edit with total confidence.',
-    'use.admitCard': 'Sarkari & Govt Exam Admit Cards',
-    'use.admitCardDesc': 'Update or correct personal details in government recruitment forms (BPSC, UP Police, SSC) without font misalignment.',
+    'use.subtitle': 'From government job applications to affidavits and correction requests — fill in Hindi without broken matras.',
+    'use.admitCard': 'Sarkari Application Forms',
+    'use.admitCardDesc': 'Fill in blank recruitment and certificate forms (BPSC, UP Police, SSC) in Unicode Hindi before you print or upload them.',
     'use.legal': 'Legal Affidavits & Stamp Papers',
     'use.legalDesc': 'Prepare bilingual court affidavits, Hindi rent agreements, power of attorney, and e-Stamp declarations.',
-    'use.land': 'Land Records & Revenue Forms',
-    'use.landDesc': 'Correct typos in UP Bhulekh, Bihar Parimarjan, MP B-1 Kistbandi, and Tehsil land certificate PDFs.',
+    'use.land': 'Land Record Correction Requests',
+    'use.landDesc': 'Fill the correction application or self-declaration for UP Bhulekh or Bihar Parimarjan. The record itself is corrected by the revenue office.',
     'use.academic': 'Academic Papers & Worksheets',
     'use.academicDesc': 'Build, edit, or translate CBSE and State Board Hindi question papers, assignments, and study materials.',
     'use.openForDoc': 'Open Editor for this document →',
@@ -126,12 +124,12 @@ export const translations: Record<Language, Record<string, string>> = {
     // Articles Section
     'art.eyebrow': 'Guides & Technical Insights',
     'art.title': 'Master Hindi PDF Editing & Typography',
-    'art.subtitle': 'Step-by-step solutions for official state forms, admit cards, broken matras, and translations.',
+    'art.subtitle': 'Step-by-step solutions for official state forms, affidavits, broken matras, and translations.',
     'art.viewAll': 'View all guides and articles →',
 
     // CTA & Footer
     'cta.title': 'Get your Hindi PDFs sorted.',
-    'cta.subtitle': 'Open the editor in your browser, or grab the Android app. 100% free, private, and Devanagari-safe.',
+    'cta.subtitle': 'Open the editor in your browser, or grab the Android app. Free, private by default, and built for Devanagari.',
     'cta.open': 'Open the editor →',
     'cta.play': 'Google Play App',
     'footer.desc': 'Every tool you need to work with Hindi PDFs, in one private, Devanagari-safe place.',
@@ -139,7 +137,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'footer.organize': 'Organize & optimize',
     'footer.resources': 'Resources & Guides',
     'footer.rights': '© 2026 Hindi PDF Editor. All rights reserved.',
-    'footer.tagline': '100% Client-Side Processing · Zero Server Storage',
+    'footer.tagline': 'Editing runs in your browser · No account needed',
 
     // Tool Interfaces
     'tool.save': 'Export PDF',
@@ -166,19 +164,19 @@ export const translations: Record<Language, Record<string, string>> = {
     'nav.switchLang': 'English',
 
     // Hero
-    'hero.badge': '100% फ्री · सीधे ब्राउज़र में · कोई खाता नहीं',
+    'hero.badge': 'फ्री · सीधे ब्राउज़र में · कोई खाता नहीं',
     'hero.titlePre': 'हिंदी पीडीएफ के सभी टूल्स,',
     'hero.title1': 'सही देवनागरी में।',
     'hero.title2': 'बिना फॉन्ट टूटे।',
     'hero.title3': 'सरकारी फॉर्म हेतु।',
-    'hero.title4': '100% प्राइवेट।',
+    'hero.title4': 'प्राइवेट, ब्राउज़र में।',
     'hero.titlePost': 'सुरक्षित और आसान।',
     'hero.subtitle':
-      'बिना किसी सॉफ्टवेयर डाउनलोड के देवनागरी के सही अक्षरों और मात्राओं के साथ पीडीएफ एडिट करें, अनुवाद करें, जोड़ें, अलग करें और कंप्रेस करें। आपकी फाइलें 100% प्राइवेट रहती हैं।',
+      'बिना किसी सॉफ्टवेयर डाउनलोड के देवनागरी के सही अक्षरों और मात्राओं के साथ पीडीएफ एडिट करें, अनुवाद करें, जोड़ें, अलग करें और कंप्रेस करें। एडिटिंग आपके ब्राउज़र में होती है; AI फीचर कुछ भेजने से पहले पूछते हैं।',
     'hero.ctaPrimary': 'एडिटर खोलें →',
     'hero.ctaSecondary': 'एंड्रॉयड ऐप डाउनलोड करें',
     'hero.tryDemo': 'लाइव डेमो देखें',
-    'hero.demoNotice': '100% लोकल प्रोसेसिंग। कोई सर्वर अपलोड नहीं।',
+    'hero.demoNotice': 'ब्राउज़र में चलता है। AI फीचर चुने बिना कुछ भी अपलोड नहीं होता।',
 
     // Tool Items in Hero
     'tool.edit': 'हिंदी पीडीएफ एडिट करें',
@@ -190,62 +188,60 @@ export const translations: Record<Language, Record<string, string>> = {
     'tool.merge': 'पीडीएफ जोड़ें व अलग करें',
     'tool.mergeSub': 'क्रम और पेज रेंज चुनें',
     'tool.compress': 'पीडीएफ साइज कम करें',
-    'tool.compressSub': '100KB पोर्टल सुरक्षित',
+    'tool.compressSub': 'सरकारी पोर्टल के लिए छोटी फाइल',
 
     // Features Section
     'feat.eyebrow': 'सभी सुविधाएं एक ही स्थान पर',
     'feat.title': 'खास तौर पर हिंदी (देवनागरी) के लिए तैयार',
     'feat.subtitle':
       'साधारण पीडीएफ एडिटर हिंदी की मात्राओं, आधे अक्षरों और संयुक्ताक्षरों को तोड़ देते हैं। Hindi PDF Editor को विशेष रूप से भारतीय भाषाओं के लिए डिजाइन किया गया है।',
-    'feat.editHeading': '100% सटीक देवनागरी फॉन्ट शेपिंग',
+    'feat.editHeading': 'जुड़ी हुई, सही देवनागरी',
     'feat.editDesc':
-      'HarfBuzz ओपन-टाइप इंजन के साथ सीधे हिंदी में टाइप करें। संयुक्ताक्षर (क्ष, त्र, ज्ञ, द्ध) और छोटी-इ की मात्राएं कभी अलग या उल्टी नहीं होतीं।',
+      'नया हिंदी टेक्स्ट यूनिकोड में टाइप होता है और ब्राउज़र का टेक्स्ट इंजन उसे आकार देता है, इसलिए संयुक्ताक्षर (क्ष, त्र, ज्ञ, द्ध) और छोटी-इ की मात्रा (कि, पि) वेब पेज की तरह जुड़ी हुई दिखती हैं।',
     'feat.translateHeading': 'द्विभाषी दस्तावेज अनुवाद (AI)',
     'feat.translateDesc':
       'अंग्रेजी नोटिस, कॉन्ट्रैक्ट और मैनुअल को मूल लेआउट, टेबल और बॉर्डर्स को बनाए रखते हुए तुरंत हिंदी में ट्रांसलेट करें।',
     'feat.ocrHeading': 'स्मार्ट हिंदी + अंग्रेजी ओसीआर',
     'feat.ocrDesc':
       'स्कैन किए गए राजस्व रिकॉर्ड, एडमिट कार्ड और पुराने प्रमाण पत्रों में से देवनागरी प्रिंटेड टेक्स्ट को तुरंत पहचानें और कॉपी करें।',
-    'feat.privacyHeading': '100% लोकल और गोपनीय',
+    'feat.privacyHeading': 'लोकल और गोपनीय',
     'feat.privacyDesc':
-      'आपकी फाइलें कभी आपके डिवाइस से बाहर नहीं जातीं। सभी एडिटिंग, मास्किंग और कंप्रेशन आपके ब्राउज़र की मेमोरी में लोकली होती है।',
-    'feat.compressHeading': 'सरकारी पोर्टल 100KB कंप्रेसर',
+      'फाइल खोलना, एडिट, मर्ज, स्प्लिट और कंप्रेस आपके ब्राउज़र में होते हैं। AI टेक्स्ट पहचान और अनुवाद आपकी पुष्टि के बाद ही हमारे सर्वर को डेटा भेजते हैं।',
+    'feat.compressHeading': 'सरकारी पोर्टल के लिए पीडीएफ छोटी करें',
     'feat.compressDesc':
-      'सरकारी भर्ती फॉर्म (UP Police, BPSC, SSC) में अपलोड करने के लिए पीडीएफ साइज को बिना लिखावट धुंधली किए 100KB–200KB में बदलें।',
+      'स्कैन पेज क्वालिटी स्लाइडर से दोबारा बनाएं ताकि फाइल सरकारी पोर्टल की अपलोड लिमिट (SSC, UP Police, BPSC) में आ जाए। कम क्वालिटी यानी छोटी फाइल।',
 
     // How It Works
     'how.eyebrow': 'आसान 4-स्टेप प्रक्रिया',
     'how.title': 'Hindi PDF Editor कैसे काम करता है',
-    'how.subtitle': 'बिना किसी सॉफ्टवेयर इंस्टालेशन, बिना अकाउंट बनाए और बिना किसी सर्वर अपलोड के।',
+    'how.subtitle': 'कोई इंस्टालेशन नहीं, कोई अकाउंट नहीं। फाइल ब्राउज़र में ही खुलती है।',
     'how.step1Title': 'पीडीएफ फाइल खोलें',
     'how.step1Desc': 'अपनी पीडीएफ फाइल एडिटर में ड्रैग-एंड-ड्रॉप करें। फाइल तुरंत हाई-रेजोल्यूशन में आपके डिवाइस पर खुल जाएगी।',
     'how.step2Title': 'टेक्स्ट सेलेक्ट या मास्क करें',
     'how.step2Desc': 'जिस टेक्स्ट को बदलना है उस पर क्लिक करें। एडिटर पुराने टेक्स्ट को बैकग्राउंड से मैच करके छिपा देता है।',
     'how.step3Title': 'यूनिकोड हिंदी में टाइप करें',
-    'how.step3Desc': 'अपने मोबाइल या कंप्यूटर के किसी भी हिंदी कीबोर्ड (Google Indic, Mangal, InScript) से शुद्ध हिंदी टाइप करें।',
-    'how.step4Title': 'वेक्टर पीडीएफ डाउनलोड करें',
-    'how.step4Desc': 'Export PDF पर क्लिक करके तुरंत नया हाई-क्वालिटी पीडीएफ सेव करें जो हर स्मार्टफोन और पीसी पर साफ दिखता है।',
+    'how.step3Desc': 'किसी भी यूनिकोड हिंदी कीबोर्ड (Gboard, Google Input Tools, InScript) से टाइप करें। ब्राउज़र टाइप करते समय ही अक्षरों को सही आकार देता है।',
+    'how.step4Title': 'नई पीडीएफ डाउनलोड करें',
+    'how.step4Desc': 'अपने बदलावों के साथ नई पीडीएफ डाउनलोड करें। पेज हाई-रेजोल्यूशन इमेज के रूप में सेव होते हैं, इसलिए हिंदी हर फोन और पीसी पर एक जैसी दिखती है। मूल फाइल नहीं बदलती।',
 
     // Comparison
-    'comp.eyebrow': 'तुलना और बेंचमार्क',
-    'comp.title': 'Hindi PDF Editor अन्य टूल्स से बेहतर क्यों है?',
-    'comp.subtitle': 'जानिए हमारा देवनागरी इंजन साधारण अंग्रेजी एडिटर्स की तुलना में कैसे बेहतर परिणाम देता है।',
+    'comp.eyebrow': 'तुलना',
+    'comp.title': 'साधारण पीडीएफ एडिटर्स से यह कैसे अलग है',
+    'comp.subtitle': 'Hindi PDF Editor क्या करता है, और साधारण पीडीएफ टूल्स में लोगों को अक्सर क्या दिक्कतें आती हैं।',
     'comp.thFeature': 'प्रमुख सुविधा',
     'comp.thOur': 'Hindi PDF Editor',
-    'comp.thAdobe': 'Adobe Acrobat',
-    'comp.thCanva': 'Canva PDF',
-    'comp.thSmallpdf': 'Smallpdf / iLovePDF',
+    'comp.thTypical': 'साधारण पीडीएफ एडिटर',
 
     // Use Cases
     'use.eyebrow': 'दस्तावेजों के अनुसार समाधान',
     'use.title': 'वास्तविक सरकारी और कानूनी दस्तावेजों के लिए निर्मित',
     'use.subtitle': 'उत्तर प्रदेश, बिहार, मध्य प्रदेश और राजस्थान के सरकारी फॉर्म से लेकर कोर्ट एफिडेविट तक — पूरे भरोसे के साथ एडिट करें।',
-    'use.admitCard': 'सरकारी नौकरी व परीक्षा एडमिट कार्ड',
-    'use.admitCardDesc': 'UP Police, BPSC, SSC और रेलवे भर्ती फॉर्म के एडमिट कार्ड में नाम, पिता का नाम या जन्मतिथि की गलती आसानी से सुधारें।',
+    'use.admitCard': 'सरकारी आवेदन फॉर्म',
+    'use.admitCardDesc': 'UP Police, BPSC, SSC और रेलवे भर्ती या प्रमाण पत्र के खाली फॉर्म प्रिंट या अपलोड करने से पहले यूनिकोड हिंदी में भरें।',
     'use.legal': 'कानूनी शपथ पत्र और ई-स्टांप पेपर',
     'use.legalDesc': '₹10, ₹50, ₹100 के ई-स्टांप पेपर पर 4.5 इंच मार्जिन के साथ सही हिंदी एफिडेविट, किरायानामा और अनुबंध पत्र तैयार करें।',
-    'use.land': 'भूलेख खसरा-खतौनी और परिमार्जन',
-    'use.landDesc': 'यूपी भूलेख, बिहार भूमि परिमार्जन और एमपी खतौनी में काश्तकार का नाम, गाटा संख्या और रकबा सुधार का प्रपत्र तैयार करें।',
+    'use.land': 'भूलेख सुधार आवेदन',
+    'use.landDesc': 'यूपी भूलेख या बिहार परिमार्जन के सुधार आवेदन या स्वघोषणा पत्र भरें। रिकॉर्ड में सुधार राजस्व कार्यालय ही करता है।',
     'use.academic': 'शैक्षणिक प्रश्न पत्र और अध्ययन सामग्री',
     'use.academicDesc': 'शिक्षक और छात्र सीबीएसई या स्टेट बोर्ड के हिंदी प्रश्न पत्र, असाइनमेंट और नोट्स को आसानी से एडिट और ट्रांसलेट कर सकते हैं।',
     'use.openForDoc': 'इस दस्तावेज के लिए एडिटर खोलें →',
@@ -269,12 +265,12 @@ export const translations: Record<Language, Record<string, string>> = {
     // Articles Section
     'art.eyebrow': 'गाइड्स और तकनीकी लेख',
     'art.title': 'हिंदी पीडीएफ और देवनागरी टाइपोग्राफी सीखें',
-    'art.subtitle': 'सरकारी फॉर्म, एडमिट कार्ड, टूटी मात्राओं को ठीक करने और अनुवाद करने के स्टेप-बाय-स्टेप समाधान।',
+    'art.subtitle': 'सरकारी फॉर्म, शपथ पत्र, टूटी मात्राओं को ठीक करने और अनुवाद करने के स्टेप-बाय-स्टेप तरीके।',
     'art.viewAll': 'सभी गाइड्स और लेख देखें →',
 
     // CTA & Footer
     'cta.title': 'अपनी हिंदी पीडीएफ आसानी से तैयार करें।',
-    'cta.subtitle': 'ब्राउज़र में एडिटर खोलें या एंड्रॉयड ऐप डाउनलोड करें। 100% फ्री, सुरक्षित और देवनागरी-फ्रेंडली।',
+    'cta.subtitle': 'ब्राउज़र में एडिटर खोलें या एंड्रॉयड ऐप डाउनलोड करें। फ्री, डिफ़ॉल्ट रूप से प्राइवेट और देवनागरी के लिए बना।',
     'cta.open': 'एडिटर खोलें →',
     'cta.play': 'गूगल प्ले ऐप',
     'footer.desc': 'हिंदी पीडीएफ के साथ काम करने के लिए भारत का पहला सुरक्षित, लोकल-फर्स्ट देवनागरी एडिटर।',
@@ -282,7 +278,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'footer.organize': 'प्रबंधन और कंप्रेस',
     'footer.resources': 'संसाधन और गाइड्स',
     'footer.rights': '© 2026 Hindi PDF Editor. सर्वाधिकार सुरक्षित।',
-    'footer.tagline': '100% क्लाइंट-साइड प्रोसेसिंग · शून्य सर्वर स्टोरेज',
+    'footer.tagline': 'एडिटिंग आपके ब्राउज़र में · कोई अकाउंट नहीं',
 
     // Tool Interfaces
     'tool.save': 'एक्सपोर्ट पीडीएफ',

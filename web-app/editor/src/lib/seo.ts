@@ -1,4 +1,4 @@
-import { SITE_FAQS } from '../home/faqData';
+import { getFaqs } from '../home/faqData';
 import type { Language } from './i18n';
 import { LANGUAGES, routePath, type Route } from './routes';
 import { TOOL_COPY } from './toolContent';
@@ -103,17 +103,15 @@ function homeGraph(route: Route): unknown {
       publisher: { '@id': `${SITE_ORIGIN}/#organization` },
     },
   ];
-  if (route.lang === 'en') {
-    graph.push({
-      '@type': 'FAQPage',
-      '@id': `${url}#faq`,
-      mainEntity: SITE_FAQS.map((f) => ({
-        '@type': 'Question',
-        name: f.q,
-        acceptedAnswer: { '@type': 'Answer', text: f.a },
-      })),
-    });
-  }
+  graph.push({
+    '@type': 'FAQPage',
+    '@id': `${url}#faq`,
+    mainEntity: getFaqs(route.lang).map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  });
   return { '@context': 'https://schema.org', '@graph': graph };
 }
 
