@@ -74,6 +74,19 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 - **Validate before reporting success.** After export, confirm the output file is non-empty and re-openable (a basic parse-back check) before telling the user it worked. A silently corrupt export is worse than a visible error.
 - **Vet new native dependencies before adding them.** Check current maintenance status and Expo SDK compatibility — the mobile native-module ecosystem's compatibility windows are short, and a package that worked six months ago may not build today. Don't add one without checking.
 
+## Website, content and SEO rules (`web-app/`)
+
+- **Public claims must match the code.** Before a feature appears in page copy, FAQs, JSON-LD or `llms*.txt`, check it in the source.
+  - The web export is page images, not vector or searchable text.
+  - Legacy fonts are detected, never converted. The web editor blocks those pages; replacement mode is Android-only.
+  - Compression has a quality slider, not size presets.
+  - AI OCR and translation send data after consent, so the site is not "100% local".
+  - Do not add "100%", "flawless" or unsourced claims about named competitors. Answer engines quote this text verbatim.
+- **Never publish guidance to alter documents issued by an authority**, such as admit cards, mark sheets or land records. Point to the legitimate route instead: a correction window, an affidavit, or an application to the issuing office.
+- **URLs are fixed by ADR 0010.** Each tool has one path, and Hindi lives under `/hi/`. Do not reintroduce `?tool=`/`?lang=` URLs or client-only pages. `check-seo.mjs` must pass.
+- **Articles are researched and hand-written.** The daily article bot's schedule stays off. Do not re-enable it or bulk-generate templated pages. When an article changes, bump its `dateModified` (the build copies it into the sitemap) and update the hub card, the home card if there is one, `llms.txt` and `scripts/seo-keyword-queue.json`.
+- **Hindi pages use Hindi UI.** New tool strings go through `useTx(en, hi)` in `web-app/editor/src/lib/i18n.tsx`.
+
 ## Performance constraints
 
 - Render background page images at 2–3× the page's point-dimensions, not arbitrarily higher — this is a deliberate memory/quality tradeoff, not a "more is better" setting.

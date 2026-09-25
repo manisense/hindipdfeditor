@@ -434,3 +434,12 @@ Be aware of these; validate them yourself rather than assuming either outcome:
 - **The in-house replacement module is confirmed to work at runtime, not just to build.** Phase 0's on-device run exercised `getPageCount()`/`renderPage()` against the repo's fixture PDF and pulled the resulting bitmap off-device for visual inspection — correct page count, correct pixel dimensions for the requested scale, correct visual content. Section 10's last open Phase 0 item is closed; Phase 1 is unblocked.
 - **`expo-file-system`'s top-level legacy methods (`readAsStringAsync`, `getInfoAsync`, etc.) throw unconditionally in the installed SDK version** — a real runtime bug, only caught by running on a real device, that every unit test's mocking had silently hidden. Any _new_ code that needs these must import from `expo-file-system/legacy`, not the package root. Already fixed in `fontAsset.ts` and `exportPdf.ts`; grep for `from 'expo-file-system'` (without `/legacy`) before adding new file-system code.
 - **A full-page background PNG combined with Devanagari text through an embedded variable font hung `expo-print`'s WebView indefinitely** — only caught on a real device. The current pipeline uses 3× print-mode JPEG at quality 97 and an `<img>` content layer. The new values compile and pass desktop compositor checks but still need the Phase 4.7 physical-device export pass.
+
+## 13. Companion website (`web-app/`) — structure the app and site share
+
+The website is a separate React/Vite app, but its public copy describes this product, so the two must stay consistent.
+
+- **Prerendered pages, one URL per tool and language** (ADR 0010): `/`, `/edit-hindi-pdf/`, `/translate-hindi-pdf/`, `/merge-pdf/`, `/split-pdf/`, `/compress-pdf/`, and the same paths under `/hi/`. The build writes static HTML for each page, including its canonical, reciprocal hreflang and JSON-LD. `web-app/scripts/check-seo.mjs` fails the build if these drift. Old `/edit/?tool=…` URLs are 301-redirected by `web-app/functions/edit/index.js`.
+- **Web export differs from the app.** The web editor exports each page as an image (not selectable text).
+- **Legacy fonts differ too.** The web editor blocks editing on any legacy-font or unverifiable page. The opt-in raster-only Unicode replacement mode (Phase 4.7) exists only in the Android app. Public copy must describe each platform as it actually behaves.
+- **AI features are consent-gated on both.** Translation sends detected text, and AI OCR sends page images, to the Gemini proxy (ADR 0008) only after the user confirms.
