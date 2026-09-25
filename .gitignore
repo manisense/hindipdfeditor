@@ -43,3 +43,4 @@ mobile-app/modules/*/ios/build/
 # Redundant zip of already-tracked play-store assets
 mobile-app/play-store-assets/play-store-assets.zip
 
+web-app/.wrangler/
