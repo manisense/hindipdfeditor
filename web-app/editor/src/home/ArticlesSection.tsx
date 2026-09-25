@@ -43,7 +43,7 @@ export function ArticlesSection() {
     },
     {
       category: 'सरकारी भर्ती',
-      title: 'एडमिट कार्ड और सरकारी फॉर्म में नाम सुधार शपथ पत्र (Affidavit) कैसे बनाएं',
+      title: "नाम की स्पेलिंग अलग होने पर 'एक ही व्यक्ति' शपथ पत्र कैसे बनवाएं",
       desc: 'UP Police, BPSC, SSC GD और रेलवे भर्ती परीक्षाओं के लिए नाम और पिता के नाम में स्पेलिंग गलती सुधारने का पूरा फॉर्मेट।',
       href: '/articles/sarkari-admit-card-name-correction-affidavit-hindi/',
       badgeTone: 'bg-accent-tint text-accent',

@@ -26,6 +26,10 @@ All notable changes to this project are documented here, grouped by phase (see `
   - The home title and H1 now lead with "Hindi PDF Editor" and target "online free" and "Hindi font".
   - The edit page targets "edit Hindi text in PDF" and has a new FAQ on which Hindi font is used.
 - **IndexNow**: the key file is hosted at the site root, and `web-app/scripts/indexnow.mjs` submits all sitemap URLs to Bing and the other IndexNow engines.
+- **Article rewrites**, driven by Search Console impressions:
+  - The Parimarjan Plus guide went from about 150 to 850 words. It covers the two application types, documents, the self-declaration, why applications get reverted, and status and helpline.
+  - The name-mismatch affidavit guide went from about 300 to 800 words. It covers the correction window, what the affidavit must say, the process, and when an affidavit is not enough.
+  - Both have new titles for click-through, visible FAQs that match their JSON-LD, an Article image, and no emoji.
 
 ### Added — Unified Design System & Vector Icon Infrastructure
 
