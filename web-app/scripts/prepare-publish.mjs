@@ -11,6 +11,7 @@ const ssrEntry = path.join(webAppRoot, 'editor', 'dist-ssr', 'entry-server.js');
 
 const STATIC_ENTRIES = [
   '404.html',
+  '2cb0e0db8ff34e8eb3666ac4ec72525a.txt',
   'favicon.ico',
   'robots.txt',
   'sitemap.xml',

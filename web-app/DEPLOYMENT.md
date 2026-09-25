@@ -161,3 +161,13 @@ You cannot finish Search Console verification from this repo alone — the DNS T
 
 Recheck after any Cloudflare plan or security-setting change.
 
+## IndexNow (Bing and others)
+
+The IndexNow key file `web-app/2cb0e0db8ff34e8eb3666ac4ec72525a.txt` is published at the site root. The key is public by design. After a deploy that adds or changes pages, submit every sitemap URL:
+
+```
+node web-app/scripts/indexnow.mjs
+```
+
+Needs Node 18 or newer. HTTP 200 or 202 means the URLs were accepted.
+

@@ -25,6 +25,7 @@ All notable changes to this project are documented here, grouped by phase (see `
   - A Pages Function (`web-app/functions/edit/index.js`) now 301s `/edit/` and `/edit/?tool=…` straight to `/` or the matching tool page. `_redirects` cannot match query strings.
   - The home title and H1 now lead with "Hindi PDF Editor" and target "online free" and "Hindi font".
   - The edit page targets "edit Hindi text in PDF" and has a new FAQ on which Hindi font is used.
+- **IndexNow**: the key file is hosted at the site root, and `web-app/scripts/indexnow.mjs` submits all sitemap URLs to Bing and the other IndexNow engines.
 
 ### Added — Unified Design System & Vector Icon Infrastructure
 
