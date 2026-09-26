@@ -1,6 +1,7 @@
 import { useLanguage } from '../lib/i18n';
 import { TOOL_COPY } from '../lib/toolContent';
 import { TOOLS, toolHref, type ToolId } from '../lib/tools';
+import { TOOL_VISUALS } from './toolVisuals';
 import './ToolGuide.css';
 
 type Props = {
@@ -25,7 +26,7 @@ export function ToolGuide({ toolId }: Props) {
   const copy = TOOL_COPY[toolId][lang];
   return (
     <section className="tool-guide" aria-labelledby={`tool-guide-${toolId}`}>
-      <div className="tool-guide__card">
+      <div className="tool-guide__card tool-guide__card--steps">
         <h2 id={`tool-guide-${toolId}`}>{isHindi ? 'कैसे इस्तेमाल करें' : 'How to use it'}</h2>
         <ol className="tool-guide__steps">
           {copy.steps.map((step) => (
@@ -47,11 +48,19 @@ export function ToolGuide({ toolId }: Props) {
       <nav className="tool-guide__related" aria-label={isHindi ? 'दूसरे टूल' : 'Other tools'}>
         <h2>{isHindi ? 'दूसरे पीडीएफ टूल' : 'Other PDF tools'}</h2>
         <ul>
-          {TOOLS.filter((tool) => tool.id !== toolId).map((tool) => (
-            <li key={tool.id}>
-              <a href={toolHref(tool.id, lang)}>{TOOL_COPY[tool.id][lang].heading}</a>
-            </li>
-          ))}
+          {TOOLS.filter((tool) => tool.id !== toolId).map((tool) => {
+            const { icon: Icon, chip } = TOOL_VISUALS[tool.id];
+            return (
+              <li key={tool.id}>
+                <a href={toolHref(tool.id, lang)}>
+                  <span className={`tool-guide__chip ${chip}`}>
+                    <Icon size={20} aria-hidden="true" />
+                  </span>
+                  {TOOL_COPY[tool.id][lang].heading}
+                </a>
+              </li>
+            );
+          })}
         </ul>
       </nav>
     </section>

@@ -15,12 +15,12 @@
   position: relative;
 }
 
-.tool-shell--translate,
-.tool-shell--split {
+.tool-shell--translate {
   --tool-soft: var(--accent-tint);
 }
 
-.tool-shell--merge {
+.tool-shell--merge,
+.tool-shell--split {
   --tool-soft: var(--pop-lav);
 }
 
@@ -138,6 +138,19 @@
   gap: 12px;
   justify-content: center;
   margin-top: 16px;
+}
+
+.tool-shell__local {
+  align-items: center;
+  background: var(--success-soft);
+  border-radius: 9999px;
+  color: var(--success);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 4px;
+  padding: 4px 12px;
+  white-space: nowrap;
 }
 
 .tool-shell__steps {

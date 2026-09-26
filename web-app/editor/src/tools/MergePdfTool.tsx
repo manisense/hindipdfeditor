@@ -5,7 +5,8 @@ import { AppStatus } from '../components/AppStatus';
 import { DropZone } from '../components/DropZone';
 import { SelectedFileSummary } from '../components/SelectedFileSummary';
 import { ToolShell } from '../components/ToolShell';
-import { downloadPdfBytes, mergePdfFiles } from '../lib/pdfOps';
+import { NextSteps } from '../components/NextSteps';
+import { downloadPdfBytes, mergePdfFiles, toPdfFile } from '../lib/pdfOps';
 import { useTx } from '../lib/i18n';
 import { getTool } from '../lib/tools';
 import './UtilityTool.css';
@@ -18,6 +19,7 @@ export function MergePdfTool() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [doneName, setDoneName] = useState<string | null>(null);
+  const [output, setOutput] = useState<File | null>(null);
 
   const step = doneName ? 3 : files.length >= 2 ? 2 : 1;
 
@@ -29,6 +31,7 @@ export function MergePdfTool() {
       const bytes = await mergePdfFiles(files);
       const filename = 'merged.pdf';
       downloadPdfBytes(bytes, filename);
+      setOutput(toPdfFile(bytes, filename));
       setDoneName(filename);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -118,6 +121,7 @@ export function MergePdfTool() {
             {tx('Downloaded', 'डाउनलोड हुई:')} {doneName}
           </AppStatus>
         )}
+        {doneName && <NextSteps current="merge" output={output} />}
       </div>
     </ToolShell>
   );

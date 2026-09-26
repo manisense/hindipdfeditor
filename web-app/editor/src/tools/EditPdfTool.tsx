@@ -14,6 +14,7 @@ import {
 import { AppButton } from "../components/AppButton";
 import { AppPopup } from "../components/AppPopup";
 import { AppStatus } from "../components/AppStatus";
+import { NextSteps } from "../components/NextSteps";
 import { useAppPopup } from "../components/appPopupContext";
 import { DropZone } from "../components/DropZone";
 import { EditableTextOverlay } from "../components/EditableTextOverlay";
@@ -28,6 +29,7 @@ import { aiApiClient } from "../lib/aiApiClient";
 import { ptSizeToImagePx, ptToImagePx } from "../lib/coordinateMath";
 import { textGeometryForDetectedLine } from "../lib/detectedLineTextGeometry";
 import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
+import { toPdfFile } from "../lib/pdfOps";
 import {
   ensureFontsLoaded,
   getFontBase64,
@@ -86,7 +88,7 @@ type Status =
   | { state: "idle" }
   | { state: "opening" }
   | { state: "saving" }
-  | { state: "saved"; filename: string }
+  | { state: "saved"; filename: string; output: File }
   | { state: "error"; message: string };
 
 async function detectLegacyFontWarnings(
@@ -870,7 +872,7 @@ export function EditPdfTool() {
         documentToExport.sourceName.replace(/\.pdf$/i, "") || "edited";
       const filename = `${baseName}-edited.pdf`;
       downloadPdfBlob(blob, filename);
-      setStatus({ state: "saved", filename });
+      setStatus({ state: "saved", filename, output: toPdfFile(blob, filename) });
     } catch (error) {
       setStatus({
         state: "error",
@@ -1232,6 +1234,7 @@ export function EditPdfTool() {
               {tx("Exported successfully as", "इस नाम से सेव हुई:")} {status.filename}
             </AppStatus>
           )}
+          {status.state === "saved" && <NextSteps current="edit" output={status.output} />}
           {status.state === "error" && (
             <AppStatus tone="error" title={tx("Export failed", "एक्सपोर्ट नहीं हो पाया")}>{status.message}</AppStatus>
           )}

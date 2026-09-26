@@ -13,6 +13,12 @@ export async function fileToBytes(file: File): Promise<Uint8Array> {
   return new Uint8Array(await file.arrayBuffer());
 }
 
+/** Wraps exported PDF data as a File so it can be handed to another tool in memory. */
+export function toPdfFile(data: Blob | Uint8Array, filename: string): File {
+  const part = data instanceof Blob ? data : new Uint8Array(data);
+  return new File([part], filename, { type: 'application/pdf' });
+}
+
 /** Triggers a browser download for raw PDF bytes. */
 export function downloadPdfBytes(bytes: Uint8Array, filename: string): void {
   const copy = new Uint8Array(bytes);

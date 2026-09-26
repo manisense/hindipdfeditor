@@ -1,8 +1,8 @@
-import { Check } from 'lucide-react';
+import { Check, ShieldCheck } from 'lucide-react';
 import { useEffect, type ReactNode } from 'react';
 
 import { Footer } from '../home/Footer';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, useTx } from '../lib/i18n';
 import { rememberLastTool } from '../lib/lastTool';
 import { TOOLS, toolHref, type ToolMeta } from '../lib/tools';
 import { SiteHeader } from './SiteHeader';
@@ -22,7 +22,10 @@ type Props = {
 
 export function ToolShell({ tool, steps, actions, compact = false, children }: Props) {
   const { lang, isHindi } = useLanguage();
+  const tx = useTx();
   const toolId = tool?.id;
+  // Translate sends text to the AI service after consent, so it doesn't get the local badge.
+  const runsLocally = Boolean(toolId) && toolId !== 'translate';
 
   useEffect(() => {
     if (toolId) rememberLastTool(toolId);
@@ -65,7 +68,7 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
 
         {tool && <ToolIntro toolId={tool.id} />}
 
-        {((steps && steps.length > 0) || actions) && (
+        {((steps && steps.length > 0) || actions || runsLocally) && (
           <div className="tool-shell__bar">
             {steps && steps.length > 0 && (
               <ol className="tool-shell__steps" aria-label="Progress">
@@ -82,6 +85,12 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
                   </li>
                 ))}
               </ol>
+            )}
+            {runsLocally && (
+              <span className="tool-shell__local">
+                <ShieldCheck size={14} aria-hidden="true" />
+                {tx('Runs in your browser', 'आपके ब्राउज़र में चलता है')}
+              </span>
             )}
             {actions && <div className="tool-shell__actions">{actions}</div>}
           </div>

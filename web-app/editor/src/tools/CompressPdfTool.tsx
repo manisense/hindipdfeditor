@@ -5,7 +5,8 @@ import { AppStatus } from '../components/AppStatus';
 import { DropZone } from '../components/DropZone';
 import { SelectedFileSummary } from '../components/SelectedFileSummary';
 import { ToolShell } from '../components/ToolShell';
-import { compressPdfFile, downloadPdfBytes } from '../lib/pdfOps';
+import { NextSteps } from '../components/NextSteps';
+import { compressPdfFile, downloadPdfBytes, toPdfFile } from '../lib/pdfOps';
 import { useTx } from '../lib/i18n';
 import { getTool } from '../lib/tools';
 import './UtilityTool.css';
@@ -19,6 +20,8 @@ type Result = {
   pageCount: number;
   /** False when re-encoding made the file bigger; nothing is downloaded then. */
   smaller: boolean;
+  /** The compressed PDF, kept so it can go straight into another tool. */
+  output: File | null;
 };
 
 function formatBytes(n: number): string {
@@ -55,6 +58,7 @@ export function CompressPdfTool() {
         compressedBytes: bytes.byteLength,
         pageCount,
         smaller,
+        output: smaller ? toPdfFile(bytes, filename) : null,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -150,6 +154,7 @@ export function CompressPdfTool() {
             {formatBytes(result.originalBytes)} → {formatBytes(result.compressedBytes)}
           </AppStatus>
         )}
+        {result?.smaller && <NextSteps current="compress" output={result.output} />}
       </div>
     </ToolShell>
   );

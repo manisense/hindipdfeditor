@@ -6,6 +6,7 @@ import {
 
 import { AppButton } from "../components/AppButton";
 import { AppStatus } from "../components/AppStatus";
+import { NextSteps } from "../components/NextSteps";
 import { DropZone } from "../components/DropZone";
 import { SelectedFileSummary } from "../components/SelectedFileSummary";
 import { ToolShell } from "../components/ToolShell";
@@ -13,6 +14,7 @@ import { TurnstileWidget } from "../components/TurnstileWidget";
 import { aiApiClient } from "../lib/aiApiClient";
 import { ptSizeToImagePx, ptToImagePx } from "../lib/coordinateMath";
 import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
+import { toPdfFile } from "../lib/pdfOps";
 import { ensureFontsLoaded, getFontBase64 } from "../lib/fontAsset";
 import {
   containsDevanagari,
@@ -62,6 +64,8 @@ type Progress = {
 
 type Result = {
   filename: string;
+  /** The translated PDF, kept so it can go straight into another tool. */
+  output: File;
   pageCount: number;
   translatedLines: number;
   skippedLines: number;
@@ -486,6 +490,7 @@ export function TranslatePdfTool() {
       downloadPdfBlob(blob, filename);
       setResult({
         filename,
+        output: toPdfFile(blob, filename),
         pageCount: doc.pageCount,
         translatedLines,
         skippedLines,
@@ -604,6 +609,7 @@ export function TranslatePdfTool() {
             {result.usedOcrFallback ? tr(" · used OCR (legacy font)", " · OCR इस्तेमाल हुआ (पुराना फॉन्ट)") : ""}
           </AppStatus>
         )}
+        {result && <NextSteps current="translate" output={result.output} />}
       </div>
     </ToolShell>
   );
