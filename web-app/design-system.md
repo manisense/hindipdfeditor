@@ -92,3 +92,12 @@ Alternate `surface.white` and `surface.cream` full-bleed sections to break up a 
 2. **Devanagari gets equal typographic billing**, not smaller/secondary treatment next to English.
 3. **Restraint everywhere except one CTA moment** — the colorful gradient mesh is used exactly once (final CTA); don't scatter decorative gradients through the app.
 4. **Local/private-by-design should be visually reinforced** — the green privacy card and "100% Client-Side Processing" footer line suggest a persistent trust signal (e.g. a small "processed on your device" badge) worth carrying into the app's editor screen.
+
+## 9. Web patterns (website, `web-app/`)
+
+- **Site header:** the same header on every page, home, tools, articles and legal alike (`SiteHeader.tsx`; `.sh-*` in `assets/site.css`). It holds the logo badge, a Tools menu of icon-chip rows, How it works, Guides, FAQ, a language chip, and one gradient "Open editor" CTA (hidden on tool pages). The pill-shaped bar has a hairline and soft shadow only once the page is scrolled. On phones, the logo, language chip and menu button sit inside a 16px gutter.
+- **Tool row:** icon chip (40–44px, category tint), bold name, one-line outcome, chevron. It is used in the header menu, the hero picker, "Other PDF tools" and "Keep going with this PDF".
+- **Hero picker:** a white card with a dashed drop area and one primary "Choose a PDF" pill, then the five tool rows. Once a file is chosen, the rows turn into "do this" buttons with a brand arrow.
+- **Rails:** document jobs and guides sit in a horizontal scroll-snap row on phones (cards about 80% wide, so the next one peeks in) and in a grid from `lg`.
+- **Next steps:** after a successful export, a row of tool rows hands the output to the next tool. It never appears on an error or on "already compact".
+- **Section rhythm:** white hero, then alternating cream and white sections, then the closing CTA with the pastel mesh (the one place the mesh is used).

@@ -4,6 +4,17 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Mobile Web Parity & Architecture Overhaul
 
+### Changed — Website UI/UX overhaul (ADR `0013-web-shared-shell-and-in-memory-tool-handoff.md`)
+
+- **One header and footer across the site.** Home, tools, articles, legal, support, about and 404 all use the same header, with a Tools menu, language chip and one CTA; the four old variants are removed. The mobile menu button no longer clips at 390px, and static pages' menus work without JavaScript. Hindi articles now link to Hindi routes.
+- **Hero: pick a file, then a task.** A static English + Devanagari headline replaces the typewriter. Choosing or dropping a PDF offers the five tools, and the file goes to the chosen tool in memory, with no upload and no page reload. Returning visitors see "Continue: <tool>" (only the tool id is stored).
+- **Home page cut to single-purpose rows:** 14.3k px → 7.8k px on a 390px phone, and 8.5k px → 5.9k px on desktop. Document jobs link to the right tool. A real-text shaping demo replaces the features bento and the comparison table.
+- **Tools never dead-end.** After an export, "Keep going with this PDF" hands the output to another tool. A "Runs in your browser" badge appears on local-only tools. How-to steps are numbered. DropZone says when a file isn't a PDF instead of ignoring it.
+- **Articles:** a sticky "open the right tool" pill on phones. Emoji are removed from the guides hub, and the hub's category tags now use the design-system tints.
+- **Design tokens:** the React and static CSS now match `design-system.md` (neutrals, category tints, 16px radius, soft shadow, 16px phone gutter). The primary button uses the brand gradient; the secondary is the white outline pill.
+- **Copy fixes (public claims must match the code):** the translation card no longer promises exact table/font preservation. An unsourced 5-star badge, a named-competitor footer link and a Hindi "India's first" claim are removed.
+- **Verified in this session:** lint, typecheck, 76 Vitest tests, the production build and `check-seo`. Chromium screenshots at 390px and 1440px show no horizontal scroll on any page. The home → Compress hand-off, Compress → Merge via "Keep going", back navigation and the continue chip were checked with the `mobile-app/fixtures` PDFs. **Not verified:** real fonts (the sandbox blocks Google Fonts, so screenshots used fallback faces); Safari/iOS; drag-and-drop from the OS file manager (tested through the file input).
+
 ### Fixed — Android app stability (Play Console, 1.0.0 / versionCode 6)
 
 - **Release workflow** (`.github/workflows/android-release.yml`, run by hand). It builds a release APK, then runs `scripts/android-smoke-test.sh` on an Android 14 emulator. The test launches the app and opens the Files tab with valid, truncated and garbage PDFs. It kills the `:pdfrender` helper with SIGSEGV and checks the app survives, and it fails on fatal errors from the app process. With `release` ticked and a green smoke test, the workflow builds on EAS and submits to Play as a draft. That needs an `EXPO_TOKEN` secret. It uses a `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` secret when present, and otherwise the key stored in Expo (`production-eas-key` submit profile).

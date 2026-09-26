@@ -88,6 +88,7 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 - **Articles are researched and hand-written.** The daily article bot's schedule stays off. Do not re-enable it or bulk-generate templated pages. When an article changes, bump its `dateModified` (the build copies it into the sitemap) and update the hub card, the home card if there is one, `llms.txt` and `scripts/seo-keyword-queue.json`.
 - **Articles are credited to Manish** (Person `@id` `https://hindipdfeditor.com/about/#manish`, described on `/about/`). Keep the visible byline and the JSON-LD author in sync when adding articles.
 - **Hindi pages use Hindi UI.** New tool strings go through `useTx(en, hi)` in `web-app/editor/src/lib/i18n.tsx`.
+- **One site shell (ADR 0013).** Every page uses the shared header and footer: `SiteHeader.tsx` in React, the `.sh-*` markup in static HTML. A new static page copies the header from an existing one. Files move between tools only in memory (`lib/pendingFiles.ts`), never through browser storage.
 
 ## Performance constraints
 
