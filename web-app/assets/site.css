@@ -2,22 +2,22 @@
   color-scheme: light;
   --bg: #ffffff;
   --surface: #ffffff;
-  --ink: #15172c;
-  --muted: #5b6172;
-  --line: #eceae2;
+  --ink: #14161f;
+  --muted: #5b6472;
+  --line: #e7e8f1;
   --accent: #1843dd;
   --accent-dark: #1130a8;
-  --orange: #b58400;
-  --blue: #3a5cf0;
-  --green: #01873e;
-  --purple: #5b4bd6;
-  --teal: #12a551;
-  --cream: #fbf8f1;
+  --orange: #f0700f;
+  --blue: #1843dd;
+  --green: #16a34a;
+  --purple: #7c3aed;
+  --teal: #0d9488;
+  --cream: #faf6ec;
   --navy: #050839;
-  --brand-wash: #eef3ff;
-  --shadow: 0 12px 34px rgba(21, 23, 44, 0.09);
+  --brand-wash: #eef2ff;
+  --shadow: 0 8px 24px rgba(20, 22, 31, 0.06);
   --shadow-hover: 0 14px 34px rgba(24, 67, 221, 0.28);
-  --radius: 12px;
+  --radius: 16px;
   --max: 1120px;
   font-family:
     "Inter",
@@ -302,19 +302,19 @@ img {
   color: var(--accent);
 }
 .tool-icon--orange {
-  color: #f59e0b;
+  color: var(--orange);
 }
 .tool-icon--blue {
-  color: #3b82f6;
+  color: var(--blue);
 }
 .tool-icon--green {
-  color: #22a06b;
+  color: var(--green);
 }
 .tool-icon--purple {
-  color: #8b5cf6;
+  color: var(--purple);
 }
 .tool-icon--teal {
-  color: #14b8a6;
+  color: var(--teal);
 }
 
 .tool-card h3 {
@@ -483,7 +483,7 @@ img {
 }
 
 .promo-list li::before {
-  color: #22a06b;
+  color: var(--green);
   content: "✓";
   font-weight: 800;
   left: 0;
@@ -697,6 +697,8 @@ h3 {
 }
 
 .content-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: var(--radius);

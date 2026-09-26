@@ -34,35 +34,35 @@ export function Hero() {
       icon: Pencil,
       name: t('tool.edit'),
       detail: t('tool.editSub'),
-      tone: 'bg-brand-tint text-brand',
+      tone: 'bg-cat-edit-tint text-cat-edit',
       href: toolHref('edit', lang),
     },
     {
       icon: Languages,
       name: t('tool.translate'),
       detail: t('tool.translateSub'),
-      tone: 'bg-accent-tint text-accent',
+      tone: 'bg-cat-translate-tint text-cat-translate',
       href: toolHref('translate', lang),
     },
     {
       icon: ScanText,
       name: t('tool.ocr'),
       detail: t('tool.ocrSub'),
-      tone: 'bg-pop-yellow-tint text-[#B58400]',
+      tone: 'bg-cat-ocr-tint text-cat-ocr',
       href: toolHref('edit', lang),
     },
     {
       icon: Layers,
       name: t('tool.merge'),
       detail: t('tool.mergeSub'),
-      tone: 'bg-pop-lav text-[#5B4BD6]',
+      tone: 'bg-cat-merge-tint text-cat-merge',
       href: toolHref('merge', lang),
     },
     {
       icon: FileArchive,
       name: t('tool.compress'),
       detail: t('tool.compressSub'),
-      tone: 'bg-pop-yellow-tint text-[#B58400]',
+      tone: 'bg-cat-sarkari-tint text-cat-sarkari',
       href: toolHref('compress', lang),
     },
   ];
@@ -157,7 +157,7 @@ export function Hero() {
               style={{ animationDelay: '0.15s' }}
             >
               <div className="mb-3.5 flex items-center gap-2.5">
-                <span className="grid size-8 place-items-center rounded-lg bg-brand-tint text-brand">
+                <span className="grid size-8 place-items-center rounded-lg bg-cat-edit-tint text-cat-edit">
                   <Pencil className="size-4" strokeWidth={2} />
                 </span>
                 <div>

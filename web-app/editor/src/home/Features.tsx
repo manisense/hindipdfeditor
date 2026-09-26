@@ -132,7 +132,7 @@ export function Features() {
 
         <div className="grid gap-4 md:grid-cols-6">
           <Card className="md:col-span-4" href={toolHref('edit', lang)}>
-            <Ico icon={Pencil} tone="bg-brand-tint text-brand" />
+            <Ico icon={Pencil} tone="bg-cat-edit-tint text-cat-edit" />
             <h3 className="text-xl font-bold text-ink">{t('feat.editHeading')}</h3>
             <p className="mt-2 max-w-md text-[15px] text-muted">
               {t('feat.editDesc')}
@@ -141,7 +141,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-2" href={toolHref('translate', lang)}>
-            <Ico icon={Languages} tone="bg-accent-tint text-accent" />
+            <Ico icon={Languages} tone="bg-cat-translate-tint text-cat-translate" />
             <h3 className="text-xl font-bold text-ink">{t('feat.translateHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">
               {t('feat.translateDesc')}
@@ -150,7 +150,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-2" href={toolHref('edit', lang)}>
-            <Ico icon={ScanText} tone="bg-pop-yellow-tint text-[#B58400]" />
+            <Ico icon={ScanText} tone="bg-cat-ocr-tint text-cat-ocr" />
             <h3 className="text-xl font-bold text-ink">{t('feat.ocrHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">
               {t('feat.ocrDesc')}
@@ -159,7 +159,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-2" href={toolHref('merge', lang)}>
-            <Ico icon={Layers} tone="bg-pop-lav text-[#5B4BD6]" />
+            <Ico icon={Layers} tone="bg-cat-merge-tint text-cat-merge" />
             <h3 className="text-xl font-bold text-ink">{isHindi ? 'पीडीएफ जोड़ें, अलग करें व क्रम बदलें' : 'Merge, split & reorder'}</h3>
             <p className="mt-2 text-[15px] text-muted">
               {isHindi ? 'कई पीडीएफ को मनचाहे क्रम में जोड़ें या जरूरी पेज अलग करें।' : 'Combine, extract page ranges and rebuild documents in the order you want.'}
@@ -168,7 +168,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-2" href={toolHref('compress', lang)}>
-            <Ico icon={FileArchive} tone="bg-brand-tint text-brand" />
+            <Ico icon={FileArchive} tone="bg-cat-edit-tint text-cat-edit" />
             <h3 className="text-xl font-bold text-ink">{t('feat.compressHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">
               {t('feat.compressDesc')}
@@ -186,7 +186,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-2" href={toolHref('edit', lang)}>
-            <Ico icon={ShieldCheck} tone="bg-accent-tint text-accent" />
+            <Ico icon={ShieldCheck} tone="bg-cat-translate-tint text-cat-translate" />
             <h3 className="text-xl font-bold text-ink">{t('feat.privacyHeading')}</h3>
             <p className="mt-2 text-[15px] text-muted">
               {t('feat.privacyDesc')}

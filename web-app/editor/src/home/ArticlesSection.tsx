@@ -11,7 +11,7 @@ export function ArticlesSection() {
       title: "Hindi Text Broken in a PDF? 4 Different Problems and How to Fix Each One",
       desc: "Scattered matras, empty boxes, copy-paste gibberish or \"d`fr nso\"? Find which of four problems you have and fix it.",
       href: '/articles/fix-broken-hindi-fonts-in-pdf/',
-      badgeTone: 'bg-brand-tint text-brand',
+      badgeTone: 'bg-cat-edit-tint text-cat-edit',
       readTime: '5 min read',
     },
     {
@@ -19,7 +19,7 @@ export function ArticlesSection() {
       title: "How to Merge Hindi PDF Files Into One (in the Right Order, Without Uploading Them)",
       desc: "Combine certificates, affidavits and scans into one PDF in the right order, and stay under the portal size limit.",
       href: '/articles/merge-multiple-hindi-pdf-files-online/',
-      badgeTone: 'bg-accent-tint text-accent',
+      badgeTone: 'bg-cat-merge-tint text-cat-merge',
       readTime: '4 min read',
     },
     {
@@ -27,7 +27,7 @@ export function ArticlesSection() {
       title: "How to Translate a Hindi PDF to English (and Keep the Layout)",
       desc: "Four ways to translate a Hindi PDF, from quick copy-paste to keeping the original page layout.",
       href: '/articles/translate-hindi-pdf-to-english/',
-      badgeTone: 'bg-pop-lav text-[#5B4BD6]',
+      badgeTone: 'bg-cat-translate-tint text-cat-translate',
       readTime: '4 min read',
     },
   ];
@@ -38,7 +38,7 @@ export function ArticlesSection() {
       title: "हिंदी पीडीएफ कैसे एडिट करें — मोबाइल और कंप्यूटर पर, बिना मात्रा टूटे (2026)",
       desc: "मोबाइल पर हिंदी टाइपिंग सेट करने से लेकर मात्राएं सही रखने और नई पीडीएफ डाउनलोड करने तक, पूरा तरीका।",
       href: '/articles/hindi-pdf-kaise-edit-kare/',
-      badgeTone: 'bg-brand-tint text-brand',
+      badgeTone: 'bg-cat-edit-tint text-cat-edit',
       readTime: '5 मिनट',
     },
     {
@@ -46,7 +46,7 @@ export function ArticlesSection() {
       title: "नाम में स्पेलिंग अलग है? सरकारी भर्ती के लिए 'एक ही व्यक्ति' शपथ पत्र कैसे बनवाएं (प्रारूप सहित)",
       desc: "मार्कशीट, आधार और भर्ती फॉर्म में नाम अलग है? शपथ पत्र का प्रारूप, बनवाने का तरीका और कब यह काफी नहीं होता।",
       href: '/articles/sarkari-admit-card-name-correction-affidavit-hindi/',
-      badgeTone: 'bg-accent-tint text-accent',
+      badgeTone: 'bg-cat-sarkari-tint text-cat-sarkari',
       readTime: '4 मिनट',
     },
     {
@@ -54,7 +54,7 @@ export function ArticlesSection() {
       title: "कृति देव वाली पीडीएफ में 'd`fr nso' क्यों दिखता है — पढ़ें, यूनिकोड में बदलें या एडिट करें",
       desc: "कृति देव पीडीएफ में \"d`fr nso\" क्यों दिखता है, टेक्स्ट यूनिकोड में कैसे बदलें और कुछ शब्द कैसे बदलें।",
       href: '/articles/kruti-dev-pdf-unicode-converter-hindi/',
-      badgeTone: 'bg-pop-lav text-[#5B4BD6]',
+      badgeTone: 'bg-cat-edit-tint text-cat-edit',
       readTime: '5 मिनट',
     },
   ];
@@ -83,9 +83,9 @@ export function ArticlesSection() {
           <div>
             <a
               href="/articles/"
-              className="inline-flex items-center gap-2 font-display text-[15px] font-bold text-brand hover:text-brand/80 transition-colors"
+              className="inline-flex items-center gap-2 whitespace-nowrap font-display text-[15px] font-bold text-brand hover:text-brand/80 transition-colors"
             >
-              <span>{isHindi ? 'सभी गाइड्स और लेख देखें →' : 'View all guides →'}</span>
+              <span>{isHindi ? 'सभी गाइड्स देखें' : 'View all guides'}</span>
               <ArrowRight className="size-4" />
             </a>
           </div>

@@ -25,7 +25,7 @@ export const TOOLS: ToolMeta[] = [
     shortTitle: "Translate",
     description:
       "Translate detected Hindi or English text securely in either direction, then download a new PDF.",
-    accent: "#01873e",
+    accent: "#16a34a",
     category: "convert",
   },
   {
@@ -34,7 +34,7 @@ export const TOOLS: ToolMeta[] = [
     shortTitle: "Merge",
     description:
       "Combine multiple PDFs into one file. Runs entirely in your browser.",
-    accent: "#5b4bd6",
+    accent: "#7c3aed",
     category: "organize",
   },
   {
@@ -43,7 +43,7 @@ export const TOOLS: ToolMeta[] = [
     shortTitle: "Split",
     description:
       "Extract page ranges into a new PDF without uploading to a server.",
-    accent: "#12a551",
+    accent: "#7c3aed",
     category: "organize",
   },
   {
@@ -51,7 +51,7 @@ export const TOOLS: ToolMeta[] = [
     title: "Compress PDF",
     shortTitle: "Compress",
     description: "Shrink a PDF by re-encoding page images at a lower quality.",
-    accent: "#b58400",
+    accent: "#f0700f",
     category: "optimize",
   },
 ];

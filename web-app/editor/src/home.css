@@ -8,30 +8,43 @@
   --color-brand: #1843dd;
   --color-brand-hover: #1130a8;
   --color-brand-500: #3a5cf0;
-  --color-brand-tint: #d7e7ff;
-  --color-brand-wash: #eef3ff;
+  --color-brand-tint: #e8edff;
+  --color-brand-wash: #eef2ff;
 
-  --color-accent: #01873e;
+  --color-accent: #16a34a;
   --color-accent-500: #12a551;
-  --color-accent-tint: #d6f3e3;
+  --color-accent-tint: #e6f7ec;
 
   --color-navy: #050839;
   --color-navy-800: #0c1150;
 
   --color-pop-yellow: #ffce45;
-  --color-pop-yellow-tint: #fff0c2;
-  --color-pop-lav: #e9e6ff;
+  --color-pop-yellow-tint: #fff1e4;
+  --color-pop-lav: #f1eafe;
   --color-pop-coral: #ff8b5e;
 
-  --color-ink: #15172c;
-  --color-muted: #5b6172;
-  --color-cream: #fbf8f1;
-  --color-line: #eceae2;
+  --color-brand-deep: #3226b8;
+  --color-faint: #94a0b2;
+  --color-page: #fbfbfe;
+  --color-cat-edit: #1843dd;
+  --color-cat-edit-tint: #e8edff;
+  --color-cat-translate: #16a34a;
+  --color-cat-translate-tint: #e6f7ec;
+  --color-cat-merge: #7c3aed;
+  --color-cat-merge-tint: #f1eafe;
+  --color-cat-sarkari: #f0700f;
+  --color-cat-sarkari-tint: #fff1e4;
+  --color-cat-ocr: #0d9488;
+  --color-cat-ocr-tint: #e3f6f4;
+  --color-ink: #14161f;
+  --color-muted: #5b6472;
+  --color-cream: #faf6ec;
+  --color-line: #e7e8f1;
 
   --font-display: 'Plus Jakarta Sans', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
   --font-body: 'Inter', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
 
-  --shadow-soft: 0 12px 34px rgba(21, 23, 44, 0.09);
+  --shadow-soft: 0 8px 24px rgba(20, 22, 31, 0.06);
   --shadow-brand: 0 14px 34px rgba(24, 67, 221, 0.28);
 }
 
