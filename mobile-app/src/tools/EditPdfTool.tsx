@@ -171,8 +171,8 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
         const image = await renderPage(uri, i, RASTER_SCALE);
         pages.push({
           pageIndex: i,
-          widthPt: image.pxWidth / RASTER_SCALE,
-          heightPt: image.pxHeight / RASTER_SCALE,
+          widthPt: image.widthPt,
+          heightPt: image.heightPt,
           backgroundImageUri: image.uri,
           imagePxWidth: image.pxWidth,
           imagePxHeight: image.pxHeight,

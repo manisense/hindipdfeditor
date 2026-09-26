@@ -169,7 +169,10 @@ App.tsx
   package.json                 // "pdf-page-image": "file:./modules/pdf-page-image" in root package.json
   expo-module.config.json
   /android/src/main/java/expo/modules/pdfpageimage
-    PdfPageImageModule.kt       // getPageCount(uri), renderPage(uri, page, scale) via android.graphics.pdf.PdfRenderer
+    PdfPageImageModule.kt       // getPageCount(uri), renderPage(uri, page, scale), colour sampling, device scan
+    PdfRenderService.kt         // runs android.graphics.pdf.PdfRenderer in the :pdfrender process (ADR 0011)
+    PdfRenderClient.kt          // app-side binder client; a helper crash becomes a normal error
+    PdfRenderProtocol.kt        // shared transaction and status codes
     PageImageResult.kt
     PdfPageImageExceptions.kt
   /src
@@ -264,7 +267,7 @@ All three are simple linear scale conversions (`scale = target / pageWidthPt`, o
 
 ### `pdfToImages.ts`
 
-Wraps the in-house `pdf-page-image` local Expo Module (`modules/pdf-page-image` — see Section 4.2, ADR 0004; this is the only file that should import from `modules/pdf-page-image` directly). Renders the specific page being edited at 2–3× its point-dimensions (e.g. a 595×842pt A4 page → ~1190×1684px or higher) so text stays crisp through the print pipeline. Returns `{ uri, pxWidth, pxHeight }`.
+Wraps the in-house `pdf-page-image` local Expo Module (`modules/pdf-page-image` — see Section 4.2, ADR 0004; this is the only file that should import from `modules/pdf-page-image` directly). Renders the specific page being edited at 2–3× its point-dimensions (e.g. a 595×842pt A4 page → ~1190×1684px or higher) so text stays crisp through the print pipeline. Returns `{ uri, pxWidth, pxHeight, widthPt, heightPt }`. Take page sizes from `widthPt`/`heightPt`, never px / scale: the native renderer caps a bitmap at 16M px and lowers the scale for very large pages. All PdfRenderer calls run in the separate `:pdfrender` process, so a pdfium crash on a damaged file becomes an error instead of an app crash (ADR 0011).
 
 ### `htmlCompositor.ts`
 

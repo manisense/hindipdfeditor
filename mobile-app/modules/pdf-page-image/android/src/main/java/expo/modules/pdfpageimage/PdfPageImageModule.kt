@@ -8,8 +8,6 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.Matrix
-import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -21,7 +19,6 @@ import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.io.File
-import java.io.FileOutputStream
 import java.util.UUID
 
 /**
@@ -30,6 +27,9 @@ import java.util.UUID
  * pins an isolated, unmaintained Android Gradle Plugin version that fails to resolve under
  * this project's Gradle/JDK toolchain. This module wraps the stable, first-party
  * `android.graphics.pdf.PdfRenderer` API directly, with no third-party dependency.
+ *
+ * Rasterizing runs in the `:pdfrender` helper process via [PdfRenderClient]/[PdfRenderService]
+ * (ADR 0011), so a pdfium crash on a bad file can't take the app down.
  *
  * This rasterizes an existing PDF page to a background JPEG image, and separately samples
  * average pixel colors from an already-rendered background image (for Phase 3 masking) - it
@@ -40,11 +40,13 @@ class PdfPageImageModule : Module() {
   private val context: Context
     get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
 
+  private val renderClient: PdfRenderClient by lazy { PdfRenderClient(context.applicationContext) }
+
   override fun definition() = ModuleDefinition {
     Name("PdfPageImage")
 
     AsyncFunction("getPageCount") { uri: String ->
-      openRenderer(uri).use { renderer -> renderer.pageCount }
+      pageCount(uri)
     }
 
     // scale is unitless (output px per PDF point) - callers pass 2-3x per
@@ -104,74 +106,36 @@ class PdfPageImageModule : Module() {
     }
   }
 
-  private fun openRenderer(uriString: String): PdfRenderer {
-    val pfd = try {
-      openParcelFileDescriptor(uriString)
-    } catch (e: Exception) {
-      throw PdfOpenFailedException(uriString, e)
-    }
-    return try {
-      // PdfRenderer takes ownership of pfd and closes it when the renderer is closed,
-      // including via the `.use {}` extension below - do not close pfd separately after this.
-      PdfRenderer(pfd)
-    } catch (e: Exception) {
-      pfd.close()
-      throw PdfOpenFailedException(uriString, e)
-    }
+  // Page cap in px (width * height). 3x an A4 or US Letter page is ~4.5M px; this leaves room
+  // for large pages at full scale while keeping one ARGB bitmap under ~64 MB. Bigger pages are
+  // rendered at a proportionally lower scale by PdfRenderService.
+  private val maxRenderPixels = 16_000_000L
+
+  private fun openSource(uriString: String): ParcelFileDescriptor = try {
+    openParcelFileDescriptor(uriString)
+  } catch (e: Exception) {
+    throw PdfOpenFailedException(uriString, e)
   }
 
+  private fun pageCount(uriString: String): Int =
+    openSource(uriString).use { pfd -> renderClient.pageCount(pfd, uriString) }
+
   private fun renderPage(uriString: String, pageIndex: Int, scale: Double): PageImageResult {
-    openRenderer(uriString).use { renderer ->
-      if (pageIndex < 0 || pageIndex >= renderer.pageCount) {
-        throw PdfPageNotFoundException(pageIndex, renderer.pageCount)
+    val outputFile = File(appContext.cacheDirectory, "pdf-page-image-${UUID.randomUUID()}.jpg")
+    try {
+      val rendered = openSource(uriString).use { pfd ->
+        renderClient.renderPage(pfd, uriString, pageIndex, scale, maxRenderPixels, outputFile)
       }
-
-      renderer.openPage(pageIndex).use { page ->
-        // page.width / page.height are in PDF points (1/72"), matching the unit
-        // coordinateMath.ts uses elsewhere in this app - see hindi-pdf-editor-spec.md Section 7-8.
-        val pxWidth = Math.round(page.width * scale).toInt().coerceAtLeast(1)
-        val pxHeight = Math.round(page.height * scale).toInt().coerceAtLeast(1)
-
-        val bitmap = Bitmap.createBitmap(pxWidth, pxHeight, Bitmap.Config.ARGB_8888)
-        val outputFile = File(appContext.cacheDirectory, "pdf-page-image-${UUID.randomUUID()}.jpg")
-        try {
-          // PDF pages with transparent regions would otherwise composite onto a black
-          // bitmap by default; white matches what every PDF viewer shows for those regions.
-          bitmap.eraseColor(Color.WHITE)
-
-          val matrix = Matrix().apply {
-            setScale(pxWidth / page.width.toFloat(), pxHeight / page.height.toFloat())
-          }
-          page.render(bitmap, null, matrix, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
-
-          // JPEG, not PNG: confirmed on a real device that Android's print WebView hangs
-          // indefinitely (not just "slow") when a page background this size is base64-inlined as
-          // a PNG `background-image` data URI *and* the overlay text needs real Devanagari shaping
-          // through the same embedded variable font - PNG-only text/whitespace-heavy content with
-          // no overlay text, and small ASCII overlay text, both exported fine, isolating the
-          // combination rather than either factor alone (see CHANGELOG). This bitmap already has
-          // no meaningful alpha (erased to opaque white above for transparent PDF regions), so
-          // JPEG's lack of an alpha channel loses nothing. Quality 97 plus the caller's 3x render
-          // scale keeps fine source text materially closer to the original while per-page WebView
-          // export prevents the larger image from accumulating into one multi-page HTML payload.
-          FileOutputStream(outputFile).use { out ->
-            check(bitmap.compress(Bitmap.CompressFormat.JPEG, 97, out)) {
-              "Bitmap.compress returned false"
-            }
-          }
-        } catch (e: Exception) {
-          outputFile.delete()
-          throw e
-        } finally {
-          bitmap.recycle()
-        }
-
-        return PageImageResult(
-          uri = Uri.fromFile(outputFile).toString(),
-          width = pxWidth,
-          height = pxHeight
-        )
-      }
+      return PageImageResult(
+        uri = Uri.fromFile(outputFile).toString(),
+        width = rendered.pxWidth,
+        height = rendered.pxHeight,
+        widthPt = rendered.widthPt,
+        heightPt = rendered.heightPt
+      )
+    } catch (e: Exception) {
+      outputFile.delete()
+      throw e
     }
   }
 

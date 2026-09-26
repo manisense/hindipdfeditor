@@ -111,8 +111,8 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
         const img = await renderPage(selectedDoc.uri, i, 3);
         pages.push({
           pageIndex: i,
-          widthPt: img.pxWidth / 3,
-          heightPt: img.pxHeight / 3,
+          widthPt: img.widthPt,
+          heightPt: img.heightPt,
           backgroundImageUri: img.uri,
           imagePxWidth: img.pxWidth,
           imagePxHeight: img.pxHeight,

@@ -1,2 +1,10 @@
-<manifest>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <!-- Every PdfRenderer (system pdfium) call runs in this separate process, so a native crash
+         on a malformed PDF kills only the helper, not the app. See PdfRenderService / ADR 0011. -->
+    <service
+      android:name="expo.modules.pdfpageimage.PdfRenderService"
+      android:exported="false"
+      android:process=":pdfrender" />
+  </application>
 </manifest>
