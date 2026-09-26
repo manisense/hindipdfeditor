@@ -6,6 +6,7 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ### Fixed — Website tools
 
+- **Named author**: all 13 articles now carry a visible byline ("By Manish" / "लेखक: Manish") and a Person JSON-LD author: Software Engineer at Pruning Labs, with LinkedIn `sameAs`, replacing "Hindi PDF Editor Team". The About pages describe him and link the Person to the Organization as founder. The article generator template uses the same author.
 - **Translate read Kruti Dev PDFs as English.** Legacy fonts store Hindi as Latin letters, so direction detection took their embedded text for English. Legacy-font pages now count as Hindi, and a failed font check yields no guess (fail closed). Checked with the new `mobile-app/fixtures/legacy-krutidev-fixture.pdf`. The same file also confirmed that the web editor blocks editing on legacy-font pages, with the warning in English and Hindi.
 - **Hindi pages had English progress messages and an English crash screen.** Translate's progress, errors and cancel message now come in Hindi too, and so does the error-recovery screen (`RecoveryScreen.tsx`).
 - **Removed an internal setup note shown publicly on `/support/`** (the Cloudflare Email Routing reminder).

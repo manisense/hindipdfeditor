@@ -82,9 +82,13 @@ function generateArticleHtml(item) {
         datePublished: today,
         dateModified: today,
         author: {
-          '@type': 'Organization',
-          name: 'Hindi PDF Editor Team',
-          url: 'https://hindipdfeditor.com',
+          '@type': 'Person',
+          '@id': 'https://hindipdfeditor.com/about/#manish',
+          name: 'Manish',
+          jobTitle: 'Software Engineer',
+          worksFor: { '@type': 'Organization', name: 'Pruning Labs' },
+          url: 'https://hindipdfeditor.com/about/',
+          sameAs: ['https://www.linkedin.com/in/muneshmeena/'],
         },
         publisher: {
           '@type': 'Organization',

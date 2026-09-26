@@ -85,6 +85,7 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 - **Never publish guidance to alter documents issued by an authority**, such as admit cards, mark sheets or land records. Point to the legitimate route instead: a correction window, an affidavit, or an application to the issuing office.
 - **URLs are fixed by ADR 0010.** Each tool has one path, and Hindi lives under `/hi/`. Do not reintroduce `?tool=`/`?lang=` URLs or client-only pages. `check-seo.mjs` must pass.
 - **Articles are researched and hand-written.** The daily article bot's schedule stays off. Do not re-enable it or bulk-generate templated pages. When an article changes, bump its `dateModified` (the build copies it into the sitemap) and update the hub card, the home card if there is one, `llms.txt` and `scripts/seo-keyword-queue.json`.
+- **Articles are credited to Manish** (Person `@id` `https://hindipdfeditor.com/about/#manish`, described on `/about/`). Keep the visible byline and the JSON-LD author in sync when adding articles.
 - **Hindi pages use Hindi UI.** New tool strings go through `useTx(en, hi)` in `web-app/editor/src/lib/i18n.tsx`.
 
 ## Performance constraints
