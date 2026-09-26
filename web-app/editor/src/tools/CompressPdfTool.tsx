@@ -17,6 +17,8 @@ type Result = {
   originalBytes: number;
   compressedBytes: number;
   pageCount: number;
+  /** False when re-encoding made the file bigger; nothing is downloaded then. */
+  smaller: boolean;
 };
 
 function formatBytes(n: number): string {
@@ -44,12 +46,15 @@ export function CompressPdfTool() {
       const { bytes, pageCount, originalBytes } = await compressPdfFile(file, quality);
       const base = file.name.replace(/\.pdf$/i, '') || 'compressed';
       const filename = `${base}-compressed.pdf`;
-      downloadPdfBytes(bytes, filename);
+      // Text-based PDFs can grow when every page becomes a JPEG; never hand back a bigger file.
+      const smaller = bytes.byteLength < originalBytes;
+      if (smaller) downloadPdfBytes(bytes, filename);
       setResult({
         filename,
         originalBytes,
         compressedBytes: bytes.byteLength,
         pageCount,
+        smaller,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -131,7 +136,15 @@ export function CompressPdfTool() {
           </div>
         )}
         {error && <AppStatus tone="error" title={tx('Compression failed', 'कंप्रेस नहीं हो पाया')}>{error}</AppStatus>}
-        {result && (
+        {result && !result.smaller && (
+          <AppStatus tone="warning" title={tx('This PDF is already compact', 'यह पीडीएफ पहले से छोटी है')}>
+            {tx(
+              `Compressing would make it bigger (${formatBytes(result.originalBytes)} → ${formatBytes(result.compressedBytes)}), so nothing was downloaded. Try a lower quality, or upload the original as it is.`,
+              `कंप्रेस करने से फाइल बड़ी हो जाती (${formatBytes(result.originalBytes)} → ${formatBytes(result.compressedBytes)}), इसलिए कुछ डाउनलोड नहीं हुआ। क्वालिटी और घटाकर देखें, या मूल फाइल ही अपलोड करें।`,
+            )}
+          </AppStatus>
+        )}
+        {result?.smaller && (
           <AppStatus tone="success" title={tx('Your smaller PDF is ready', 'आपकी छोटी पीडीएफ तैयार है')}>
             {tx('Downloaded', 'डाउनलोड हुई:')} {result.filename} · {result.pageCount} {tx('pages', 'पेज')} ·{' '}
             {formatBytes(result.originalBytes)} → {formatBytes(result.compressedBytes)}
