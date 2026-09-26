@@ -5,9 +5,9 @@ import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.BitmapRegionDecoder
 import android.graphics.Color
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -140,24 +140,86 @@ class PdfPageImageModule : Module() {
   }
 
   /**
+   * Pixels of one rectangle of a JPEG this app rendered, decoded on their own via
+   * `BitmapRegionDecoder` rather than decoding the whole 3x page (~18 MB for A4) for a box a few
+   * hundred px across. [left]/[top] are the region's position in the full image, in px.
+   */
+  private class Region(
+    val pixels: IntArray,
+    val left: Int,
+    val top: Int,
+    val width: Int,
+    val height: Int
+  ) {
+    val right get() = left + width
+    val bottom get() = top + height
+
+    /** ARGB pixel at full-image coordinates ([x], [y]) px, which must lie inside this region. */
+    fun pixel(x: Int, y: Int): Int = pixels[(y - top) * width + (x - left)]
+  }
+
+  /**
+   * Decodes the part of the image at [uriString] inside the given full-image px rectangle,
+   * clamped to the image's bounds. Returns null when nothing of the rectangle is on the image.
+   */
+  private fun decodeRegion(uriString: String, left: Int, top: Int, right: Int, bottom: Int): Region? {
+    val pfd = try {
+      openParcelFileDescriptor(uriString)
+    } catch (e: Exception) {
+      throw ColorSampleFailedException(uriString, e)
+    }
+    return try {
+      pfd.use {
+        val decoder = (
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            BitmapRegionDecoder.newInstance(it)
+          } else {
+            @Suppress("DEPRECATION")
+            BitmapRegionDecoder.newInstance(it.fileDescriptor, false)
+          }
+          ) ?: throw IllegalStateException("BitmapRegionDecoder.newInstance returned null")
+        try {
+          val rect = Rect(
+            left.coerceIn(0, decoder.width),
+            top.coerceIn(0, decoder.height),
+            right.coerceIn(0, decoder.width),
+            bottom.coerceIn(0, decoder.height)
+          )
+          if (rect.isEmpty) return null
+          val bitmap = decoder.decodeRegion(rect, null)
+            ?: throw IllegalStateException("BitmapRegionDecoder.decodeRegion returned null")
+          try {
+            val pixels = IntArray(bitmap.width * bitmap.height)
+            bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+            Region(pixels, rect.left, rect.top, bitmap.width, bitmap.height)
+          } finally {
+            bitmap.recycle()
+          }
+        } finally {
+          decoder.recycle()
+        }
+      }
+    } catch (e: Exception) {
+      throw ColorSampleFailedException(uriString, e)
+    }
+  }
+
+  /**
    * Finds the per-channel *median* (not mean) of the pixels in a band `marginPx` wide
    * surrounding (xPx, yPx, wPx, hPx), excluding the rectangle itself, to approximate the page's
    * background color right around a region the user is about to mask - not the color of the
    * burned-in text inside the rectangle, which is exactly what masking is trying to hide.
    *
-   * Median over mean: callers (`App.tsx`) already expand the caller-drawn rectangle by a small
-   * safety margin before calling this, specifically so the sampled band starts past the
-   * anti-aliased edge of the original text - but real documents still put JPEG ringing
-   * artifacts and the occasional stray dark pixel right at that boundary. A mean lets even a
-   * handful of such outliers visibly drag the fill color away from the true paper color (this
-   * was reported as "the mask box is still visible" against non-pure-white backgrounds); a
-   * median is unaffected by a minority of outliers as long as most of the sampled band is
-   * genuinely background, which it is by construction here.
+   * Median over mean: callers already expand the caller-drawn rectangle by a small safety
+   * margin before calling this, specifically so the sampled band starts past the anti-aliased
+   * edge of the original text - but real documents still put JPEG ringing artifacts and the
+   * occasional stray dark pixel right at that boundary. A mean lets even a handful of such
+   * outliers visibly drag the fill color away from the true paper color (this was reported as
+   * "the mask box is still visible" against non-pure-white backgrounds); a median is
+   * unaffected by a minority of outliers as long as most of the sampled band is genuinely
+   * background, which it is by construction here.
    *
-   * Decodes the whole background JPEG rather than only the needed band via
-   * `BitmapRegionDecoder`: these images are already bounded to 2-3x a page's point-dimensions
-   * per AGENTS.md's performance constraint (a few MB decoded), and this runs once per
-   * user-drawn mask, not in a hot loop, so the simpler full-decode is preferable.
+   * All parameters are background-image px.
    */
   private fun sampleAverageColor(
     uriString: String,
@@ -167,70 +229,59 @@ class PdfPageImageModule : Module() {
     hPx: Int,
     marginPx: Int
   ): String {
-    val pfd = try {
-      openParcelFileDescriptor(uriString)
-    } catch (e: Exception) {
-      throw ColorSampleFailedException(uriString, e)
-    }
-    val bitmap = try {
-      pfd.use { BitmapFactory.decodeFileDescriptor(it.fileDescriptor) }
-        ?: throw IllegalStateException("BitmapFactory.decodeFileDescriptor returned null")
-    } catch (e: Exception) {
-      throw ColorSampleFailedException(uriString, e)
-    }
+    // Degenerate case (nothing of the band is on the image) - fail closed to white, the most
+    // common real-world page background, rather than divide by zero or crash.
+    val region = decodeRegion(
+      uriString,
+      xPx - marginPx,
+      yPx - marginPx,
+      xPx + wPx + marginPx,
+      yPx + hPx + marginPx
+    ) ?: return "#ffffff"
 
-    try {
-      val outerLeft = (xPx - marginPx).coerceIn(0, bitmap.width)
-      val outerTop = (yPx - marginPx).coerceIn(0, bitmap.height)
-      val outerRight = (xPx + wPx + marginPx).coerceIn(0, bitmap.width)
-      val outerBottom = (yPx + hPx + marginPx).coerceIn(0, bitmap.height)
-      val innerLeft = xPx.coerceIn(0, bitmap.width)
-      val innerTop = yPx.coerceIn(0, bitmap.height)
-      val innerRight = (xPx + wPx).coerceIn(0, bitmap.width)
-      val innerBottom = (yPx + hPx).coerceIn(0, bitmap.height)
+    val innerLeft = xPx.coerceIn(region.left, region.right)
+    val innerTop = yPx.coerceIn(region.top, region.bottom)
+    val innerRight = (xPx + wPx).coerceIn(region.left, region.right)
+    val innerBottom = (yPx + hPx).coerceIn(region.top, region.bottom)
 
-      // Fixed-size (0-255) histograms, not a full pixel list - O(1) extra space per channel
-      // regardless of how large the sampled band is, while still supporting an exact median.
-      val histR = IntArray(256)
-      val histG = IntArray(256)
-      val histB = IntArray(256)
-      var count = 0L
-      for (y in outerTop until outerBottom) {
-        val insideInnerRow = y in innerTop until innerBottom
-        for (x in outerLeft until outerRight) {
-          if (insideInnerRow && x in innerLeft until innerRight) continue
-          val pixel = bitmap.getPixel(x, y)
-          histR[Color.red(pixel)]++
-          histG[Color.green(pixel)]++
-          histB[Color.blue(pixel)]++
-          count++
-        }
+    // Fixed-size (0-255) histograms, not a full pixel list - O(1) extra space per channel
+    // regardless of how large the sampled band is, while still supporting an exact median.
+    val histR = IntArray(256)
+    val histG = IntArray(256)
+    val histB = IntArray(256)
+    var count = 0L
+    for (y in region.top until region.bottom) {
+      val insideInnerRow = y in innerTop until innerBottom
+      for (x in region.left until region.right) {
+        if (insideInnerRow && x in innerLeft until innerRight) continue
+        val pixel = region.pixel(x, y)
+        histR[Color.red(pixel)]++
+        histG[Color.green(pixel)]++
+        histB[Color.blue(pixel)]++
+        count++
       }
-
-      // Degenerate case (e.g. the rectangle fills the whole page, leaving no surrounding band
-      // to sample) - fail closed to white, the most common real-world page background, rather
-      // than divide by zero or crash.
-      if (count == 0L) return "#ffffff"
-
-      fun medianOf(histogram: IntArray): Int {
-        val half = count / 2
-        var runningCount = 0L
-        for (value in 0..255) {
-          runningCount += histogram[value]
-          if (runningCount > half) return value
-        }
-        return 255
-      }
-
-      return String.format(
-        "#%02x%02x%02x",
-        medianOf(histR),
-        medianOf(histG),
-        medianOf(histB)
-      )
-    } finally {
-      bitmap.recycle()
     }
+
+    // Degenerate case (e.g. the rectangle fills the whole page, leaving no surrounding band).
+    if (count == 0L) return "#ffffff"
+
+    return String.format(
+      "#%02x%02x%02x",
+      medianOf(histR, count),
+      medianOf(histG, count),
+      medianOf(histB, count)
+    )
+  }
+
+  /** Exact median value (0-255) of a 256-bucket histogram holding [count] samples. */
+  private fun medianOf(histogram: IntArray, count: Long): Int {
+    val half = count / 2
+    var runningCount = 0L
+    for (value in 0..255) {
+      runningCount += histogram[value]
+      if (runningCount > half) return value
+    }
+    return 255
   }
 
   /**
@@ -243,6 +294,8 @@ class PdfPageImageModule : Module() {
    * 2. Measures Manhattan color distance |r - bgR| + |g - bgG| + |b - bgB| for every pixel.
    * 3. Averages the highest-contrast pixels (top distance buckets) to accurately extract the text color.
    * 4. Supports light-on-dark, dark-on-light, and colored text over colored backgrounds.
+   *
+   * All parameters are background-image px.
    */
   private fun sampleTextColor(
     uriString: String,
@@ -251,123 +304,92 @@ class PdfPageImageModule : Module() {
     wPx: Int,
     hPx: Int
   ): String {
-    val pfd = try {
-      openParcelFileDescriptor(uriString)
-    } catch (e: Exception) {
-      throw ColorSampleFailedException(uriString, e)
+    val insetX = (wPx * 0.08).toInt().coerceAtMost(wPx / 4)
+    val insetY = (hPx * 0.08).toInt().coerceAtMost(hPx / 4)
+    val region = decodeRegion(
+      uriString,
+      xPx + insetX,
+      yPx + insetY,
+      xPx + wPx - insetX,
+      yPx + hPx - insetY
+    ) ?: return "#15172c"
+
+    val histR = IntArray(256)
+    val histG = IntArray(256)
+    val histB = IntArray(256)
+    val totalPixels = region.pixels.size.toLong()
+    if (totalPixels == 0L) return "#15172c"
+
+    // Step 1: Collect channel histograms to find the background color (median of each channel)
+    for (pixel in region.pixels) {
+      histR[Color.red(pixel)]++
+      histG[Color.green(pixel)]++
+      histB[Color.blue(pixel)]++
     }
-    val bitmap = try {
-      pfd.use { BitmapFactory.decodeFileDescriptor(it.fileDescriptor) }
-        ?: throw IllegalStateException("BitmapFactory.decodeFileDescriptor returned null")
-    } catch (e: Exception) {
-      throw ColorSampleFailedException(uriString, e)
+
+    val bgR = medianOf(histR, totalPixels)
+    val bgG = medianOf(histG, totalPixels)
+    val bgB = medianOf(histB, totalPixels)
+
+    // Step 2: Measure distance from background for all pixels
+    val distCounts = LongArray(766)
+    val distRedSums = LongArray(766)
+    val distGreenSums = LongArray(766)
+    val distBlueSums = LongArray(766)
+    var maxDist = 0
+
+    for (pixel in region.pixels) {
+      val r = Color.red(pixel)
+      val g = Color.green(pixel)
+      val b = Color.blue(pixel)
+      val dist = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB)
+      distCounts[dist]++
+      distRedSums[dist] += r.toLong()
+      distGreenSums[dist] += g.toLong()
+      distBlueSums[dist] += b.toLong()
+      if (dist > maxDist) {
+        maxDist = dist
+      }
     }
 
-    try {
-      val insetX = (wPx * 0.08).toInt().coerceAtMost(wPx / 4)
-      val insetY = (hPx * 0.08).toInt().coerceAtMost(hPx / 4)
-      val left = (xPx + insetX).coerceIn(0, bitmap.width)
-      val top = (yPx + insetY).coerceIn(0, bitmap.height)
-      val right = (xPx + wPx - insetX).coerceIn(0, bitmap.width)
-      val bottom = (yPx + hPx - insetY).coerceIn(0, bitmap.height)
-      if (right <= left || bottom <= top) return "#15172c"
-
-      val histR = IntArray(256)
-      val histG = IntArray(256)
-      val histB = IntArray(256)
-      var totalPixels = 0L
-
-      // Step 1: Collect channel histograms to find the background color (median of each channel)
-      for (y in top until bottom) {
-        for (x in left until right) {
-          val pixel = bitmap.getPixel(x, y)
-          histR[Color.red(pixel)]++
-          histG[Color.green(pixel)]++
-          histB[Color.blue(pixel)]++
-          totalPixels++
-        }
-      }
-      if (totalPixels == 0L) return "#15172c"
-
-      fun medianOf(histogram: IntArray): Int {
-        val half = totalPixels / 2
-        var runningCount = 0L
-        for (value in 0..255) {
-          runningCount += histogram[value]
-          if (runningCount > half) return value
-        }
-        return 255
-      }
-
-      val bgR = medianOf(histR)
-      val bgG = medianOf(histG)
-      val bgB = medianOf(histB)
-
-      // Step 2: Measure distance from background for all pixels
-      val distCounts = LongArray(766)
-      val distRedSums = LongArray(766)
-      val distGreenSums = LongArray(766)
-      val distBlueSums = LongArray(766)
-      var maxDist = 0
-
-      for (y in top until bottom) {
-        for (x in left until right) {
-          val pixel = bitmap.getPixel(x, y)
-          val r = Color.red(pixel)
-          val g = Color.green(pixel)
-          val b = Color.blue(pixel)
-          val dist = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB)
-          distCounts[dist]++
-          distRedSums[dist] += r.toLong()
-          distGreenSums[dist] += g.toLong()
-          distBlueSums[dist] += b.toLong()
-          if (dist > maxDist) {
-            maxDist = dist
-          }
-        }
-      }
-
-      // If there is very little contrast in the region (< 35 total delta), fallback
-      // based on the background brightness so text is always legible.
-      if (maxDist < 35) {
-        val bgLuma = (bgR * 299 + bgG * 587 + bgB * 114) / 1000
-        return if (bgLuma > 128) "#15172c" else "#ffffff"
-      }
-
-      // Step 3: Accumulate the highest-contrast pixels (top distance buckets)
-      val targetSampleCount = Math.max(10L, (totalPixels * 8 / 100))
-      var accumulatedCount = 0L
-      var sumR = 0L
-      var sumG = 0L
-      var sumB = 0L
-      val minDistanceThreshold = (maxDist * 40 / 100).coerceAtLeast(25)
-
-      for (d in 765 downTo minDistanceThreshold) {
-        val count = distCounts[d]
-        if (count > 0) {
-          accumulatedCount += count
-          sumR += distRedSums[d]
-          sumG += distGreenSums[d]
-          sumB += distBlueSums[d]
-          if (accumulatedCount >= targetSampleCount) {
-            break
-          }
-        }
-      }
-
-      if (accumulatedCount == 0L) {
-        val bgLuma = (bgR * 299 + bgG * 587 + bgB * 114) / 1000
-        return if (bgLuma > 128) "#15172c" else "#ffffff"
-      }
-
-      val finalR = (sumR / accumulatedCount).toInt().coerceIn(0, 255)
-      val finalG = (sumG / accumulatedCount).toInt().coerceIn(0, 255)
-      val finalB = (sumB / accumulatedCount).toInt().coerceIn(0, 255)
-
-      return String.format("#%02x%02x%02x", finalR, finalG, finalB)
-    } finally {
-      bitmap.recycle()
+    // If there is very little contrast in the region (< 35 total delta), fallback
+    // based on the background brightness so text is always legible.
+    if (maxDist < 35) {
+      val bgLuma = (bgR * 299 + bgG * 587 + bgB * 114) / 1000
+      return if (bgLuma > 128) "#15172c" else "#ffffff"
     }
+
+    // Step 3: Accumulate the highest-contrast pixels (top distance buckets)
+    val targetSampleCount = Math.max(10L, (totalPixels * 8 / 100))
+    var accumulatedCount = 0L
+    var sumR = 0L
+    var sumG = 0L
+    var sumB = 0L
+    val minDistanceThreshold = (maxDist * 40 / 100).coerceAtLeast(25)
+
+    for (d in 765 downTo minDistanceThreshold) {
+      val count = distCounts[d]
+      if (count > 0) {
+        accumulatedCount += count
+        sumR += distRedSums[d]
+        sumG += distGreenSums[d]
+        sumB += distBlueSums[d]
+        if (accumulatedCount >= targetSampleCount) {
+          break
+        }
+      }
+    }
+
+    if (accumulatedCount == 0L) {
+      val bgLuma = (bgR * 299 + bgG * 587 + bgB * 114) / 1000
+      return if (bgLuma > 128) "#15172c" else "#ffffff"
+    }
+
+    val finalR = (sumR / accumulatedCount).toInt().coerceIn(0, 255)
+    val finalG = (sumG / accumulatedCount).toInt().coerceIn(0, 255)
+    val finalB = (sumB / accumulatedCount).toInt().coerceIn(0, 255)
+
+    return String.format("#%02x%02x%02x", finalR, finalG, finalB)
   }
 
   /**
