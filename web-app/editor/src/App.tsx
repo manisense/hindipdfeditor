@@ -53,7 +53,7 @@ function ToolRoute({ toolId }: { toolId: ToolId }) {
       {toolId === 'edit' ? (
         <EditPdfTool />
       ) : toolId === 'translate' ? (
-        <ErrorBoundary label="Translate">
+        <ErrorBoundary>
           <TranslatePdfTool />
         </ErrorBoundary>
       ) : toolId === 'merge' ? (
