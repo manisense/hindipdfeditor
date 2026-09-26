@@ -2,12 +2,16 @@ import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 
 import App from './App';
-import { readLanguagePreference } from './lib/i18n';
+import { readLanguagePreference, saveLanguagePreference } from './lib/i18n';
 import { legacyRedirectTarget, parseRoute, routePath } from './lib/routes';
 import './home.css';
 
 function redirectTarget(): string | null {
   const { pathname, search, hash } = window.location;
+  // An explicit ?lang= in a link is the visitor's choice for this visit, so it wins over
+  // (and replaces) any language they picked earlier.
+  const explicitLang = new URLSearchParams(search).get('lang');
+  if (explicitLang === 'hi' || explicitLang === 'en') saveLanguagePreference(explicitLang);
   const legacy = legacyRedirectTarget(pathname, search);
   if (legacy) return `${legacy}${hash}`;
 

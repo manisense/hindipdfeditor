@@ -4,6 +4,12 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Mobile Web Parity & Architecture Overhaul
 
+### Fixed — Website tools
+
+- **Edit, Translate, Split and Compress failed to open any PDF on browsers without `Map.prototype.getOrInsertComputed`** (for example Chromium 141), with "getOrInsertComputed is not a function". pdf.js 5.7's modern build calls that very new API. The app now imports pdf.js's legacy build, which polyfills it in both the main thread and the worker. Verified in Chromium 141 with no polyfill: Hindi edit and export, split, compress, and translate language detection.
+- **Compress no longer hands back a bigger file.** Text-based PDFs can grow when every page becomes a JPEG (for example 36.1 KB → 41.2 KB). The tool now downloads nothing in that case and says why.
+- **An explicit `?lang=` link now wins over a saved language preference**, and becomes the new saved choice. Before, a saved Hindi preference sent a `?lang=en` link to the Hindi page after a second redirect.
+
 ### Changed — Website SEO: crawlable pages
 
 - **Prerendered website pages (ADR `0010-prerendered-web-pages-and-path-urls.md`)**: the home page and each tool are now static HTML at build time, in English and Hindi. There is one URL per tool and language (`/merge-pdf/`, `/hi/merge-pdf/`, …), with per-page titles, canonicals, reciprocal hreflang and JSON-LD.

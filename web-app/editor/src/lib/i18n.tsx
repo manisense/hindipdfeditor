@@ -314,7 +314,8 @@ export function readLanguagePreference(): Language | null {
   }
 }
 
-function saveLanguagePreference(lang: Language): void {
+/** Stores the visitor's explicit language choice; storage can be unavailable in private modes. */
+export function saveLanguagePreference(lang: Language): void {
   try {
     localStorage.setItem(LANGUAGE_PREFERENCE_KEY, lang);
   } catch {
