@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { useLanguage } from '../lib/i18n';
 import { getFaqs } from './faqData';
+import { SectionHeading } from './ui/section-heading';
 
 function Item({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -47,22 +48,15 @@ export function FAQ() {
   const faqs = getFaqs(lang);
 
   return (
-    <section id="faq" className="py-24" aria-labelledby="faq-heading">
-      <div className="section-x grid gap-12 md:grid-cols-[0.8fr_1.2fr]">
-        <div>
-          <div className="mb-3 font-display text-sm font-semibold uppercase tracking-[0.08em] text-brand">
-            {t('faq.eyebrow')}
-          </div>
-          <h2
-            id="faq-heading"
-            className="text-[clamp(28px,3.6vw,42px)] font-bold leading-tight text-ink"
-          >
-            {t('faq.title')}
-          </h2>
-          <p className="mt-4 text-lg text-muted">
-            {t('faq.subtitle')}
-          </p>
-        </div>
+    <section id="faq" className="bg-cream py-16 sm:py-24" aria-labelledby="faq-heading">
+      <div className="section-x grid gap-8 md:grid-cols-[0.8fr_1.2fr] md:gap-12">
+        <SectionHeading
+          id="faq-heading"
+          align="left"
+          eyebrow={t('faq.eyebrow')}
+          title={t('faq.title')}
+          subtitle={t('faq.subtitle')}
+        />
         <div>
           {faqs.map((f) => (
             <Item key={f.q} q={f.q} a={f.a} />

@@ -31,7 +31,7 @@ export function Footer() {
       links: [
         { label: isHindi ? 'गाइड्स और आर्टिकल्स' : 'Articles & Guides', href: '/articles/' },
         { label: isHindi ? 'कैसे काम करता है' : 'How it works', href: `${homeHref}#how-it-works` },
-        { label: isHindi ? 'टूल्स की तुलना (Compare)' : 'Compare vs Acrobat/Canva', href: `${homeHref}#compare` },
+        { label: isHindi ? 'हिंदी के लिए ही क्यों' : 'Why Hindi-first', href: `${homeHref}#compare` },
         { label: isHindi ? 'दस्तावेज उपयोग' : 'Document use cases', href: `${homeHref}#use-cases` },
         { label: isHindi ? 'अक्सर पूछे जाने वाले सवाल (FAQ)' : 'FAQ', href: `${homeHref}#faq` },
         { label: isHindi ? 'प्राइवेसी पॉलिसी' : 'Privacy Policy', href: `${isHindi ? '/hi' : ''}/privacy/` },

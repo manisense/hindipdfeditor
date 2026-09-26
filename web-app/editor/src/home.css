@@ -36,6 +36,8 @@
   --color-cat-sarkari-tint: #fff1e4;
   --color-cat-ocr: #0d9488;
   --color-cat-ocr-tint: #e3f6f4;
+  --color-success: #16a34a;
+  --color-warn: #ef6c4d;
   --color-ink: #14161f;
   --color-muted: #5b6472;
   --color-cream: #faf6ec;
@@ -111,7 +113,13 @@
 .section-x {
   max-width: 1120px;
   margin-inline: auto;
-  padding-inline: 24px;
+  padding-inline: 16px;
+}
+
+@media (min-width: 640px) {
+  .section-x {
+    padding-inline: 24px;
+  }
 }
 
 /* Mobile nav menu animation */

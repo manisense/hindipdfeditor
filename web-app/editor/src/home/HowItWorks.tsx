@@ -1,91 +1,71 @@
-import { motion } from 'motion/react';
-import { UploadCloud, Edit3, Type, FileCheck } from 'lucide-react';
-import { Btn } from './ui/button';
-import { useLanguage } from '../lib/i18n';
+import { Download, PenLine, UploadCloud } from 'lucide-react';
+
+import { useLanguage, useTx } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
+import { Btn } from './ui/button';
+import { SectionHeading } from './ui/section-heading';
 
 export function HowItWorks() {
-  const { lang, t, isHindi } = useLanguage();
+  const { lang } = useLanguage();
+  const tx = useTx();
 
   const steps = [
     {
       icon: UploadCloud,
-      number: '01',
-      title: t('how.step1Title'),
-      desc: t('how.step1Desc'),
+      title: tx('Open your PDF', 'अपनी पीडीएफ खोलें'),
+      desc: tx(
+        'Choose or drop a file. It opens in your browser and is not uploaded.',
+        'फाइल चुनें या छोड़ें। वह आपके ब्राउज़र में खुलती है, अपलोड नहीं होती।',
+      ),
     },
     {
-      icon: Edit3,
-      number: '02',
-      title: t('how.step2Title'),
-      desc: t('how.step2Desc'),
+      icon: PenLine,
+      title: tx('Tap a line and type Hindi', 'लाइन पर टैप करें, हिंदी लिखें'),
+      desc: tx(
+        'Replace detected text, add a new box or erase text. Type with any Unicode Hindi keyboard, such as Gboard or InScript.',
+        'पहचाना गया टेक्स्ट बदलें, नया बॉक्स जोड़ें या टेक्स्ट मिटाएं। Gboard या InScript जैसे किसी भी यूनिकोड हिंदी कीबोर्ड से लिखें।',
+      ),
     },
     {
-      icon: Type,
-      number: '03',
-      title: t('how.step3Title'),
-      desc: t('how.step3Desc'),
-    },
-    {
-      icon: FileCheck,
-      number: '04',
-      title: t('how.step4Title'),
-      desc: t('how.step4Desc'),
+      icon: Download,
+      title: tx('Download a new PDF', 'नई पीडीएफ डाउनलोड करें'),
+      desc: tx(
+        'Pages are saved as high-resolution images, so the Hindi looks the same everywhere. Your original file is not changed.',
+        'पेज हाई-रेजोल्यूशन इमेज के रूप में सेव होते हैं, इसलिए हिंदी हर जगह एक जैसी दिखती है। मूल फाइल नहीं बदलती।',
+      ),
     },
   ];
 
   return (
-    <section id="how-it-works" className="py-24 bg-white border-y border-line" aria-labelledby="how-it-works-heading">
+    <section id="how-it-works" className="bg-cream py-16 sm:py-24" aria-labelledby="how-it-works-heading">
       <div className="section-x">
-        <div className="mx-auto mb-16 max-w-3xl text-center">
-          <div className="mb-3 font-display text-sm font-semibold uppercase tracking-[0.08em] text-brand">
-            {t('how.eyebrow')}
-          </div>
-          <h2
-            id="how-it-works-heading"
-            className="text-[clamp(28px,3.6vw,42px)] font-bold leading-tight text-ink"
-          >
-            {t('how.title')}
-          </h2>
-          <p className="mt-4 text-lg text-muted">
-            {t('how.subtitle')}
-          </p>
-        </div>
+        <SectionHeading
+          id="how-it-works-heading"
+          eyebrow={tx('How it works', 'कैसे काम करता है')}
+          title={tx('Three steps. No account.', 'तीन कदम। कोई अकाउंट नहीं।')}
+        />
 
-        <ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map((step, idx) => {
+        <ol className="mt-12 grid gap-4 md:grid-cols-3 md:gap-6">
+          {steps.map((step, i) => {
             const Icon = step.icon;
             return (
-              <motion.li
-                key={step.number}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.4, delay: idx * 0.1 }}
-                className="relative flex flex-col rounded-2xl border border-line bg-cream/40 p-6 transition-all duration-200 hover:border-brand/30 hover:bg-white hover:shadow-[var(--shadow-soft)]"
-              >
-                <div className="mb-5 flex items-center justify-between">
-                  <div className="grid size-11 place-items-center rounded-xl bg-brand-tint text-brand">
-                    <Icon className="size-5" strokeWidth={2.2} />
-                  </div>
-                  <span className="font-display text-2xl font-black text-brand/25">
-                    {step.number}
+              <li key={step.title} className="rounded-2xl bg-white p-6 shadow-[0_8px_24px_rgba(20,22,31,0.06)]">
+                <div className="flex items-center justify-between">
+                  <span className="grid size-12 place-items-center rounded-xl bg-cat-edit-tint text-cat-edit">
+                    <Icon className="size-6" aria-hidden />
                   </span>
+                  <span className="font-display text-[32px] font-extrabold leading-none text-line">{i + 1}</span>
                 </div>
-                <h3 className="font-display text-lg font-bold text-ink">
-                  {step.title}
-                </h3>
-                <p className="mt-2.5 text-[14.5px] leading-relaxed text-muted">
-                  {step.desc}
-                </p>
-              </motion.li>
+                <h3 className="mt-4 font-display text-[18px] font-semibold text-ink">{step.title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-muted">{step.desc}</p>
+              </li>
             );
           })}
         </ol>
 
-        <div className="mt-12 text-center">
+        <div className="mt-10 text-center">
           <Btn arrow href={toolHref('edit', lang)}>
-            {isHindi ? 'अभी हिंदी पीडीएफ एडिट करें' : 'Start editing a Hindi PDF'}
+            {tx('Edit a Hindi PDF now', 'अभी हिंदी पीडीएफ एडिट करें')}
           </Btn>
         </div>
       </div>

@@ -1,29 +1,28 @@
 import { SiteHeader } from '../components/SiteHeader';
-import { Hero } from './Hero';
-import { Features } from './Features';
-import { HowItWorks } from './HowItWorks';
-import { ComparisonSection } from './ComparisonSection';
-import { UseCasesSection } from './UseCasesSection';
 import { ArticlesSection } from './ArticlesSection';
-import { WorkYourWay } from './WorkYourWay';
-import { FAQ } from './FAQ';
 import { CTA } from './CTA';
+import { FAQ } from './FAQ';
 import { Footer } from './Footer';
+import { Hero } from './Hero';
+import { HowItWorks } from './HowItWorks';
+import { UseCasesSection } from './UseCasesSection';
+import { WhyHindiSection } from './WhyHindiSection';
 import '../home.css';
 
-/** Marketing home — design from hindipdfeditor landing, wired to our tools. */
+/**
+ * Marketing home: pick-and-play hero, then one job per section — document jobs, why Hindi
+ * stays joined, how it works, guides, FAQ, closing CTA.
+ */
 export function HomePage() {
   return (
     <div className="home-root">
       <SiteHeader />
       <main>
         <Hero />
-        <Features />
-        <HowItWorks />
-        <ComparisonSection />
         <UseCasesSection />
+        <WhyHindiSection />
+        <HowItWorks />
         <ArticlesSection />
-        <WorkYourWay />
         <FAQ />
         <CTA />
       </main>
@@ -31,5 +30,3 @@ export function HomePage() {
     </div>
   );
 }
-
-

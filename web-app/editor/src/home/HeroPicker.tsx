@@ -130,7 +130,7 @@ export function HeroPicker() {
             {tx('Choose a PDF', 'पीडीएफ चुनें')}
           </button>
           {rejected && (
-            <p role="alert" className="mt-3 text-[13px] font-medium text-[#EF6C4D]">
+            <p role="alert" className="mt-3 text-[13px] font-medium text-warn">
               {tx('That file isn’t a PDF. Choose a .pdf file.', 'यह पीडीएफ फाइल नहीं है। कोई .pdf फाइल चुनें।')}
             </p>
           )}
