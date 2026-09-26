@@ -7,6 +7,7 @@ All notable changes to this project are documented here, grouped by phase (see `
 ### Fixed — Android app stability (Play Console, 1.0.0 / versionCode 6)
 
 - **Native crashes in the system PDF engine** (`libpdfium.so` SIGSEGVs in `CPDF_Document::CPDF_Document` and `CPDF_Page::~CPDF_Page`). All PdfRenderer calls now run in a separate `:pdfrender` process (ADR `0011-pdfium-in-a-separate-process.md`). A damaged or half-downloaded PDF now makes that call fail with "the file may be damaged or unsupported" instead of closing the app. Page bitmaps are capped at 16M px, and the renderer returns each page's size in points so capped pages keep correct geometry. Needs checking on a device: no Android SDK or device was available when this was written.
+- **The Files tab re-rendered failing thumbnails on every list update.** A PDF whose thumbnail fails (damaged, encrypted, still downloading) is now remembered for the session and shows the placeholder icon. Unopened device files over 50 MB no longer get a rendered thumbnail.
 
 ### Fixed — Website tools
 
