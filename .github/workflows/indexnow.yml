@@ -1,0 +1,27 @@
+name: Notify search engines (IndexNow)
+
+# Submits every sitemap URL to IndexNow (Bing, Yandex, Seznam, Naver) after the
+# website changes. Cloudflare Pages deploys main on its own; the wait gives that
+# deploy time to finish so engines fetch the new pages.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web-app/**'
+      - '!web-app/.claude/**'
+  workflow_dispatch:
+
+jobs:
+  indexnow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Wait for the Cloudflare Pages deploy
+        if: github.event_name == 'push'
+        run: sleep 240
+      - name: Submit sitemap URLs
+        run: node web-app/scripts/indexnow.mjs

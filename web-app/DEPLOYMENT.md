@@ -163,7 +163,7 @@ Recheck after any Cloudflare plan or security-setting change.
 
 ## IndexNow (Bing and others)
 
-The IndexNow key file `web-app/2cb0e0db8ff34e8eb3666ac4ec72525a.txt` is published at the site root. The key is public by design. After a deploy that adds or changes pages, submit every sitemap URL:
+The IndexNow key file `web-app/2cb0e0db8ff34e8eb3666ac4ec72525a.txt` is published at the site root. The key is public by design. The `Notify search engines (IndexNow)` GitHub Actions workflow does this automatically about 4 minutes after every push to `main` that touches `web-app/`, and can be run by hand from the Actions tab. To run it locally instead:
 
 ```
 node web-app/scripts/indexnow.mjs
