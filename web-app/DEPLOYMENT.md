@@ -171,3 +171,13 @@ node web-app/scripts/indexnow.mjs
 
 Needs Node 18 or newer. HTTP 200 or 202 means the URLs were accepted.
 
+## Content-Security-Policy: deliberately not set (yet)
+
+The site has no CSP header, on purpose. A policy that doesn't break the tools would need:
+- `'unsafe-inline'` for styles, because every article and the prerendered pages use inline styles.
+- A hash for the articles hub's inline script.
+- `'wasm-unsafe-eval'`, plus `cdn.jsdelivr.net` in both `script-src` and `connect-src`, because Tesseract OCR fetches its worker, core and Hindi language data from there at run time.
+- `challenges.cloudflare.com` for Turnstile, `api.hindipdfeditor.com` for AI features, and the Google Analytics and Fonts hosts.
+
+The site serves no user-generated content, so such a policy would add little protection. A wrong one would silently break OCR or translation in production, and those can't be exercised offline. If a CSP is added later, ship it as `Content-Security-Policy-Report-Only` first and test OCR, translation and Turnstile on the live site before enforcing it.
+
