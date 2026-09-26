@@ -1,4 +1,4 @@
-import { Nav } from './Nav';
+import { SiteHeader } from '../components/SiteHeader';
 import { Hero } from './Hero';
 import { Features } from './Features';
 import { HowItWorks } from './HowItWorks';
@@ -15,7 +15,7 @@ import '../home.css';
 export function HomePage() {
   return (
     <div className="home-root">
-      <Nav />
+      <SiteHeader />
       <main>
         <Hero />
         <Features />

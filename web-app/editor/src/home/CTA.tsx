@@ -28,7 +28,7 @@ export function CTA() {
           {t('cta.subtitle')}
         </p>
         <div className="mt-7 flex flex-wrap justify-center gap-3.5">
-          <Btn size="lg" href={toolHref('edit', lang)}>
+          <Btn size="lg" arrow href={toolHref('edit', lang)}>
             {t('cta.open')}
           </Btn>
           <GooglePlayLink size="lg" variant="ghost" />

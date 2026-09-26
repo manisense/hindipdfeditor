@@ -1,21 +1,20 @@
+import { ArrowRight } from 'lucide-react';
+
 import { cn } from '../../lib/cn';
 
 const base =
   'group inline-flex items-center justify-center gap-2 rounded-full font-display font-semibold transition-all active:translate-y-px whitespace-nowrap';
 
 const variants = {
-  primary: 'bg-brand !text-white shadow-[var(--shadow-brand)] hover:bg-brand-hover hover:!text-white',
-  subtle: 'bg-[#eceef2] !text-ink hover:bg-[#e2e5ea] hover:!text-ink',
+  primary:
+    'bg-linear-to-r from-brand to-brand-deep !text-white shadow-[var(--shadow-brand)] hover:-translate-y-0.5 hover:brightness-110 hover:!text-white',
   ghost:
-    'bg-white !text-ink border border-line shadow-[0_2px_8px_rgba(21,23,44,0.05)] hover:-translate-y-0.5 hover:border-[#d9d7cd] hover:!text-ink',
-  green: 'bg-accent !text-white hover:bg-accent-500 hover:!text-white',
-  dark: 'bg-navy !text-white hover:bg-navy-800 hover:!text-white',
+    'bg-white !text-ink border border-line shadow-[0_2px_8px_rgba(20,22,31,0.05)] hover:-translate-y-0.5 hover:border-brand/30 hover:!text-ink',
 };
 
-
 const sizes = {
-  md: 'text-[15px] px-6 py-3',
-  lg: 'text-[16px] px-7 py-4',
+  md: 'h-12 text-[15px] px-6',
+  lg: 'h-14 text-[16px] px-8',
 };
 
 export function Btn({
@@ -24,6 +23,7 @@ export function Btn({
   size = 'md',
   className,
   href = '#',
+  arrow = false,
   ...props
 }: {
   children: React.ReactNode;
@@ -31,10 +31,15 @@ export function Btn({
   size?: keyof typeof sizes;
   className?: string;
   href?: string;
+  /** Trailing arrow icon for forward-moving calls to action. */
+  arrow?: boolean;
 } & React.AnchorHTMLAttributes<HTMLAnchorElement>) {
   return (
     <a href={href} className={cn(base, variants[variant], sizes[size], className)} {...props}>
       {children}
+      {arrow && (
+        <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5" />
+      )}
     </a>
   );
 }

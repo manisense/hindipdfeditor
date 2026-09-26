@@ -84,8 +84,8 @@ export function HowItWorks() {
         </ol>
 
         <div className="mt-12 text-center">
-          <Btn href={toolHref('edit', lang)}>
-            {isHindi ? 'अभी हिंदी पीडीएफ एडिट करना शुरू करें →' : 'Start Editing Hindi PDF Now →'}
+          <Btn arrow href={toolHref('edit', lang)}>
+            {isHindi ? 'अभी हिंदी पीडीएफ एडिट करें' : 'Start editing a Hindi PDF'}
           </Btn>
         </div>
       </div>

@@ -12,16 +12,6 @@ export interface I18nContextType {
 
 export const translations: Record<Language, Record<string, string>> = {
   en: {
-    // Nav
-    'nav.features': 'Features',
-    'nav.howItWorks': 'How it works',
-    'nav.compare': 'Compare',
-    'nav.useCases': 'Use cases',
-    'nav.guides': 'Guides',
-    'nav.openEditor': 'Open editor',
-    'nav.googlePlay': 'Google Play',
-    'nav.switchLang': 'हिन्दी',
-
     // Hero
     'hero.badge': 'Free to use · runs locally · no account',
     'hero.titlePre': 'Hindi PDF Editor',
@@ -32,7 +22,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'hero.titlePost': 'Devanagari-safe.',
     'hero.subtitle':
       'Edit Devanagari text without broken matras, translate Hindi ↔ English, merge, split and compress. Editing runs in your browser or the Android app; AI features ask before sending anything.',
-    'hero.ctaPrimary': 'Open the editor →',
+    'hero.ctaPrimary': 'Open the editor',
     'hero.ctaSecondary': 'Get the Android app',
     'hero.tryDemo': 'Try interactive demo',
     'hero.demoNotice': 'Runs in your browser. Nothing is uploaded unless you choose an AI feature.',
@@ -103,7 +93,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'use.landDesc': 'Fill the correction application or self-declaration for UP Bhulekh or Bihar Parimarjan. The record itself is corrected by the revenue office.',
     'use.academic': 'Academic Papers & Worksheets',
     'use.academicDesc': 'Build, edit, or translate CBSE and State Board Hindi question papers, assignments, and study materials.',
-    'use.openForDoc': 'Open Editor for this document →',
+    'use.openForDoc': 'Open Editor for this document',
 
     // Work Your Way
     'work.eyebrow': 'Work your way',
@@ -125,12 +115,12 @@ export const translations: Record<Language, Record<string, string>> = {
     'art.eyebrow': 'Guides & Technical Insights',
     'art.title': 'Master Hindi PDF Editing & Typography',
     'art.subtitle': 'Step-by-step solutions for official state forms, affidavits, broken matras, and translations.',
-    'art.viewAll': 'View all guides and articles →',
+    'art.viewAll': 'View all guides and articles',
 
     // CTA & Footer
     'cta.title': 'Get your Hindi PDFs sorted.',
     'cta.subtitle': 'Open the editor in your browser, or grab the Android app. Free, private by default, and built for Devanagari.',
-    'cta.open': 'Open the editor →',
+    'cta.open': 'Open the editor',
     'cta.play': 'Google Play App',
     'footer.desc': 'Every tool you need to work with Hindi PDFs, in one private, Devanagari-safe place.',
     'footer.editOcr': 'Edit & OCR',
@@ -153,16 +143,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'tool.backHome': '← Back to Home',
   },
   hi: {
-    // Nav
-    'nav.features': 'विशेषताएं',
-    'nav.howItWorks': 'कैसे काम करता है',
-    'nav.compare': 'तुलना',
-    'nav.useCases': 'उपयोग के मामले',
-    'nav.guides': 'गाइड्स और लेख',
-    'nav.openEditor': 'एडिटर खोलें',
-    'nav.googlePlay': 'गूगल प्ले',
-    'nav.switchLang': 'English',
-
     // Hero
     'hero.badge': 'फ्री · सीधे ब्राउज़र में · कोई खाता नहीं',
     'hero.titlePre': 'हिंदी पीडीएफ एडिटर',
@@ -173,7 +153,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'hero.titlePost': 'सुरक्षित और आसान।',
     'hero.subtitle':
       'बिना किसी सॉफ्टवेयर डाउनलोड के देवनागरी के सही अक्षरों और मात्राओं के साथ पीडीएफ एडिट करें, अनुवाद करें, जोड़ें, अलग करें और कंप्रेस करें। एडिटिंग आपके ब्राउज़र में होती है; AI फीचर कुछ भेजने से पहले पूछते हैं।',
-    'hero.ctaPrimary': 'एडिटर खोलें →',
+    'hero.ctaPrimary': 'एडिटर खोलें',
     'hero.ctaSecondary': 'एंड्रॉयड ऐप डाउनलोड करें',
     'hero.tryDemo': 'लाइव डेमो देखें',
     'hero.demoNotice': 'ब्राउज़र में चलता है। AI फीचर चुने बिना कुछ भी अपलोड नहीं होता।',
@@ -244,7 +224,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'use.landDesc': 'यूपी भूलेख या बिहार परिमार्जन के सुधार आवेदन या स्वघोषणा पत्र भरें। रिकॉर्ड में सुधार राजस्व कार्यालय ही करता है।',
     'use.academic': 'शैक्षणिक प्रश्न पत्र और अध्ययन सामग्री',
     'use.academicDesc': 'शिक्षक और छात्र सीबीएसई या स्टेट बोर्ड के हिंदी प्रश्न पत्र, असाइनमेंट और नोट्स को आसानी से एडिट और ट्रांसलेट कर सकते हैं।',
-    'use.openForDoc': 'इस दस्तावेज के लिए एडिटर खोलें →',
+    'use.openForDoc': 'इस दस्तावेज के लिए एडिटर खोलें',
 
     // Work Your Way
     'work.eyebrow': 'अपनी पसंद के अनुसार काम करें',
@@ -266,12 +246,12 @@ export const translations: Record<Language, Record<string, string>> = {
     'art.eyebrow': 'गाइड्स और तकनीकी लेख',
     'art.title': 'हिंदी पीडीएफ और देवनागरी टाइपोग्राफी सीखें',
     'art.subtitle': 'सरकारी फॉर्म, शपथ पत्र, टूटी मात्राओं को ठीक करने और अनुवाद करने के स्टेप-बाय-स्टेप तरीके।',
-    'art.viewAll': 'सभी गाइड्स और लेख देखें →',
+    'art.viewAll': 'सभी गाइड्स और लेख देखें',
 
     // CTA & Footer
     'cta.title': 'अपनी हिंदी पीडीएफ आसानी से तैयार करें।',
     'cta.subtitle': 'ब्राउज़र में एडिटर खोलें या एंड्रॉयड ऐप डाउनलोड करें। फ्री, डिफ़ॉल्ट रूप से प्राइवेट और देवनागरी के लिए बना।',
-    'cta.open': 'एडिटर खोलें →',
+    'cta.open': 'एडिटर खोलें',
     'cta.play': 'गूगल प्ले ऐप',
     'footer.desc': 'हिंदी पीडीएफ के साथ काम करने के लिए भारत का पहला सुरक्षित, लोकल-फर्स्ट देवनागरी एडिटर।',
     'footer.editOcr': 'एडिट और ओसीआर',

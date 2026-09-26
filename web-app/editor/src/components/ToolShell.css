@@ -67,67 +67,6 @@
   width: 220px;
 }
 
-.tool-shell__nav-wrap {
-  padding: 12px 18px 0;
-  position: sticky;
-  top: 0;
-  z-index: 30;
-}
-
-.tool-shell__header {
-  align-items: center;
-  backdrop-filter: blur(18px) saturate(150%);
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(21, 23, 44, 0.07);
-  border-radius: 999px;
-  box-shadow: var(--shadow-float);
-  display: flex;
-  gap: 14px;
-  justify-content: space-between;
-  margin: 0 auto;
-  max-width: 1120px;
-  min-height: 62px;
-  padding: 8px 10px 8px 16px;
-}
-
-.tool-shell__logo-link {
-  align-items: center;
-  color: var(--ink);
-  display: inline-flex;
-  flex: none;
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  gap: 9px;
-  letter-spacing: -0.025em;
-  text-decoration: none;
-}
-
-.tool-shell__logo {
-  border-radius: 9px;
-  display: block;
-  height: 32px;
-  width: 32px;
-}
-
-.tool-shell__wordmark strong {
-  color: var(--brand);
-}
-
-.tool-shell__current-tool {
-  align-items: center;
-  background: var(--tool-soft);
-  border-radius: 999px;
-  color: var(--tool-accent);
-  display: inline-flex;
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
-  gap: 6px;
-  margin-right: auto;
-  padding: 7px 11px;
-}
-
 .tool-shell__actions {
   align-items: center;
   display: flex;
@@ -136,51 +75,10 @@
   justify-content: flex-end;
 }
 
-.tool-shell__all-tools {
-  align-items: center;
-  border-radius: 999px;
-  color: var(--muted);
-  display: inline-flex;
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 650;
-  gap: 7px;
-  padding: 10px 13px;
-  text-decoration: none;
-  transition: background 150ms ease, color 150ms ease;
-}
-
-.tool-shell__all-tools:hover {
-  background: var(--surface-subtle);
-  color: var(--ink);
-}
-
-.tool-shell__lang-btn {
-  align-items: center;
-  background: var(--surface-subtle);
-  border: 1px solid var(--line);
-  border-radius: 9999px;
-  color: var(--ink);
-  cursor: pointer;
-  display: inline-flex;
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  gap: 5px;
-  padding: 5px 10px;
-  transition: background 150ms ease, border-color 150ms ease;
-}
-
-.tool-shell__lang-btn:hover {
-  background: var(--brand-wash);
-  border-color: color-mix(in srgb, var(--brand) 25%, transparent);
-  color: var(--brand);
-}
-
 .tool-shell__main {
   flex: 1;
   margin: 0 auto;
-  /* 24px side padding leaves the same 1120px content width as the floating header. */
+  /* 24px side padding leaves a 1120px content width. */
   max-width: 1168px;
   padding: 22px 24px 64px;
   position: relative;
@@ -233,13 +131,22 @@
   color: var(--tool-accent);
 }
 
+.tool-shell__bar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
 .tool-shell__steps {
   align-items: center;
   display: flex;
   gap: 0;
   justify-content: center;
   list-style: none;
-  margin: 18px auto 0;
+  margin: 0;
   padding: 0;
   width: min(100%, 700px);
 }
@@ -324,7 +231,7 @@
   margin-bottom: 12px;
 }
 
-.tool-shell--compact .tool-shell__steps {
+.tool-shell--compact .tool-shell__bar {
   margin-top: 12px;
 }
 
@@ -332,72 +239,7 @@
   margin-top: 14px;
 }
 
-.tool-shell__footer {
-  align-items: center;
-  background: rgba(255, 255, 255, 0.82);
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  display: flex;
-  flex-wrap: wrap;
-  font-size: 12.5px;
-  gap: 18px;
-  justify-content: space-between;
-  padding: 22px max(24px, calc((100vw - 1120px) / 2));
-  position: relative;
-  z-index: 1;
-}
-
-.tool-shell__footer > div,
-.tool-shell__footer nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.tool-shell__footer a {
-  color: var(--muted);
-  text-decoration: none;
-}
-
-.tool-shell__footer a:hover {
-  color: var(--brand);
-}
-
 @media (max-width: 760px) {
-  .tool-shell__nav-wrap {
-    padding: 8px 10px 0;
-  }
-
-  .tool-shell__header {
-    border-radius: 20px;
-    min-height: 56px;
-    padding: 8px 9px 8px 11px;
-  }
-
-  .tool-shell__wordmark {
-    display: none;
-  }
-
-  .tool-shell__current-tool {
-    margin-right: 0;
-  }
-
-  .tool-shell__all-tools span {
-    display: none;
-  }
-
-  .tool-shell__lang-text {
-    display: none;
-  }
-
-  .tool-shell__lang-btn {
-    padding: 6px 9px;
-  }
-
-  .tool-shell__all-tools {
-    padding-inline: 11px;
-  }
-
   .tool-shell__actions .app-button {
     min-height: 38px;
     padding: 8px 12px;
@@ -432,24 +274,6 @@
     min-width: 18px;
   }
 
-  .tool-shell__footer {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 20px;
-  }
-}
-
-@media (max-width: 430px) {
-  .tool-shell__current-tool span {
-    max-width: 90px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .tool-shell__footer-dot {
-    display: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -460,5 +284,4 @@
     transition-duration: 0.01ms !important;
   }
 }
-
 

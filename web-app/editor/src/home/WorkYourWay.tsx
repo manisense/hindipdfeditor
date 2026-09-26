@@ -50,7 +50,7 @@ export function WorkYourWay() {
             ))}
           </div>
           <div className="mt-8 flex flex-wrap gap-3.5">
-            <Btn href={toolHref('edit', lang)}>{isHindi ? 'एडिटर खोलें →' : 'Open the editor →'}</Btn>
+            <Btn arrow href={toolHref('edit', lang)}>{isHindi ? 'एडिटर खोलें' : 'Open the editor'}</Btn>
             <GooglePlayLink variant="ghost" />
           </div>
         </div>

@@ -68,7 +68,7 @@ export function Hero() {
   ];
 
   return (
-    <section id="top" className="relative overflow-hidden pt-28 pb-16">
+    <section id="top" className="relative overflow-hidden pt-8 pb-16 sm:pt-12">
       <div
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px]"
         style={{ background: 'radial-gradient(70% 100% at 50% 0%, #eef3ff 0%, transparent 70%)' }}
@@ -137,10 +137,10 @@ export function Hero() {
 
             <Fade delay={0.15}>
               <div className="mt-7 flex flex-wrap items-center gap-3">
-                <Btn size="lg" href={toolHref('edit', lang)}>
+                <Btn size="lg" arrow href={toolHref('edit', lang)}>
                   {t('hero.ctaPrimary')}
                 </Btn>
-                <GooglePlayLink size="lg" variant="subtle" />
+                <GooglePlayLink size="lg" variant="ghost" />
               </div>
             </Fade>
 

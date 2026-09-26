@@ -1,19 +1,12 @@
-import {
-  Combine,
-  FileArchive,
-  Globe,
-  Grid2X2,
-  Languages,
-  Pencil,
-  Scissors,
-  type LucideIcon,
-} from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { Footer } from '../home/Footer';
 import { useLanguage } from '../lib/i18n';
-import { routePath } from '../lib/routes';
-import { TOOLS, toolHref, type ToolId, type ToolMeta } from '../lib/tools';
+import { TOOLS, toolHref, type ToolMeta } from '../lib/tools';
+import { SiteHeader } from './SiteHeader';
 import { ToolGuide, ToolIntro } from './ToolGuide';
+import { TOOL_VISUALS } from './toolVisuals';
 import './ToolShell.css';
 
 type Step = { label: string; active?: boolean; done?: boolean };
@@ -26,37 +19,8 @@ type Props = {
   children: ReactNode;
 };
 
-const toolIcons: Record<ToolId, LucideIcon> = {
-  edit: Pencil,
-  translate: Languages,
-  merge: Combine,
-  split: Scissors,
-  compress: FileArchive,
-};
-
-const toolHindiNames: Record<ToolId, string> = {
-  edit: 'हिंदी एडिट',
-  translate: 'अनुवाद',
-  merge: 'मर्ज (जोड़ें)',
-  split: 'स्प्लिट (अलग करें)',
-  compress: 'कंप्रेस करें',
-};
-
 export function ToolShell({ tool, steps, actions, compact = false, children }: Props) {
-  const { lang, setLang, isHindi } = useLanguage();
-  const ActiveIcon = tool ? toolIcons[tool.id] : Grid2X2;
-  const homeHref = routePath({ lang, toolId: null });
-  const legalPrefix = isHindi ? '/hi' : '';
-
-  const toggleLanguage = () => {
-    setLang(lang === 'en' ? 'hi' : 'en');
-  };
-
-  const toolDisplayTitle = tool
-    ? isHindi
-      ? toolHindiNames[tool.id] || tool.shortTitle
-      : tool.shortTitle
-    : '';
+  const { lang, isHindi } = useLanguage();
 
   return (
     <div
@@ -69,54 +33,15 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
         <span />
       </div>
 
-      <div className="tool-shell__nav-wrap">
-        <header className="tool-shell__header">
-          <a href={homeHref} className="tool-shell__logo-link">
-            <img
-              className="tool-shell__logo"
-              src="/assets/app-icon.png"
-              alt="Hindi PDF Editor logo"
-              width={32}
-              height={32}
-            />
-            <span className="tool-shell__wordmark">
-              Hindi PDF <strong>Editor</strong>
-            </span>
-          </a>
-          {tool && (
-            <div className="tool-shell__current-tool" aria-label={`Current tool: ${toolDisplayTitle}`}>
-              <ActiveIcon size={15} strokeWidth={2.2} aria-hidden="true" />
-              <span>{toolDisplayTitle}</span>
-            </div>
-          )}
-          <div className="tool-shell__actions">
-            {/* Language Toggle in Tool Header */}
-            <button
-              type="button"
-              onClick={toggleLanguage}
-              title={isHindi ? 'Switch to English' : 'हिंदी भाषा में बदलें'}
-              aria-label="Switch Language"
-              className="tool-shell__lang-btn"
-            >
-              <Globe size={13} style={{ color: 'var(--brand)' }} />
-              <span className="tool-shell__lang-text">{isHindi ? 'English' : 'हिन्दी'}</span>
-            </button>
-
-            <a className="tool-shell__all-tools" href={`${homeHref}#features`}>
-              <Grid2X2 size={16} strokeWidth={2.2} aria-hidden="true" />
-              <span>{isHindi ? 'सभी टूल्स' : 'All tools'}</span>
-            </a>
-            {actions}
-          </div>
-        </header>
-      </div>
+      <SiteHeader activeToolId={tool?.id ?? null} />
 
       <main className="tool-shell__main">
         {tool && (
           <nav className="tool-shell__tool-switcher" aria-label="PDF tools">
             {TOOLS.map((item) => {
-              const Icon = toolIcons[item.id];
-              const name = isHindi ? toolHindiNames[item.id] || item.shortTitle : item.shortTitle;
+              const visual = TOOL_VISUALS[item.id];
+              const Icon = visual.icon;
+              const name = isHindi ? visual.nameHi : item.shortTitle;
               return (
                 <a
                   key={item.id}
@@ -134,19 +59,26 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
 
         {tool && <ToolIntro toolId={tool.id} />}
 
-        {steps && steps.length > 0 && (
-          <ol className="tool-shell__steps" aria-label="Progress">
-            {steps.map((step, index) => (
-              <li
-                key={step.label}
-                className={`tool-shell__step ${step.active ? 'is-active' : ''} ${step.done ? 'is-done' : ''}`}
-                aria-current={step.active ? 'step' : undefined}
-              >
-                <span className="tool-shell__step-num">{step.done ? '✓' : index + 1}</span>
-                <span>{step.label}</span>
-              </li>
-            ))}
-          </ol>
+        {((steps && steps.length > 0) || actions) && (
+          <div className="tool-shell__bar">
+            {steps && steps.length > 0 && (
+              <ol className="tool-shell__steps" aria-label="Progress">
+                {steps.map((step, index) => (
+                  <li
+                    key={step.label}
+                    className={`tool-shell__step ${step.active ? 'is-active' : ''} ${step.done ? 'is-done' : ''}`}
+                    aria-current={step.active ? 'step' : undefined}
+                  >
+                    <span className="tool-shell__step-num">
+                      {step.done ? <Check size={14} strokeWidth={3} aria-hidden="true" /> : index + 1}
+                    </span>
+                    <span>{step.label}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {actions && <div className="tool-shell__actions">{actions}</div>}
+          </div>
         )}
 
         <div className="tool-shell__body">{children}</div>
@@ -154,18 +86,7 @@ export function ToolShell({ tool, steps, actions, compact = false, children }: P
         {tool && <ToolGuide toolId={tool.id} />}
       </main>
 
-      <footer className="tool-shell__footer">
-        <div>
-          <span>© 2026 Hindi PDF Editor</span>
-          <span className="tool-shell__footer-dot" aria-hidden="true">·</span>
-          <span>{isHindi ? 'देवनागरी के लिए बना एडिटर' : 'Made for Devanagari · हिंदी'}</span>
-        </div>
-        <nav aria-label="Legal and support">
-          <a href={`${legalPrefix}/privacy/`}>{isHindi ? 'प्राइवेसी' : 'Privacy'}</a>
-          <a href={`${legalPrefix}/support/`}>{isHindi ? 'सपोर्ट' : 'Support'}</a>
-          <a href={`${legalPrefix}/terms/`}>{isHindi ? 'शर्तें' : 'Terms'}</a>
-        </nav>
-      </footer>
+      <Footer />
     </div>
   );
 }

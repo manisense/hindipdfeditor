@@ -1,9 +1,11 @@
 import { LOGO_BADGE, PLAY_STORE_URL } from './links';
 import { useLanguage } from '../lib/i18n';
+import { routePath } from '../lib/routes';
 import { toolHref } from '../lib/tools';
 
 export function Footer() {
   const { lang, t, isHindi } = useLanguage();
+  const homeHref = routePath({ lang, toolId: null });
 
   const cols = [
     {
@@ -28,10 +30,10 @@ export function Footer() {
       title: t('footer.resources'),
       links: [
         { label: isHindi ? 'गाइड्स और आर्टिकल्स' : 'Articles & Guides', href: '/articles/' },
-        { label: isHindi ? 'कैसे काम करता है' : 'How it works', href: '#how-it-works' },
-        { label: isHindi ? 'टूल्स की तुलना (Compare)' : 'Compare vs Acrobat/Canva', href: '#compare' },
-        { label: isHindi ? 'दस्तावेज उपयोग' : 'Document use cases', href: '#use-cases' },
-        { label: isHindi ? 'अक्सर पूछे जाने वाले सवाल (FAQ)' : 'FAQ', href: '#faq' },
+        { label: isHindi ? 'कैसे काम करता है' : 'How it works', href: `${homeHref}#how-it-works` },
+        { label: isHindi ? 'टूल्स की तुलना (Compare)' : 'Compare vs Acrobat/Canva', href: `${homeHref}#compare` },
+        { label: isHindi ? 'दस्तावेज उपयोग' : 'Document use cases', href: `${homeHref}#use-cases` },
+        { label: isHindi ? 'अक्सर पूछे जाने वाले सवाल (FAQ)' : 'FAQ', href: `${homeHref}#faq` },
         { label: isHindi ? 'प्राइवेसी पॉलिसी' : 'Privacy Policy', href: `${isHindi ? '/hi' : ''}/privacy/` },
         { label: isHindi ? 'डेटा सुरक्षा' : 'Data Safety', href: `${isHindi ? '/hi' : ''}/data-safety/` },
         { label: isHindi ? 'नियम और शर्तें' : 'Terms of Service', href: `${isHindi ? '/hi' : ''}/terms/` },
@@ -47,7 +49,7 @@ export function Footer() {
       <div className="section-x">
         <div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
-            <a href="#top" className="flex items-center gap-2.5">
+            <a href={homeHref} className="flex items-center gap-2.5">
               <img src={LOGO_BADGE} alt="" className="size-8 rounded-lg" />
               <span className="font-display text-[17px] font-bold">
                 Hindi PDF <span className="text-brand">Editor</span>

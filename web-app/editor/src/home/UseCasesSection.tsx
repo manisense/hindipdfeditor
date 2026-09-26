@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Award, FileText, Scale, GraduationCap, ArrowUpRight } from 'lucide-react';
+import { Award, FileText, Scale, GraduationCap, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../lib/i18n';
 import { toolHref } from '../lib/tools';
 
@@ -93,7 +93,7 @@ export function UseCasesSection() {
                     className="inline-flex items-center gap-1.5 font-display text-sm font-bold text-brand transition-colors hover:text-brand/80"
                   >
                     <span>{t('use.openForDoc')}</span>
-                    <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
                   </a>
                 </div>
               </motion.div>
