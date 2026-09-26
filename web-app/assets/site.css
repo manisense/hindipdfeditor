@@ -1553,3 +1553,51 @@ td {
   }
 }
 
+
+/* ——— Sticky article CTA (phones only) ——— */
+
+.article-cta-bar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  body:has(.article-cta-bar) {
+    padding-bottom: 88px;
+  }
+
+  .article-cta-bar {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e7e8f1;
+    border-radius: 9999px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    box-shadow: 0 12px 32px rgba(20, 22, 31, 0.16);
+    color: #14161f;
+    display: flex;
+    font-family: "Plus Jakarta Sans", "Noto Sans Devanagari", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    gap: 12px;
+    height: 56px;
+    left: 16px;
+    padding: 0 16px 0 8px;
+    position: fixed;
+    right: 16px;
+    z-index: 40;
+  }
+
+  .article-cta-bar > span:nth-child(2) {
+    flex: 1;
+  }
+
+  .article-cta-bar > svg {
+    color: #1843dd;
+    height: 20px;
+    width: 20px;
+  }
+
+  .article-cta-bar .sh-chip svg {
+    height: 20px;
+    width: 20px;
+  }
+}
