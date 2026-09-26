@@ -1,4 +1,20 @@
 import type { ExpoConfig } from 'expo/config';
+import { withGradleProperties, type ConfigPlugin } from 'expo/config-plugins';
+
+/**
+ * Gives Gradle a 6 GB heap. With the template's 2 GB, R8 (minifyReleaseWithR8) ran out of memory
+ * on the release build and Gradle hung instead of failing. Seen in CI on 1.0.1; 6 GB built it in
+ * about ten minutes.
+ */
+const withGradleHeap: ConfigPlugin = (config) =>
+  withGradleProperties(config, (cfg) => {
+    const key = 'org.gradle.jvmargs';
+    cfg.modResults = cfg.modResults.filter(
+      (item) => !(item.type === 'property' && item.key === key),
+    );
+    cfg.modResults.push({ type: 'property', key, value: '-Xmx6g -XX:MaxMetaspaceSize=1g' });
+    return cfg;
+  });
 
 /**
  * Single source of truth for Expo / EAS / Play Store metadata. EAS Build runs `expo prebuild`
@@ -88,4 +104,4 @@ const config: ExpoConfig = {
   },
 };
 
-export default config;
+export default withGradleHeap(config);
