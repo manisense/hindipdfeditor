@@ -79,8 +79,22 @@ async function detectDirectionFromPdf(
 ): Promise<TranslationDirection | null> {
   setPdfBytes(bytes);
   const pageCount = Math.min(await getPageCount(), DETECT_PAGES);
+  // Legacy fonts (Kruti Dev etc.) store Hindi as Latin letters, so their embedded text would
+  // read as English. Every font on the legacy list is Devanagari, so those pages count as Hindi.
+  // If fonts can't be inspected, don't guess a direction from possibly-garbled text.
+  let legacyPages: Set<number>;
+  try {
+    legacyPages = new Set((await detectLegacyFonts(bytes)).map((warning) => warning.page));
+  } catch {
+    return null;
+  }
   const texts: string[] = [];
+  let sawLegacyHindi = false;
   for (let page = 0; page < pageCount; page += 1) {
+    if (legacyPages.has(page)) {
+      sawLegacyHindi = true;
+      continue;
+    }
     try {
       const lines = await extractEmbeddedTextLines(bytes, page);
       for (const line of lines) texts.push(line.text);
@@ -88,7 +102,7 @@ async function detectDirectionFromPdf(
       /* ignore page extract failures during language probe */
     }
   }
-  return detectTranslationDirection(texts);
+  return detectTranslationDirection(texts) ?? (sawLegacyHindi ? "hi-en" : null);
 }
 
 async function detectLegacyFontWarnings(
@@ -115,6 +129,7 @@ async function buildTranslatedDocument(
   jobId: string,
   onProgress: (p: Progress) => void,
   signal: AbortSignal,
+  tr: (en: string, hi: string) => string,
 ): Promise<{
   doc: DocumentState;
   translatedLines: number;
@@ -123,22 +138,28 @@ async function buildTranslatedDocument(
 }> {
   if (file.size > MAX_FILE_BYTES) {
     throw new Error(
-      `This PDF is too large for in-browser translation (max ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB). Try Compress PDF first, or split into smaller files.`,
+      tr(
+        `This PDF is too large for in-browser translation (max ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB). Try Compress PDF first, or split into smaller files.`,
+        `यह पीडीएफ ब्राउज़र में अनुवाद के लिए बहुत बड़ी है (अधिकतम ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB)। पहले कंप्रेस करें या छोटी फाइलों में बांटें।`,
+      ),
     );
   }
 
-  onProgress({ phase: "loading", detail: "Reading PDF…" });
+  onProgress({ phase: "loading", detail: tr("Reading PDF…", "पीडीएफ पढ़ी जा रही है…") });
   const bytes = new Uint8Array(await file.arrayBuffer());
   throwIfAborted(signal);
   setPdfBytes(bytes);
   const pageCount = await getPageCount();
   if (pageCount > MAX_PAGES) {
     throw new Error(
-      `This PDF has ${pageCount} pages (max ${MAX_PAGES} for Translate). Split it into smaller ranges first.`,
+      tr(
+        `This PDF has ${pageCount} pages (max ${MAX_PAGES} for Translate). Split it into smaller ranges first.`,
+        `इस पीडीएफ में ${pageCount} पेज हैं (अनुवाद के लिए अधिकतम ${MAX_PAGES})। पहले इसे छोटे हिस्सों में बांटें।`,
+      ),
     );
   }
 
-  onProgress({ phase: "loading", detail: "Checking fonts…" });
+  onProgress({ phase: "loading", detail: tr("Checking fonts…", "फॉन्ट जांचे जा रहे हैं…") });
   const legacyFontWarnings = await detectLegacyFontWarnings(pageCount);
   throwIfAborted(signal);
   const forceOcrPages = new Set(
@@ -155,7 +176,7 @@ async function buildTranslatedDocument(
     throwIfAborted(signal);
     onProgress({
       phase: "loading",
-      detail: `Rasterizing page ${i + 1} of ${pageCount}…`,
+      detail: tr(`Rasterizing page ${i + 1} of ${pageCount}…`, `पेज ${i + 1} / ${pageCount} तैयार हो रहा है…`),
     });
     const image = await renderPage(i, RASTER_SCALE);
     const widthPt = image.pxWidth / RASTER_SCALE;
@@ -174,8 +195,11 @@ async function buildTranslatedDocument(
     onProgress({
       phase: "detecting",
       detail: forceOcr
-        ? `OCR on page ${i + 1} of ${pageCount} (legacy font — skipping embedded text)…`
-        : `Detecting text on page ${i + 1} of ${pageCount}…`,
+        ? tr(
+            `OCR on page ${i + 1} of ${pageCount} (legacy font — skipping embedded text)…`,
+            `पेज ${i + 1} / ${pageCount} पर OCR (पुराना फॉन्ट — अंदर का टेक्स्ट छोड़ा गया)…`,
+          )
+        : tr(`Detecting text on page ${i + 1} of ${pageCount}…`, `पेज ${i + 1} / ${pageCount} पर टेक्स्ट पहचाना जा रहा है…`),
     });
     let lines: OcrLine[] = [];
     try {
@@ -193,7 +217,10 @@ async function buildTranslatedDocument(
       usedOcrFallback = true;
       onProgress({
         phase: "detecting",
-        detail: `Improving text detection on page ${i + 1} of ${pageCount}…`,
+        detail: tr(
+          `Improving text detection on page ${i + 1} of ${pageCount}…`,
+          `पेज ${i + 1} / ${pageCount} पर टेक्स्ट पहचान बेहतर की जा रही है…`,
+        ),
       });
       lines = await detectTextLinesWithGemini(page, jobId, i);
       throwIfAborted(signal);
@@ -217,7 +244,10 @@ async function buildTranslatedDocument(
 
     onProgress({
       phase: "translating",
-      detail: `Translating ${sourceLines.length} line(s) on page ${i + 1}…`,
+      detail: tr(
+        `Translating ${sourceLines.length} line(s) on page ${i + 1}…`,
+        `पेज ${i + 1} की ${sourceLines.length} लाइनों का अनुवाद हो रहा है…`,
+      ),
     });
     const translatedById = new Map<string, string>();
     const requestLines = buildTranslationLinesWithContext(
@@ -382,7 +412,10 @@ export function TranslatePdfTool() {
       setDirection(detected);
       if (!detected) {
         setError(
-          "Could not detect clear Hindi or English text in this PDF. Try a digital (text-layer) file, or use Edit PDF → Enhance with AI first.",
+          tr(
+            "Could not detect clear Hindi or English text in this PDF. Try a digital (text-layer) file, or use Edit PDF → Enhance with AI first.",
+            "इस पीडीएफ में साफ हिंदी या अंग्रेजी टेक्स्ट नहीं मिला। डिजिटल (टेक्स्ट वाली) फाइल आज़माएं, या पहले एडिट टूल में \"AI से सुधारें\" इस्तेमाल करें।",
+          ),
         );
       }
     } catch (err) {
@@ -402,7 +435,7 @@ export function TranslatePdfTool() {
     setResult(null);
     try {
       if (!turnstileToken)
-        throw new Error("Complete the security check before translating.");
+        throw new Error(tr("Complete the security check before translating.", "अनुवाद से पहले सुरक्षा चेक पूरा करें।"));
       aiApiClient.setTurnstileTokenProvider(() => turnstileToken);
       ensureFontsLoaded();
       await document.fonts.load("12px NotoSansDevanagari");
@@ -413,22 +446,31 @@ export function TranslatePdfTool() {
           `document-${crypto.randomUUID()}`,
           setProgress,
           controller.signal,
+          tr,
         );
       if (translatedLines === 0) {
-        const sourceLabel =
-          direction === "hi-en" ? "Hindi (Devanagari)" : "English";
+        const sourceLabel = direction === "hi-en"
+          ? tr("Hindi (Devanagari)", "हिंदी")
+          : tr("English", "अंग्रेजी");
         throw new Error(
           skippedLines > 0
-            ? `Found ${sourceLabel} text but could not translate any lines (${skippedLines} skipped). Try a clearer scan.`
-            : `No ${sourceLabel} text was found to translate. Try a clearer scan, or use AI OCR for difficult pages.`,
+            ? tr(
+                `Found ${sourceLabel} text but could not translate any lines (${skippedLines} skipped). Try a clearer scan.`,
+                `${sourceLabel} टेक्स्ट मिला, पर किसी लाइन का अनुवाद नहीं हो पाया (${skippedLines} छोड़ी गईं)। साफ स्कैन आज़माएं।`,
+              )
+            : tr(
+                `No ${sourceLabel} text was found to translate. Try a clearer scan, or use AI OCR for difficult pages.`,
+                `अनुवाद के लिए ${sourceLabel} टेक्स्ट नहीं मिला। साफ स्कैन आज़माएं, या मुश्किल पेजों के लिए AI OCR इस्तेमाल करें।`,
+              ),
         );
       }
       throwIfAborted(controller.signal);
       const targetCode = direction === "hi-en" ? "en" : "hi";
-      const targetLabel = direction === "hi-en" ? "English" : "Hindi";
       setProgress({
         phase: "exporting",
-        detail: `Building ${targetLabel} PDF…`,
+        detail: direction === "hi-en"
+          ? tr("Building English PDF…", "अंग्रेजी पीडीएफ बन रही है…")
+          : tr("Building Hindi PDF…", "हिंदी पीडीएफ बन रही है…"),
       });
       const [sans, serif] = await Promise.all([
         getFontBase64("NotoSansDevanagari"),
@@ -451,7 +493,7 @@ export function TranslatePdfTool() {
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        setError("Translation cancelled.");
+        setError(tr("Translation cancelled.", "अनुवाद रद्द किया गया।"));
       } else {
         setError(err instanceof Error ? err.message : String(err));
       }
