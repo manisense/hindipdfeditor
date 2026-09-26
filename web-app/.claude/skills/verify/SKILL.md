@@ -29,5 +29,5 @@ Wrangler reads `_redirects` only at startup, so restart it (or use a new port) a
 
 ## Gotchas
 - `pkill -f <pattern>` in the same Bash call kills the shell (the pattern matches itself). Start servers on a fresh port instead.
-- **pdf.js 5.7 needs `Map.prototype.getOrInsertComputed`.** Chromium 141 lacks it, so Edit and Translate fail with "getOrInsertComputed is not a function". To exercise those tools, inject a polyfill with `context.addInitScript`. Treat this as a real production risk too (see the verify report).
+- pdf.js is imported from its **legacy** build (`pdfjs-dist/legacy/build/…`), which polyfills newer JS APIs such as `Map.prototype.getOrInsertComputed`. Do not switch back to `pdfjs-dist` / `build/`: Edit, Translate, Split and Compress then fail on browsers without those APIs (Chromium 141 here), with "getOrInsertComputed is not a function".
 - The sandbox blocks Google Fonts and analytics; ignore those console errors.
