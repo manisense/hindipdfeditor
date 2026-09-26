@@ -12,33 +12,6 @@ export interface I18nContextType {
 
 export const translations: Record<Language, Record<string, string>> = {
   en: {
-    // Hero
-    'hero.badge': 'Free to use · runs locally · no account',
-    'hero.titlePre': 'Hindi PDF Editor',
-    'hero.title1': 'Hindi PDFs.',
-    'hero.title2': 'हिंदी दस्तावेज़।',
-    'hero.title3': 'Bilingual edits.',
-    'hero.title4': 'Sarkari forms.',
-    'hero.titlePost': 'Devanagari-safe.',
-    'hero.subtitle':
-      'Edit Devanagari text without broken matras, translate Hindi ↔ English, merge, split and compress. Editing runs in your browser or the Android app; AI features ask before sending anything.',
-    'hero.ctaPrimary': 'Open the editor',
-    'hero.ctaSecondary': 'Get the Android app',
-    'hero.tryDemo': 'Try interactive demo',
-    'hero.demoNotice': 'Runs in your browser. Nothing is uploaded unless you choose an AI feature.',
-
-    // Tool Items in Hero
-    'tool.edit': 'Edit Hindi PDF',
-    'tool.editSub': 'Live Devanagari shaping',
-    'tool.translate': 'Hindi ↔ English',
-    'tool.translateSub': 'Free in your browser',
-    'tool.ocr': 'OCR detection',
-    'tool.ocrSub': 'Hindi + English text',
-    'tool.merge': 'Merge & split',
-    'tool.mergeSub': 'Any order, any range',
-    'tool.compress': 'Compress PDF',
-    'tool.compressSub': 'Shrink scanned files',
-
     // Features Section
     'feat.eyebrow': 'Everything in one place',
     'feat.title': 'Built for Hindi PDFs, not English afterthoughts',
@@ -130,46 +103,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'footer.tagline': 'Editing runs in your browser · No account needed',
 
     // Tool Interfaces
-    'tool.save': 'Export PDF',
-    'tool.downloading': 'Generating PDF…',
-    'tool.addText': 'Add Text',
-    'tool.mask': 'Mask Text',
-    'tool.fontSize': 'Font Size',
-    'tool.color': 'Color',
-    'tool.zoomIn': 'Zoom In',
-    'tool.zoomOut': 'Zoom Out',
-    'tool.prevPage': 'Previous',
-    'tool.nextPage': 'Next',
-    'tool.backHome': '← Back to Home',
   },
   hi: {
-    // Hero
-    'hero.badge': 'फ्री · सीधे ब्राउज़र में · कोई खाता नहीं',
-    'hero.titlePre': 'हिंदी पीडीएफ एडिटर',
-    'hero.title1': 'सही देवनागरी में।',
-    'hero.title2': 'बिना फॉन्ट टूटे।',
-    'hero.title3': 'सरकारी फॉर्म हेतु।',
-    'hero.title4': 'प्राइवेट, ब्राउज़र में।',
-    'hero.titlePost': 'सुरक्षित और आसान।',
-    'hero.subtitle':
-      'बिना किसी सॉफ्टवेयर डाउनलोड के देवनागरी के सही अक्षरों और मात्राओं के साथ पीडीएफ एडिट करें, अनुवाद करें, जोड़ें, अलग करें और कंप्रेस करें। एडिटिंग आपके ब्राउज़र में होती है; AI फीचर कुछ भेजने से पहले पूछते हैं।',
-    'hero.ctaPrimary': 'एडिटर खोलें',
-    'hero.ctaSecondary': 'एंड्रॉयड ऐप डाउनलोड करें',
-    'hero.tryDemo': 'लाइव डेमो देखें',
-    'hero.demoNotice': 'ब्राउज़र में चलता है। AI फीचर चुने बिना कुछ भी अपलोड नहीं होता।',
-
-    // Tool Items in Hero
-    'tool.edit': 'हिंदी पीडीएफ एडिट करें',
-    'tool.editSub': 'सही देवनागरी फॉन्ट और मात्राएं',
-    'tool.translate': 'हिंदी ↔ अंग्रेजी अनुवाद',
-    'tool.translateSub': 'ब्राउज़र में फ्री अनुवाद',
-    'tool.ocr': 'स्मार्ट ओसीआर डिटेक्शन',
-    'tool.ocrSub': 'हिंदी + अंग्रेजी टेक्स्ट',
-    'tool.merge': 'पीडीएफ जोड़ें व अलग करें',
-    'tool.mergeSub': 'क्रम और पेज रेंज चुनें',
-    'tool.compress': 'पीडीएफ साइज कम करें',
-    'tool.compressSub': 'सरकारी पोर्टल के लिए छोटी फाइल',
-
     // Features Section
     'feat.eyebrow': 'सभी सुविधाएं एक ही स्थान पर',
     'feat.title': 'खास तौर पर हिंदी (देवनागरी) के लिए तैयार',
@@ -261,17 +196,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'footer.tagline': 'एडिटिंग आपके ब्राउज़र में · कोई अकाउंट नहीं',
 
     // Tool Interfaces
-    'tool.save': 'एक्सपोर्ट पीडीएफ',
-    'tool.downloading': 'पीडीएफ तैयार हो रहा है…',
-    'tool.addText': 'टेक्स्ट जोड़ें',
-    'tool.mask': 'मास्क लगाएं',
-    'tool.fontSize': 'फॉन्ट साइज',
-    'tool.color': 'रंग',
-    'tool.zoomIn': 'बड़ा करें (+)',
-    'tool.zoomOut': 'छोटा करें (-)',
-    'tool.prevPage': 'पिछला पेज',
-    'tool.nextPage': 'अगला पेज',
-    'tool.backHome': '← होम पेज पर जाएं',
   },
 };
 

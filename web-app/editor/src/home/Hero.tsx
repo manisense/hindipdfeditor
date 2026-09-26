@@ -1,22 +1,13 @@
-import { ChevronRight, Pencil, Languages, ScanText, Layers, FileArchive } from 'lucide-react';
-import { Btn } from './ui/button';
-import { GooglePlayLink } from './ui/google-play-link';
-import { TypewriterCycle } from './ui/typewriter-cycle';
-import { PointerHighlight } from './ui/pointer-highlight';
-import { Cover } from './ui/cover';
-import { ImagesBadge } from './ui/images-badge';
-import { useLanguage } from '../lib/i18n';
-import { toolHref } from '../lib/tools';
+import { useEffect, useState } from 'react';
+import { ArrowRight, BadgeIndianRupee, Globe2, ShieldCheck, Sparkles } from 'lucide-react';
 
-function Fade({
-  children,
-  delay = 0,
-  className = '',
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
+import { TOOL_VISUALS } from '../components/toolVisuals';
+import { useLanguage, useTx } from '../lib/i18n';
+import { readLastTool } from '../lib/lastTool';
+import { toolHref, type ToolId } from '../lib/tools';
+import { HeroPicker } from './HeroPicker';
+
+function Rise({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   // CSS animation, not motion: it starts as soon as the prerendered HTML paints instead of
   // keeping the hero invisible until JavaScript hydrates.
   return (
@@ -26,206 +17,90 @@ function Fade({
   );
 }
 
-export function Hero() {
-  const { lang, t, isHindi } = useLanguage();
+function ToolChip({ toolId }: { toolId: ToolId }) {
+  const { icon: Icon, chip } = TOOL_VISUALS[toolId];
+  return (
+    <span className={`grid size-8 place-items-center rounded-full ${chip}`}>
+      <Icon className="size-4" aria-hidden />
+    </span>
+  );
+}
 
-  const tools = [
-    {
-      icon: Pencil,
-      name: t('tool.edit'),
-      detail: t('tool.editSub'),
-      tone: 'bg-cat-edit-tint text-cat-edit',
-      href: toolHref('edit', lang),
-    },
-    {
-      icon: Languages,
-      name: t('tool.translate'),
-      detail: t('tool.translateSub'),
-      tone: 'bg-cat-translate-tint text-cat-translate',
-      href: toolHref('translate', lang),
-    },
-    {
-      icon: ScanText,
-      name: t('tool.ocr'),
-      detail: t('tool.ocrSub'),
-      tone: 'bg-cat-ocr-tint text-cat-ocr',
-      href: toolHref('edit', lang),
-    },
-    {
-      icon: Layers,
-      name: t('tool.merge'),
-      detail: t('tool.mergeSub'),
-      tone: 'bg-cat-merge-tint text-cat-merge',
-      href: toolHref('merge', lang),
-    },
-    {
-      icon: FileArchive,
-      name: t('tool.compress'),
-      detail: t('tool.compressSub'),
-      tone: 'bg-cat-sarkari-tint text-cat-sarkari',
-      href: toolHref('compress', lang),
-    },
+export function Hero() {
+  const { lang, isHindi } = useLanguage();
+  const tx = useTx();
+  // Read after hydration so the prerendered HTML and the first client render match.
+  const [lastTool, setLastTool] = useState<ToolId | null>(null);
+  useEffect(() => setLastTool(readLastTool()), []);
+
+  const trust = [
+    { icon: BadgeIndianRupee, label: tx('Free, no sign-up', 'फ्री, बिना साइन-अप') },
+    { icon: ShieldCheck, label: tx('Edits stay in your browser', 'एडिट ब्राउज़र में ही') },
+    { icon: Sparkles, label: tx('AI only after you confirm', 'AI सिर्फ आपकी मंजूरी से') },
+    { icon: Globe2, label: tx('Hindi and English', 'हिंदी और अंग्रेजी') },
   ];
 
   return (
-    <section id="top" className="relative overflow-hidden pt-8 pb-16 sm:pt-12">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px]"
-        style={{ background: 'radial-gradient(70% 100% at 50% 0%, #eef3ff 0%, transparent 70%)' }}
-      />
-
-      <div className="section-x">
-        <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
-          <div>
-            <Fade>
+    <section id="top" className="relative overflow-hidden pb-16 pt-8 sm:pb-24 sm:pt-16">
+      <div className="section-x grid items-center gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-x-16 lg:gap-y-8">
+        <div className="lg:col-start-1 lg:row-start-1 lg:self-end">
+          {lastTool && (
+            <Rise>
               <a
-                href="#features"
-                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1.5 text-[13.5px] font-medium text-muted shadow-[0_1px_2px_rgba(21,23,44,0.04)] transition-colors hover:text-ink"
+                href={toolHref(lastTool, lang)}
+                className="mb-6 inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white pl-1 pr-4 text-[14px] font-semibold text-ink shadow-[0_8px_24px_rgba(20,22,31,0.06)] transition-colors hover:border-brand/30"
               >
-                <span className="size-1.5 rounded-full bg-accent" />
-                {t('hero.badge')}
-                <ChevronRight className="size-3.5" />
+                <ToolChip toolId={lastTool} />
+                {tx('Continue:', 'जारी रखें:')} {isHindi ? TOOL_VISUALS[lastTool].nameHi : TOOL_VISUALS[lastTool].nameEn}
+                <ArrowRight className="size-4 text-brand" aria-hidden />
               </a>
-            </Fade>
+            </Rise>
+          )}
 
-            <Fade delay={0.05}>
-              <h1 className="mt-6 font-display text-[clamp(34px,4.6vw,56px)] font-extrabold leading-[1.05] tracking-tight text-ink">
-                <span className="block text-ink">{t('hero.titlePre')}</span>
-                <TypewriterCycle
-                  className="text-ink"
-                  caretClassName="bg-brand"
-                  phrases={
-                    isHindi
-                      ? [
-                          { text: 'हिंदी टेक्स्ट एडिट करें।' },
-                          { text: 'बिना फॉन्ट टूटे।' },
-                          { text: 'सरकारी फॉर्म हेतु।' },
-                          { text: 'फ्री, बिना साइन-अप।' },
-                        ]
-                      : [
-                          { text: 'Edit Hindi text online.' },
-                          { text: 'No broken Hindi fonts.' },
-                          { text: 'हिंदी दस्तावेज़।' },
-                          { text: 'Free, no sign-up.' },
-                        ]
-                  }
-                />
-              </h1>
-            </Fade>
-
-            <Fade delay={0.1}>
-              <p className="mt-5 max-w-lg text-[clamp(16px,1.7vw,18px)] leading-relaxed text-muted">
-                {isHindi ? (
-                  <>
-                    देवनागरी के सही अक्षरों और मात्राओं के साथ पीडीएफ{' '}
-                    <PointerHighlight className="mx-0.5 font-semibold text-ink">
-                      एडिट, अनुवाद और कंप्रेस
-                    </PointerHighlight>{' '}
-                    करें — सब कुछ <Cover>एक ही जगह</Cover>।
-                  </>
-                ) : (
-                  <>
-                    Edit, translate, merge, split, compress and OCR your{' '}
-                    <PointerHighlight className="mx-0.5 font-semibold text-ink">
-                      Devanagari
-                    </PointerHighlight>{' '}
-                    documents — all of it, in <Cover>one place</Cover>.
-                  </>
-                )}
-              </p>
-            </Fade>
-
-            <Fade delay={0.15}>
-              <div className="mt-7 flex flex-wrap items-center gap-3">
-                <Btn size="lg" arrow href={toolHref('edit', lang)}>
-                  {t('hero.ctaPrimary')}
-                </Btn>
-                <GooglePlayLink size="lg" variant="ghost" />
-              </div>
-            </Fade>
-
-            <Fade delay={0.2}>
-              <div className="mt-7">
-                <ImagesBadge label={isHindi ? 'दैनिक हिंदी दस्तावेजों के लिए भरोसेमंद' : 'Loved for everyday Hindi paperwork'} />
-              </div>
-            </Fade>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <div
-              className="hero-rise rounded-2xl border border-black/[0.05] bg-[#f4f5f7] p-5"
-              style={{ animationDelay: '0.15s' }}
-            >
-              <div className="mb-3.5 flex items-center gap-2.5">
-                <span className="grid size-8 place-items-center rounded-lg bg-cat-edit-tint text-cat-edit">
-                  <Pencil className="size-4" strokeWidth={2} />
-                </span>
-                <div>
-                  <div className="font-display text-[14.5px] font-bold text-ink leading-none">
-                    {isHindi ? 'सीधे ब्राउज़र में एडिट करें' : 'Edit right in your browser'}
-                  </div>
-                  <div className="mt-1 text-[12.5px] text-muted">
-                    {isHindi ? 'बिना इंस्टालेशन — सही मात्राएं' : 'No setup — shaping stays correct'}
-                  </div>
-                </div>
-              </div>
-              <div className="rounded-xl border border-black/[0.06] bg-white p-4 shadow-[0_8px_24px_rgba(21,23,44,0.07)]">
-                <div className="mb-3 flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-line" />
-                  <span className="size-2 rounded-full bg-line" />
-                  <span className="size-2 rounded-full bg-line" />
-                  <span className="ml-1.5 h-3.5 flex-1 rounded bg-[#f4f5f7]" />
-                </div>
-                <div className="mb-2.5 font-display text-xl font-semibold text-ink">अनुबंध पत्र</div>
-                <div className="mb-2 h-2.5 w-[92%] rounded bg-brand-tint" />
-                <div className="mb-2 flex items-center gap-1.5">
-                  <div className="h-2.5 w-1/3 rounded bg-slate-100" />
-                  <span className="rounded-md bg-brand px-2 py-0.5 font-display text-[11px] font-semibold text-white">
-                    हस्ताक्षर
+          <Rise delay={0.05}>
+            <h1 className="font-display text-[clamp(36px,4.4vw,56px)] font-extrabold leading-[1.08] tracking-tight text-ink">
+              {isHindi ? (
+                <>
+                  <span className="block">हिंदी पीडीएफ एडिट करें,</span>
+                  <span className="block">बिना मात्रा टूटे।</span>
+                </>
+              ) : (
+                <>
+                  <span className="block">Edit Hindi PDFs.</span>
+                  <span className="block" lang="hi">
+                    बिना मात्रा टूटे।
                   </span>
-                  <div className="h-2.5 w-1/5 rounded bg-slate-100" />
-                </div>
-                <div className="h-2.5 w-2/3 rounded bg-accent-tint" />
-              </div>
-            </div>
+                </>
+              )}
+            </h1>
+          </Rise>
 
-            <div
-              className="hero-rise rounded-2xl border border-black/[0.05] bg-[#f4f5f7] p-5"
-              style={{ animationDelay: '0.25s' }}
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <div className="font-display text-[14.5px] font-bold text-ink">
-                  {isHindi ? 'एक ही टूलकिट, सभी कार्य' : 'One toolkit, every job'}
-                </div>
-                <span className="rounded-full bg-white px-2.5 py-1 font-display text-[12px] font-semibold text-muted">
-                  {tools.length} {isHindi ? 'टूल्स' : 'tools'}
-                </span>
-              </div>
-              <div className="rounded-xl border border-black/[0.06] bg-white p-2">
-                {tools.map((t) => (
-                  <a
-                    key={t.name}
-                    href={t.href}
-                    className="flex items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-[#f7f8fa]"
-                  >
-                    <span
-                      className={`grid size-8 flex-none place-items-center rounded-lg ${t.tone}`}
-                    >
-                      <t.icon className="size-[17px]" strokeWidth={2} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-display text-[13.5px] font-semibold text-ink leading-tight">
-                        {t.name}
-                      </div>
-                      <div className="text-[12px] text-muted">{t.detail}</div>
-                    </div>
-                    <span className="text-[16px] leading-none text-slate-300">⋯</span>
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
+          <Rise delay={0.1}>
+            <p className="mt-6 max-w-xl text-[clamp(16px,1.6vw,19px)] leading-relaxed text-muted">
+              {tx(
+                'Replace text, translate, merge, split and compress — right in your browser. New Hindi text is shaped properly, so क्ष, त्र and कि stay joined.',
+                'टेक्स्ट बदलें, अनुवाद करें, पीडीएफ जोड़ें, अलग करें और साइज कम करें — सीधे ब्राउज़र में। नया हिंदी टेक्स्ट सही आकार में बनता है, इसलिए क्ष, त्र और कि जुड़े रहते हैं।',
+              )}
+            </p>
+          </Rise>
         </div>
+
+        <Rise delay={0.1} className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <HeroPicker />
+        </Rise>
+
+        <Rise delay={0.15} className="lg:col-start-1 lg:row-start-2 lg:self-start">
+          <ul className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+            {trust.map(({ icon: Icon, label }) => (
+              <li key={label} className="flex items-center gap-2 text-[14px] font-medium text-ink">
+                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-cat-translate-tint text-cat-translate">
+                  <Icon className="size-4" aria-hidden />
+                </span>
+                {label}
+              </li>
+            ))}
+          </ul>
+        </Rise>
       </div>
     </section>
   );

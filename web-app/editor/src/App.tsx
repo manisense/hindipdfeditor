@@ -5,7 +5,9 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToolShell } from './components/ToolShell';
 import { HomePage } from './home/HomePage';
 import { LanguageProvider, type Language } from './lib/i18n';
-import { routePath, type Route } from './lib/routes';
+import { ROUTE_CHANGE_EVENT } from './lib/navigation';
+import { parseRoute, routePath, type Route } from './lib/routes';
+import { seoFor } from './lib/seo';
 import { getTool, type ToolId } from './lib/tools';
 import './App.css';
 
@@ -67,7 +69,23 @@ function ToolRoute({ toolId }: { toolId: ToolId }) {
   );
 }
 
-export default function App({ route }: { route: Route }) {
+export default function App({ route: initialRoute }: { route: Route }) {
+  const [route, setRoute] = useState(initialRoute);
+
+  useEffect(() => {
+    const sync = () => {
+      const next = parseRoute(window.location.pathname);
+      setRoute(next);
+      document.title = seoFor(next).title;
+    };
+    window.addEventListener('popstate', sync);
+    window.addEventListener(ROUTE_CHANGE_EVENT, sync);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener(ROUTE_CHANGE_EVENT, sync);
+    };
+  }, []);
+
   const pathFor = (lang: Language) => routePath({ ...route, lang });
 
   return (

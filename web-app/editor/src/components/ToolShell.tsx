@@ -1,8 +1,9 @@
 import { Check } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 import { Footer } from '../home/Footer';
 import { useLanguage } from '../lib/i18n';
+import { rememberLastTool } from '../lib/lastTool';
 import { TOOLS, toolHref, type ToolMeta } from '../lib/tools';
 import { SiteHeader } from './SiteHeader';
 import { ToolGuide, ToolIntro } from './ToolGuide';
@@ -21,6 +22,11 @@ type Props = {
 
 export function ToolShell({ tool, steps, actions, compact = false, children }: Props) {
   const { lang, isHindi } = useLanguage();
+  const toolId = tool?.id;
+
+  useEffect(() => {
+    if (toolId) rememberLastTool(toolId);
+  }, [toolId]);
 
   return (
     <div

@@ -1,7 +1,8 @@
-import { useRef, useState, type DragEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { FileType2, Files, ShieldCheck, UploadCloud } from 'lucide-react';
 
 import { useTx } from '../lib/i18n';
+import { takePendingFiles } from '../lib/pendingFiles';
 import { AppButton } from './AppButton';
 import './DropZone.css';
 
@@ -40,12 +41,22 @@ export function DropZone({
   const tx = useTx();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [rejected, setRejected] = useState(false);
 
   const emit = (list: FileList | File[]) => {
     const files = Array.from(list).filter(isPdf);
+    setRejected(files.length === 0);
     if (files.length === 0) return;
     onFiles(multiple ? files : files.slice(0, 1));
   };
+
+  // A file picked on the home page arrives here once, as if it had been dropped.
+  const onFilesRef = useRef(onFiles);
+  onFilesRef.current = onFiles;
+  useEffect(() => {
+    const files = takePendingFiles();
+    if (files) onFilesRef.current(multiple ? files : files.slice(0, 1));
+  }, [multiple]);
 
   const onDrop = (event: DragEvent) => {
     event.preventDefault();
@@ -92,7 +103,11 @@ export function DropZone({
         onClick={() => inputRef.current?.click()}
         disabled={disabled}
       />
-      <p className="drop-zone__hint">{tx(`or drop PDF${multiple ? 's' : ''} here`, 'या पीडीएफ यहाँ छोड़ें')}</p>
+      <p className="drop-zone__hint" role={rejected ? 'alert' : undefined}>
+        {rejected
+          ? tx('That file isn’t a PDF. Choose a .pdf file.', 'यह पीडीएफ फाइल नहीं है। कोई .pdf फाइल चुनें।')
+          : tx(`or drop PDF${multiple ? 's' : ''} here`, 'या पीडीएफ यहाँ छोड़ें')}
+      </p>
       <div className="drop-zone__assurances" aria-label={tx('File handling details', 'फाइल की जानकारी')}>
         <span>
           <ShieldCheck size={14} aria-hidden="true" /> {tx('Private by default', 'डिफ़ॉल्ट रूप से प्राइवेट')}

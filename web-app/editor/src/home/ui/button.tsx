@@ -1,21 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 
 import { cn } from '../../lib/cn';
-
-const base =
-  'group inline-flex items-center justify-center gap-2 rounded-full font-display font-semibold transition-all active:translate-y-px whitespace-nowrap';
-
-const variants = {
-  primary:
-    'bg-linear-to-r from-brand to-brand-deep !text-white shadow-[var(--shadow-brand)] hover:-translate-y-0.5 hover:brightness-110 hover:!text-white',
-  ghost:
-    'bg-white !text-ink border border-line shadow-[0_2px_8px_rgba(20,22,31,0.05)] hover:-translate-y-0.5 hover:border-brand/30 hover:!text-ink',
-};
-
-const sizes = {
-  md: 'h-12 text-[15px] px-6',
-  lg: 'h-14 text-[16px] px-8',
-};
+import { buttonBase as base, buttonSizes as sizes, buttonVariants as variants } from './button-classes';
 
 export function Btn({
   children,
