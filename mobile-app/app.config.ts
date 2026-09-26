@@ -8,7 +8,7 @@ const config: ExpoConfig = {
   name: 'Hindi PDF Editor',
   slug: 'hindipdfeditor',
   owner: 'hindipdf',
-  version: '1.0.0',
+  version: '1.0.1',
   // No manifest lock: tablets and foldables rotate (Play's large-screen guidance, and Android 16
   // ignores the lock there anyway). Phones stay portrait via src/hooks/useOrientationPolicy.ts.
   orientation: 'default',
@@ -17,7 +17,7 @@ const config: ExpoConfig = {
   scheme: 'hindipdfeditor',
   android: {
     package: 'com.hindipdfeditor.app',
-    versionCode: 6,
+    versionCode: 7,
     allowBackup: false,
     adaptiveIcon: {
       backgroundColor: '#1843DD',
