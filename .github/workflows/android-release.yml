@@ -49,7 +49,6 @@ jobs:
         run: >-
           ./gradlew :app:assembleRelease -PreactNativeArchitectures=x86_64
           --no-daemon --stacktrace
-          -Dorg.gradle.jvmargs="-Xmx6g -XX:MaxMetaspaceSize=1g"
       - name: Show R8's missing-class rules
         if: failure()
         working-directory: mobile-app/android
