@@ -136,14 +136,14 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
   );
   const editingBlocked = policy.editingBlocked;
 
-  const ensureOcrForPage = (doc: DocumentState, pageIndex: number) => {
+  const ensureOcrForPage = async (doc: DocumentState, pageIndex: number): Promise<void> => {
     const pageState = doc.pages[pageIndex];
     if (!pageState || doc.legacyFontWarnings.some((w) => w.page === pageIndex)) return;
     if (ocrAttemptedPagesRef.current.has(pageIndex)) return;
     ocrAttemptedPagesRef.current.add(pageIndex);
 
     setOcrStatusByPage((s) => ({ ...s, [pageIndex]: 'running' }));
-    detectTextLines(pageState)
+    await detectTextLines(pageState)
       .then((lines) => {
         if (useEditStore.getState().document?.sourceUri !== doc.sourceUri) return;
         setOcrLines(pageIndex, lines);
@@ -155,9 +155,12 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       });
   };
 
-  const ensureOcrForAllPages = (doc: DocumentState) => {
+  // One page at a time: each page runs two ML Kit passes that each decode the full 3x page
+  // image (~18 MB for A4), so starting every page at once could need hundreds of MB.
+  const ensureOcrForAllPages = async (doc: DocumentState) => {
     for (let i = 0; i < doc.pages.length; i++) {
-      ensureOcrForPage(doc, i);
+      if (useEditStore.getState().document?.sourceUri !== doc.sourceUri) return;
+      await ensureOcrForPage(doc, i);
     }
   };
 
@@ -197,7 +200,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       ocrAttemptedPagesRef.current.clear();
       editPairingsRef.current.clear();
       setOcrStatusByPage({});
-      ensureOcrForAllPages(newDoc);
+      void ensureOcrForAllPages(newDoc);
 
       const fileData: Omit<RecentFile, 'id' | 'date'> = {
         name,
