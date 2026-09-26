@@ -35,4 +35,5 @@ Colour sampling (`sampleAverageColor`, `sampleTextColor`) stays in-process. It o
 
 - A damaged PDF now shows an error, or a placeholder thumbnail, instead of closing the app.
 - The first render after launch or after a crash pays the process start-up cost, roughly 100–300 ms. The helper process uses its own memory, which also keeps large page bitmaps off the app's heap.
+- Android runs `Application.onCreate` in every process, so the helper also loads React Native's native libraries at start-up. It never creates a React instance. expo-updates only initialises from `onCreate` under instrumentation tests, so it doesn't touch its database from the helper. Anything added to `MainApplication.onCreate` later must stay safe to run in a second process.
 - This needs a device check. No Android SDK or device was available in the session that made this change (see CHANGELOG).
