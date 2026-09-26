@@ -35,6 +35,7 @@ export function Footer() {
         { label: isHindi ? 'प्राइवेसी पॉलिसी' : 'Privacy Policy', href: `${isHindi ? '/hi' : ''}/privacy/` },
         { label: isHindi ? 'डेटा सुरक्षा' : 'Data Safety', href: `${isHindi ? '/hi' : ''}/data-safety/` },
         { label: isHindi ? 'नियम और शर्तें' : 'Terms of Service', href: `${isHindi ? '/hi' : ''}/terms/` },
+        { label: isHindi ? 'हमारे बारे में' : 'About', href: `${isHindi ? '/hi' : ''}/about/` },
         { label: isHindi ? 'सहायता और संपर्क' : 'Support', href: `${isHindi ? '/hi' : ''}/support/` },
         { label: isHindi ? 'एंड्रॉयड ऐप (गूगल प्ले)' : 'Android App', href: PLAY_STORE_URL },
       ],

@@ -72,9 +72,10 @@ function homeGraph(route: Route): unknown {
       '@type': 'Organization',
       '@id': `${SITE_ORIGIN}/#organization`,
       name: SITE_NAME,
+      legalName: 'Manisense',
       url: `${SITE_ORIGIN}/`,
       logo: { '@type': 'ImageObject', url: `${SITE_ORIGIN}/assets/app-icon.png` },
-      sameAs: [PLAY_STORE_URL],
+      sameAs: [PLAY_STORE_URL, 'https://github.com/manisense/hindipdfeditor'],
       contactPoint: {
         '@type': 'ContactPoint',
         email: 'support@hindipdfeditor.com',

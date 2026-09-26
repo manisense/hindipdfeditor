@@ -33,6 +33,8 @@
 - Data Safety (Hindi): https://hindipdfeditor.com/hi/data-safety/
 - Terms of Service (English): https://hindipdfeditor.com/terms/
 - Terms of Service (Hindi): https://hindipdfeditor.com/hi/terms/
+- About (English): https://hindipdfeditor.com/about/
+- About (Hindi): https://hindipdfeditor.com/hi/about/
 - Support (English): https://hindipdfeditor.com/support/
 - Support (Hindi): https://hindipdfeditor.com/hi/support/
 

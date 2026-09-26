@@ -6,6 +6,10 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ### Fixed — Website tools
 
+- **Translate read Kruti Dev PDFs as English.** Legacy fonts store Hindi as Latin letters, so direction detection took their embedded text for English. Legacy-font pages now count as Hindi, and a failed font check yields no guess (fail closed). Checked with the new `mobile-app/fixtures/legacy-krutidev-fixture.pdf`. The same file also confirmed that the web editor blocks editing on legacy-font pages, with the warning in English and Hindi.
+- **Hindi pages had English progress messages and an English crash screen.** Translate's progress, errors and cancel message now come in Hindi too, and so does the error-recovery screen (`RecoveryScreen.tsx`).
+- **Removed an internal setup note shown publicly on `/support/`** (the Cloudflare Email Routing reminder).
+- **Added `/about/` and `/hi/about/`**: who makes the tool, how it works, what data leaves the device, and what it must not be used for. The Organization JSON-LD now carries `legalName` and the GitHub `sameAs`.
 - **Edit, Translate, Split and Compress failed to open any PDF on browsers without `Map.prototype.getOrInsertComputed`** (for example Chromium 141), with "getOrInsertComputed is not a function". pdf.js 5.7's modern build calls that very new API. The app now imports pdf.js's legacy build, which polyfills it in both the main thread and the worker. Verified in Chromium 141 with no polyfill: Hindi edit and export, split, compress, and translate language detection.
 - **Compress no longer hands back a bigger file.** Text-based PDFs can grow when every page becomes a JPEG (for example 36.1 KB → 41.2 KB). The tool now downloads nothing in that case and says why.
 - **An explicit `?lang=` link now wins over a saved language preference**, and becomes the new saved choice. Before, a saved Hindi preference sent a `?lang=en` link to the Hindi page after a second redirect.
