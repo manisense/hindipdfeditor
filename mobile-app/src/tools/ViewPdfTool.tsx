@@ -211,10 +211,21 @@ export function ViewPdfTool({
     }
   };
 
+  // The file the viewer currently shows. A render that finishes after the file changed (or the
+  // viewer closed) is dropped by comparing against this, not against one effect run: the effect
+  // re-runs on every page change, and tying results to a run discarded pages still rendering.
+  const activeFileRef = useRef<string | null>(null);
+  useEffect(() => {
+    activeFileRef.current = fileUri;
+    return () => {
+      activeFileRef.current = null;
+    };
+  }, [fileUri]);
+
   // Pre-load and render pages with caching
   useEffect(() => {
     if (!fileUri || pageCount === 0) return;
-    let isMounted = true;
+    const uri = fileUri;
 
     async function renderPageBatch() {
       const indicesToRender = [currentPage];
@@ -222,12 +233,13 @@ export function ViewPdfTool({
       if (currentPage - 1 >= 0) indicesToRender.push(currentPage - 1);
 
       for (const idx of indicesToRender) {
-        if (renderingRef.current.has(idx) || pageRenders[idx]?.uri) continue;
+        // Skip pages in flight and pages already settled (rendered, or failed: no retry loop).
+        if (renderingRef.current.has(idx) || pageRenders[idx]?.loading === false) continue;
         renderingRef.current.add(idx);
 
         try {
-          const rendered = await renderPage(fileUri!, idx, 2.5);
-          if (isMounted) {
+          const rendered = await renderPage(uri, idx, 2.5);
+          if (activeFileRef.current === uri) {
             setPageRenders((prev) => ({
               ...prev,
               [idx]: {
@@ -241,21 +253,19 @@ export function ViewPdfTool({
           }
         } catch (err) {
           console.warn(`Failed to render page ${idx}`, err);
-          if (isMounted) {
+          if (activeFileRef.current === uri) {
             setPageRenders((prev) => ({
               ...prev,
               [idx]: { pageIndex: idx, loading: false },
             }));
           }
+        } finally {
+          if (activeFileRef.current === uri) renderingRef.current.delete(idx);
         }
       }
     }
 
     void renderPageBatch();
-
-    return () => {
-      isMounted = false;
-    };
   }, [fileUri, pageCount, currentPage, pageRenders]);
 
   const handleJumpToPage = () => {
