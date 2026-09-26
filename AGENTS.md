@@ -47,6 +47,7 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 
 6. **Home Screen Responsiveness**:
    - Mobile home screen must be clean, responsive, adaptable to varying screen sizes, and fixed (non-scrollable), utilizing vertical space intentionally without large dead gaps.
+   - Phones stay in portrait through a runtime lock (`useOrientationPolicy.ts`). Screens whose shorter side is at least 600dp rotate freely, and the manifest declares no orientation (ADR 0012). Read sizes with `useWindowDimensions`, never a one-off `Dimensions.get('window')`.
 
 7. **One Brand Color, Many Category Tints**:
    - Category accent colors must never compete with `brand.primary` (`#1843DD`) for primary action buttons. Accents label categories; `#1843DD` drives action.

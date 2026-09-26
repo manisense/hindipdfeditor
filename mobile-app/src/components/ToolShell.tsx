@@ -1,9 +1,7 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  Platform,
   Pressable,
   ScrollView,
-  StatusBar as RNStatusBar,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -119,11 +117,20 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
   const theme = useAppTheme();
   const styles = useThemedStyles(getStyles);
 
-  const topInset = Math.max(
-    insets.top,
-    Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 24) : 0,
-  );
+  // The app draws edge to edge, so the safe-area inset already includes the status bar.
+  const topInset = insets.top;
   const [activeTab, setActiveTab] = useState<MainTab>('home');
+  const activeTabOffsetX = Math.max(CORE_TABS.indexOf(activeTab), 0) * windowWidth;
+
+  // Keep the pager on the active tab when the width changes (rotation, foldable, split screen);
+  // offsets are multiples of the window width, so the old offset would land between tabs.
+  // Tab changes scroll themselves (animated), so this only acts when the width moved.
+  const lastPagerWidthRef = useRef(windowWidth);
+  useEffect(() => {
+    if (lastPagerWidthRef.current === windowWidth) return;
+    lastPagerWidthRef.current = windowWidth;
+    pagerRef.current?.scrollTo({ x: activeTabOffsetX, animated: false });
+  }, [windowWidth, activeTabOffsetX]);
   const currentTool = TOOLS.find((t) => t.id === activeTool) ?? null;
 
   const handleOpenFile = (file: RecentFile, toolId?: ToolId) => {
@@ -216,6 +223,8 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
             bounces={false}
             scrollEventThrottle={16}
             onMomentumScrollEnd={handleScrollEnd}
+            // The pager remounts when a tool closes; start it on the tab the nav bar shows.
+            contentOffset={{ x: activeTabOffsetX, y: 0 }}
             style={styles.pagerScrollView}
           >
             {/* Tab 1: Home */}

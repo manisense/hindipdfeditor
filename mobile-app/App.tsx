@@ -7,6 +7,7 @@ import { ThemeProvider } from '@shopify/restyle';
 
 import { AppPopupProvider } from './src/components/AppPopup';
 import { ToolShell, type ToolId } from './src/components/ToolShell';
+import { useOrientationPolicy } from './src/hooks/useOrientationPolicy';
 import { useRecentFilesStore, type RecentFile } from './src/state/recentFilesStore';
 import { useSettingsStore } from './src/state/settingsStore';
 import { darkTheme, lightTheme } from './src/theme';
@@ -27,6 +28,7 @@ export default function App() {
     NotoSansDevanagari: require('./assets/fonts/NotoSansDevanagari-Variable.ttf'),
   });
 
+  useOrientationPolicy();
   const systemColorScheme = useColorScheme();
   const initSettings = useSettingsStore((s) => s.initStore);
   const theme = useSettingsStore((s) => s.theme);
