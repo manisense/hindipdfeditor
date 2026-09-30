@@ -30,3 +30,7 @@ The smoke test blocks external analytics and Google Fonts to keep it determinist
 - Field Core Web Vitals, production GA4 enhanced-measurement privacy settings and production error monitoring remain unverified.
 - Existing lockfile audit reports 9 vulnerable dependencies (4 moderate, 5 high), including pdfjs-dist and DOMPurify. No dependency versions changed in this batch. Review advisories and make a separate tested dependency update before public release.
 - No ranking guarantee is made; rank #1 requires observed search results, useful product outcomes and ongoing measurement.
+
+## Follow-up 1: dependency audit
+
+Compatible updates applied with `npm --prefix web-app/editor audit fix`; current audit reports zero findings. PDF.js 5.5.207 and DOMPurify 3.4.16 are locked. Lint, 80 tests, build, publish checks and real browser fixture export passed after the update. Advisory references: https://github.com/mozilla/pdf.js/security/advisories and https://github.com/cure53/DOMPurify/security/advisories. The earlier 9-finding statement above is the historical first-batch baseline, now resolved.
