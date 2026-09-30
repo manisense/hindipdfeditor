@@ -1,7 +1,10 @@
+import routeManifest from "../../../tool-routes.json";
+
 export type ToolId = "edit" | "merge" | "split" | "compress" | "translate";
 
 export type ToolMeta = {
   id: ToolId;
+  path: string;
   title: string;
   shortTitle: string;
   description: string;
@@ -9,52 +12,7 @@ export type ToolMeta = {
   category: "edit" | "organize" | "optimize" | "convert";
 };
 
-export const TOOLS: ToolMeta[] = [
-  {
-    id: "edit",
-    title: "Edit Hindi PDF",
-    shortTitle: "Edit PDF",
-    description:
-      "Tap detected Hindi or English text to replace it, add new overlays, or erase burned-in text — then export a new PDF.",
-    accent: "#1843dd",
-    category: "edit",
-  },
-  {
-    id: "translate",
-    title: "Translate Hindi ↔ English",
-    shortTitle: "Translate",
-    description:
-      "Translate detected Hindi or English text securely in either direction, then download a new PDF.",
-    accent: "#01873e",
-    category: "convert",
-  },
-  {
-    id: "merge",
-    title: "Merge PDF",
-    shortTitle: "Merge",
-    description:
-      "Combine multiple PDFs into one file. Runs entirely in your browser.",
-    accent: "#5b4bd6",
-    category: "organize",
-  },
-  {
-    id: "split",
-    title: "Split PDF",
-    shortTitle: "Split",
-    description:
-      "Extract page ranges into a new PDF without uploading to a server.",
-    accent: "#12a551",
-    category: "organize",
-  },
-  {
-    id: "compress",
-    title: "Compress PDF",
-    shortTitle: "Compress",
-    description: "Shrink a PDF by re-encoding page images at a lower quality.",
-    accent: "#b58400",
-    category: "optimize",
-  },
-];
+export const TOOLS = routeManifest as ToolMeta[];
 
 export function getTool(id: string | null): ToolMeta | null {
   if (!id) return null;
@@ -62,10 +20,15 @@ export function getTool(id: string | null): ToolMeta | null {
 }
 
 export function toolHref(id: ToolId): string {
-  return `/edit/?tool=${id}`;
+  const tool = getTool(id);
+  if (!tool) throw new Error("Unknown PDF tool");
+  return tool.path;
 }
 
 export function readToolIdFromLocation(): ToolId | null {
+  const pathname = window.location.pathname.replace(/\/?$/, "/");
+  const route = TOOLS.find((tool) => tool.path === pathname);
+  if (route) return route.id;
   const params = new URLSearchParams(window.location.search);
   const raw = params.get("tool");
   if (

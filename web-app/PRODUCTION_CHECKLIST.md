@@ -1,7 +1,7 @@
 # Production readiness checklist — hindipdfeditor.com
 
 Target Cloudflare account: `localcode.ai@gmail.com`.
-Last verified: 2026-07-24.
+Historical verification below: 2026-07-24. The 1 October 2026 SEO migration is locally verified but not deployed; do not treat historical checked boxes as current production checks.
 
 ## Cloudflare account & auth
 
@@ -49,5 +49,15 @@ cd services/ai-api && npx wrangler deploy
 # Website (requires editor/.env)
 cd web-app
 npm run build
-npx wrangler deploy   # or: npx wrangler pages deploy dist --project-name hindipdfeditor --branch main
+npx wrangler pages deploy dist --project-name hindipdfeditor --branch main
 ```
+
+## Pending production SEO migration checks
+
+- [ ] Root `/` returns 200; bare `/edit/` permanently redirects to root without a loop.
+- [ ] Old query tools preserve task, mode and language on their `/tools/` destinations.
+- [ ] Root and `/hi/` have matching initial/client canonicals and reciprocal language links.
+- [ ] Each tool and hashed asset loads; unknown paths return 404.
+- [ ] Updated sitemap accepted and priority URLs inspected in GSC.
+- [ ] Consented AI completion tested against production API.
+- [ ] Analytics events and existing GA4 enhanced-measurement settings reviewed for privacy.

@@ -4,6 +4,7 @@
 # Root-local editor/tooling noise
 *.log
 *.tmp
+.wrangler/
 
 # Mobile app local/generated state
 mobile-app/node_modules/
@@ -31,6 +32,7 @@ web-app/editor/node_modules/
 web-app/editor/tsconfig.tsbuildinfo
 web-app/edit/
 web-app/dist/
+web-app/editor/.prerender/
 web-app/node_modules/
 
 # Local Expo Module native build outputs
@@ -41,4 +43,3 @@ mobile-app/modules/*/ios/build/
 
 # Redundant zip of already-tracked play-store assets
 mobile-app/play-store-assets/play-store-assets.zip
-

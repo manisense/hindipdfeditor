@@ -99,6 +99,13 @@ Standard pyramid, mapped to this project:
 
 ## Documentation & change tracking
 
+### Web SEO routing baseline
+
+- The public marketing homepage is `/`, with its full Hindi equivalent at `/hi/`. Public PDF tasks use the shared `web-app/tool-routes.json` manifest.
+- Build-time HTML and client metadata must agree on each canonical. Preserve old `/edit/?tool=` task intent and supported parameters through the Cloudflare Pages migration worker; never restore a root-to-editor redirect.
+- Keep shared web colors and geometry derived from this file and `design-system.md` in `web-app/assets/brand-tokens.css`. Validate real responsive screenshots when changing public layouts.
+- Web-only delivery records live in `web-app/CHANGELOG.md` and `web-app/docs/decisions/`; record cross-platform behavior changes in the mobile changelog as well.
+
 Every real change gets recorded in more than just the diff — a future session (yours or Codex's) has no memory of this one, and "I'll remember why" doesn't survive a context reset. Three lightweight mechanisms, layered:
 
 1. **Git + Conventional Commits.** Prefix every commit: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`. Costs nothing, and it's machine-parseable — a changelog can be generated from commit history later, and `git log --oneline` tells you what kind of change each commit was without opening it.

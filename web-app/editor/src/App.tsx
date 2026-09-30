@@ -1,46 +1,61 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from "react";
 
-import { AppPopupProvider } from './components/AppPopup';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { SeoHead } from './components/SeoHead';
-import { HomePage } from './home/HomePage';
-import { LanguageProvider } from './lib/i18n';
-import { readToolIdFromLocation, type ToolId } from './lib/tools';
-import './App.css';
+import { AppPopupProvider } from "./components/AppPopup";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { SeoHead } from "./components/SeoHead";
+import { HomePage } from "./home/HomePage";
+import { LanguageProvider } from "./lib/i18n";
+import { readToolIdFromLocation, type ToolId } from "./lib/tools";
+import { applySeo, seoForTool } from "./lib/seo";
+import "./App.css";
 
 const CompressPdfTool = lazy(() =>
-  import('./tools/CompressPdfTool').then((module) => ({ default: module.CompressPdfTool })),
+  import("./tools/CompressPdfTool").then((module) => ({
+    default: module.CompressPdfTool,
+  })),
 );
 const EditPdfTool = lazy(() =>
-  import('./tools/EditPdfTool').then((module) => ({ default: module.EditPdfTool })),
+  import("./tools/EditPdfTool").then((module) => ({
+    default: module.EditPdfTool,
+  })),
 );
 const MergePdfTool = lazy(() =>
-  import('./tools/MergePdfTool').then((module) => ({ default: module.MergePdfTool })),
+  import("./tools/MergePdfTool").then((module) => ({
+    default: module.MergePdfTool,
+  })),
 );
 const SplitPdfTool = lazy(() =>
-  import('./tools/SplitPdfTool').then((module) => ({ default: module.SplitPdfTool })),
+  import("./tools/SplitPdfTool").then((module) => ({
+    default: module.SplitPdfTool,
+  })),
 );
 const TranslatePdfTool = lazy(() =>
-  import('./tools/TranslatePdfTool').then((module) => ({ default: module.TranslatePdfTool })),
+  import("./tools/TranslatePdfTool").then((module) => ({
+    default: module.TranslatePdfTool,
+  })),
 );
 
 function useToolId(): ToolId | null {
-  const [toolId, setToolId] = useState<ToolId | null>(() => readToolIdFromLocation());
+  const [toolId, setToolId] = useState<ToolId | null>(() =>
+    readToolIdFromLocation(),
+  );
 
   useEffect(() => {
     const onNav = () => {
-      setToolId(readToolIdFromLocation());
+      const nextTool = readToolIdFromLocation();
+      applySeo(seoForTool(nextTool));
+      setToolId(nextTool);
       // Client-side tool switches (popstate) need an explicit page_view; first load
       // is already counted by analytics.js gtag('config', ...).
       const path = `${window.location.pathname}${window.location.search}`;
-      window.gtag?.('event', 'page_view', {
+      window.gtag?.("event", "page_view", {
         page_path: path,
         page_location: window.location.href,
         page_title: document.title,
       });
     };
-    window.addEventListener('popstate', onNav);
-    return () => window.removeEventListener('popstate', onNav);
+    window.addEventListener("popstate", onNav);
+    return () => window.removeEventListener("popstate", onNav);
   }, []);
 
   return toolId;
@@ -60,17 +75,17 @@ export default function App() {
             </div>
           }
         >
-          {toolId === 'edit' ? (
+          {toolId === "edit" ? (
             <EditPdfTool />
-          ) : toolId === 'translate' ? (
+          ) : toolId === "translate" ? (
             <ErrorBoundary label="Translate">
               <TranslatePdfTool />
             </ErrorBoundary>
-          ) : toolId === 'merge' ? (
+          ) : toolId === "merge" ? (
             <MergePdfTool />
-          ) : toolId === 'split' ? (
+          ) : toolId === "split" ? (
             <SplitPdfTool />
-          ) : toolId === 'compress' ? (
+          ) : toolId === "compress" ? (
             <CompressPdfTool />
           ) : (
             <HomePage />

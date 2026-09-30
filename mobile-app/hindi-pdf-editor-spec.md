@@ -4,6 +4,10 @@
 
 ## 1. What we're building
 
+### Public web entry points (1 October 2026)
+
+The companion website's marketing homepage is `/`, with a full Hindi equivalent at `/hi/`. Its public task paths are defined in `web-app/tool-routes.json`, and retired `/edit/?tool=` links retain their task intent through a query-aware Cloudflare Pages redirect. Homepage HTML is rendered at build time from the same React components used in the browser. Core web editing stays local; optional AI operations require consent. The web export remains image-based after HTML shaping; these SEO/UI changes do not alter the native rendering pipeline or phase status above. See `web-app/docs/decisions/0001-root-homepage-and-static-tool-entries.md`.
+
 An Android-first React Native app that opens an existing PDF containing Hindi (Devanagari) text and lets the user edit it directly on the page — tap to add new text, or mask and replace existing text — while seeing correctly-shaped Devanagari at every step (proper conjuncts, matras, reph — never broken into disconnected pieces), and exports a real PDF file at the end.
 
 **Hard requirements:**

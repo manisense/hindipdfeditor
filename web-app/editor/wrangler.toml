@@ -1,24 +1,4 @@
-# Present when Cloudflare's root directory is set to `web-app/editor`.
-# Prefer root directory `web-app` in the dashboard; this keeps the current
-# `npx wrangler deploy` command working either way.
 name = "hindipdfeditor"
 compatibility_date = "2026-07-07"
 
-[assets]
-directory = "../dist"
-not_found_handling = "404-page"
-
-[observability]
-enabled = false
-head_sampling_rate = 1
-
-[observability.logs]
-enabled = true
-head_sampling_rate = 1
-persist = true
-invocation_logs = true
-
-[observability.traces]
-enabled = false
-persist = true
-head_sampling_rate = 1
+pages_build_output_dir = "../dist"

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "edit",
+    "path": "/tools/edit-hindi-pdf/",
+    "title": "Edit Hindi PDF",
+    "shortTitle": "Edit PDF",
+    "description": "Replace detected Hindi or English text, add text overlays, and export a new PDF. Core editing stays on your device.",
+    "accent": "#1843DD",
+    "category": "edit"
+  },
+  {
+    "id": "translate",
+    "path": "/tools/translate-hindi-pdf/",
+    "title": "Translate Hindi ↔ English",
+    "shortTitle": "Translate",
+    "description": "Translate Hindi or English text after approving secure AI processing. Review the translated text and export a new PDF.",
+    "accent": "#16A34A",
+    "category": "convert"
+  },
+  {
+    "id": "merge",
+    "path": "/tools/merge-pdf/",
+    "title": "Merge PDF",
+    "shortTitle": "Merge",
+    "description": "Combine multiple PDFs in your chosen order. Processing stays in your browser and creates a new file.",
+    "accent": "#7C3AED",
+    "category": "organize"
+  },
+  {
+    "id": "split",
+    "path": "/tools/split-pdf/",
+    "title": "Split PDF",
+    "shortTitle": "Split",
+    "description": "Extract selected page ranges into a new PDF. Processing stays on your device.",
+    "accent": "#7C3AED",
+    "category": "organize"
+  },
+  {
+    "id": "compress",
+    "path": "/tools/compress-pdf/",
+    "title": "Compress PDF",
+    "shortTitle": "Compress",
+    "description": "Reduce PDF size by re-encoding pages as images. Review readability before downloading; text becomes image-based.",
+    "accent": "#F0700F",
+    "category": "optimize"
+  }
+]

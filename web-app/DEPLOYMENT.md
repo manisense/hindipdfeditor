@@ -16,12 +16,19 @@ Use these so Git builds do not fail:
 | Deploy command | `npx wrangler pages deploy dist --project-name hindipdfeditor` |
 | Build output directory | `dist` (if the UI asks for one instead of a deploy command) |
 
-If the root directory is still `web-app/editor`, keep deploy as
-`npx wrangler deploy` — the editor `wrangler.toml` publishes `../dist` as
-static assets after `npm run build`.
+If the root directory is `web-app/editor`, build with `npm run build` and deploy with
+`npx wrangler pages deploy ../dist --project-name hindipdfeditor`. Both configurations
+publish the same Pages artifact. Do not use the former Workers-only `wrangler deploy`
+path: it does not run the Pages migration worker.
 
-Do **not** use bare `npx wrangler deploy` against the Pages project without an
-`[assets]` directory (that is what caused the missing entry-point error).
+## Root and tool migration
+
+The build prerenders `/` and `/hi/` from React and generates `/tools/` task entries.
+It includes `_worker.js` and `_routes.json` for query-aware permanent redirects from
+`/edit/` and root tool-query links. The worker preserves mode/language parameters.
+Hashed application assets still live under `/edit/assets/`; do not redirect that prefix.
+The homepage has no root-to-editor redirect. Verify using the local Pages preview before
+publishing and keep migration redirects for at least a year.
 
 ## Target account
 
@@ -129,7 +136,7 @@ Also publicly available:
 | **URL Inspection** | Test a single URL (e.g. `/edit/?tool=translate`) |
 | **Enhancements / rich results** | FAQ / SoftwareApplication structured data (when eligible) |
 
-After each meaningful content deploy, use **URL Inspection → Request indexing** on `/edit/` and key tool URLs if they are new or heavily changed.
+After each meaningful content deploy, use **URL Inspection → Request indexing** on `/` and key `/tools/` URLs if they are new or heavily changed.
 
 ### 4. SEO / AEO / AISEO already in the site
 
