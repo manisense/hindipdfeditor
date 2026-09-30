@@ -26,6 +26,11 @@ import { ToolShell } from "../components/ToolShell";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { aiApiClient } from "../lib/aiApiClient";
 import { trackToolEvent } from "../lib/analytics";
+import {
+  editSnapshot,
+  hasUnexportedChanges,
+  useUnsavedChanges,
+} from "../lib/unsavedChanges";
 import { ptSizeToImagePx, ptToImagePx } from "../lib/coordinateMath";
 import { textGeometryForDetectedLine } from "../lib/detectedLineTextGeometry";
 import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
@@ -143,6 +148,12 @@ export function EditPdfTool() {
   const closeDocument = useEditStore((s) => s.closeDocument);
 
   const document = useEditStore((s) => s.document);
+  const [exportedSnapshot, setExportedSnapshot] = useState<string | null>(null);
+  const [discardVisible, setDiscardVisible] = useState(false);
+  const dirty = hasUnexportedChanges(document, exportedSnapshot);
+  useUnsavedChanges(
+    dirty || status.state === "saving" || translating || enhancingPage !== null,
+  );
   const loadDocument = useEditStore((s) => s.loadDocument);
   const addTextEdit = useEditStore((s) => s.addTextEdit);
   const addMaskEdit = useEditStore((s) => s.addMaskEdit);
@@ -853,6 +864,7 @@ export function EditPdfTool() {
     setFocusedEditId(null);
     const documentToExport = useEditStore.getState().document;
     if (!documentToExport) return;
+    const snapshotToExport = editSnapshot(documentToExport);
     setStatus({ state: "saving" });
     try {
       const fontBase64ByFamily = {
@@ -864,6 +876,7 @@ export function EditPdfTool() {
         documentToExport.sourceName.replace(/\.pdf$/i, "") || "edited";
       const filename = `${baseName}-edited.pdf`;
       downloadPdfBlob(blob, filename);
+      setExportedSnapshot(snapshotToExport);
       setStatus({ state: "saved", filename });
       trackToolEvent("export_success", "edit");
     } catch (error) {
@@ -901,7 +914,9 @@ export function EditPdfTool() {
 
   const step = status.state === "saved" ? 3 : document ? 2 : 1;
 
-  const handleCloseDocument = () => {
+  const closeWithoutChanges = () => {
+    setDiscardVisible(false);
+    setExportedSnapshot(null);
     pendingEditRequestRef.current += 1;
     dismissOnlyGestureRef.current = false;
     closeDocument();
@@ -911,6 +926,13 @@ export function EditPdfTool() {
     editPairingsRef.current.clear();
     setOcrStatusByPage({});
     setStatus({ state: "idle" });
+  };
+
+  const handleCloseDocument = () => {
+    if (status.state === "saving" || translating || enhancingPage !== null)
+      return;
+    if (dirty) setDiscardVisible(true);
+    else closeWithoutChanges();
   };
 
   return (
@@ -1222,6 +1244,31 @@ export function EditPdfTool() {
         </main>
       )}
 
+      <AppPopup
+        open={discardVisible}
+        title="Discard unexported changes?"
+        tone="warning"
+        onClose={() => setDiscardVisible(false)}
+        actions={
+          <>
+            <AppButton
+              title="Keep editing"
+              onClick={() => setDiscardVisible(false)}
+              data-popup-initial-focus
+            />
+            <AppButton
+              title="Discard changes"
+              variant="secondary"
+              onClick={closeWithoutChanges}
+            />
+          </>
+        }
+      >
+        <p>
+          Download your edited PDF before closing to keep your changes. The
+          original PDF will remain unchanged.
+        </p>
+      </AppPopup>
       {translationOptionsVisible && (
         <AppPopup
           open

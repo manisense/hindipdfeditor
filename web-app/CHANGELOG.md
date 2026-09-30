@@ -21,3 +21,7 @@
 
 ### Dependency security follow-up
 - Compatible lockfile updates clear all 9 reported audit findings: PDF.js 5.5.207, DOMPurify 3.4.16 and Vitest 4.1.11 among the updates. Audit returned zero findings; 80 tests, lint, production build and real Hindi browser export passed.
+
+### Editor navigation safeguard
+- Unexported authoring edits trigger browser navigation protection and a focused discard confirmation when opening another file. OCR cache and viewport changes do not trigger it. Export snapshots preserve protection for edits made while an export is running.
+- Lint, 81 tests, build and browser keep-editing/export regression passed.

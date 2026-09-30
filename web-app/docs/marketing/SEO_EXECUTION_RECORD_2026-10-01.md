@@ -34,3 +34,7 @@ The smoke test blocks external analytics and Google Fonts to keep it determinist
 ## Follow-up 1: dependency audit
 
 Compatible updates applied with `npm --prefix web-app/editor audit fix`; current audit reports zero findings. PDF.js 5.5.207 and DOMPurify 3.4.16 are locked. Lint, 80 tests, build, publish checks and real browser fixture export passed after the update. Advisory references: https://github.com/mozilla/pdf.js/security/advisories and https://github.com/cure53/DOMPurify/security/advisories. The earlier 9-finding statement above is the historical first-batch baseline, now resolved.
+
+## Follow-up 2: unexported work
+
+Navigation guard and open-another confirmation implemented. The snapshot excludes OCR/viewport state and compares against the actual exported version. Lint, 81 tests and production build passed. Browser smoke confirmed the dialog preserves the document, dirty state cancels beforeunload, and the exported state permits navigation. Browser-native warnings depend on browser interaction policy; language toggles preserve the document.

@@ -74,13 +74,11 @@ const { chromium } = require("playwright");
   await page.goto(baseUrl + "/tools/edit-hindi-pdf/", {
     waitUntil: "networkidle",
   });
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "invalid.txt",
-      mimeType: "text/plain",
-      buffer: Buffer.from("not a pdf"),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "invalid.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("not a pdf"),
+  });
   await page.getByRole("alert").filter({ hasText: "Choose a PDF" }).waitFor();
   await page.evaluate(() => {
     window.__seoEvents = [];
@@ -104,6 +102,18 @@ const { chromium } = require("playwright");
     .last()
     .fill("क्ष त्र ज्ञ कि प्रार्थना — परीक्षण");
   await page.locator("textarea").last().press("Escape");
+  await page.getByRole("button", { name: "Open another", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Discard unexported changes?" })
+    .waitFor();
+  await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+  if (
+    !(await page.evaluate(
+      () =>
+        !window.dispatchEvent(new Event("beforeunload", { cancelable: true })),
+    ))
+  )
+    throw new Error("Unexported changes are unprotected");
   const pending = page.waitForEvent("download", { timeout: 60000 });
   await page
     .getByRole("button", { name: "Download edited PDF", exact: true })
@@ -111,6 +121,12 @@ const { chromium } = require("playwright");
   const downloaded = await pending;
   await downloaded.saveAs(path.join(outputDir, "hindi-seo-export.pdf"));
   console.log("EXPORTED", downloaded.suggestedFilename());
+  if (
+    !(await page.evaluate(() =>
+      window.dispatchEvent(new Event("beforeunload", { cancelable: true })),
+    ))
+  )
+    throw new Error("Exported changes still warn");
   const events = await page.evaluate(() => window.__seoEvents);
   if (events.filter((e) => e[1] === "export_success").length !== 1)
     throw new Error("Export event duplicated or missing");
