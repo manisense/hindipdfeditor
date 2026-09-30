@@ -14,3 +14,7 @@
 - TypeScript/build, full ESLint, and unit tests run during implementation; see the execution record for final counts.
 - Local Cloudflare preview verified root/tool routing, initial and hydrated canonicals, responsive pages and a real Hindi fixture export.
 - Production deployment, GSC selected canonicals, authenticated AI completion and field Core Web Vitals remain unverified.
+
+### Release follow-up
+- Final checks: 80 editor tests, 3 routing tests, lint, production build and artifact validation passed; responsive browser smoke and actual Devanagari export passed.
+- Existing dependency audit warnings and production-only checks are recorded in `docs/marketing/SEO_EXECUTION_RECORD_2026-10-01.md`.

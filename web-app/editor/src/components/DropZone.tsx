@@ -1,8 +1,8 @@
-import { useRef, useState, type DragEvent, type ReactNode } from 'react';
-import { FileType2, Files, ShieldCheck, UploadCloud } from 'lucide-react';
+import { useRef, useState, type DragEvent, type ReactNode } from "react";
+import { FileType2, Files, ShieldCheck, UploadCloud } from "lucide-react";
 
-import { AppButton } from './AppButton';
-import './DropZone.css';
+import { AppButton } from "./AppButton";
+import "./DropZone.css";
 
 type Props = {
   accept?: string;
@@ -19,29 +19,47 @@ type Props = {
 
 function isPdf(file: File): boolean {
   return (
-    file.type === 'application/pdf' ||
-    file.name.toLowerCase().endsWith('.pdf')
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
   );
 }
 
 export function DropZone({
-  accept = 'application/pdf',
+  accept = "application/pdf",
   multiple = false,
   disabled,
   title,
   subtitle,
-  buttonLabel = 'Select PDF files',
-  accent = '#1843dd',
+  buttonLabel = "Select PDF files",
+  accent = "#1843dd",
   onFiles,
   children,
   compact = false,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [validationMessage, setValidationMessage] = useState<string | null>(
+    null,
+  );
 
   const emit = (list: FileList | File[]) => {
-    const files = Array.from(list).filter(isPdf);
-    if (files.length === 0) return;
+    if (disabled) return;
+    const selected = Array.from(list);
+    const files = selected.filter(isPdf);
+    if (files.length === 0) {
+      setValidationMessage("Choose a PDF file (.pdf). No file was opened.");
+      return;
+    }
+    if (files.length !== selected.length) {
+      setValidationMessage(
+        "Choose PDF files only. No files were opened; remove unsupported files and try again.",
+      );
+      return;
+    }
+    if (!multiple && files.length > 1) {
+      setValidationMessage("Choose one PDF at a time. No file was opened.");
+      return;
+    }
+    setValidationMessage(null);
     onFiles(multiple ? files : files.slice(0, 1));
   };
 
@@ -54,8 +72,8 @@ export function DropZone({
 
   return (
     <div
-      className={`drop-zone ${compact ? 'drop-zone--compact' : ''} ${dragging ? 'drop-zone--active' : ''} ${disabled ? 'drop-zone--disabled' : ''}`}
-      style={{ ['--drop-accent' as string]: accent }}
+      className={`drop-zone ${compact ? "drop-zone--compact" : ""} ${dragging ? "drop-zone--active" : ""} ${disabled ? "drop-zone--disabled" : ""}`}
+      style={{ ["--drop-accent" as string]: accent }}
       onDragEnter={(e) => {
         e.preventDefault();
         if (!disabled) setDragging(true);
@@ -73,11 +91,15 @@ export function DropZone({
         disabled={disabled}
         onChange={(e) => {
           if (e.target.files) emit(e.target.files);
-          e.target.value = '';
+          e.target.value = "";
         }}
       />
       <div className="drop-zone__icon" aria-hidden="true">
-        {multiple ? <Files size={30} strokeWidth={1.9} /> : <UploadCloud size={30} strokeWidth={1.9} />}
+        {multiple ? (
+          <Files size={30} strokeWidth={1.9} />
+        ) : (
+          <UploadCloud size={30} strokeWidth={1.9} />
+        )}
       </div>
       <div className="drop-zone__copy">
         <span className="drop-zone__eyebrow">Ready when you are</span>
@@ -90,7 +112,12 @@ export function DropZone({
         onClick={() => inputRef.current?.click()}
         disabled={disabled}
       />
-      <p className="drop-zone__hint">or drop PDF{multiple ? 's' : ''} here</p>
+      <p className="drop-zone__hint">or drop PDF{multiple ? "s" : ""} here</p>
+      {validationMessage && (
+        <p className="drop-zone__validation" role="alert">
+          {validationMessage}
+        </p>
+      )}
       <div className="drop-zone__assurances" aria-label="File handling details">
         <span>
           <ShieldCheck size={14} aria-hidden="true" /> Private by default

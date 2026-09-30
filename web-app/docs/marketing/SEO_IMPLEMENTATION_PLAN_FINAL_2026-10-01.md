@@ -248,3 +248,8 @@ None are marked complete by writing this plan.
 - [Google Core Web Vitals](https://developers.google.com/search/docs/appearance/core-web-vitals): performance targets and limits of ranking inference.
 - [W3C target-size guidance](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html): interactive target sizing and exceptions.
 - [Google helpful content](https://developers.google.com/search/docs/fundamentals/creating-helpful-content): original evidence and user benefit.
+
+
+## Implementation status — 1 October 2026
+
+The first local batch implements root/locale prerendering, dedicated tool routes and legacy migration, shared design tokens, the homepage redesign and editor-only outcome events. This does not mark the complete plan finished. See [the execution record](SEO_EXECUTION_RECORD_2026-10-01.md) for acceptance evidence, release limits and remaining work.

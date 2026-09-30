@@ -25,6 +25,7 @@ import { PdfPageViewer } from "../components/PdfPageViewer";
 import { ToolShell } from "../components/ToolShell";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { aiApiClient } from "../lib/aiApiClient";
+import { trackToolEvent } from "../lib/analytics";
 import { ptSizeToImagePx, ptToImagePx } from "../lib/coordinateMath";
 import { textGeometryForDetectedLine } from "../lib/detectedLineTextGeometry";
 import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
@@ -214,9 +215,10 @@ export function EditPdfTool() {
       aiJobIdRef.current = `document-${crypto.randomUUID()}`;
       editPairingsRef.current.clear();
       setOcrStatusByPage({});
-      setEditMode("edit");
+      setEditMode(readEditModeFromLocation());
       ensureOcrForAllPages(newDocument);
       setStatus({ state: "idle" });
+      trackToolEvent("pdf_open_success", "edit");
     } catch (error) {
       setStatus({
         state: "error",
@@ -863,7 +865,9 @@ export function EditPdfTool() {
       const filename = `${baseName}-edited.pdf`;
       downloadPdfBlob(blob, filename);
       setStatus({ state: "saved", filename });
+      trackToolEvent("export_success", "edit");
     } catch (error) {
+      trackToolEvent("export_failed", "edit");
       setStatus({
         state: "error",
         message: error instanceof Error ? error.message : String(error),
@@ -941,7 +945,9 @@ export function EditPdfTool() {
             <div className="app__spinner" />
             <div>
               <p className="app__progress">Opening your PDF…</p>
-              <p className="app__progress-sub">Rendering pages and detecting editable text</p>
+              <p className="app__progress-sub">
+                Rendering pages and detecting editable text
+              </p>
             </div>
           </div>
         </div>
@@ -958,7 +964,9 @@ export function EditPdfTool() {
             disabled={status.state === "saving"}
           />
           {status.state === "error" && (
-            <AppStatus tone="error" title="Couldn’t open this PDF">{status.message}</AppStatus>
+            <AppStatus tone="error" title="Couldn’t open this PDF">
+              {status.message}
+            </AppStatus>
           )}
         </div>
       )}
@@ -1051,7 +1059,10 @@ export function EditPdfTool() {
                 }
               />
             </div>
-            <div className="app__toolbar-row app__toolbar-row--modes" aria-label="Editing modes">
+            <div
+              className="app__toolbar-row app__toolbar-row--modes"
+              aria-label="Editing modes"
+            >
               <AppButton
                 title="Edit text"
                 icon={<Type size={15} aria-hidden="true" />}
@@ -1204,7 +1215,9 @@ export function EditPdfTool() {
             </AppStatus>
           )}
           {status.state === "error" && (
-            <AppStatus tone="error" title="Export failed">{status.message}</AppStatus>
+            <AppStatus tone="error" title="Export failed">
+              {status.message}
+            </AppStatus>
           )}
         </main>
       )}
