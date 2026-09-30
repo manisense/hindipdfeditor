@@ -5,8 +5,8 @@
   display: inline-flex;
   gap: 8px;
   justify-content: center;
-  min-height: 46px;
-  padding: 12px 18px;
+  min-height: 48px;
+  padding: 12px 24px;
   font-size: 15px;
   font-weight: 600;
   font-family: var(--font-display);
@@ -39,12 +39,12 @@
 
 .app-button--small {
   min-height: 38px;
-  padding: 8px 14px;
+  padding: 8px 16px;
   font-size: 13px;
 }
 
 .app-button--primary {
-  background: var(--brand);
+  background: linear-gradient(135deg, var(--brand), var(--brand-hover));
   color: #fff;
   box-shadow: var(--shadow-brand);
 }
@@ -55,14 +55,14 @@
 
 .app-button--secondary {
   border: 1px solid color-mix(in srgb, var(--brand) 9%, var(--line));
-  background: var(--brand-wash);
-  color: var(--brand-hover);
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .app-button--danger {
   border: 1px solid color-mix(in srgb, var(--danger) 13%, var(--line));
   background: var(--danger-soft);
-  color: var(--danger);
+  color: var(--ink);
 }
 
 .app-button--ghost {

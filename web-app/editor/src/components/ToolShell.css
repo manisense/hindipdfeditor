@@ -1,11 +1,7 @@
 .tool-shell {
   --tool-accent: var(--brand);
   --tool-soft: var(--brand-wash);
-  background:
-    linear-gradient(to right, rgba(24, 67, 221, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(24, 67, 221, 0.035) 1px, transparent 1px),
-    var(--cream);
-  background-size: 44px 44px;
+  background: var(--background);
   color: var(--ink);
   display: flex;
   flex-direction: column;
@@ -15,56 +11,17 @@
   position: relative;
 }
 
-.tool-shell--translate,
-.tool-shell--split {
+.tool-shell--translate {
   --tool-soft: var(--accent-tint);
 }
 
-.tool-shell--merge {
+.tool-shell--merge,
+.tool-shell--split {
   --tool-soft: var(--pop-lav);
 }
 
 .tool-shell--compress {
   --tool-soft: var(--pop-yellow-tint);
-}
-
-.tool-shell__ambient {
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  position: absolute;
-}
-
-.tool-shell__ambient span {
-  border-radius: 50%;
-  filter: blur(2px);
-  opacity: 0.8;
-  position: absolute;
-}
-
-.tool-shell__ambient span:nth-child(1) {
-  background: var(--brand-tint);
-  height: 340px;
-  right: -130px;
-  top: -120px;
-  width: 340px;
-}
-
-.tool-shell__ambient span:nth-child(2) {
-  background: var(--tool-soft);
-  height: 260px;
-  left: -110px;
-  top: 340px;
-  width: 260px;
-}
-
-.tool-shell__ambient span:nth-child(3) {
-  background: var(--accent-tint);
-  bottom: 100px;
-  height: 220px;
-  opacity: 0.38;
-  right: 8%;
-  width: 220px;
 }
 
 .tool-shell__nav-wrap {
@@ -147,7 +104,9 @@
   gap: 7px;
   padding: 10px 13px;
   text-decoration: none;
-  transition: background 150ms ease, color 150ms ease;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
 }
 
 .tool-shell__all-tools:hover {
@@ -168,7 +127,9 @@
   font-weight: 700;
   gap: 5px;
   padding: 5px 10px;
-  transition: background 150ms ease, border-color 150ms ease;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
 }
 
 .tool-shell__lang-btn:hover {
@@ -219,7 +180,10 @@
   gap: 7px;
   padding: 9px 12px;
   text-decoration: none;
-  transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .tool-shell__tool-switcher a:hover {
@@ -228,9 +192,10 @@
 }
 
 .tool-shell__tool-switcher a.is-active {
-  background: var(--tool-soft);
-  box-shadow: 0 5px 18px color-mix(in srgb, var(--tool-accent) 12%, transparent);
-  color: var(--tool-accent);
+  background: var(--brand-tint);
+  border-color: var(--brand);
+  color: var(--brand);
+  box-shadow: var(--shadow-soft);
 }
 
 .tool-shell__steps {
@@ -263,7 +228,7 @@
 
 .tool-shell__step:not(:last-child)::after {
   background: var(--line-strong);
-  content: '';
+  content: "";
   flex: 1;
   height: 2px;
   margin: 0 12px;
@@ -293,9 +258,9 @@
 }
 
 .tool-shell__step.is-active .tool-shell__step-num {
-  background: var(--tool-accent);
-  border-color: var(--tool-accent);
-  box-shadow: 0 7px 18px color-mix(in srgb, var(--tool-accent) 22%, transparent);
+  background: linear-gradient(135deg, var(--brand), var(--brand-hover));
+  border-color: var(--brand);
+  box-shadow: 0 7px 18px rgba(20, 22, 31, 0.06);
   color: white;
 }
 
@@ -461,4 +426,8 @@
   }
 }
 
-
+.tool-shell__current-tool h1 {
+  font-size: inherit;
+  font-weight: inherit;
+  margin: 0;
+}

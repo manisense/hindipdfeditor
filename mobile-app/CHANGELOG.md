@@ -4,6 +4,10 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Mobile Web Parity & Architecture Overhaul
 
+### Changed — Web SEO design baseline (1 October 2026)
+
+- Restored the companion web app's shared palette, category colors, shadows and principal button geometry to the root design system. React and static pages consume `web-app/assets/brand-tokens.css`; native rendering and phase status are unchanged.
+
 ### Added — Unified Design System & Vector Icon Infrastructure
 
 - **Unified Design System (`design-system.md` & ADR `0009-unified-design-system-and-ui-tokens.md`)**:

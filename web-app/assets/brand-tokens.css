@@ -1,0 +1,101 @@
+/* Web tokens derived from repository-root design-system.md. */
+:root {
+  --hpe-primary: #1843dd;
+  --hpe-primary-deep: #3226b8;
+  --hpe-primary-tint: #eef2ff;
+  --hpe-edit: #1843dd;
+  --hpe-edit-tint: #e8edff;
+  --hpe-green: #16a34a;
+  --hpe-green-tint: #e6f7ec;
+  --hpe-purple: #7c3aed;
+  --hpe-purple-tint: #f1eafe;
+  --hpe-orange: #f0700f;
+  --hpe-orange-tint: #fff1e4;
+  --hpe-teal: #0d9488;
+  --hpe-teal-tint: #e3f6f4;
+  --hpe-text: #14161f;
+  --hpe-text-secondary: #5b6472;
+  --hpe-text-muted: #94a0b2;
+  --hpe-border: #e7e8f1;
+  --hpe-white: #ffffff;
+  --hpe-page: #fbfbfe;
+  --hpe-cream: #faf6ec;
+  --hpe-warning: #ef6c4d;
+  --hpe-shadow: 0px 8px 24px rgba(20, 22, 31, 0.06);
+  --hpe-font: "Inter", "Noto Sans Devanagari", system-ui, sans-serif;
+  --hpe-font-hindi: "Noto Sans Devanagari", "Inter", system-ui, sans-serif;
+  --hpe-space-1: 4px;
+  --hpe-space-2: 8px;
+  --hpe-space-3: 12px;
+  --hpe-space-4: 16px;
+  --hpe-space-6: 24px;
+  --hpe-space-8: 32px;
+  --hpe-space-12: 48px;
+  --hpe-space-16: 64px;
+
+  /* Compatibility aliases keep existing components on the approved palette. */
+  --brand: var(--hpe-primary);
+  --brand-hover: var(--hpe-primary-deep);
+  --brand-500: var(--hpe-primary);
+  --brand-tint: var(--hpe-primary-tint);
+  --brand-wash: var(--hpe-primary-tint);
+  --accent: var(--hpe-green);
+  --accent-500: var(--hpe-green);
+  --accent-tint: var(--hpe-green-tint);
+  --navy: var(--hpe-text);
+  --navy-800: var(--hpe-text);
+  --pop-yellow: var(--hpe-orange);
+  --pop-yellow-tint: var(--hpe-orange-tint);
+  --pop-yellow-ink: var(--hpe-orange);
+  --pop-lav: var(--hpe-purple-tint);
+  --pop-lav-ink: var(--hpe-purple);
+  --pop-coral: var(--hpe-warning);
+  --ink: var(--hpe-text);
+  --muted: var(--hpe-text-secondary);
+  --cream: var(--hpe-cream);
+  --line: var(--hpe-border);
+  --line-strong: var(--hpe-border);
+  --surface: var(--hpe-white);
+  --background: var(--hpe-page);
+  --surface-subtle: var(--hpe-page);
+  --danger: var(--hpe-warning);
+  --danger-soft: var(--hpe-orange-tint);
+  --success: var(--hpe-green);
+  --success-soft: var(--hpe-green-tint);
+  --warning: var(--hpe-warning);
+  --warning-soft: var(--hpe-orange-tint);
+  --shadow-soft: var(--hpe-shadow);
+  --shadow-brand: var(--hpe-shadow);
+  --shadow-card: var(--hpe-shadow);
+  --shadow-float: var(--hpe-shadow);
+  --font-display: var(--hpe-font);
+  --font-body: var(--hpe-font);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 20px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--hpe-primary);
+  outline-offset: 4px;
+}
+
+[lang="hi"] {
+  font-family: var(--hpe-font-hindi);
+  letter-spacing: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

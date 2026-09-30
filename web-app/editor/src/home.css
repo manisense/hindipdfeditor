@@ -1,40 +1,26 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-/* ============================================================
-   Hindi PDF Editor — design tokens (from hindipdfeditor landing)
-   Brand colors sourced from the Figma logo
-   ============================================================ */
-@theme {
-  --color-brand: #1843dd;
-  --color-brand-hover: #1130a8;
-  --color-brand-500: #3a5cf0;
-  --color-brand-tint: #d7e7ff;
-  --color-brand-wash: #eef3ff;
-
-  --color-accent: #01873e;
-  --color-accent-500: #12a551;
-  --color-accent-tint: #d6f3e3;
-
-  --color-navy: #050839;
-  --color-navy-800: #0c1150;
-
-  --color-pop-yellow: #ffce45;
-  --color-pop-yellow-tint: #fff0c2;
-  --color-pop-lav: #e9e6ff;
-  --color-pop-coral: #ff8b5e;
-
-  --color-ink: #15172c;
-  --color-muted: #5b6172;
-  --color-cream: #fbf8f1;
-  --color-line: #eceae2;
-
-  --font-display: 'Plus Jakarta Sans', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
-  --font-body: 'Inter', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
-
-  --shadow-soft: 0 12px 34px rgba(21, 23, 44, 0.09);
-  --shadow-brand: 0 14px 34px rgba(24, 67, 221, 0.28);
+@import "../../assets/brand-tokens.css";
+@theme inline {
+  --color-brand: var(--hpe-primary);
+  --color-brand-hover: var(--hpe-primary-deep);
+  --color-brand-500: var(--hpe-primary);
+  --color-brand-tint: var(--hpe-primary-tint);
+  --color-brand-wash: var(--hpe-primary-tint);
+  --color-accent: var(--hpe-green);
+  --color-accent-500: var(--hpe-green);
+  --color-accent-tint: var(--hpe-green-tint);
+  --color-navy: var(--hpe-text);
+  --color-navy-800: var(--hpe-text);
+  --color-pop-yellow: var(--hpe-orange);
+  --color-pop-yellow-tint: var(--hpe-orange-tint);
+  --color-pop-lav: var(--hpe-purple-tint);
+  --color-pop-coral: var(--hpe-warning);
+  --color-ink: var(--hpe-text);
+  --color-muted: var(--hpe-text-secondary);
+  --color-cream: var(--hpe-cream);
+  --color-line: var(--hpe-border);
 }
-
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -68,7 +54,6 @@
   }
 }
 
-
 /* Typewriter caret */
 @keyframes caret-blink {
   0%,
@@ -91,8 +76,16 @@
     linear-gradient(to right, rgba(24, 67, 221, 0.06) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(24, 67, 221, 0.06) 1px, transparent 1px);
   background-size: 44px 44px;
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 40%, transparent 100%);
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 40%,
+    #000 40%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 40%,
+    #000 40%,
+    transparent 100%
+  );
 }
 
 .section-x {
@@ -120,5 +113,3 @@
 [id] {
   scroll-margin-top: 80px;
 }
-
-
