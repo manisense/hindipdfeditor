@@ -166,8 +166,7 @@ export async function compressPdfFile(
     const jpegBase64 = await readBase64(image.uri);
     const embeddedJpg = await outDoc.embedJpg(jpegBase64);
 
-    const widthPt = image.pxWidth / scale;
-    const heightPt = image.pxHeight / scale;
+    const { widthPt, heightPt } = image;
     const page = outDoc.addPage([widthPt, heightPt]);
     page.drawImage(embeddedJpg, {
       x: 0,

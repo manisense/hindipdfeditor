@@ -33,6 +33,12 @@
         "track": "production",
         "releaseStatus": "draft"
       }
+    },
+    "production-eas-key": {
+      "android": {
+        "track": "production",
+        "releaseStatus": "draft"
+      }
     }
   }
 }

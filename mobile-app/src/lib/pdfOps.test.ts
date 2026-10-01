@@ -19,6 +19,8 @@ jest.mock('./pdfToImages', () => ({
     uri: 'file:///cache/rendered-page.jpg',
     pxWidth: 800,
     pxHeight: 1200,
+    widthPt: 595,
+    heightPt: 842,
   }),
 }));
 
@@ -143,6 +145,20 @@ describe('pdfOps', () => {
 
       expect(result.uri).toBe('file:///cache/compressed-test-uuid-123.pdf');
       expect(result.pageCount).toBe(1);
+    });
+
+    it('keeps the page size in points even when the renderer capped the bitmap', async () => {
+      mockReadAsStringAsync.mockResolvedValue(
+        '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=',
+      );
+      await compressPdfFile('file:///path/source.pdf', 1, 2);
+
+      // The mock returns 800x1200 px for a 595x842 pt page: px / scale would give 400x600 pt.
+      const written = mockWriteAsStringAsync.mock.calls.at(-1)?.[1] as string;
+      const output = await PDFDocument.load(written);
+      const size = output.getPage(0).getSize();
+      expect(size.width).toBeCloseTo(595);
+      expect(size.height).toBeCloseTo(842);
     });
   });
 });

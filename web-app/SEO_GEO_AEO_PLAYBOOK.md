@@ -1,6 +1,6 @@
 # SEO, GEO & AEO Master Playbook — Hindi PDF Editor
 > **Domain:** `https://hindipdfeditor.com`  
-> **Target Products:** Web Application (`/edit/`) & Android App  
+> **Target Products:** Web Application (`/` and tool pages) & Android App  
 > **Core Value Proposition:** Local-first, private PDF tool suite with zero-server uploads and 100% correct Devanagari (Hindi) OpenType shaping (fixing broken matras, conjuncts, and font corruption).
 
 ---
@@ -125,7 +125,7 @@ Every tool page must output rich nested JSON-LD structured data linking `Softwar
       "name": "Hindi PDF Editor",
       "applicationCategory": "ProductivityApplication",
       "operatingSystem": "Web, Android",
-      "url": "https://hindipdfeditor.com/edit/",
+      "url": "https://hindipdfeditor.com/",
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -142,7 +142,7 @@ Every tool page must output rich nested JSON-LD structured data linking `Softwar
     },
     {
       "@type": "FAQPage",
-      "@id": "https://hindipdfeditor.com/edit/#faq",
+      "@id": "https://hindipdfeditor.com/#faq",
       "mainEntity": [
         {
           "@type": "Question",
@@ -187,9 +187,9 @@ Because 90%+ of the core user base resides in India (or the Hindi-speaking globa
 ### 1. Language & Regional Metadata
 ```html
 <html lang="hi" data-lang-alt="en">
-<link rel="alternate" hreflang="hi" href="https://hindipdfeditor.com/edit/?lang=hi" />
-<link rel="alternate" hreflang="en-IN" href="https://hindipdfeditor.com/edit/" />
-<link rel="alternate" hreflang="x-default" href="https://hindipdfeditor.com/edit/" />
+<link rel="alternate" hreflang="hi" href="https://hindipdfeditor.com/?lang=hi" />
+<link rel="alternate" hreflang="en-IN" href="https://hindipdfeditor.com/" />
+<link rel="alternate" hreflang="x-default" href="https://hindipdfeditor.com/" />
 ```
 
 ### 2. Target Regional Geographies in Content & Case Studies
@@ -227,7 +227,7 @@ Answer top-ranking Quora questions with authoritative 300-word guides + link:
 
 Run this audit monthly to verify indexing and AI visibility:
 
-- [ ] **Google Search Console**: Check for crawl errors, Core Web Vitals (LCP < 2.5s, CLS < 0.1), and indexation status of all `/edit/` parameters.
+- [ ] **Google Search Console**: Check for crawl errors, Core Web Vitals (LCP < 2.5s, CLS < 0.1), and indexation status of the home and tool pages.
 - [ ] **AI Citation Checks**: Query ChatGPT, Perplexity, and Gemini with:
   - *"What is the best free tool to edit Hindi text in a PDF with correct matras?"*
   - *"How to edit Hindi PDF online without uploading documents?"*

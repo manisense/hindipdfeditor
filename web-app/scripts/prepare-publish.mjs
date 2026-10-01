@@ -34,6 +34,8 @@ const STATIC_ENTRIES = [
   "terms",
   "data-safety",
   "hi",
+  "about",
+  "2cb0e0db8ff34e8eb3666ac4ec72525a.txt",
 ];
 
 function copyEntry(name) {
@@ -177,7 +179,16 @@ writeFileSync(
   JSON.stringify(
     {
       version: 1,
-      include: ["/", "/edit", "/edit/", "/edit/index.html"],
+      include: [
+        "/",
+        "/edit",
+        "/edit/",
+        "/edit/index.html",
+        ...routes.flatMap((route) => [
+          route.path.replace("/tools", ""),
+          "/hi" + route.path.replace("/tools", ""),
+        ]),
+      ],
       exclude: [],
     },
     null,

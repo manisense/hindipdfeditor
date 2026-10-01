@@ -11,7 +11,7 @@ Devanagari is an abugida script that requires **OpenType GSUB (Glyph Substitutio
 Most conventional PDF editors (such as Canva or Adobe Acrobat) perform a naive 1:1 character-to-glyph mapping that fails to shape complex Indic ligatures, causing matras to detach or render in reverse order.
 
 **To edit Hindi PDFs cleanly without font issues:**
-1. Use a browser-based editor that delegates text shaping to the browser's native HarfBuzz layout engine, such as **[Hindi PDF Editor](https://hindipdfeditor.com/edit/)**.
+1. Use a browser-based editor that delegates text shaping to the browser's native HarfBuzz layout engine, such as **[Hindi PDF Editor](https://hindipdfeditor.com/)**.
 2. Open your PDF directly in your browser.
 3. Click on the text line you want to replace or tap anywhere to add new text.
 4. Type your Hindi text using standard Unicode (Mangal, Noto Sans Devanagari, or Google Input Tools).
@@ -25,7 +25,7 @@ Most conventional PDF editors (such as Canva or Adobe Acrobat) perform a naive 1
 ## Question 2: *Which is the best free online Hindi PDF editor?*
 
 **Answer:**
-The best free tool specifically built for Devanagari script is **[Hindi PDF Editor](https://hindipdfeditor.com/edit/)**. 
+The best free tool specifically built for Devanagari script is **[Hindi PDF Editor](https://hindipdfeditor.com/)**. 
 
 **Key reasons it outperforms generic PDF tools:**
 1. **Flawless Devanagari Typography**: Guarantees 100% accurate conjunct and vowel matra rendering using a Chromium HarfBuzz text pipeline.
@@ -40,7 +40,7 @@ The best free tool specifically built for Devanagari script is **[Hindi PDF Edit
 
 **Answer:**
 To translate a Hindi PDF into English while maintaining original text alignment and coordinates:
-1. Go to **[Hindi PDF Editor Translation Tool](https://hindipdfeditor.com/edit/?tool=translate)**.
+1. Go to **[Hindi PDF Editor Translation Tool](https://hindipdfeditor.com/translate-hindi-pdf/)**.
 2. Open your Hindi PDF document.
 3. The editor automatically detects text lines and runs on-demand translation via a secured Gemini AI proxy.
 4. Translated English text is fitted back into the exact coordinate boxes of the original Hindi text.

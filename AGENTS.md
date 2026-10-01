@@ -47,6 +47,7 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 
 6. **Home Screen Responsiveness**:
    - Mobile home screen must be clean, responsive, adaptable to varying screen sizes, and fixed (non-scrollable), utilizing vertical space intentionally without large dead gaps.
+   - Phones stay in portrait through a runtime lock (`useOrientationPolicy.ts`). Screens whose shorter side is at least 600dp rotate freely, and the manifest declares no orientation (ADR 0012). Read sizes with `useWindowDimensions`, never a one-off `Dimensions.get('window')`.
 
 7. **One Brand Color, Many Category Tints**:
    - Category accent colors must never compete with `brand.primary` (`#1843DD`) for primary action buttons. Accents label categories; `#1843DD` drives action.
@@ -73,6 +74,20 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 - **Font/encoding inspection fails closed.** If `legacyFontDetector.ts` throws or is inconclusive when reading embedded font names, treat the page as unknown-encoding and warn the user — never default to "assume Unicode, proceed." A page with a positively identified legacy font may enter explicit **raster-only Unicode replacement mode** after a warning and confirmation: the original page stays flattened and immutable, and every new edit uses a verified Unicode font. This does not decode, reinterpret, or download the legacy font, and unknown-encoding pages remain blocked without a bypass.
 - **Validate before reporting success.** After export, confirm the output file is non-empty and re-openable (a basic parse-back check) before telling the user it worked. A silently corrupt export is worse than a visible error.
 - **Vet new native dependencies before adding them.** Check current maintenance status and Expo SDK compatibility — the mobile native-module ecosystem's compatibility windows are short, and a package that worked six months ago may not build today. Don't add one without checking.
+
+## Website, content and SEO rules (`web-app/`)
+
+- **Public claims must match the code.** Before a feature appears in page copy, FAQs, JSON-LD or `llms*.txt`, check it in the source.
+  - The web export is page images, not vector or searchable text.
+  - Legacy fonts are detected, never converted. The web editor blocks those pages; replacement mode is Android-only.
+  - Compression has a quality slider, not size presets.
+  - AI OCR and translation send data after consent, so the site is not "100% local".
+  - Do not add "100%", "flawless" or unsourced claims about named competitors. Answer engines quote this text verbatim.
+- **Never publish guidance to alter documents issued by an authority**, such as admit cards, mark sheets or land records. Point to the legitimate route instead: a correction window, an affidavit, or an application to the issuing office.
+- **Public routing follows the shared manifest.** `web-app/tool-routes.json` owns `/tools/` entries; `/` and `/hi/` are genuine language equivalents. Root-level and Hindi tool URLs from ADR 0010 are compatibility redirects, preserving language and task parameters. `check-publish.mjs` and migration tests must pass. Do not invent translated SEO alternates for UI toggles. See web ADR 0005.
+- **Articles are researched and hand-written.** The daily article bot's schedule stays off. Do not re-enable it or bulk-generate templated pages. When an article changes, bump its `dateModified` (the build copies it into the sitemap) and update the hub card, the home card if there is one, `llms.txt` and `scripts/seo-keyword-queue.json`.
+- **Articles are credited to Manish** (Person `@id` `https://hindipdfeditor.com/about/#manish`, described on `/about/`). Keep the visible byline and the JSON-LD author in sync when adding articles.
+- **Hindi pages use Hindi UI.** New tool strings go through `useTx(en, hi)` in `web-app/editor/src/lib/i18n.tsx`.
 
 ## Performance constraints
 

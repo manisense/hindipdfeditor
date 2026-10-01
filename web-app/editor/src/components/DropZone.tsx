@@ -1,3 +1,4 @@
+import { useTx } from "../lib/i18n";
 import { useRef, useState, type DragEvent, type ReactNode } from "react";
 import { FileType2, Files, ShieldCheck, UploadCloud } from "lucide-react";
 
@@ -35,6 +36,7 @@ export function DropZone({
   children,
   compact = false,
 }: Props) {
+  const tx = useTx();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(
@@ -102,12 +104,14 @@ export function DropZone({
         )}
       </div>
       <div className="drop-zone__copy">
-        <span className="drop-zone__eyebrow">Ready when you are</span>
+        <span className="drop-zone__eyebrow">
+          {tx("Ready when you are", "तैयार हैं")}
+        </span>
         <h2 className="drop-zone__title">{title}</h2>
         {subtitle && <p className="drop-zone__subtitle">{subtitle}</p>}
       </div>
       <AppButton
-        title={buttonLabel}
+        title={buttonLabel ?? tx("Select PDF files", "पीडीएफ फाइलें चुनें")}
         icon={<UploadCloud size={17} aria-hidden="true" />}
         onClick={() => inputRef.current?.click()}
         disabled={disabled}
@@ -120,10 +124,12 @@ export function DropZone({
       )}
       <div className="drop-zone__assurances" aria-label="File handling details">
         <span>
-          <ShieldCheck size={14} aria-hidden="true" /> Private by default
+          <ShieldCheck size={14} aria-hidden="true" />{" "}
+          {tx("Private by default", "डिफ़ॉल्ट रूप से प्राइवेट")}
         </span>
         <span>
-          <FileType2 size={14} aria-hidden="true" /> PDF files only
+          <FileType2 size={14} aria-hidden="true" />{" "}
+          {tx("PDF files only", "सिर्फ पीडीएफ फाइलें")}
         </span>
       </div>
       {children}

@@ -147,3 +147,9 @@ After each meaningful content deploy, use **URL Inspection → Request indexing*
 - `robots.txt` allows major search + AI crawlers
 
 You cannot finish Search Console verification from this repo alone — the DNS TXT step must be done in Cloudflare + Search Console UI.
+
+## Merged release compatibility
+
+The shared tool manifest and Pages migration worker own routing. The former root-level tool URLs and `/hi/<tool>/` URLs permanently redirect to `/tools/<tool>/`, retaining mode, tracking and Hindi UI preference. The superseded parallel SSR/Pages Function implementation is removed so there is one canonical owner. Remote mobile changes, PDF.js legacy browser compatibility, bilingual labels/recovery, public About pages, paused content schedule and IndexNow integration are retained.
+
+Use the project-local Wrangler binary with project credentials explicitly supplied; do not rely on a different account's global OAuth configuration. No Cloudflare API token was located in this checkout during the merge; `.wrangler/cache` files hold account metadata only.

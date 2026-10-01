@@ -1,3 +1,4 @@
+import { useTx } from "../lib/i18n";
 import { trackToolEvent } from "../lib/analytics";
 import { useState } from "react";
 
@@ -13,6 +14,7 @@ import "./UtilityTool.css";
 const tool = getTool("split")!;
 
 export function SplitPdfTool() {
+  const tx = useTx();
   const [file, setFile] = useState<File | null>(null);
   const [pageCount, setPageCount] = useState(0);
   const [fromPage, setFromPage] = useState(1);
@@ -73,9 +75,12 @@ export function SplitPdfTool() {
         {!file ? (
           <DropZone
             accent={tool.accent}
-            title="Split a PDF"
-            subtitle="Pick a PDF, then choose which pages to keep."
-            buttonLabel="Select PDF"
+            title={tx("Split a PDF", "पीडीएफ के पेज अलग करें")}
+            subtitle={tx(
+              "Pick a PDF, then choose which pages to keep.",
+              "पीडीएफ चुनें, फिर तय करें कि कौन-से पेज रखने हैं।",
+            )}
+            buttonLabel={tx("Select PDF", "पीडीएफ चुनें")}
             onFiles={(files) => void openFile(files[0])}
           />
         ) : (
@@ -87,13 +92,20 @@ export function SplitPdfTool() {
             <div className="utility-tool__setting-card">
               <div className="utility-tool__setting-heading">
                 <div>
-                  <strong>Choose pages to keep</strong>
-                  <span>Enter one continuous page range</span>
+                  <strong>
+                    {tx("Choose pages to keep", "रखने वाले पेज चुनें")}
+                  </strong>
+                  <span>
+                    {tx(
+                      "Enter one continuous page range",
+                      "एक लगातार पेज रेंज डालें",
+                    )}
+                  </span>
                 </div>
               </div>
               <div className="utility-tool__range">
                 <label>
-                  From page
+                  {tx("From page", "पेज से")}
                   <input
                     type="number"
                     disabled={busy}
@@ -110,7 +122,7 @@ export function SplitPdfTool() {
                   →
                 </span>
                 <label>
-                  To page
+                  {tx("To page", "पेज तक")}
                   <input
                     type="number"
                     disabled={busy}
@@ -127,7 +139,7 @@ export function SplitPdfTool() {
             </div>
             <div className="utility-tool__actions">
               <AppButton
-                title="Choose another"
+                title={tx("Choose another", "दूसरी फाइल चुनें")}
                 disabled={busy}
                 variant="ghost"
                 small
@@ -151,8 +163,11 @@ export function SplitPdfTool() {
           </AppStatus>
         )}
         {doneName && (
-          <AppStatus tone="success" title="Split PDF ready">
-            Downloaded {doneName}
+          <AppStatus
+            tone="success"
+            title={tx("Split PDF ready", "नई पीडीएफ तैयार")}
+          >
+            {tx("Downloaded", "डाउनलोड हुई:")} {doneName}
           </AppStatus>
         )}
       </div>

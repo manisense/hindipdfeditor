@@ -75,3 +75,9 @@ export function LanguageProvider({
 export function useLanguage() {
   return useContext(I18nContext);
 }
+
+/** Select a translated UI label without changing the document or public route. */
+export function useTx(): (en: string, hi: string) => string {
+  const { isHindi } = useLanguage();
+  return (en, hi) => (isHindi ? hi : en);
+}

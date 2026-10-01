@@ -1,3 +1,4 @@
+import { useTx } from "../lib/i18n";
 import {
   useCallback,
   useEffect,
@@ -62,6 +63,7 @@ export function AppPopup({
   onClose,
   closeLabel = "Close popup",
 }: AppPopupProps) {
+  const tx = useTx();
   const titleId = useId();
   const bodyId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -153,7 +155,7 @@ export function AppPopup({
             <button
               type="button"
               className="app-popup__close"
-              aria-label={closeLabel}
+              aria-label={closeLabel ?? tx("Close popup", "पॉपअप बंद करें")}
               onClick={onClose}
             >
               <X size={19} aria-hidden="true" />

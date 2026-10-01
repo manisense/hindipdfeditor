@@ -62,3 +62,20 @@ test("invalid tool state returns a real 404; static assets are delegated", async
     "https://example.com/tools/translate-hindi-pdf/",
   );
 });
+
+test("remote tool URLs redirect without losing language or mode", () => {
+  for (const route of routes) {
+    const alias = route.path.replace("/tools", "");
+    for (const prefix of ["", "/hi"]) {
+      const target = migrationDestination(
+        new URL(
+          `https://example.com${prefix}${alias}?mode=erase&utm_source=old`,
+        ),
+      );
+      assert.equal(target.pathname, route.path);
+      assert.equal(target.searchParams.get("mode"), "erase");
+      assert.equal(target.searchParams.get("utm_source"), "old");
+      assert.equal(target.searchParams.get("lang"), prefix ? "hi" : null);
+    }
+  }
+});

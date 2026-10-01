@@ -1,3 +1,4 @@
+import { useTx } from "../lib/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Download,
@@ -113,6 +114,7 @@ async function detectLegacyFontWarnings(
 }
 
 export function EditPdfTool() {
+  const tx = useTx();
   const { showPopup } = useAppPopup();
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const [focusedEditId, setFocusedEditId] = useState<string | null>(null);
@@ -355,11 +357,14 @@ export function EditPdfTool() {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await showPopup({
-        title: "Enhancement couldn’t finish",
+        title: tx(
+          "Enhancement couldn’t finish",
+          "AI टेक्स्ट पहचान पूरी नहीं हो पाई",
+        ),
         message,
         tone: "error",
-        eyebrow: "AI text detection",
-        actionLabel: "Back to editor",
+        eyebrow: tx("AI text detection", "AI टेक्स्ट पहचान"),
+        actionLabel: tx("Back to editor", "एडिटर पर वापस"),
       });
     } finally {
       setEnhancingPage(null);
@@ -576,30 +581,36 @@ export function EditPdfTool() {
         const sourceLabel =
           direction === "hi-en" ? "Hindi (Devanagari)" : "English";
         await showPopup({
-          title: "No source text found",
-          message: `No ${sourceLabel} text was found to translate. Try Enhance with AI on scanned pages, then translate again.`,
+          title: tx("No source text found", "अनुवाद के लिए टेक्स्ट नहीं मिला"),
+          message: tx(
+            `No ${sourceLabel} text was found to translate. Try Enhance with AI on scanned pages, then translate again.`,
+            'अनुवाद के लिए टेक्स्ट नहीं मिला। स्कैन पेजों पर पहले "Enhance with AI" आज़माएं, फिर दोबारा अनुवाद करें।',
+          ),
           tone: "warning",
-          eyebrow: "Translation check",
-          actionLabel: "Back to editor",
+          eyebrow: tx("Translation check", "अनुवाद जांच"),
+          actionLabel: tx("Back to editor", "एडिटर पर वापस"),
         });
         return;
       }
       const targetLabel = direction === "hi-en" ? "English" : "Hindi";
       await showPopup({
-        title: "Translation complete",
-        message: `Replaced ${translatedCount} line${translatedCount === 1 ? "" : "s"} with ${targetLabel}. Review the overlays, then download the edited PDF.`,
+        title: tx("Translation complete", "अनुवाद पूरा हुआ"),
+        message: tx(
+          `Replaced ${translatedCount} line${translatedCount === 1 ? "" : "s"} with ${targetLabel}. Review the overlays, then download the edited PDF.`,
+          `${translatedCount} लाइनें ${direction === "hi-en" ? "अंग्रेजी" : "हिंदी"} में बदली गईं। बदलाव जांचें, फिर एडिट की हुई पीडीएफ डाउनलोड करें।`,
+        ),
         tone: "success",
-        eyebrow: "Ready to review",
-        actionLabel: "Review edits",
+        eyebrow: tx("Ready to review", "जांच के लिए तैयार"),
+        actionLabel: tx("Review edits", "बदलाव देखें"),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await showPopup({
-        title: "Translation couldn’t finish",
+        title: tx("Translation couldn’t finish", "अनुवाद पूरा नहीं हो पाया"),
         message,
         tone: "error",
-        eyebrow: "Translation failed",
-        actionLabel: "Back to editor",
+        eyebrow: tx("Translation failed", "अनुवाद विफल"),
+        actionLabel: tx("Back to editor", "एडिटर पर वापस"),
       });
     } finally {
       setTranslating(false);
@@ -894,23 +905,51 @@ export function EditPdfTool() {
     : 0;
   const zoomHint =
     pageZoom > 1.01
-      ? ` Ctrl+scroll or pinch to zoom (${Math.round(pageZoom * 100)}%).`
-      : " Pinch or Ctrl+scroll to zoom.";
+      ? tx(
+          ` Ctrl+scroll or pinch to zoom (${Math.round(pageZoom * 100)}%).`,
+          ` ज़ूम के लिए पिंच या Ctrl+स्क्रॉल करें (${Math.round(pageZoom * 100)}%)।`,
+        )
+      : tx(
+          " Pinch or Ctrl+scroll to zoom.",
+          " ज़ूम के लिए पिंच या Ctrl+स्क्रॉल करें।",
+        );
+  const findingText = tx(
+    `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`,
+    `टेक्स्ट खोजा जा रहा है… (${ocrReadyCount}/${document?.pages.length ?? 0} पेज तैयार)`,
+  );
   const hintText = editingBlocked
-    ? "Editing is disabled on this page — see the warning above."
+    ? tx(
+        "Editing is disabled on this page — see the warning above.",
+        "इस पेज पर एडिटिंग बंद है — ऊपर की चेतावनी देखें।",
+      )
     : editMode === "erase"
-      ? `Erase mode — drag a box over text to replace. Click without dragging, click outside the page, or press Esc to cancel.${zoomHint}`
+      ? tx(
+          "Erase mode — drag a box over text to replace. Click without dragging, click outside the page, or press Esc to cancel.",
+          "मिटाने का मोड — बदलने वाले टेक्स्ट पर बॉक्स खींचें। रद्द करने के लिए बिना खींचे क्लिक करें, पेज के बाहर क्लिक करें या Esc दबाएं।",
+        ) + zoomHint
       : editMode === "addText"
         ? ocrStatus === "running"
-          ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
-          : `Add Text — click the page to place text. Click outside the page or press Esc to cancel.${zoomHint}`
+          ? findingText
+          : tx(
+              "Add Text — click the page to place text. Click outside the page or press Esc to cancel.",
+              "टेक्स्ट जोड़ें — जहाँ लिखना है वहाँ पेज पर क्लिक करें। रद्द करने के लिए पेज के बाहर क्लिक करें या Esc दबाएं।",
+            ) + zoomHint
         : ocrStatus === "running"
           ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
           : ocrStatus === "failed"
-            ? `Could not detect text automatically — use Erase box or Add text. Press Esc to clear selection.${zoomHint}`
+            ? tx(
+                "Could not detect text automatically — use Erase box or Add text. Press Esc to clear selection.",
+                'टेक्स्ट अपने-आप नहीं पहचाना जा सका — "Erase box" या "Add text" इस्तेमाल करें। चुनाव हटाने के लिए Esc दबाएं।',
+              ) + zoomHint
             : (page?.ocrLines.length ?? 0) === 0
-              ? `No tappable text found yet — try Enhance with AI, Erase box, or Add text.${zoomHint}`
-              : `Edit text — click a highlighted line to change it. Press Esc to finish.${zoomHint}`;
+              ? tx(
+                  "No tappable text found yet — try Enhance with AI, Erase box, or Add text.",
+                  'अभी टैप करने लायक टेक्स्ट नहीं मिला — "Enhance with AI", "Erase box" या "Add text" आज़माएं।',
+                ) + zoomHint
+              : tx(
+                  "Edit text — click a highlighted line to change it. Press Esc to finish.",
+                  "टेक्स्ट एडिट करें — बदलने के लिए हाइलाइट की गई लाइन पर क्लिक करें। खत्म करने के लिए Esc दबाएं।",
+                ) + zoomHint;
 
   const step = status.state === "saved" && !dirty ? 3 : document ? 2 : 1;
 
@@ -940,10 +979,14 @@ export function EditPdfTool() {
       tool={tool}
       compact={Boolean(document)}
       steps={[
-        { label: "Select PDF", active: step === 1, done: step > 1 },
-        { label: "Edit", active: step === 2, done: step > 2 },
         {
-          label: "Download",
+          label: tx("Select PDF", "पीडीएफ चुनें"),
+          active: step === 1,
+          done: step > 1,
+        },
+        { label: tx("Edit", "एडिट"), active: step === 2, done: step > 2 },
+        {
+          label: tx("Download", "डाउनलोड"),
           active: step === 3,
           done: status.state === "saved" && !dirty,
         },
@@ -951,7 +994,7 @@ export function EditPdfTool() {
       actions={
         document ? (
           <AppButton
-            title="Open another"
+            title={tx("Open another", "दूसरी फाइल खोलें")}
             disabled={
               status.state === "opening" ||
               status.state === "saving" ||
@@ -984,9 +1027,12 @@ export function EditPdfTool() {
         <div className="app__centered app__fill app__landing">
           <DropZone
             accent={tool.accent}
-            title="Edit Hindi PDF"
-            subtitle="Open a PDF in your browser. Tap detected text to edit, add overlays, or erase burned-in text. Your file stays on this device."
-            buttonLabel="Select PDF"
+            title={tx("Edit Hindi PDF", "हिंदी पीडीएफ एडिट करें")}
+            subtitle={tx(
+              "Open a PDF in your browser. Tap detected text to edit, add overlays, or erase burned-in text. Your file stays on this device.",
+              "पीडीएफ अपने ब्राउज़र में खोलें। पहचाने गए टेक्स्ट पर टैप करके बदलें, नया टेक्स्ट जोड़ें या पेज पर छपा टेक्स्ट मिटाएं। फाइल इसी डिवाइस पर रहती है।",
+            )}
+            buttonLabel={tx("Select PDF", "पीडीएफ चुनें")}
             onFiles={(files) => void openPdfFile(files[0])}
             disabled={status.state === "saving"}
           />
@@ -1039,14 +1085,14 @@ export function EditPdfTool() {
                   />
                 </div>
               ) : (
-                <span className="app__page-count">1 page</span>
+                <span className="app__page-count">{tx("1 page", "1 पेज")}</span>
               )}
               <span className="app__filename">
                 <FileText size={15} aria-hidden="true" />
                 <span>{document.sourceName}</span>
               </span>
               <AppButton
-                title="Undo"
+                title={tx("Undo", "पहले जैसा करें")}
                 icon={<Undo2 size={15} aria-hidden="true" />}
                 small
                 variant="ghost"
@@ -1058,8 +1104,8 @@ export function EditPdfTool() {
               <AppButton
                 title={
                   enhancingPage === currentPageIndex
-                    ? "Enhancing…"
-                    : "Enhance with AI"
+                    ? tx("Enhancing…", "सुधार रहे हैं…")
+                    : tx("Enhance with AI", "AI से सुधारें")
                 }
                 icon={<Sparkles size={15} aria-hidden="true" />}
                 small
@@ -1073,7 +1119,11 @@ export function EditPdfTool() {
                 }
               />
               <AppButton
-                title={translating ? "Translating…" : "Translate"}
+                title={
+                  translating
+                    ? tx("Translating…", "अनुवाद हो रहा है…")
+                    : tx("Translate", "अनुवाद")
+                }
                 icon={<Languages size={15} aria-hidden="true" />}
                 small
                 variant="secondary"
@@ -1091,7 +1141,7 @@ export function EditPdfTool() {
               aria-label="Editing modes"
             >
               <AppButton
-                title="Edit text"
+                title={tx("Edit text", "टेक्स्ट बदलें")}
                 icon={<Type size={15} aria-hidden="true" />}
                 small
                 variant={editMode === "edit" ? "primary" : "secondary"}
@@ -1099,7 +1149,7 @@ export function EditPdfTool() {
                 disabled={editingBlocked}
               />
               <AppButton
-                title="Add text"
+                title={tx("Add text", "टेक्स्ट जोड़ें")}
                 icon={<Plus size={15} aria-hidden="true" />}
                 small
                 variant={editMode === "addText" ? "primary" : "secondary"}
@@ -1107,7 +1157,7 @@ export function EditPdfTool() {
                 disabled={editingBlocked}
               />
               <AppButton
-                title="Erase box"
+                title={tx("Erase box", "मिटाएं")}
                 icon={<Eraser size={15} aria-hidden="true" />}
                 small
                 variant={editMode === "erase" ? "primary" : "secondary"}
@@ -1230,7 +1280,9 @@ export function EditPdfTool() {
 
           <AppButton
             title={
-              status.state === "saving" ? "Exporting…" : "Download edited PDF"
+              status.state === "saving"
+                ? tx("Exporting…", "एक्सपोर्ट हो रहा है…")
+                : tx("Download edited PDF", "एडिट की हुई पीडीएफ डाउनलोड करें")
             }
             icon={<Download size={17} aria-hidden="true" />}
             onClick={() => void saveAndExport()}
@@ -1277,13 +1329,13 @@ export function EditPdfTool() {
       {translationOptionsVisible && (
         <AppPopup
           open
-          title="Translate PDF"
-          eyebrow="Choose translation scope"
+          title={tx("Translate PDF", "पीडीएफ अनुवाद")}
+          eyebrow={tx("Choose translation scope", "कितना अनुवाद करना है")}
           onClose={() => setTranslationOptionsVisible(false)}
           actions={
             <>
               <AppButton
-                title="Cancel"
+                title={tx("Cancel", "रद्द करें")}
                 small
                 variant="ghost"
                 onClick={() => setTranslationOptionsVisible(false)}
@@ -1291,13 +1343,13 @@ export function EditPdfTool() {
               {detectedDirection && (
                 <>
                   <AppButton
-                    title="This page"
+                    title={tx("This page", "यह पेज")}
                     small
                     variant="secondary"
                     onClick={() => queueTranslation("page")}
                   />
                   <AppButton
-                    title="Whole PDF"
+                    title={tx("Whole PDF", "पूरी पीडीएफ")}
                     small
                     onClick={() => queueTranslation("document")}
                     data-popup-initial-focus
@@ -1309,20 +1361,23 @@ export function EditPdfTool() {
         >
           {detectedDirection ? (
             <p>
-              Detected{" "}
+              {tx("Detected", "पहचानी गई दिशा:")}{" "}
               <strong>
                 {detectedDirection === "hi-en"
-                  ? "Hindi → English"
-                  : "English → Hindi"}
+                  ? tx("Hindi → English", "हिंदी → अंग्रेजी")
+                  : tx("English → Hindi", "अंग्रेजी → हिंदी")}
               </strong>
-              . Source-language lines are sent securely through our Gemini
-              proxy. The original PDF is never overwritten.
+              {tx(
+                ". Source-language lines are sent securely through our Gemini proxy. The original PDF is never overwritten.",
+                "। स्रोत भाषा की लाइनें सुरक्षित रूप से हमारे Gemini प्रॉक्सी से भेजी जाती हैं। मूल पीडीएफ कभी नहीं बदलती।",
+              )}
             </p>
           ) : (
             <p>
-              No clear Hindi or English source text was detected yet. Run{" "}
-              <strong>Enhance with AI</strong> or wait for text detection, then
-              try Translate again.
+              {tx(
+                "No clear Hindi or English source text was detected yet. Run Enhance with AI or wait for text detection, then try Translate again.",
+                'अभी साफ हिंदी या अंग्रेजी टेक्स्ट नहीं मिला। "AI से सुधारें" चलाएं या टेक्स्ट पहचान पूरी होने दें, फिर दोबारा अनुवाद करें।',
+              )}
             </p>
           )}
         </AppPopup>
@@ -1333,10 +1388,13 @@ export function EditPdfTool() {
           open
           title={
             aiGateMode === "translate"
-              ? "Security check for translation"
-              : "Enhance with AI OCR"
+              ? tx(
+                  "Security check for translation",
+                  "अनुवाद के लिए सुरक्षा चेक",
+                )
+              : tx("Enhance with AI OCR", "AI OCR से सुधारें")
           }
-          eyebrow="Privacy-first AI"
+          eyebrow={tx("Privacy-first AI", "प्राइवेसी के साथ AI")}
           onClose={() => {
             setAiConsentVisible(false);
             setPendingTranslation(null);
@@ -1344,7 +1402,7 @@ export function EditPdfTool() {
           actions={
             <>
               <AppButton
-                title="Cancel"
+                title={tx("Cancel", "रद्द करें")}
                 small
                 variant="ghost"
                 onClick={() => {
@@ -1353,7 +1411,7 @@ export function EditPdfTool() {
                 }}
               />
               <AppButton
-                title="Continue"
+                title={tx("Continue", "आगे बढ़ें")}
                 small
                 onClick={confirmAiOcr}
                 disabled={!turnstileToken}
@@ -1364,8 +1422,14 @@ export function EditPdfTool() {
         >
           <p>
             {aiGateMode === "translate"
-              ? "Complete the security check, then detected source-language lines will be translated through our Gemini proxy. If local extraction is unreliable, only the affected page image is also sent for higher-accuracy OCR. The original PDF is never changed."
-              : "This page image will be sent securely through our service to Google's Gemini API for higher-accuracy text detection. The original PDF is never changed."}
+              ? tx(
+                  "Complete the security check, then detected source-language lines will be translated through our Gemini proxy. If local extraction is unreliable, only the affected page image is also sent for higher-accuracy OCR. The original PDF is never changed.",
+                  "सुरक्षा चेक पूरा करें, फिर पहचानी गई लाइनों का अनुवाद हमारे Gemini प्रॉक्सी से होगा। अगर ब्राउज़र में टेक्स्ट ठीक से न पढ़ा जाए, तो सिर्फ उस पेज की इमेज भी बेहतर OCR के लिए भेजी जाएगी। मूल पीडीएफ कभी नहीं बदलती।",
+                )
+              : tx(
+                  "This page image will be sent securely through our service to Google's Gemini API for higher-accuracy text detection. The original PDF is never changed.",
+                  "इस पेज की इमेज बेहतर टेक्स्ट पहचान के लिए हमारी सर्विस से सुरक्षित रूप से Google के Gemini API को भेजी जाएगी। मूल पीडीएफ कभी नहीं बदलती।",
+                )}
           </p>
           <TurnstileWidget onToken={setTurnstileToken} />
         </AppPopup>

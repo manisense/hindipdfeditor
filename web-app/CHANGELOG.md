@@ -42,3 +42,6 @@
 - Shared popup/file-summary controls use approved geometry. Narrow legal/support navigation and long links reflow correctly. Eight priority guides and eight legal/support pages passed responsive browser checks.
 - Local mobile Lighthouse: performance 89, accessibility 100, SEO 100; LCP 3.3 seconds, TBT 0, CLS 0. Field Core Web Vitals remain unverified.
 - Actual Hindi exports and a 400/700/800-weight display-font PDF were visually inspected using independent rasterizers. Browser application errors: zero. Production release and account-level GSC/GA4/AI checks await owning-account access.
+
+### Remote main integration
+- Fetched remote main before merging. Retained mobile renderer/release work, bilingual recovery and tool labels, PDF.js legacy browser compatibility, About pages and publishing integrations. One shared canonical/build system supersedes the parallel SSR implementation; aliases preserve its previously published tool URLs.

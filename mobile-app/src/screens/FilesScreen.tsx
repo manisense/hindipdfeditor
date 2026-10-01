@@ -100,6 +100,12 @@ function classifyCategory(
 // In-memory module-level cache for scanned device files to avoid rescanning on every tab switch
 let cachedScannedDeviceFiles: RecentFile[] | null = null;
 let isScanRunning = false;
+// URIs whose thumbnail could not be rendered (damaged, encrypted or half-downloaded PDFs).
+// Kept for the session so a failing file isn't re-rendered every time the list re-renders.
+const failedThumbnailUris = new Set<string>();
+// Unopened device files above this size (bytes) get the placeholder icon instead of a
+// rendered thumbnail: parsing a very large PDF just to draw a 40dp preview isn't worth it.
+const MAX_THUMBNAIL_SOURCE_BYTES = 50 * 1024 * 1024;
 
 export function FilesScreen({ onOpenFile }: Props) {
   const insets = useSafeAreaInsets();
@@ -312,7 +318,15 @@ export function FilesScreen({ onOpenFile }: Props) {
   // Lazy render thumbnail for a file if missing
   const lazyLoadThumbnail = useCallback(
     async (file: RecentFile) => {
-      if (!file.uri || thumbnailCache[file.uri] || renderingRefs.current.has(file.uri)) return;
+      if (
+        !file.uri ||
+        thumbnailCache[file.uri] ||
+        renderingRefs.current.has(file.uri) ||
+        failedThumbnailUris.has(file.uri) ||
+        (!file.isRecent && (file.sizeBytes ?? 0) > MAX_THUMBNAIL_SOURCE_BYTES)
+      ) {
+        return;
+      }
       renderingRefs.current.add(file.uri);
       try {
         const [thumb, count] = await Promise.all([
@@ -324,6 +338,8 @@ export function FilesScreen({ onOpenFile }: Props) {
 
         if (thumb?.uri) {
           setThumbnailCache((prev) => ({ ...prev, [file.uri]: thumb.uri }));
+        } else {
+          failedThumbnailUris.add(file.uri);
         }
         if (count && count > 0) {
           setPageCountCache((prev) => ({ ...prev, [file.uri]: count }));

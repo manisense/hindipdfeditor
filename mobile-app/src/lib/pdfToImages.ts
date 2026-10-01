@@ -17,10 +17,18 @@ export interface PageImage {
    * WebView (see `PdfPageImageModule.kt`'s docstring and CHANGELOG for the on-device repro).
    */
   uri: string;
-  /** Rendered bitmap width, in px. */
+  /**
+   * Rendered bitmap width, in px. Usually page width in pt * the requested scale, but lower for
+   * very large pages (the native renderer caps the pixel count), so derive pt sizes from
+   * `widthPt`/`heightPt`, never from px / scale.
+   */
   pxWidth: number;
-  /** Rendered bitmap height, in px. */
+  /** Rendered bitmap height, in px (same caveat as `pxWidth`). */
   pxHeight: number;
+  /** Page width, in PDF points. */
+  widthPt: number;
+  /** Page height, in PDF points. */
+  heightPt: number;
 }
 
 /** Number of pages in the PDF at `uri` (a `file://` or `content://` URI). */
@@ -38,7 +46,13 @@ export async function getPageCount(uri: string): Promise<number> {
  */
 export async function renderPage(uri: string, page: number, scale: number): Promise<PageImage> {
   const result = await PdfPageImage.renderPage(uri, page, scale);
-  return { uri: result.uri, pxWidth: result.width, pxHeight: result.height };
+  return {
+    uri: result.uri,
+    pxWidth: result.width,
+    pxHeight: result.height,
+    widthPt: result.widthPt,
+    heightPt: result.heightPt,
+  };
 }
 
 /**

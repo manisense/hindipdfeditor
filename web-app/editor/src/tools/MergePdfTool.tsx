@@ -1,3 +1,4 @@
+import { useTx } from "../lib/i18n";
 import { trackToolEvent } from "../lib/analytics";
 import { useState } from "react";
 
@@ -13,6 +14,7 @@ import "./UtilityTool.css";
 const tool = getTool("merge")!;
 
 export function MergePdfTool() {
+  const tx = useTx();
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,9 +62,12 @@ export function MergePdfTool() {
           <DropZone
             multiple
             accent={tool.accent}
-            title="Merge PDF files"
-            subtitle="Choose two or more PDFs. They stay on your device."
-            buttonLabel="Select PDF files"
+            title={tx("Merge PDF files", "पीडीएफ फाइलें जोड़ें")}
+            subtitle={tx(
+              "Choose two or more PDFs. They stay on your device.",
+              "दो या ज्यादा पीडीएफ चुनें। फाइलें आपके डिवाइस पर ही रहती हैं।",
+            )}
+            buttonLabel={tx("Select PDF files", "पीडीएफ फाइलें चुनें")}
             onFiles={(next) => {
               setFiles(next);
               setDoneName(null);
@@ -90,7 +95,7 @@ export function MergePdfTool() {
                       updateQueue(files.filter((_, i) => i !== index))
                     }
                   >
-                    Remove
+                    {tx("Remove", "हटाएं")}
                   </button>
                 </li>
               ))}
@@ -99,15 +104,18 @@ export function MergePdfTool() {
               multiple
               compact
               accent={tool.accent}
-              title="Add more PDFs"
-              subtitle="Drop additional files to append."
-              buttonLabel="Add PDFs"
+              title={tx("Add more PDFs", "और पीडीएफ जोड़ें")}
+              subtitle={tx(
+                "Drop additional files to append.",
+                "और फाइलें यहाँ छोड़ें, वे आखिर में जुड़ेंगी।",
+              )}
+              buttonLabel={tx("Add PDFs", "पीडीएफ जोड़ें")}
               disabled={busy}
               onFiles={(next) => updateQueue([...files, ...next])}
             />
             <div className="utility-tool__actions">
               <AppButton
-                title="Clear"
+                title={tx("Clear", "सब हटाएं")}
                 disabled={busy}
                 variant="ghost"
                 small
@@ -131,8 +139,11 @@ export function MergePdfTool() {
           </AppStatus>
         )}
         {doneName && (
-          <AppStatus tone="success" title="Merged PDF ready">
-            Downloaded {doneName}
+          <AppStatus
+            tone="success"
+            title={tx("Merged PDF ready", "जुड़ी हुई पीडीएफ तैयार")}
+          >
+            {tx("Downloaded", "डाउनलोड हुई:")} {doneName}
           </AppStatus>
         )}
       </div>

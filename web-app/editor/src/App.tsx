@@ -78,7 +78,7 @@ export default function App() {
           {toolId === "edit" ? (
             <EditPdfTool />
           ) : toolId === "translate" ? (
-            <ErrorBoundary label="Translate">
+            <ErrorBoundary>
               <TranslatePdfTool />
             </ErrorBoundary>
           ) : toolId === "merge" ? (

@@ -55,3 +55,7 @@ without requiring one exact model phrasing.
 source pages with tables, formal prose, names, dates, amounts, URLs, identifiers, conjuncts, and a
 reph. Generate and validate the PDF with the same headless-Chrome and Poppler commands documented
 above; this is an additional translation fixture and does not replace the canonical shaping fixture.
+
+## `legacy-krutidev-fixture.pdf`
+
+A stand-in for a Kruti Dev document, used to check that editors refuse to edit legacy-font pages. It fails closed on the web and offers raster-only replacement on Android. Its text is stored as ASCII ("d\`fr nso" is how Kruti Dev stores कृति देव), and its font's BaseFont is `KrutiDev010`. The real font is proprietary and not shipped, so the glyphs render as Helvetica. The detector keys on the font name, exactly as it does for a real file. Regenerate it with `node scripts/make-legacy-font-fixture.mjs` from `web-app/editor`.

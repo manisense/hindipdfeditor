@@ -4,9 +4,78 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Mobile Web Parity & Architecture Overhaul
 
-### Changed — Web SEO design baseline (1 October 2026)
+### Fixed — Android app stability (Play Console, 1.0.0 / versionCode 6)
 
-- Restored the companion web app's shared palette, category colors, shadows and principal button geometry to the root design system. React and static pages consume `web-app/assets/brand-tokens.css`; native rendering and phase status are unchanged.
+- **The release build could hang in R8.** With the template's 2 GB Gradle heap, `minifyReleaseWithR8` ran out of memory and Gradle hung until CI timed out. `app.config.ts` now sets `org.gradle.jvmargs=-Xmx6g` through a small config plugin, so EAS builds get it too. The CI smoke test then passed: the `:pdfrender` helper started for Files-tab thumbnails, the app survived a SIGSEGV of the helper, and the app process logged no fatal errors.
+- **Release workflow** (`.github/workflows/android-release.yml`, run by hand). It builds a release APK, then runs `scripts/android-smoke-test.sh` on an Android 14 emulator. The test launches the app and opens the Files tab with valid, truncated and garbage PDFs. It kills the `:pdfrender` helper with SIGSEGV and checks the app survives, and it fails on fatal errors from the app process. With `release` ticked and a green smoke test, the workflow builds on EAS and submits to Play as a draft. That needs an `EXPO_TOKEN` secret. It uses a `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` secret when present, and otherwise the key stored in Expo (`production-eas-key` submit profile).
+- **Version 1.0.1 (versionCode 7).** The native module changed shape (render results now carry `widthPt`/`heightPt`). `runtimeVersion` follows the app version, so the bump keeps over-the-air JS updates for this code away from 1.0.0 binaries.
+- **Verified in the session that made these changes:** lint, typecheck, 173 Jest tests and Prettier pass. The `pdf-page-image` Kotlin compiles without warnings against the Android 14 framework classes (Robolectric `android-all`), with Expo API stubs. `expo prebuild` emits `android:screenOrientation="unspecified"` and versionCode 7, and autolinking resolves `expo-screen-orientation`. **Not verified:** nothing ran on a device or emulator (no Android SDK in that environment). Check before release: open a damaged PDF from the Files tab; edit and export a multi-page Hindi PDF; rotate on a tablet or foldable.
+- **Native crashes in the system PDF engine** (`libpdfium.so` SIGSEGVs in `CPDF_Document::CPDF_Document` and `CPDF_Page::~CPDF_Page`). All PdfRenderer calls now run in a separate `:pdfrender` process (ADR `0011-pdfium-in-a-separate-process.md`). A damaged or half-downloaded PDF now makes that call fail with "the file may be damaged or unsupported" instead of closing the app. Page bitmaps are capped at 16M px, and the renderer returns each page's size in points so capped pages keep correct geometry. Needs checking on a device: no Android SDK or device was available when this was written.
+- **Opening a PDF in the editor started text recognition on every page at once.** Each page runs two ML Kit passes that each decode the full 3× page image (~18 MB for A4), so a 20-page file could need about 700 MB. That risks an out-of-memory crash, and garbage-collection stalls that can lead to ANRs. Pages are now recognised one at a time, in page order.
+- **Colour sampling decoded the whole page image to read one small box.** `sampleAverageColor` and `sampleTextColor` now decode only the needed rectangle with `BitmapRegionDecoder`, and read it with one `getPixels` call instead of a `getPixel` call per pixel. For A4 that is a few hundred KB instead of ~18 MB per tap. This is Play's bitmap-optimisation recommendation. The sampling maths is unchanged.
+- **Viewer: the next or previous page could stay on its loading state forever.** Each finished render re-ran the render effect, which discarded the results of pages still rendering but left them marked as in flight. Results are now kept while the same file is open, and a page that fails to render is not retried in a loop.
+- **Large screens** (Play recommendation): the manifest no longer locks the app to portrait, so tablets and foldables rotate. Phones stay portrait through a runtime lock, because the fixed home screen doesn't fit a landscape phone (ADR `0012-portrait-phones-rotating-large-screens.md`). The tab pager and the viewer now follow width changes, and the pager no longer reopens on Home while the nav bar shows another tab after a tool closes. The top inset comes from safe-area insets alone, not the legacy `StatusBar.currentHeight`.
+- **The Files tab re-rendered failing thumbnails on every list update.** A PDF whose thumbnail fails (damaged, encrypted, still downloading) is now remembered for the session and shows the placeholder icon. Unopened device files over 50 MB no longer get a rendered thumbnail.
+
+### Fixed — Website tools
+
+- **Named author**: all 13 articles now carry a visible byline ("By Manish" / "लेखक: Manish") and a Person JSON-LD author: Software Engineer at Pruning Labs, with LinkedIn `sameAs`, replacing "Hindi PDF Editor Team". The About pages describe him and link the Person to the Organization as founder. The article generator template uses the same author.
+- **Translate read Kruti Dev PDFs as English.** Legacy fonts store Hindi as Latin letters, so direction detection took their embedded text for English. Legacy-font pages now count as Hindi, and a failed font check yields no guess (fail closed). Checked with the new `mobile-app/fixtures/legacy-krutidev-fixture.pdf`. The same file also confirmed that the web editor blocks editing on legacy-font pages, with the warning in English and Hindi.
+- **Hindi pages had English progress messages and an English crash screen.** Translate's progress, errors and cancel message now come in Hindi too, and so does the error-recovery screen (`RecoveryScreen.tsx`).
+- **Removed an internal setup note shown publicly on `/support/`** (the Cloudflare Email Routing reminder).
+- **Added `/about/` and `/hi/about/`**: who makes the tool, how it works, what data leaves the device, and what it must not be used for. The Organization JSON-LD now carries `legalName` and the GitHub `sameAs`.
+- **Edit, Translate, Split and Compress failed to open any PDF on browsers without `Map.prototype.getOrInsertComputed`** (for example Chromium 141), with "getOrInsertComputed is not a function". pdf.js 5.7's modern build calls that very new API. The app now imports pdf.js's legacy build, which polyfills it in both the main thread and the worker. Verified in Chromium 141 with no polyfill: Hindi edit and export, split, compress, and translate language detection.
+- **Compress no longer hands back a bigger file.** Text-based PDFs can grow when every page becomes a JPEG (for example 36.1 KB → 41.2 KB). The tool now downloads nothing in that case and says why.
+- **An explicit `?lang=` link now wins over a saved language preference**, and becomes the new saved choice. Before, a saved Hindi preference sent a `?lang=en` link to the Hindi page after a second redirect.
+
+### Changed — Website SEO: crawlable pages
+
+- **Prerendered website pages (ADR `0010-prerendered-web-pages-and-path-urls.md`)**: the home page and each tool are now static HTML at build time, in English and Hindi. There is one URL per tool and language (`/merge-pdf/`, `/hi/merge-pdf/`, …), with per-page titles, canonicals, reciprocal hreflang and JSON-LD.
+- `/` is now the canonical home (previously a 302 to `/edit/`). `/edit/` returns a 301 to `/`, and old `?tool=`/`?lang=` links forward to the new paths.
+- Each tool page has a visible H1, intro, how-to steps and FAQ that describe only what the tool does.
+- The hero no longer starts invisible until JavaScript loads.
+- The internal SEO playbook is no longer published with the site.
+- **hreflang fixed site-wide**:
+  - The English legal pages now link reciprocally with their `/hi/` versions.
+  - Articles no longer declare false alternates: they had pointed `en`/`hi` at themselves or at unrelated articles. The article generator no longer emits them either.
+  - The build (`scripts/check-seo.mjs`) now fails if a page's canonical is not its own URL, or if an hreflang set is not reciprocal.
+- **Real 404 page**: `web-app/404.html` is a bilingual, `noindex` page linking to the tools. Without a top-level `404.html`, Cloudflare Pages treated the site as a single-page app and answered unknown URLs with a 200. Checked with `wrangler pages dev`: unknown paths now return 404.
+- **Claims match the product**:
+  - Removed "vector PDF", "100% local / zero uploads", "HarfBuzz", "Mangal" and "convert Kruti Dev to Unicode" from the site, articles and `llms*.txt`. Web export is page images, and AI OCR and translation send data after the user consents.
+  - The comparison table no longer makes unsourced claims about named competitors.
+- **Removed forgery-adjacent guides**: three articles told readers to change names, roll numbers, exam dates and plot details on issued admit cards and land records. They were deleted and 301-redirected to the affidavit and Bhulekh guides. Those two guides were rewritten around the legitimate process: a notarised affidavit, or a correction application to the issuing office.
+- `web-app/DEPLOYMENT.md` has a checklist for Cloudflare's AI-crawler settings, which can block answer-engine bots before `robots.txt` applies. It also covers Bing Webmaster Tools.
+- **Search Console follow-up**: `/edit/` earned about 275 of roughly 330 clicks, mostly for "hindi pdf editor" searches.
+  - A Pages Function (`web-app/functions/edit/index.js`) now 301s `/edit/` and `/edit/?tool=…` straight to `/` or the matching tool page. `_redirects` cannot match query strings.
+  - The home title and H1 now lead with "Hindi PDF Editor" and target "online free" and "Hindi font".
+  - The edit page targets "edit Hindi text in PDF" and has a new FAQ on which Hindi font is used.
+- **IndexNow**: the key file is hosted at the site root, and `web-app/scripts/indexnow.mjs` submits all sitemap URLs to Bing and the other IndexNow engines.
+- **Article rewrites**, driven by Search Console impressions:
+  - The Parimarjan Plus guide went from about 150 to 850 words. It covers the two application types, documents, the self-declaration, why applications get reverted, and status and helpline.
+  - The name-mismatch affidavit guide went from about 300 to 800 words. It covers the correction window, what the affidavit must say, the process, and when an affidavit is not enough.
+  - Both have new titles for click-through, visible FAQs that match their JSON-LD, an Article image, and no emoji.
+  - Three more rewrites:
+    - "Fix broken Hindi fonts" is now a guide to four different failure modes: scattered matras, empty boxes, copy-paste gibberish, and legacy fonts.
+    - "हिंदी पीडीएफ कैसे एडिट करें" now covers Gboard Hindi and Hinglish setup, the editing steps, and what not to edit.
+    - The English Kruti Dev guide explains why the text shows as gibberish, and gives three routes: convert, rebuild, or overlay.
+  - The remaining eight articles were rewritten, all researched and with new titles:
+    - The 100KB guide covers scan settings and step-wise compression, plus photo and signature KB limits for SSC, UPSSSC and UPSC.
+    - The e-District self-declaration guide is corrected: no notary is needed, and the IPC reference is gone.
+    - The e-stamp guide explains how to measure your own certificate instead of trusting a fixed 4.5-inch margin.
+    - The UP Bhulekh guide now follows the Section 38 UP Revenue Code 2006 process.
+    - The translate guide covers four approaches.
+    - The merge guide covers document order and staying under size limits.
+    - The compress-scanned guide covers legibility checks.
+    - The Kruti Dev guide now has a Hindi version.
+  - Removed claims about features that do not exist: "Portal Safe (100KB)" and "e-Stamp" presets, and the translate tool's supposed manual choice of direction.
+  - Article pages no longer scroll sideways on phones.
+- **Hindi tool UI**: on `/hi/` pages, every tool's labels, steps, buttons, popups, hints and warnings are now in Hindi, through a small `useTx(en, hi)` helper in `lib/i18n.tsx`. Pipeline progress messages and the error-recovery screen stay English for now.
+- **Legacy-font copy corrected**: the articles and FAQs had described the Android app's replacement mode as a web feature. The web editor blocks editing on legacy-font pages.
+- **Headers and sitemap**:
+  - Unhashed `/assets/*` now revalidate daily instead of being cached immutably for a year.
+  - HSTS is added.
+  - The daily article bot is paused.
+  - The build syncs each article's `dateModified` into the sitemap `lastmod`.
 
 ### Added — Unified Design System & Vector Icon Infrastructure
 
@@ -515,3 +584,10 @@ Template for each future phase, add above this line as phases complete:
 ### Fixed
 -
 -->
+
+## Web release record
+
+See web-app/CHANGELOG.md for the verified web implementation.
+
+### Concurrent web release merge — 1 October 2026
+- Preserved remote native renderer, rotation and release changes. Web route ownership now follows the shared manifest, with redirects for ADR 0010 paths; its historical ADR is superseded and the companion-web spec is aligned. No native rendering behavior was changed during this merge.

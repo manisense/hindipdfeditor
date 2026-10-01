@@ -2,6 +2,18 @@ import routes from "../tool-routes.json" with { type: "json" };
 
 /** Resolve retired landing URLs without losing supported tool state. */
 export function migrationDestination(url) {
+  const normalized = url.pathname.replace(/\/?$/, "/");
+  const hindi = normalized.startsWith("/hi/");
+  const legacyPath = hindi ? normalized.slice(3) : normalized;
+  const alias = routes.find(
+    (route) => route.path.replace("/tools", "") === legacyPath,
+  );
+  if (alias) {
+    const destination = new URL(url);
+    destination.pathname = alias.path;
+    if (hindi) destination.searchParams.set("lang", "hi");
+    return destination;
+  }
   if (!["/", "/edit", "/edit/", "/edit/index.html"].includes(url.pathname))
     return null;
   const id = url.searchParams.get("tool");
