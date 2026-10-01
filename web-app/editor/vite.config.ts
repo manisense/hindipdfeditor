@@ -57,6 +57,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 650,
     rollupOptions: {
       output: {
+        onlyExplicitManualChunks: true,
         manualChunks(id) {
           if (id.includes("node_modules/@cantoo/pdf-lib")) return "pdf-lib";
           if (id.includes("node_modules/html2canvas")) return "html2canvas";

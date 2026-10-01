@@ -1,6 +1,6 @@
 # Hindi PDF Editor — final SEO, design and web experience implementation plan
 
-Date: 1 October 2026. Status: implementation brief; application changes and deployment have not been performed. This document supersedes the earlier plan's implementation sequencing; its analytics baseline remains in `SEO_PLAN_2026-10-01.md`.
+Date: 1 October 2026. Status: local implementation completed with the release and evidence exceptions recorded below; production deployment is pending. This document supersedes the earlier plan's implementation sequencing; its analytics baseline remains in `SEO_PLAN_2026-10-01.md`.
 
 ## 1. Outcome and scope
 
@@ -226,18 +226,18 @@ Create a public shaping fixture and original walkthrough that educators and rele
 
 ## 13. Execution checklist
 
-- [ ] I01: live/local reconciliation, baseline and route map
-- [ ] I02: shared design tokens and component audit
-- [ ] I03: accurate privacy/capability/official-process copy
-- [ ] I04: crawlable root, tool shells, build and canonical consistency
-- [ ] I05: homepage UI and sample evidence
-- [ ] I06: tool entry, feedback, navigation and consent UX
-- [ ] I07: priority article deliverables and template
-- [ ] I08: validated conversion analytics
-- [ ] I09: genuine localization and rendered schema
-- [ ] I10: performance, actual exports, release checks and indexing follow-up
+- [ ] I01: local route map and historical baseline complete; owning deployment account, exact migration date and GSC baseline still required.
+- [x] I02: shared design tokens and responsive component fixes verified locally.
+- [x] I03: privacy, capability and official-process copy reviewed and corrected.
+- [x] I04: root/tool initial HTML, migration routes, build and canonical consistency verified locally.
+- [x] I05: responsive homepage and downloadable sample evidence implemented.
+- [ ] I06: feedback, navigation safeguards and consent implemented; authenticated AI completion remains unverified.
+- [ ] I07: twenty reviewed guides and template complete; original workflow screenshots and authenticated translation example remain editorial follow-up.
+- [ ] I08: coarse validated outcome events implemented/tested; production GA4 configuration and delivery still require access.
+- [x] I09: real homepage/article language equivalents and rendered schema implemented and checked locally.
+- [ ] I10: actual exports, responsive checks, fonts and local Lighthouse complete; field performance, production release and indexing follow-up remain pending.
 
-None are marked complete by writing this plan.
+Checked items refer to local implementation and verification. Production acceptance is separate and must not be inferred from these boxes.
 
 ## Primary references
 
@@ -252,4 +252,4 @@ None are marked complete by writing this plan.
 
 ## Implementation status — 1 October 2026
 
-The first local batch implements root/locale prerendering, dedicated tool routes and legacy migration, shared design tokens, the homepage redesign and editor-only outcome events. This does not mark the complete plan finished. See [the execution record](SEO_EXECUTION_RECORD_2026-10-01.md) for acceptance evidence, release limits and remaining work.
+The locally verified release now includes root/locale prerendering, working dedicated tools and legacy migration, shared UI tokens, explicit AI consent, validated utility exports, navigation safeguards, coarse analytics, twenty reviewed guides, five real article language pairs, locally served fonts and lazy PDF dependencies. See [the execution record](SEO_EXECUTION_RECORD_2026-10-01.md) for run evidence and exact release limits. No production deployment or GSC/GA4 account checks are claimed.

@@ -61,3 +61,16 @@ npx wrangler pages deploy dist --project-name hindipdfeditor --branch main
 - [ ] Updated sitemap accepted and priority URLs inspected in GSC.
 - [ ] Consented AI completion tested against production API.
 - [ ] Analytics events and existing GA4 enhanced-measurement settings reviewed for privacy.
+
+## 1 October 2026 local release evidence
+
+- [x] 85 editor tests, 7 article/analytics/routing tests, lint and TypeScript/build passed.
+- [x] Twenty reviewed guides pass source/output, canonical, language-pair and link checks.
+- [x] Actual edit, merge, split and compression exports re-opened; Hindi export and pinned display fonts visually inspected.
+- [x] Expanded responsive browser acceptance passes with zero application errors.
+- [x] UI font provenance/hash checks and deployment font-URL checks pass.
+- [x] Dependency audit reports zero findings.
+- [x] Local mobile Lighthouse: performance 89, accessibility 100, SEO 100; LCP 3.3 seconds, TBT 0, CLS 0.
+- [ ] Current session authenticated to the owning Cloudflare account: current authenticated account lists no website project.
+- [ ] Normalize the live www host (currently a separate 200) in the owning zone.
+- [ ] Run current production checks above after release; historical July results do not substitute.

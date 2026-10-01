@@ -36,3 +36,9 @@
 - Replaced legacy generated layouts and unsupported claims with a shared design-system article template and reviewed source data for twenty guides, including four new translated counterparts.
 - Five genuine article language pairs use reciprocal hreflang. Unpaired articles have no invented alternate URLs. Government guides link official sources and distinguish preparing an application from changing an issued record.
 - Publication requires review metadata; regenerated source/output parity, visible FAQ/schema correspondence, internal links, sitemap dates and article hub are checked. Machine-readable site summaries now match product limitations.
+
+### UI and performance release verification
+- PDF vendors remain lazy with explicit chunk dependency ownership. Existing Inter/Noto UI families are pinned and served locally, with provenance, hashes and licenses; export fonts are unchanged.
+- Shared popup/file-summary controls use approved geometry. Narrow legal/support navigation and long links reflow correctly. Eight priority guides and eight legal/support pages passed responsive browser checks.
+- Local mobile Lighthouse: performance 89, accessibility 100, SEO 100; LCP 3.3 seconds, TBT 0, CLS 0. Field Core Web Vitals remain unverified.
+- Actual Hindi exports and a 400/700/800-weight display-font PDF were visually inspected using independent rasterizers. Browser application errors: zero. Production release and account-level GSC/GA4/AI checks await owning-account access.

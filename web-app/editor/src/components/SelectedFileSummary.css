@@ -1,19 +1,19 @@
 .selected-file-summary {
   align-items: center;
   display: flex;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
 }
 
 .selected-file-summary__icon {
   background: var(--tool-soft, var(--brand-wash));
-  border-radius: 16px;
+  border-radius: 12px;
   color: var(--tool-accent, var(--brand));
   display: grid;
   flex: none;
-  height: 50px;
+  height: 48px;
   place-items: center;
-  width: 50px;
+  width: 48px;
 }
 
 .selected-file-summary__copy {
@@ -21,13 +21,13 @@
 }
 
 .selected-file-summary__label {
-  color: var(--tool-accent, var(--brand));
+  color: var(--ink);
   display: block;
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.09em;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   text-transform: uppercase;
 }
 
@@ -39,6 +39,6 @@
 
 .selected-file-summary p {
   color: var(--muted);
-  font-size: 13px;
-  margin: 3px 0 0;
+  font-size: 14px;
+  margin: 4px 0 0;
 }

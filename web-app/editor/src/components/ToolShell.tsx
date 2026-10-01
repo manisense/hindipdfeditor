@@ -163,7 +163,7 @@ export function ToolShell({
           </span>
           <span>
             {isHindi
-              ? "100% सुरक्षित देवनागरी एडिटर"
+              ? "देवनागरी के लिए बनाया गया"
               : "Made for Devanagari · हिंदी"}
           </span>
         </div>

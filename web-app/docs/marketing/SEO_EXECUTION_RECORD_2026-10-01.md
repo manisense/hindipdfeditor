@@ -24,12 +24,12 @@ The smoke test blocks external analytics and Google Fonts to keep it determinist
 
 ## Remaining work and release limits
 
-- Production has not been deployed. Verify redirects on the real hostname, deployed canonical/hreflang/source metadata and asset caching before requesting indexing.
-- GSC selected canonicals, index coverage, before/after rankings and country/device performance require account data after release. Supplied table remains a historical last-month baseline with unspecified exact dates.
-- Article/template editorial upgrades, unsaved-edit navigation protection, authenticated AI consent/completion checks, analytics coverage for remaining tools and full static-article UI consistency remain pending.
-- Field Core Web Vitals, production GA4 enhanced-measurement privacy settings and production error monitoring remain unverified.
-- Existing lockfile audit reports 9 vulnerable dependencies (4 moderate, 5 high), including pdfjs-dist and DOMPurify. No dependency versions changed in this batch. Review advisories and make a separate tested dependency update before public release.
-- No ranking guarantee is made; rank #1 requires observed search results, useful product outcomes and ongoing measurement.
+- The local implementation below is ready for release review; production is not deployed. Current Wrangler authentication has no owning website project. The live `www` host still returns a separate 200, so its normalization requires the owning zone/account.
+- Verify live redirects, asset caching, canonical/hreflang and schema after deployment. GSC selected canonicals, indexing, exact migration date, country/device/position data and before/after rankings require account access.
+- Production GA4 enhanced-measurement privacy settings, real event delivery and field Core Web Vitals remain unverified. Local LCP is 3.3 seconds, so the good field LCP target is not yet demonstrated.
+- Authenticated Turnstile/AI completion, real translation output review and associated production evidence remain unverified. No user document was sent during local consent checks.
+- Editorial follow-up: add workflow-specific original screenshots and a consented source/translation example after the authenticated path is verified. Continue reviewed updates based on GSC query-page evidence and exports, rather than a keyword publication quota.
+- Dependency audit findings, article/template consistency, unexported-navigation protection and remaining utility analytics were resolved in the follow-ups below.
 
 ## Follow-up 1: dependency audit
 
@@ -50,3 +50,13 @@ The final editor run passed 85 tests in 21 files and lint. Seven Node tests cove
 Twenty guides are regenerated from reviewed queue data through one token-based template. Sixteen existing URLs are retained and four genuine translated counterparts added. Five reciprocal English/Hindi pairs replace unsupported language annotations; unpaired guides have no fictitious hreflang. Government-form guides cite official portals and explain application preparation rather than alteration of issued records. Unicode/legacy/scan distinctions, image-based output and consented AI limits are explicit. No unofficial sample is presented as a government-approved form.
 
 Content checks passed for source/output parity, canonical URLs, reciprocal pairs, internal links and review metadata. The article hub, sitemap review dates and llms summaries are generated consistently. The template includes a real fixture preview/download, accessible table of contents, sources, related guides and matching FAQ schema. A production translation example and workflow-specific screenshots beyond the public editing fixture remain future evidence after authenticated verification.
+
+## Follow-up 5: remaining UI, font delivery and performance
+
+Shared popup/file-summary geometry now follows the design tokens. Static navigation and long support links reflow at 320px; the browser acceptance checks caught and drove fixes for an invalid responsive selector and minimum-content grid overflow. English/Hindi legal/support pages use the same local fonts as articles and React.
+
+Explicit manual chunk ownership prevents shared helpers from pulling PDF libraries into the homepage. Inter and Noto Sans Devanagari subsets are pinned to official sources with committed licenses, byte sizes and SHA-256 checks. Their 100–900 weight axes were inspected; used 400/700/800 weights rendered through an actual one-page Chromium PDF and were visually inspected with Poppler and MuPDF. Both showed connected conjuncts, matras and reph. Poppler reported Type 3 glyph bounding-box warnings from Chromium's print output; no visible discrepancy appeared in either renderer. Export font binaries remain unchanged.
+
+Final local mobile Lighthouse: performance **89**, accessibility **100**, SEO **100**; LCP **3.3 s**, total blocking time **0 ms**, CLS **0**. The homepage requests no PDF/OCR/export vendors before entering a tool. This is a local lab result; field CWV remains pending.
+
+Final expanded Chrome acceptance passed: homepage widths 320/360/390/768/1024/1440, eight priority guides at three widths, eight legal/support pages at 320px, old query migrations, invalid input, navigation guard, actual edited fixture export, merge/split/compress downloads, and unchecked AI consent after language detection. Browser application errors: zero. Display-font fixture weights loaded from local assets. Exported Hindi and font fixtures were re-opened and visually inspected. Unit tests: 85; Node tests: 7; lint, production build, source/output content checks, font checks and deployment-artifact checks passed. See the final verification section if subsequent checks change this status.

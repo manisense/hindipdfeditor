@@ -69,7 +69,7 @@ img {
   display: inline-flex;
   font-size: 18px;
   font-weight: 800;
-  gap: 10px;
+  gap: 12px;
   letter-spacing: -0.02em;
   min-width: max-content;
 }
@@ -88,7 +88,7 @@ img {
   align-items: center;
   display: flex;
   flex: 1;
-  gap: 22px;
+  gap: 24px;
   justify-content: center;
 }
 
@@ -109,7 +109,7 @@ img {
 .nav-actions {
   align-items: center;
   display: flex;
-  gap: 14px;
+  gap: 16px;
 }
 
 .nav-text {
@@ -123,10 +123,9 @@ img {
 }
 
 .button {
-  border-radius: 999px;
   align-items: center;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 9999px;
   cursor: pointer;
   display: inline-flex;
   font-family: inherit;
@@ -134,8 +133,8 @@ img {
   font-weight: 700;
   gap: 8px;
   justify-content: center;
-  min-height: 40px;
-  padding: 8px 18px;
+  min-height: 48px;
+  padding: 12px 24px;
   text-align: center;
   transition:
     background 150ms ease,
@@ -148,14 +147,18 @@ img {
 }
 
 .button.primary {
-  background: var(--accent);
+  background: linear-gradient(
+    110deg,
+    var(--hpe-primary),
+    var(--hpe-primary-deep)
+  );
   color: #fff;
 }
 
 .button.primary:hover,
 .button.primary:focus-visible {
   background: var(--accent-dark);
-  box-shadow: 0 6px 16px rgba(229, 50, 45, 0.28);
+  box-shadow: var(--hpe-shadow);
 }
 
 .button.secondary {
@@ -165,7 +168,7 @@ img {
 }
 
 .button.secondary:hover {
-  border-color: #cfd3de;
+  border-color: var(--hpe-border);
 }
 
 .icon {
@@ -259,7 +262,7 @@ img {
 .tab.active,
 .tab:hover,
 .tab:focus-visible {
-  background: var(--navy, #050839);
+  background: var(--navy, #14161f);
   color: #fff;
 }
 
@@ -302,19 +305,19 @@ img {
   color: var(--accent);
 }
 .tool-icon--orange {
-  color: #f59e0b;
+  color: var(--hpe-orange);
 }
 .tool-icon--blue {
-  color: #3b82f6;
+  color: var(--hpe-edit);
 }
 .tool-icon--green {
-  color: #22a06b;
+  color: var(--hpe-green);
 }
 .tool-icon--purple {
-  color: #8b5cf6;
+  color: var(--hpe-purple);
 }
 .tool-icon--teal {
-  color: #14b8a6;
+  color: var(--hpe-teal);
 }
 
 .tool-card h3 {
@@ -487,7 +490,7 @@ img {
 }
 
 .promo-list li::before {
-  color: #22a06b;
+  color: var(--hpe-green);
   content: "✓";
   font-weight: 800;
   left: 0;
@@ -564,7 +567,7 @@ img {
 /* ——— Footer ——— */
 
 .site-footer {
-  background: var(--navy, #050839);
+  background: var(--navy, #14161f);
   color: #c5c8d1;
 }
 
@@ -667,7 +670,7 @@ h3 {
 .page-hero-inner p {
   color: var(--muted);
   font-size: 16px;
-  margin: 14px 0 0;
+  margin: 16px 0 0;
 }
 
 .content {
@@ -687,7 +690,7 @@ h3 {
 .content h3 {
   font-size: 17px;
   font-weight: 700;
-  margin-top: 22px;
+  margin-top: 24px;
 }
 
 .content p,
@@ -696,16 +699,18 @@ h3 {
 }
 
 .content a {
+  overflow-wrap: anywhere;
   color: var(--accent);
   font-weight: 700;
 }
 
 .content-card {
+  min-width: 0;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   margin: 16px 0;
-  padding: 20px;
+  padding: 24px;
 }
 
 .table-wrap {
@@ -744,7 +749,7 @@ td {
 .notice {
   background: var(--cream);
   border-radius: var(--radius);
-  color: #7a4a12;
+  color: var(--hpe-text);
   padding: 16px;
 }
 
@@ -795,24 +800,6 @@ td {
   margin: 8px 0 0;
 }
 
-.feature-band,
-.feature-grid,
-.feature,
-.steps,
-.step,
-.step-number,
-.hero,
-.hero-inner,
-.lead,
-.hero-actions,
-.trust-row,
-.trust-item,
-.phone-panel,
-.phone-frame,
-.phone-caption {
-  /* legacy hooks kept harmless if referenced elsewhere */
-}
-
 @media (max-width: 1020px) {
   .tool-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -831,7 +818,7 @@ td {
   .work-way__grid,
   .promo-band__inner,
   .legal-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .tool-grid {
@@ -845,7 +832,7 @@ td {
 
 @media (max-width: 560px) {
   .nav {
-    min-height: 54px;
+    min-height: 64px;
     padding: 0 12px;
     gap: 8px;
   }
@@ -873,8 +860,8 @@ td {
   }
 
   .button {
-    min-height: 36px;
-    padding: 6px 14px;
+    min-height: 48px;
+    padding: 8px 16px;
     font-size: 13px;
   }
 
@@ -893,11 +880,11 @@ td {
   .tool-grid,
   .support-options,
   .footer-inner {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .button.primary {
-    padding-inline: 14px;
+    padding-inline: 16px;
   }
 }
 
@@ -1377,14 +1364,14 @@ td {
 
 @media (max-width: 768px) {
   .featured-hero-card {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     padding: 24px;
   }
   .floating-nav-links {
     display: none;
   }
   .article-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .hero-knowledge {
     padding-top: 100px;

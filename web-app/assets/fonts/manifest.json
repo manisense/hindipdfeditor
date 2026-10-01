@@ -1,0 +1,20 @@
+[
+  {
+    "file": "inter-v20-latin.woff2",
+    "source": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+    "bytes": 48256,
+    "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62"
+  },
+  {
+    "file": "noto-sans-devanagari-v30.woff2",
+    "source": "https://fonts.gstatic.com/s/notosansdevanagari/v30/TuG7UUFzXI5FBtUq5a8bjKYTZjtRU6Sgv3NaV_SNmI0b8QQCQmHN5TV_9qo.woff2",
+    "bytes": 121192,
+    "sha256": "3b3cae4d2600cb502286577fcfbc7f0caa05d9bb3c28d6699aeb56302d35e730"
+  },
+  {
+    "file": "noto-sans-devanagari-v30-latin.woff2",
+    "source": "https://fonts.gstatic.com/s/notosansdevanagari/v30/TuG7UUFzXI5FBtUq5a8bjKYTZjtRU6Sgv3NaV_SNmI0b8QQCQmHN5DV_.woff2",
+    "bytes": 25384,
+    "sha256": "531d2365a3dbd2daccb336430f40be4af31203a7d3f20c12513dca3012ad572b"
+  }
+]

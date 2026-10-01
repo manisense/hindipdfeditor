@@ -1,9 +1,9 @@
-import { act, createElement } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { act, createElement } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { AppPopupProvider } from './AppPopup';
-import { useAppPopup } from './appPopupContext';
+import { AppPopupProvider } from "./AppPopup";
+import { useAppPopup } from "./appPopupContext";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -16,49 +16,53 @@ function requiredElement<T extends Element>(selector: string): T {
 function PopupHarness({ resolved }: { resolved: string[] }) {
   const { showPopup } = useAppPopup();
   return createElement(
-    'div',
+    "div",
     null,
     createElement(
-      'button',
+      "button",
       {
-        type: 'button',
-        'data-testid': 'show-error',
+        type: "button",
+        "data-testid": "show-error",
         onClick: async () => {
           await showPopup({
-            title: 'Translation couldn’t finish',
-            message: 'Gemini could not complete this request.',
-            tone: 'error',
-            eyebrow: 'Translation failed',
-            actionLabel: 'Back to editor',
+            title: "Translation couldn’t finish",
+            message: "Gemini could not complete this request.",
+            tone: "error",
+            eyebrow: "Translation failed",
+            actionLabel: "Back to editor",
           });
-          resolved.push('error');
+          resolved.push("error");
         },
       },
-      'Show error',
+      "Show error",
     ),
     createElement(
-      'button',
+      "button",
       {
-        type: 'button',
-        'data-testid': 'queue-popups',
+        type: "button",
+        "data-testid": "queue-popups",
         onClick: () => {
-          void showPopup({ title: 'First popup', message: 'First message' });
-          void showPopup({ title: 'Second popup', message: 'Second message', tone: 'success' });
+          void showPopup({ title: "First popup", message: "First message" });
+          void showPopup({
+            title: "Second popup",
+            message: "Second message",
+            tone: "success",
+          });
         },
       },
-      'Queue popups',
+      "Queue popups",
     ),
   );
 }
 
-describe('AppPopupProvider', () => {
+describe("AppPopupProvider", () => {
   let container: HTMLDivElement;
   let root: Root;
   let resolved: string[];
 
   beforeEach(async () => {
     resolved = [];
-    container = document.createElement('div');
+    container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
     await act(async () => {
@@ -75,58 +79,70 @@ describe('AppPopupProvider', () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
-    document.body.style.overflow = '';
+    document.body.style.overflow = "";
   });
 
-  it('shows a branded accessible error popup and resolves its action', async () => {
-    const trigger = requiredElement<HTMLButtonElement>('[data-testid="show-error"]');
+  it("shows a branded accessible error popup and resolves its action", async () => {
+    const trigger = requiredElement<HTMLButtonElement>(
+      '[data-testid="show-error"]',
+    );
     await act(async () => trigger.click());
 
     const dialog = requiredElement<HTMLDivElement>('[role="dialog"]');
-    expect(dialog.getAttribute('aria-modal')).toBe('true');
-    expect(dialog.classList.contains('app-popup__panel--error')).toBe(true);
-    expect(dialog.textContent).toContain('Translation couldn’t finish');
-    expect(dialog.textContent).toContain('Gemini could not complete this request.');
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    expect(dialog.classList.contains("app-popup__panel--error")).toBe(true);
+    expect(dialog.textContent).toContain("Translation couldn’t finish");
+    expect(dialog.textContent).toContain(
+      "Gemini could not complete this request.",
+    );
+    expect(document.body.style.overflow).toBe("hidden");
 
     await act(async () => {
-      requiredElement<HTMLButtonElement>('[data-popup-initial-focus]').click();
+      requiredElement<HTMLButtonElement>("[data-popup-initial-focus]").click();
     });
 
     expect(document.querySelector('[role="dialog"]')).toBeNull();
-    expect(resolved).toEqual(['error']);
-    expect(document.body.style.overflow).toBe('');
+    expect(resolved).toEqual(["error"]);
+    expect(document.body.style.overflow).toBe("");
   });
 
-  it('dismisses with Escape and restores focus to the trigger', async () => {
-    const trigger = requiredElement<HTMLButtonElement>('[data-testid="show-error"]');
+  it("dismisses with Escape and restores focus to the trigger", async () => {
+    const trigger = requiredElement<HTMLButtonElement>(
+      '[data-testid="show-error"]',
+    );
     trigger.focus();
     await act(async () => trigger.click());
 
     await act(async () => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     });
 
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(document.activeElement).toBe(trigger);
-    expect(resolved).toEqual(['error']);
+    expect(resolved).toEqual(["error"]);
   });
 
-  it('queues simultaneous popup requests instead of overwriting them', async () => {
+  it("queues simultaneous popup requests instead of overwriting them", async () => {
     await act(async () => {
-      requiredElement<HTMLButtonElement>('[data-testid="queue-popups"]').click();
+      requiredElement<HTMLButtonElement>(
+        '[data-testid="queue-popups"]',
+      ).click();
     });
-    expect(requiredElement('[role="dialog"]').textContent).toContain('First popup');
+    expect(requiredElement('[role="dialog"]').textContent).toContain(
+      "First popup",
+    );
 
     await act(async () => {
-      requiredElement<HTMLButtonElement>('[data-popup-initial-focus]').click();
+      requiredElement<HTMLButtonElement>("[data-popup-initial-focus]").click();
     });
     const secondDialog = requiredElement<HTMLDivElement>('[role="dialog"]');
-    expect(secondDialog.textContent).toContain('Second popup');
-    expect(secondDialog.classList.contains('app-popup__panel--success')).toBe(true);
+    expect(secondDialog.textContent).toContain("Second popup");
+    expect(secondDialog.classList.contains("app-popup__panel--success")).toBe(
+      true,
+    );
 
     await act(async () => {
-      requiredElement<HTMLButtonElement>('[data-popup-initial-focus]').click();
+      requiredElement<HTMLButtonElement>("[data-popup-initial-focus]").click();
     });
     expect(document.querySelector('[role="dialog"]')).toBeNull();
   });

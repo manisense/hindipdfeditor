@@ -1,6 +1,6 @@
-import { FileText, Files } from 'lucide-react';
+import { FileText, Files } from "lucide-react";
 
-import './SelectedFileSummary.css';
+import "./SelectedFileSummary.css";
 
 type Props = {
   name: string;
@@ -13,7 +13,7 @@ type Props = {
 export function SelectedFileSummary({
   name,
   meta,
-  label = 'Selected PDF',
+  label = "Selected PDF",
   multiple = false,
 }: Props) {
   const Icon = multiple ? Files : FileText;

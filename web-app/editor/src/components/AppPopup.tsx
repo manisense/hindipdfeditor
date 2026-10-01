@@ -6,19 +6,19 @@ import {
   useRef,
   useState,
   type ReactNode,
-} from 'react';
-import { createPortal } from 'react-dom';
-import { CircleCheck, CircleX, Info, TriangleAlert, X } from 'lucide-react';
+} from "react";
+import { createPortal } from "react-dom";
+import { CircleCheck, CircleX, Info, TriangleAlert, X } from "lucide-react";
 
-import { AppButton } from './AppButton';
+import { AppButton } from "./AppButton";
 import {
   AppPopupContext,
   type AppPopupTone,
   type ShowPopupOptions,
-} from './appPopupContext';
-import './AppPopup.css';
+} from "./appPopupContext";
+import "./AppPopup.css";
 
-export type { AppPopupTone, ShowPopupOptions } from './appPopupContext';
+export type { AppPopupTone, ShowPopupOptions } from "./appPopupContext";
 
 type AppPopupProps = {
   open: boolean;
@@ -39,14 +39,14 @@ const toneIcons = {
 } as const;
 
 const focusableSelector = [
-  'button:not([disabled])',
-  'a[href]',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  'iframe',
+  "button:not([disabled])",
+  "a[href]",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "iframe",
   '[tabindex]:not([tabindex="-1"])',
-].join(',');
+].join(",");
 
 /**
  * Brand-consistent modal window used by every popup flow in the web app.
@@ -57,10 +57,10 @@ export function AppPopup({
   title,
   children,
   actions,
-  eyebrow = 'Hindi PDF Editor',
-  tone = 'info',
+  eyebrow = "Hindi PDF Editor",
+  tone = "info",
   onClose,
-  closeLabel = 'Close popup',
+  closeLabel = "Close popup",
 }: AppPopupProps) {
   const titleId = useId();
   const bodyId = useId();
@@ -77,26 +77,26 @@ export function AppPopup({
 
     const priorFocus = document.activeElement as HTMLElement | null;
     const priorOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
 
     const focusPopup = window.requestAnimationFrame(() => {
       const initialTarget = panelRef.current?.querySelector<HTMLElement>(
-        '[data-popup-initial-focus]',
+        "[data-popup-initial-focus]",
       );
       (initialTarget ?? panelRef.current)?.focus();
     });
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && onCloseRef.current) {
+      if (event.key === "Escape" && onCloseRef.current) {
         event.preventDefault();
         onCloseRef.current();
         return;
       }
-      if (event.key !== 'Tab' || !panelRef.current) return;
+      if (event.key !== "Tab" || !panelRef.current) return;
 
       const focusable = Array.from(
         panelRef.current.querySelectorAll<HTMLElement>(focusableSelector),
-      ).filter((element) => element.getAttribute('aria-hidden') !== 'true');
+      ).filter((element) => element.getAttribute("aria-hidden") !== "true");
       if (focusable.length === 0) {
         event.preventDefault();
         panelRef.current.focus();
@@ -114,10 +114,10 @@ export function AppPopup({
       }
     };
 
-    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener("keydown", onKeyDown);
     return () => {
       window.cancelAnimationFrame(focusPopup);
-      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = priorOverflow;
       if (priorFocus?.isConnected) priorFocus.focus();
     };
@@ -141,7 +141,6 @@ export function AppPopup({
         aria-describedby={bodyId}
         tabIndex={-1}
       >
-        <div className="app-popup__glow" aria-hidden="true" />
         <header className="app-popup__header">
           <span className="app-popup__icon" aria-hidden="true">
             <Icon size={25} strokeWidth={2.25} />
@@ -225,7 +224,7 @@ export function AppPopupProvider({ children }: { children: ReactNode }) {
       <AppPopup
         key={active?.id}
         open={active !== null}
-        title={active?.title ?? ''}
+        title={active?.title ?? ""}
         tone={active?.tone}
         eyebrow={active?.eyebrow}
         onClose={closeActive}
@@ -233,7 +232,7 @@ export function AppPopupProvider({ children }: { children: ReactNode }) {
         <p>{active?.message}</p>
         <div className="app-popup__inline-action">
           <AppButton
-            title={active?.actionLabel ?? 'Got it'}
+            title={active?.actionLabel ?? "Got it"}
             onClick={closeActive}
             data-popup-initial-focus
           />
