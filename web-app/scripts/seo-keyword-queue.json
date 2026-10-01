@@ -1,408 +1,1213 @@
 [
   {
     "slug": "hindi-pdf-kaise-edit-kare",
-    "title": "हिंदी पीडीएफ कैसे एडिट करें — PDF में हिंदी टाइपिंग और सुधार का आसान तरीका",
+    "title": "हिंदी PDF कैसे एडिट करें: टेक्स्ट जोड़ें और कॉपी जाँचें",
     "category": "देवनागरी टाइपोग्राफी",
     "language": "hi",
     "status": "published",
-    "publishedDate": "2026-08-18"
+    "publishedDate": "2026-08-18",
+    "metaDescription": "हिंदी PDF में Unicode टेक्स्ट जोड़ने, स्कैन पर मास्क लगाने और एक्सपोर्ट जाँचने की गाइड। नमूना PDF, फॉन्ट चेतावनी और प्राइवेसी सीमाएँ समझें।",
+    "directAnswer": "PDF की कॉपी खोलें, Add text या Erase box से आवश्यक बदलाव करें और नई फाइल डाउनलोड करके जाँचें। वेब एडिटर मूल पेज पर ओवरले लगाता है; यह हर पुराने फॉन्ट का कन्वर्टर नहीं है।",
+    "sections": [
+      {
+        "heading": "किस तरह की PDF पर काम हो सकता है?",
+        "paragraphs": [
+          "डिजिटल PDF में टेक्स्ट लेयर हो सकती है; स्कैन में अक्षर इमेज का हिस्सा होते हैं। एडिटर मूल पेज के ऊपर नया यूनिकोड टेक्स्ट और आवश्यक मास्क रखता है। यह Word जैसा पैराग्राफ रीफ्लो या हर फॉन्ट का कन्वर्टर नहीं है।",
+          "यदि फॉन्ट जाँच अस्पष्ट है या पुरानी एन्कोडिंग मिलती है, चेतावनी पढ़ें। प्रतिबंध को दरकिनार करने के बजाय स्रोत Word फाइल या प्रमाणित Unicode कॉपी लें।"
+        ]
+      },
+      {
+        "heading": "अभ्यास में क्या लिखें?",
+        "paragraphs": [
+          "नीचे दिए गए परीक्षण PDF पर अभ्यास करें। उदाहरण टेक्स्ट: “क्ष त्र ज्ञ कि प्रार्थना — परीक्षण”। इसमें संयुक्त अक्षर और छोटी इ की मात्रा है। यह उदाहरण किसी वास्तविक व्यक्ति या सरकारी रिकॉर्ड का डेटा नहीं है।",
+          "Add text चुनें, पेज पर जगह चुनें और हिंदी कीबोर्ड से लिखें। टेक्स्ट बॉक्स की चौड़ाई और आकार जाँचें। Erase मोड में पुराने शब्द पर बॉक्स बनाना मूल रिकॉर्ड को अधिकारपूर्वक सुधारना नहीं है।"
+        ]
+      },
+      {
+        "heading": "स्कैन का टेक्स्ट न मिले तो",
+        "paragraphs": [
+          "स्वचालित पहचान गलत हो सकती है। मैनुअल Add text या Erase box का इस्तेमाल करें। AI पहचान चाहें तो उसकी सहमति में भेजे जाने वाले पेज का विवरण पढ़ें; संवेदनशील जानकारी भेजने से पहले सोचें।"
+        ]
+      },
+      {
+        "heading": "डाउनलोड और प्रिंट की जाँच",
+        "paragraphs": [
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।",
+          "पहले नमूने पर एक्सपोर्ट करें, फिर अपनी PDF की एक कॉपी पर काम करें। मूल दस्तावेज अलग रखें। वास्तविक सरकारी प्रपत्र में बदलाव केवल जारीकर्ता की प्रक्रिया के अनुरूप करें।"
+        ]
+      },
+      {
+        "heading": "प्राइवेसी और सीमाएँ",
+        "paragraphs": [
+          "मुख्य PDF एडिटिंग आपके ब्राउज़र में होती है। AI OCR और अनुवाद अलग विकल्प हैं; उनके लिए सहमति देने पर चुना हुआ टेक्स्ट या पेज इमेज सेवा को भेजी जाती है।",
+          "बहुत बड़ी या कई पेज वाली PDF मोबाइल ब्राउज़र में धीमी हो सकती है। काम को छोटे भागों में बाँटें। पेज का रंग, टेक्स्ट बॉक्स और मास्क जाँचें; डाउनलोड शुरू होना फाइल को डिस्क पर सुरक्षित रखने की पुष्टि नहीं है।"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "नमूना खोलें",
+        "desc": "परीक्षण PDF डाउनलोड करें और एडिटर में Select PDF से खोलें।"
+      },
+      {
+        "title": "टेक्स्ट जोड़ें",
+        "desc": "Add text चुनें, पेज पर क्लिक करें और हिंदी लिखें। जरूरत पर बॉक्स या आकार बदलें।"
+      },
+      {
+        "title": "एक्सपोर्ट जाँचें",
+        "desc": "Download edited PDF चुनें और नई कॉपी दोबारा खोलें।"
+      }
+    ],
+    "faqs": [
+      {
+        "q": "क्या स्कैन की PDF में हिंदी जोड़ सकते हैं?",
+        "a": "हाँ, पेज पर नया टेक्स्ट ओवरले जोड़ सकते हैं। पहचान और पुराने शब्द को ढकने की गुणवत्ता जाँचें।"
+      },
+      {
+        "q": "क्या मूल PDF बदलती है?",
+        "a": "एक्सपोर्ट नई कॉपी बनाता है। मूल फाइल को अलग सुरक्षित रखें।"
+      }
+    ],
+    "reviewedDate": "2026-10-01",
+    "sample": true,
+    "alternateSlug": "how-to-edit-hindi-pdf",
+    "relatedSlugs": [
+      "fix-broken-hindi-fonts-in-pdf",
+      "kruti-dev-pdf-unicode-converter-hindi"
+    ]
   },
   {
     "slug": "kruti-dev-pdf-unicode-converter-hindi",
-    "title": "कृति देव 010 पीडीएफ को यूनिकोड में कैसे बदलें और एडिट करें",
+    "title": "Kruti Dev PDF और Unicode: कन्वर्जन की सीमाएँ",
     "category": "फॉन्ट कन्वर्जन",
     "language": "hi",
     "status": "published",
-    "publishedDate": "2026-08-18"
+    "publishedDate": "2026-08-18",
+    "metaDescription": "पुरानी हिंदी एन्कोडिंग पहचानें; Unicode स्रोत लें और नया ओवरले जाँचें। यह सार्वभौमिक PDF फॉन्ट कन्वर्टर नहीं है।",
+    "directAnswer": "Kruti Dev एन्कोडिंग और Unicode अलग हैं। पुराने टेक्स्ट को केवल Noto फॉन्ट में दिखाने से सही अक्षर नहीं मिलते। स्रोत से प्रमाणित Unicode टेक्स्ट लें।",
+    "sections": [
+      {
+        "heading": "दिखने वाले अक्षर और असली टेक्स्ट",
+        "paragraphs": [
+          "PDF में अक्षर सही दिखने के बाद भी कॉपी करने पर Latin संकेत मिल सकते हैं। पुराने फॉन्ट की आकृति को Unicode टेक्स्ट मानना गलत बदलाव पैदा कर सकता है। फॉन्ट का नाम और स्रोत दस्तावेज दोनों देखें।"
+        ]
+      },
+      {
+        "heading": "यह टूल क्या नहीं करता?",
+        "paragraphs": [
+          "Hindi PDF Editor में सार्वभौमिक Kruti Dev decoder या पुरानी PDF की टेक्स्ट लेयर फिर से बनाने का विकल्प नहीं है। ज्ञात पुराने फॉन्ट और अस्पष्ट जाँच पर चेतावनी का पालन करें।"
+        ]
+      },
+      {
+        "heading": "Unicode स्रोत मिलने के बाद",
+        "paragraphs": [
+          "स्रोत से मिले शब्द पहले साधारण टेक्स्ट में जाँचें। हिंदी कीबोर्ड से लिखे नए ओवरले का नमूना PDF में परीक्षण करें। Noto Sans लगाने से गलत एन्कोडिंग अपने आप सही नहीं होती।"
+        ]
+      },
+      {
+        "heading": "डाउनलोड का दृश्य मिलान",
+        "paragraphs": [
+          "अक्षर, मात्रा और रेफ को स्रोत से मिलाएँ। वेब एक्सपोर्ट इमेज आधारित है; पुराने टेक्स्ट की सही खोज या चयन वापस मिलने का दावा नहीं है। मूल स्रोत अलग रखें।"
+        ]
+      }
+    ],
+    "steps": [],
+    "faqs": [
+      {
+        "q": "क्या यह ऑटोमैटिक कन्वर्टर है?",
+        "a": "नहीं। पुरानी PDF को अपने आप Unicode में डिकोड करने का दावा नहीं है।"
+      }
+    ],
+    "reviewedDate": "2026-10-01",
+    "sample": true,
+    "alternateSlug": "kruti-dev-to-unicode-hindi-pdf-editor",
+    "relatedSlugs": [
+      "hindi-pdf-font-kaise-thik-kare"
+    ],
+    "sources": [
+      {
+        "label": "Unicode: Indic scripts, fonts and rendering",
+        "url": "https://www.unicode.org/faq/indic.html"
+      }
+    ]
   },
   {
     "slug": "sarkari-admit-card-name-correction-affidavit-hindi",
-    "title": "एडमिट कार्ड और सरकारी फॉर्म में नाम सुधार शपथ पत्र (Affidavit) कैसे बनाएं",
+    "title": "नाम सुधार आवेदन और शपथ पत्र: प्रवेश पत्र में त्रुटि हो तो क्या करें",
     "category": "सरकारी भर्ती",
     "language": "hi",
     "status": "published",
-    "publishedDate": "2026-08-18"
+    "publishedDate": "2026-08-18",
+    "metaDescription": "प्रवेश पत्र के नाम में त्रुटि पर जारीकर्ता से संपर्क करें। अपने सुधार आवेदन की PDF तैयार करें; शपथ पत्र का प्रारूप और नियम संबंधित संस्था से लें।",
+    "directAnswer": "जारीकर्ता से सुधार प्रक्रिया लें। अपने निवेदन और प्रमाण की PDF तैयार कर सकते हैं, लेकिन प्रवेश पत्र को खुद बदलना आधिकारिक सुधार नहीं है। शपथ पत्र तभी बनाएं जब संस्था माँगे।",
+    "sections": [
+      {
+        "heading": "पहले जारीकर्ता से निर्देश लें",
+        "paragraphs": [
+          "प्रवेश पत्र में त्रुटि है तो भर्ती बोर्ड या परीक्षा संस्था के वर्तमान निर्देश और संपर्क देखें। खुद प्रवेश पत्र में नाम, रोल नंबर, फोटो या केंद्र बदलकर उसे आधिकारिक सुधार मानना सही तरीका नहीं है।"
+        ]
+      },
+      {
+        "heading": "आवेदन और शपथ पत्र एक जैसे नहीं हैं",
+        "paragraphs": [
+          "सुधार आवेदन में अपनी समस्या स्पष्ट बताई जाती है। शपथ पत्र तभी तैयार करें जब संबंधित संस्था उसे माँगे और उसका प्रारूप बताए। हर परीक्षा के लिए एक जैसा शपथ पत्र, स्टाम्प मूल्य या सत्यापन नियम मानना उचित नहीं।"
+        ]
+      },
+      {
+        "heading": "अपना निवेदन तैयार करें",
+        "paragraphs": [
+          "मूल प्रवेश पत्र और पहचान/शैक्षणिक प्रमाण की कॉपी सुरक्षित रखें। आवेदन में दर्ज जानकारी, सही जानकारी और प्रमाण का उल्लेख करें। PDF एडिटर का उपयोग अपने आवेदन की कॉपी भरने के लिए करें; जारी प्रमाण में अधिकारपूर्वक संशोधन करने के लिए नहीं।"
+        ]
+      },
+      {
+        "heading": "काल्पनिक आवेदन वाक्य",
+        "paragraphs": [
+          "“विषय: नाम की वर्तनी के मिलान हेतु निवेदन। कृपया संलग्न प्रमाण के अनुसार मेरी जानकारी की जाँच करें। आवेदक: परीक्षण कुमार।” यह केवल अभ्यास उदाहरण है; यह विधिक शपथ पत्र या किसी संस्था द्वारा स्वीकार किया प्रारूप नहीं है।"
+        ]
+      },
+      {
+        "heading": "PDF की जाँच और प्राइवेसी",
+        "paragraphs": [
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।",
+          "मुख्य PDF एडिटिंग आपके ब्राउज़र में होती है। AI OCR और अनुवाद अलग विकल्प हैं; उनके लिए सहमति देने पर चुना हुआ टेक्स्ट या पेज इमेज सेवा को भेजी जाती है।",
+          "जारीकर्ता से स्वीकृत सुधार की नई कॉपी लें। अपने तैयार PDF की भाषा और संलग्नक उनके वर्तमान निर्देशों से मिलाएँ।"
+        ]
+      }
+    ],
+    "steps": [],
+    "faqs": [
+      {
+        "q": "क्या प्रवेश पत्र पर नाम खुद बदल सकते हैं?",
+        "a": "अपने बनाए PDF को अधिकृत संशोधित प्रवेश पत्र न मानें। जारीकर्ता से सुधारित प्रवेश पत्र लें।"
+      },
+      {
+        "q": "क्या हर नाम सुधार के लिए शपथ पत्र जरूरी है?",
+        "a": "इसे सार्वभौमिक नियम न मानें। संबंधित संस्था से वर्तमान आवश्यकता और प्रारूप पूछें।"
+      }
+    ],
+    "reviewedDate": "2026-10-01",
+    "sources": [
+      {
+        "label": "SSC official portal and regional help information",
+        "url": "https://ssc.gov.in/"
+      },
+      {
+        "label": "UP Police Recruitment Board: official contact",
+        "url": "https://uppbpb.gov.in/home/contact"
+      }
+    ],
+    "alternateSlug": "name-correction-application-and-affidavit-guide",
+    "relatedSlugs": [
+      "hindi-pdf-kaise-edit-kare",
+      "edit-sarkari-admit-card-hindi-pdf"
+    ]
   },
   {
     "slug": "khasra-khatauni-bhulekh-sudhar-hindi-pdf",
-    "title": "भूलेख खसरा-खतौनी और परिमार्जन पीडीएफ में नाम सुधार कैसे करें",
+    "title": "भूलेख सुधार निवेदन PDF: मूल रिकॉर्ड सुरक्षित रखें",
     "category": "भूलेख और राजस्व",
     "language": "hi",
     "status": "published",
-    "publishedDate": "2026-08-18"
+    "publishedDate": "2026-08-18",
+    "metaDescription": "सुधार के लिए अपने निवेदन और प्रमाण तैयार करें। डाउनलोड किए रिकॉर्ड में बदलाव सरकारी रिकॉर्ड का संशोधन नहीं है।",
+    "directAnswer": "अपने क्षेत्र की राजस्व प्रक्रिया देखें और साक्ष्य सहित आवेदन तैयार करें। जारी रिकॉर्ड की कॉपी को बदला हुआ अधिकृत रिकॉर्ड न मानें।",
+    "sections": [
+      {
+        "heading": "आवेदन और रिकॉर्ड",
+        "paragraphs": [
+          "अपने निवेदन में त्रुटि और प्रमाण स्पष्ट लिखें। प्रक्रिया, अधिकारी और आवश्यक दस्तावेज राज्य तथा मामले के अनुसार जाँचें।"
+        ]
+      },
+      {
+        "heading": "एक्सपोर्ट जाँचें",
+        "paragraphs": [
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।"
+        ]
+      },
+      {
+        "heading": "प्राइवेसी",
+        "paragraphs": [
+          "मुख्य PDF एडिटिंग आपके ब्राउज़र में होती है। AI OCR और अनुवाद अलग विकल्प हैं; उनके लिए सहमति देने पर चुना हुआ टेक्स्ट या पेज इमेज सेवा को भेजी जाती है।"
+        ]
+      }
+    ],
+    "steps": [],
+    "faqs": [],
+    "reviewedDate": "2026-10-01",
+    "relatedSlugs": [
+      "bihar-bhumi-parimarjan-plus-shapath-patra-pdf"
+    ]
   },
   {
     "slug": "fix-broken-hindi-fonts-in-pdf",
-    "title": "Why Hindi Fonts & Matras Break in PDF Editors (and How to Fix Them)",
+    "title": "Broken Hindi fonts in PDF: diagnose before editing",
     "category": "Typography & Fonts",
     "language": "en",
     "status": "published",
-    "publishedDate": "2026-08-18"
+    "publishedDate": "2026-08-18",
+    "metaDescription": "Understand Unicode, legacy fonts and scanned Hindi PDFs. Test conjuncts, add safe overlays and review image-based export limitations.",
+    "directAnswer": "First identify whether the PDF has Unicode text, legacy encoding or scanned pages. New Unicode overlays can replace visible words; they do not recover missing text maps or universally decode old fonts.",
+    "sections": [
+      {
+        "heading": "Identify the problem before editing",
+        "paragraphs": [
+          "Compare the same file in a browser and another PDF viewer. If the source itself is wrong, a new font in the editor will not recover lost text. Keep the original and request the editable source if available.",
+          "Text may be Unicode, an older font encoding, or a scanned image. Copying visible words into a text editor can reveal a broken text map, but this alone is not proof of a particular legacy font."
+        ]
+      },
+      {
+        "heading": "What the editor actually does",
+        "paragraphs": [
+          "New Hindi overlays use Unicode fonts. They are rendered through HTML shaping. The original page is preserved visually; adding a correct overlay does not repair the underlying text layer.",
+          "Inconclusive font inspection and detected legacy encodings trigger warnings or blocked editing. The web editor has no universal Kruti Dev decoding feature."
+        ]
+      },
+      {
+        "heading": "Check difficult Hindi combinations",
+        "paragraphs": [
+          "Use the provided sample and inspect “क्ष”, “त्र”, “ज्ञ”, “कि” and “प्रार्थना”. Check the reph, vowel marks and line wrapping at the intended font size.",
+          "A mask should cover the old ink without hiding adjacent lines. Test one short edit first; choose a background color that matches the page."
+        ]
+      },
+      {
+        "heading": "Export limitations",
+        "paragraphs": [
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised."
+        ]
+      },
+      {
+        "heading": "Privacy",
+        "paragraphs": [
+          "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent."
+        ]
+      }
+    ],
+    "steps": [],
+    "faqs": [
+      {
+        "q": "Will changing the font repair every PDF?",
+        "a": "No. A wrong text map, missing source text or legacy encoding needs diagnosis; changing an overlay font cannot recover the original text."
+      },
+      {
+        "q": "Is the downloaded text selectable?",
+        "a": "Web edits are exported as image-based pages, so selectable text is not guaranteed."
+      }
+    ],
+    "reviewedDate": "2026-10-01",
+    "sample": true,
+    "alternateSlug": "hindi-pdf-font-kaise-thik-kare",
+    "relatedSlugs": [
+      "kruti-dev-to-unicode-hindi-pdf-editor",
+      "how-to-edit-hindi-pdf"
+    ]
   },
   {
     "slug": "edit-sarkari-admit-card-hindi-pdf",
-    "title": "How to Edit Hindi Admit Card & Sarkari Exam PDF Forms (BPSC, UPPSC, SSC)",
+    "title": "Admission certificate errors: prepare a correction request",
     "category": "Govt & Exams",
     "language": "en",
     "status": "published",
-    "publishedDate": "2026-08-18"
+    "publishedDate": "2026-08-18",
+    "metaDescription": "Keep the issued certificate unchanged. Find the official contact and prepare your own supporting request PDF for a name or other discrepancy.",
+    "directAnswer": "Use the examination authority’s correction process. A PDF editor can help prepare your request and supporting copies; it cannot issue a corrected admission certificate.",
+    "sections": [
+      {
+        "heading": "Start with the issuer",
+        "paragraphs": [
+          "If an admission certificate has an error, consult the examination authority’s current instructions and contact details. Editing the candidate name, roll number, photograph or centre yourself does not make it an official correction."
+        ]
+      },
+      {
+        "heading": "An application is not an affidavit",
+        "paragraphs": [
+          "A correction application explains the mismatch. Prepare an affidavit only when the authority requires one and specifies the format. Do not assume one affidavit, stamp value or attestation rule applies to every examination."
+        ]
+      },
+      {
+        "heading": "Prepare your request",
+        "paragraphs": [
+          "Keep the original admission certificate and copies of supporting identity or education evidence. Explain the recorded information, the correct information and the supporting proof. Use a PDF editor to fill your own request, not to alter an issued certificate as an authorized correction."
+        ]
+      },
+      {
+        "heading": "Fictional request example",
+        "paragraphs": [
+          "“Subject: request to reconcile name spelling. Please review my information against the attached evidence. Applicant: Test Kumar.” This is a practice sentence, not a legal affidavit or an institution-approved format."
+        ]
+      },
+      {
+        "heading": "Review and privacy",
+        "paragraphs": [
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent.",
+          "Obtain the corrected official copy from the issuer. Check the wording and attachments of your request against its current instructions."
+        ]
+      }
+    ],
+    "steps": [],
+    "faqs": [
+      {
+        "q": "Should I replace my roll number or examination centre in the PDF?",
+        "a": "No. Ask the issuer for a corrected official certificate; visual changes do not update its systems."
+      }
+    ],
+    "reviewedDate": "2026-10-01",
+    "sources": [
+      {
+        "label": "SSC official portal and regional help information",
+        "url": "https://ssc.gov.in/"
+      },
+      {
+        "label": "UP Police Recruitment Board: official contact",
+        "url": "https://uppbpb.gov.in/home/contact"
+      }
+    ],
+    "relatedSlugs": [
+      "name-correction-application-and-affidavit-guide"
+    ]
   },
   {
     "slug": "translate-hindi-pdf-to-english",
-    "title": "How to Translate Hindi PDF to English Online Without Losing Page Formatting",
+    "title": "Translate Hindi PDF to English: consent and review",
     "category": "Translation & AI",
     "language": "en",
     "status": "published",
-    "publishedDate": "2026-08-18"
+    "publishedDate": "2026-08-18",
+    "metaDescription": "Translate supported Hindi or English text through the AI service after consent. Review text accuracy, skipped lines and image-based PDF output.",
+    "directAnswer": "Select a PDF, review the detected direction, explicitly consent to text and possible page-image processing, complete the security check and translate. Review the result; AI translation and layout can be wrong.",
+    "sections": [
+      {
+        "heading": "What is sent to the service",
+        "paragraphs": [
+          "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent.",
+          "Detected source lines are used for translation. Difficult pages with incomplete text maps may use AI OCR on page images, as disclosed in the consent. Do not approve sensitive content unless this processing is appropriate for you."
+        ]
+      },
+      {
+        "heading": "Limits and unsupported cases",
+        "paragraphs": [
+          "The UI currently limits source selection to 40 MB and 40 pages; service-side quotas may be lower and are enforced separately. Inspect current limits in the tool. Detected legacy fonts or uncertain inspection may block editing or require an OCR path according to the applicable safety policy."
+        ]
+      },
+      {
+        "heading": "Translation is not a certified document",
+        "paragraphs": [
+          "Names, dates, amounts and technical terms need manual checking. Translated words can be longer than the original; boxes may wrap or overflow. Review skipped-line information and each page before use."
+        ]
+      },
+      {
+        "heading": "Output and cancellation",
+        "paragraphs": [
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Cancel stops the current workflow. A security or service error must be visible; it must not be treated as a successful translation."
+        ]
+      }
+    ],
+    "steps": [],
+    "faqs": [
+      {
+        "q": "Is translation entirely on my device?",
+        "a": "No. Approved content is sent to the AI service after consent."
+      },
+      {
+        "q": "Is the translated PDF official or certified?",
+        "a": "No. Review accuracy and obtain any certification required by the receiving authority."
+      }
+    ],
+    "reviewedDate": "2026-10-01",
+    "toolPath": "/tools/translate-hindi-pdf/",
+    "relatedSlugs": [
+      "how-to-edit-hindi-pdf"
+    ]
   },
   {
     "slug": "kruti-dev-to-unicode-hindi-pdf-editor",
-    "title": "How to Edit Kruti Dev 010 Hindi PDF and Convert to Unicode Online",
+    "title": "Kruti Dev PDF to Unicode: conversion limits and safe editing",
     "category": "Typography & Fonts",
     "language": "en",
     "status": "published",
-    "publishedDate": "2026-08-18"
+    "publishedDate": "2026-08-18",
+    "metaDescription": "Identify legacy Hindi encoding, obtain a Unicode source and review new overlays. This editor is not a universal legacy PDF font converter.",
+    "directAnswer": "Kruti Dev encoding differs from Unicode. Displaying old encoded text in Noto does not decode it. Obtain verified Unicode text from the source.",
+    "sections": [
+      {
+        "heading": "Visible letters versus encoded text",
+        "paragraphs": [
+          "A PDF can look like Hindi while copied text contains Latin symbols. Treating old font shapes as Unicode text can produce incorrect changes. Inspect the font name and obtain the source document when possible."
+        ]
+      },
+      {
+        "heading": "What this tool does not do",
+        "paragraphs": [
+          "Hindi PDF Editor has no universal Kruti Dev decoder or feature to reconstruct every legacy PDF text layer. Follow warnings for detected old fonts and inconclusive inspection."
+        ]
+      },
+      {
+        "heading": "After you obtain a Unicode source",
+        "paragraphs": [
+          "Check source words in plain text first. Test a new overlay typed with a Hindi keyboard on the sample PDF. Selecting Noto Sans does not automatically fix wrong encoding."
+        ]
+      },
+      {
+        "heading": "Visual review of the download",
+        "paragraphs": [
+          "Compare letters, vowel marks and reph against the source. Web export is image-based; it does not promise to restore correct search or selection of the old text. Retain the source separately."
+        ]
+      }
+    ],
+    "steps": [],
+    "faqs": [
+      {
+        "q": "Is this an automatic converter?",
+        "a": "No. Automatic decoding of arbitrary legacy PDFs to Unicode is not provided."
+      }
+    ],
+    "reviewedDate": "2026-10-01",
+    "sample": true,
+    "alternateSlug": "kruti-dev-pdf-unicode-converter-hindi",
+    "relatedSlugs": [
+      "fix-broken-hindi-fonts-in-pdf"
+    ],
+    "sources": [
+      {
+        "label": "Unicode: Indic scripts, fonts and rendering",
+        "url": "https://www.unicode.org/faq/indic.html"
+      }
+    ]
   },
   {
     "slug": "swapramanit-ghoshna-patra-edistrict-hindi-pdf",
-    "title": "e-District UP स्वप्रमाणित घोषणा पत्र PDF कैसे भरें और डाउनलोड करें (जाति, आय, निवास)",
+    "title": "स्वप्रमाणित घोषणा पत्र PDF: सही प्रारूप में अपना आवेदन भरें",
     "category": "सरकारी और ई-डिस्ट्रिक्ट",
     "language": "hi",
-    "metaDescription": "उत्तर प्रदेश e-District पोर्टल के लिए स्वप्रमाणित घोषणा पत्र (Self Declaration Form) हिंदी पीडीएफ में भरने, एडिट करने और 100KB साइज में सेव करने का पूरा तरीका।",
-    "directAnswer": "e-District UP स्वप्रमाणित घोषणा पत्र भरने के लिए Hindi PDF Editor में प्रपत्र खोलें। अपना नाम, पिता/पति का नाम, उम्र, व्यवसाय और निवास स्थान टाइप करें। धारा 199/200 के तहत स्वघोषणा की पुष्टि करें और Export PDF दबाकर 100KB के अंदर पोर्टल-रेडी फाइल डाउनलोड करें।",
+    "metaDescription": "अपने ई-डिस्ट्रिक्ट आवेदन के लिए संबंधित विभाग का घोषणा पत्र लें। विवरण भरें, हस्ताक्षर निर्देश देखें और PDF की नई कॉपी जाँचें।",
+    "directAnswer": "जिस सेवा के लिए आवेदन कर रहे हैं उसी का आधिकारिक प्रारूप लें। अपनी जानकारी भरें और विभाग के हस्ताक्षर तथा संलग्नक निर्देश जाँचें। यह गाइड कोई सार्वभौमिक स्वीकृत प्रारूप नहीं देती।",
     "readTime": "4 min read",
     "badgeTone": "tag-green",
     "sections": [
       {
-        "heading": "स्वप्रमाणित घोषणा पत्र की कानूनी अनिवार्यता",
+        "heading": "प्रारूप चुनें",
         "paragraphs": [
-          "उत्तर प्रदेश में जाति, आय, मूल निवास और हैसियत प्रमाण पत्र बनवाने के लिए प्रार्थी का 'स्वप्रमाणित घोषणा पत्र' लगाना अनिवार्य है।",
-          "इस प्रपत्र में किसी भी गलत बयानबाजी पर भारतीय दंड संहिता (IPC) की धारा 199 व 200 के अंतर्गत कानूनी कार्रवाई का प्रावधान होता है।"
+          "सेवा और राज्य के पोर्टल से वर्तमान घोषणा पत्र लें। दूसरे विभाग का नमूना उपयोग करने से पहले उसकी उपयुक्तता की पुष्टि करें।"
+        ]
+      },
+      {
+        "heading": "विवरण और हस्ताक्षर",
+        "paragraphs": [
+          "सिर्फ सत्य और आवश्यक जानकारी भरें। हस्ताक्षर, तिथि और स्वप्रमाणन की जरूरत संबंधित विभाग से जाँचें; एडिटर स्वीकृति तय नहीं करता।"
+        ]
+      },
+      {
+        "heading": "एक्सपोर्ट और प्राइवेसी",
+        "paragraphs": [
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।",
+          "मुख्य PDF एडिटिंग आपके ब्राउज़र में होती है। AI OCR और अनुवाद अलग विकल्प हैं; उनके लिए सहमति देने पर चुना हुआ टेक्स्ट या पेज इमेज सेवा को भेजी जाती है।"
         ]
       }
     ],
-    "steps": [
-      {
-        "title": "घोषणा पत्र पीडीएफ खोलें",
-        "desc": "e-District का रिक्त स्वप्रमाणित घोषणा पत्र एडिटर में लोड करें।"
-      },
-      {
-        "title": "खाली स्थानों पर विवरण भरें",
-        "desc": "नाम, पिता का नाम और पता शुद्ध देवनागरी हिंदी में टाइप करें।"
-      },
-      {
-        "title": "100KB साइज में एक्सपोर्ट करें",
-        "desc": "Portal Safe कंप्रेशन सेलेक्ट करके सीधे ई-डिस्ट्रिक्ट पोर्टल पर अपलोड करने योग्य पीडीएफ डाउनलोड करें।"
-      }
-    ],
-    "faqs": [
-      {
-        "q": "क्या ई-डिस्ट्रिक्ट पोर्टल पर 100KB से बड़ी पीडीएफ अपलोड होती है?",
-        "a": "नहीं। ई-डिस्ट्रिक्ट पोर्टल पर 100KB की सख्त सीमा है। हमारा एडिटर ऑटोमैटिक रूप से इसे 100KB से कम साइज में तैयार करता है।"
-      }
-    ],
+    "steps": [],
+    "faqs": [],
     "status": "published",
-    "publishedDate": "2026-08-19"
+    "publishedDate": "2026-08-19",
+    "reviewedDate": "2026-10-01",
+    "relatedSlugs": [
+      "hindi-pdf-kaise-edit-kare"
+    ]
   },
   {
     "slug": "bihar-bhumi-parimarjan-plus-shapath-patra-pdf",
-    "title": "बिहार भूमि परिमार्जन प्लस स्वघोषणा शपथ पत्र PDF कैसे तैयार करें",
+    "title": "परिमार्जन प्लस शपथ पत्र PDF: आधिकारिक प्रारूप और तैयारी",
     "category": "भूलेख और राजस्व",
     "language": "hi",
-    "metaDescription": "बिहार भूमि सुधार परिमार्जन पोर्टल (Parimarjan Plus) पर खता, खेसरा, रकबा या लगान सुधार हेतु स्वघोषणा पत्र पीडीएफ ऑनलाइन भरने और एडिट करने की गाइड।",
-    "directAnswer": "बिहार परिमार्जन प्लस स्वघोषणा पत्र तैयार करने के लिए Hindi PDF Editor में आवेदन प्रपत्र खोलें। अपना जमाबंदी नंबर, खाता, खसरा और सही रकबा (डिसमिल/एकड़) दर्ज करें। लगान रसीद के साथ मर्ज करके तुरंत पोर्टल अपलोड के लिए तैयार पीडीएफ पाएं।",
+    "metaDescription": "बिहार परिमार्जन प्लस के लिए आधिकारिक प्रारूप कहाँ देखें, सुधार निवेदन कैसे तैयार करें और PDF की कॉपी कैसे जाँचें। सरकारी रिकॉर्ड बदलने से अंतर समझें।",
+    "directAnswer": "अपने आवेदन के लिए आधिकारिक परिमार्जन प्लस प्रारूप लें। आवश्यक विवरण प्रमाण से मिलाकर भरें और नई PDF जाँचें। एडिटर आवेदन की तैयारी में मदद करता है; सरकारी जमाबंदी रिकॉर्ड का सुधार नहीं करता।",
     "readTime": "4 min read",
     "badgeTone": "tag-green",
     "sections": [
       {
-        "heading": "परिमार्जन प्लस में आवश्यक सुधार विवरण",
+        "heading": "आधिकारिक प्रारूप कहाँ से लें?",
         "paragraphs": [
-          "डिजिटाइज्ड जमाबंदी में पूर्वजों के नाम की वर्तनी, गलत खाता संख्या या छूटे हुए हिस्सेदारों के नाम को सुधारने के लिए अंचल अधिकारी (CO) को स्वघोषणा पत्र देना होता है।"
+          "बिहारभूमि की जमाबंदी FAQ सुधार आवेदन के लिए परिमार्जन प्लस पोर्टल बताती है। आवेदन का प्रकार और संबंधित प्रक्रिया आधिकारिक स्रोत पर देखें। अपने मामले के लिए वहाँ उपलब्ध प्रारूप लें; किसी सामान्य नमूने को सरकारी स्वीकृत शपथ पत्र न मानें।"
+        ]
+      },
+      {
+        "heading": "सुधार आवेदन और मूल रिकॉर्ड में अंतर",
+        "paragraphs": [
+          "PDF पर नाम या खाता बदल देना सरकारी जमाबंदी में सुधार नहीं है। अपना सुधार निवेदन और साक्ष्य तैयार करें; दर्ज रिकॉर्ड का संशोधन संबंधित अधिकारी की प्रक्रिया से होता है।",
+          "इस साइट का सरकार से संबंध नहीं है। आवेदन की स्वीकृति, समय सीमा, स्टाम्प या सत्यापन की जरूरत इस एडिटर से तय नहीं होती।"
+        ]
+      },
+      {
+        "heading": "भरने से पहले यह मिलान करें",
+        "paragraphs": [
+          "आधिकारिक प्रारूप में माँगी गई जानकारी को अपने मूल दस्तावेजों से मिलाएँ। नाम, पिता का नाम, गाँव, खाता/खेसरा और क्षेत्रफल की इकाई में अनुमान न लगाएँ। केवल अपने मामले के आवश्यक विवरण भरें।",
+          "सहायक दस्तावेजों को जस का तस रखें। Merge PDF का उपयोग तभी करें जब पोर्टल एक संयुक्त फाइल माँगे; यदि अलग अपलोड माँगे तो अलग फाइल रखें।"
+        ]
+      },
+      {
+        "heading": "केवल काल्पनिक अभ्यास उदाहरण",
+        "paragraphs": [
+          "उदाहरण: “आवेदक: परीक्षण कुमार; सुधार का विषय: नाम की वर्तनी का मिलान; संदर्भ: संबंधित प्रमाण की प्रति।” यह केवल टाइपिंग अभ्यास है, कानूनी शपथ-पत्र प्रारूप या किसी जमीन के अधिकार का प्रमाण नहीं।",
+          "शपथ-पत्र की भाषा, सत्यापन, हस्ताक्षर और संलग्नकों का वर्तमान आधिकारिक निर्देश अलग से जाँचें।"
+        ]
+      },
+      {
+        "heading": "फाइल की अंतिम जाँच",
+        "paragraphs": [
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।",
+          "मुख्य PDF एडिटिंग आपके ब्राउज़र में होती है। AI OCR और अनुवाद अलग विकल्प हैं; उनके लिए सहमति देने पर चुना हुआ टेक्स्ट या पेज इमेज सेवा को भेजी जाती है।",
+          "अपलोड से पहले हर पेज पढ़ें। फाइल की सीमा और प्रकार आधिकारिक पोर्टल से देखें; इस गाइड में अनुमानित KB सीमा या स्वीकृति की गारंटी नहीं दी जाती।"
         ]
       }
     ],
     "steps": [
       {
-        "title": "परिमार्जन प्रारूप खोलें",
-        "desc": "प्रपत्र को एडिटर में लोड करें।"
+        "title": "आधिकारिक निर्देश देखें",
+        "desc": "नीचे दिए गए बिहारभूमि और परिमार्जन प्लस लिंक से अपने आवेदन का प्रारूप लें।"
       },
       {
-        "title": "सुधार का विवरण दर्ज करें",
-        "desc": "सही खाता/खेसरा और रकबा हिंदी में भरें।"
+        "title": "कॉपी में विवरण भरें",
+        "desc": "एडिटर में कॉपी खोलें; अपने साक्ष्य से विवरण मिलाएँ।"
       },
       {
-        "title": "दस्तावेज एक्सपोर्ट करें",
-        "desc": "CO लॉगिन पर सबमिट करने के लिए क्लियर वेक्टर पीडीएफ डाउनलोड करें।"
+        "title": "जमा करने से पहले जाँचें",
+        "desc": "नया PDF खोलें, हस्ताक्षर और संलग्नक निर्देश जाँचें और आधिकारिक पोर्टल की प्रक्रिया अपनाएँ।"
       }
     ],
     "faqs": [
       {
-        "q": "क्या परिमार्जन आवेदन मोबाइल से भरा जा सकता है?",
-        "a": "हाँ, आप मोबाइल से परिमार्जन पीडीएफ फॉर्म भरकर डाउनलोड कर सकते हैं।"
+        "q": "क्या यहाँ डाउनलोड होने वाला नमूना सरकारी शपथ पत्र है?",
+        "a": "नहीं। इस साइट का अभ्यास PDF सरकारी प्रारूप नहीं है। अपने मामले का प्रारूप आधिकारिक पोर्टल से लें।"
+      },
+      {
+        "q": "क्या PDF में बदलाव से जमीन का रिकॉर्ड बदल जाता है?",
+        "a": "नहीं। सरकारी रिकॉर्ड का सुधार संबंधित अधिकारी की आधिकारिक प्रक्रिया से होता है।"
       }
     ],
     "status": "published",
-    "publishedDate": "2026-08-20"
+    "publishedDate": "2026-08-20",
+    "reviewedDate": "2026-10-01",
+    "sources": [
+      {
+        "label": "बिहारभूमि: जमाबंदी और परिमार्जन FAQ",
+        "url": "https://biharbhumi.bihar.gov.in/biharbhumi/FAQ/12.html"
+      },
+      {
+        "label": "Parimarjan Plus: citizen portal and user manual",
+        "url": "https://parimarjanplus.bihar.gov.in/ParimarjanNew/userDashboard.aspx"
+      }
+    ],
+    "alternateSlug": "parimarjan-plus-affidavit-pdf-guide",
+    "relatedSlugs": [
+      "hindi-pdf-kaise-edit-kare",
+      "pdf-size-kam-kaise-kare-100kb-sarkari-form"
+    ]
   },
   {
     "slug": "pdf-size-kam-kaise-kare-100kb-sarkari-form",
-    "title": "सरकारी फॉर्म के लिए PDF साइज कम कैसे करें (100KB और 200KB में बदलें)",
+    "title": "PDF साइज कम करें: 100KB लक्ष्य और साफ अक्षर की जाँच",
     "category": "पीडीएफ टूल्स",
     "language": "hi",
-    "metaDescription": "UPSC, SSC, BPSC, और UP Police सरकारी नौकरी फॉर्म में अपलोड करने के लिए पीडीएफ साइज 50KB, 100KB या 200KB में बिना लिखावट धुंधली किए कंप्रेस करें।",
-    "directAnswer": "सरकारी फॉर्म के लिए पीडीएफ साइज कम करने के लिए hindipdfeditor.com/edit/?tool=compress पर जाएं। फाइल चुनें, 'Portal Safe (100KB)' या 'Standard (200KB)' विकल्प चुनें और Compress PDF दबाएं। आपकी हिंदी लिखावट बिल्कुल साफ रहेगी और फाइल साइज तुरंत कम हो जाएगा।",
+    "metaDescription": "JPEG गुणवत्ता बदलकर PDF की नई कॉपी बनाएँ। 100KB या दूसरी सीमा की गारंटी नहीं; फाइल साइज और अक्षर डाउनलोड के बाद जाँचें।",
+    "directAnswer": "Compress PDF में फाइल चुनें और Image quality बदलें। आउटपुट की वास्तविक साइज देखें; हर फाइल 100KB में नहीं आ सकती।",
     "readTime": "3 min read",
     "badgeTone": "tag-amber",
     "sections": [
       {
-        "heading": "सरकारी पोर्टल्स की अपलोड सीमा (Upload Limits)",
+        "heading": "पोर्टल की वास्तविक सीमा देखें",
         "paragraphs": [
-          "सरकारी भर्ती पोर्टल्स (जैसे BPSC, SSC, UP Police) 100KB से 300KB की लिमिट लगाते हैं। साधारण ऑनलाइन कंप्रेसर हिंदी के अक्षरों और मात्राओं को धुंधला कर देते हैं, जिससे फॉर्म रिजेक्ट हो जाता है।",
-          "हमारा स्मार्ट डीपीआई स्केलर देवनागरी स्ट्रोक्स को क्रिस्प रखते हुए फाइल साइज को कम करता है।"
+          "अपने पोर्टल का वर्तमान KB/MB और पेज निर्देश देखें। इस टूल में Portal Safe नाम का लक्ष्य-साइज प्रीसेट नहीं है।"
+        ]
+      },
+      {
+        "heading": "अक्षरों की स्पष्टता",
+        "paragraphs": [
+          "कंप्रेशन पेज को JPEG में बदलता है। छोटी मात्रा, अंक और स्कैन की बारीक रेखाएँ बिगड़ सकती हैं। कम गुणवत्ता पर धुंधलापन संभव है; lossless का दावा नहीं।"
+        ]
+      },
+      {
+        "heading": "डाउनलोड की तुलना",
+        "paragraphs": [
+          "फाइल छोटी होने के बजाय बड़ी भी हो सकती है। यदि आकार या स्पष्टता बेहतर नहीं है, मूल कॉपी रखें और दूसरी गुणवत्ता आजमाएँ।",
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।"
         ]
       }
     ],
     "steps": [
       {
-        "title": "फाइल सेलेक्ट करें",
-        "desc": "कंप्रेस टूल में अपनी बड़ी पीडीएफ फाइल डालें।"
+        "title": "फाइल चुनें",
+        "desc": "Compress PDF खोलें और PDF चुनें।"
       },
       {
-        "title": "टारगेट साइज चुनें",
-        "desc": "100KB या 200KB प्रीसेट पर क्लिक करें।"
+        "title": "गुणवत्ता चुनें",
+        "desc": "Image quality स्लाइडर बदलें और नई कॉपी डाउनलोड करें।"
       },
       {
-        "title": "डाउनलोड करें",
-        "desc": "तुरंत हल्की और साफ पीडीएफ फाइल सेव करें।"
+        "title": "फाइल देखें",
+        "desc": "साइज और हर पेज जाँचें।"
       }
     ],
-    "faqs": [
-      {
-        "q": "क्या कंप्रेस करने से हिंदी फोंट खराब होंगे?",
-        "a": "नहीं। हमारा एल्गोरिदम टेक्स्ट कंट्रास्ट को सुरक्षित रखता है।"
-      }
-    ],
+    "faqs": [],
     "status": "published",
-    "publishedDate": "2026-08-21"
+    "publishedDate": "2026-08-21",
+    "reviewedDate": "2026-10-01",
+    "toolPath": "/tools/compress-pdf/",
+    "relatedSlugs": [
+      "hindi-pdf-kaise-edit-kare"
+    ]
   },
   {
     "slug": "e-stamp-paper-par-hindi-matter-print-margin-guide",
-    "title": "e-Stamp पेपर पर हिंदी शपथ पत्र (Affidavit) प्रिंट करने का सही मार्जिन तरीका",
+    "title": "e-Stamp पर हिंदी मसौदा: पहले प्रिंट लेआउट जाँचें",
     "category": "कानूनी और शपथ पत्र",
     "language": "hi",
-    "metaDescription": "₹10, ₹50, ₹100 के ई-स्टांप पेपर पर बारकोड को बचाकर नीचे 60% हिस्से में हिंदी शपथ पत्र और अनुबंध प्रिंट करने की सही मार्जिन सेटिंग गाइड।",
-    "directAnswer": "e-Stamp पेपर पर प्रिंट करने के लिए टॉप मार्जिन को 4.5 इंच (11.5 cm) पर सेट करें ताकि सरकारी ट्रेजरी बारकोड और सील पर टेक्स्ट ओवरलैप न हो। Hindi PDF Editor में e-Stamp प्रीसेट का उपयोग करके सीधे लीगल साइज या A4 पर परफेक्ट प्रिंट निकालें।",
+    "metaDescription": "e-Stamp पर मसौदा रखने से पहले जारीकर्ता के निर्देश, पेज आकार और प्रिंट स्केल देखें। कोई सार्वभौमिक मार्जिन या प्रीसेट मानकर न चलें।",
+    "directAnswer": "मूल e-Stamp के बारकोड, प्रमाण और सत्यापन क्षेत्र न ढकें। मसौदा और प्रिंट लेआउट संबंधित निर्देशों के अनुसार तैयार करें; पहले साधारण कागज पर परीक्षण करें।",
     "readTime": "4 min read",
     "badgeTone": "tag-blue",
     "sections": [
       {
-        "heading": "ई-स्टांप पेपर खराब होने से कैसे बचाएं?",
+        "heading": "एक मार्जिन हर फाइल के लिए नहीं",
         "paragraphs": [
-          "Stock Holding Corporation (SHCIL) के ई-स्टांप सर्टिफिकेट में ऊपर का 40% हिस्सा ट्रेजरी बारकोड और होलोग्राम के लिए आरक्षित होता है। गलत मार्जिन से प्रिंट करने पर स्टांप पेपर खराब हो जाता है।"
+          "इस वेब एडिटर में e-Stamp का सार्वभौमिक प्रीसेट नहीं है। पेज का आकार और खाली स्थान देखें; किसी अनुमानित 4.5 इंच मार्जिन को सभी दस्तावेजों का नियम न मानें।"
+        ]
+      },
+      {
+        "heading": "प्रिंट से पहले परीक्षण",
+        "paragraphs": [
+          "मसौदे की भाषा और वैधता संबंधित अधिकारी या उपयुक्त पेशेवर से जाँचें। साधारण कागज पर वास्तविक पेज आकार में प्रिंट परीक्षण करें। सील, बारकोड और जारी जानकारी के ऊपर टेक्स्ट न रखें।"
+        ]
+      },
+      {
+        "heading": "नई कॉपी की जाँच",
+        "paragraphs": [
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।",
+          "मुख्य PDF एडिटिंग आपके ब्राउज़र में होती है। AI OCR और अनुवाद अलग विकल्प हैं; उनके लिए सहमति देने पर चुना हुआ टेक्स्ट या पेज इमेज सेवा को भेजी जाती है।"
         ]
       }
     ],
-    "steps": [
-      {
-        "title": "एफिडेविट टेक्स्ट तैयार करें",
-        "desc": "एडिटर में शपथ पत्र का हिंदी मैटर लिखें।"
-      },
-      {
-        "title": "Top Margin 4.5 inch सेट करें",
-        "desc": "ई-स्टांप मार्जिन प्रीसेट लागू करें।"
-      },
-      {
-        "title": "प्रिंट टेस्ट लें",
-        "desc": "सादे कागज पर टेस्ट प्रिंट करके स्टांप पेपर पर फाइनल प्रिंट निकालें।"
-      }
-    ],
-    "faqs": [
-      {
-        "q": "क्या ई-स्टांप पेपर के लिए विशेष प्रिंटर चाहिए?",
-        "a": "नहीं, किसी भी सामान्य लेजर या इंकजेट प्रिंटर से प्रिंट किया जा सकता है।"
-      }
-    ],
+    "steps": [],
+    "faqs": [],
     "status": "published",
-    "publishedDate": "2026-08-22"
+    "publishedDate": "2026-08-22",
+    "reviewedDate": "2026-10-01",
+    "relatedSlugs": [
+      "hindi-pdf-kaise-edit-kare"
+    ]
   },
   {
     "slug": "khasra-khatauni-land-record-hindi-pdf-edit",
-    "title": "How to Edit Hindi Khasra-Khatauni & Land Record (Bhulekh) PDF Documents",
+    "title": "Land record correction request PDF: preserve the original",
     "category": "Govt & Legal",
     "language": "en",
-    "metaDescription": "Step-by-step tutorial on how to edit and correct Hindi text, plot numbers, and owner names in Bhulekh Khasra-Khatauni land record PDFs safely.",
-    "directAnswer": "To edit a Hindi Khasra-Khatauni (Bhulekh) land record PDF, open it in Hindi PDF Editor at hindipdfeditor.com/edit/. Mask the outdated plot number, farmer name, or acreage field, and type the updated details in Unicode Hindi. Because all editing runs 100% locally in your browser, sensitive land ownership records are never uploaded to cloud servers.",
+    "metaDescription": "Prepare your own correction request and supporting evidence. Editing a downloaded land record does not update the official register.",
+    "directAnswer": "Check the applicable revenue process and prepare a request with evidence. A modified copy of an issued record is not an authorized replacement.",
     "readTime": "4 min read",
     "badgeTone": "tag-green",
     "sections": [
       {
-        "heading": "Common Land Record Corrections (UP, MP, Bihar Bhulekh)",
+        "heading": "Application versus official record",
         "paragraphs": [
-          "State land records (Bhulekh) in Uttar Pradesh, Bihar, Madhya Pradesh, and Rajasthan often contain typographical mistakes in Hindi names (e.g., father's name, village Tehsil spelling, or Gata/Khasra numbers).",
-          "Correcting draft applications before revenue court or Tehsil registry requires clean Devanagari typography that matches the original government land record style."
+          "Explain the discrepancy and evidence in your request. Check the process, responsible authority and required documents for your state and case."
+        ]
+      },
+      {
+        "heading": "Review the export",
+        "paragraphs": [
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised."
+        ]
+      },
+      {
+        "heading": "Privacy",
+        "paragraphs": [
+          "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent."
         ]
       }
     ],
-    "steps": [
-      {
-        "title": "Upload Bhulekh PDF Locally",
-        "desc": "Load your land record PDF into the editor. WebAssembly parses the pages on your device without server transmission."
-      },
-      {
-        "title": "Mask Name or Khasra Number",
-        "desc": "Click on the land record entry that needs modification to place an automatic background mask."
-      },
-      {
-        "title": "Enter Correct Hindi Details",
-        "desc": "Type the corrected Hindi name or numeric digits. Select font size to match the original document table."
-      },
-      {
-        "title": "Download Clean Vector PDF",
-        "desc": "Export the updated PDF instantly with crisp text suitable for printing and submission."
-      }
-    ],
-    "faqs": [
-      {
-        "q": "Are my land records uploaded to your server?",
-        "a": "No. Hindi PDF Editor is 100% local-first. Documents are processed in your browser memory and never uploaded to any remote database."
-      }
-    ],
+    "steps": [],
+    "faqs": [],
     "status": "published",
-    "publishedDate": "2026-08-18"
+    "publishedDate": "2026-08-18",
+    "reviewedDate": "2026-10-01",
+    "relatedSlugs": [
+      "parimarjan-plus-affidavit-pdf-guide"
+    ]
   },
   {
     "slug": "up-police-bharti-admit-card-hindi-pdf-edit",
-    "title": "How to Edit UP Police Bharti & Constable Exam Admit Card Hindi PDF",
+    "title": "UP Police admission certificate errors: contact the issuer",
     "category": "Govt & Exams",
     "language": "en",
-    "metaDescription": "Guide to editing UP Police Constable recruitment admit cards, fixing Hindi name typos, examination center details, and photo signatures safely.",
-    "directAnswer": "To edit or correct details on a UP Police Constable admit card PDF, load the file into Hindi PDF Editor. Select the candidate name, roll number, or exam date line to mask and type the corrected text in Unicode Hindi. Export the vector PDF immediately with 100% correct Devanagari matras.",
+    "metaDescription": "Keep the issued certificate unchanged. Find the official contact and prepare your own supporting request PDF for a name or other discrepancy.",
+    "directAnswer": "Use the examination authority’s correction process. A PDF editor can help prepare your request and supporting copies; it cannot issue a corrected admission certificate.",
     "readTime": "4 min read",
     "badgeTone": "tag-green",
     "sections": [
       {
-        "heading": "Handling Admit Card Typographical Errors",
+        "heading": "Start with the issuer",
         "paragraphs": [
-          "During state recruitment drives like UPPRPB Constable & SI exams, applicants frequently spot typographical mismatches between their Aadhaar and admit cards (such as missing halants or split vowel matras).",
-          "Hindi PDF Editor allows candidates to prepare corrected verification drafts locally with zero privacy risk."
+          "If an admission certificate has an error, consult the examination authority’s current instructions and contact details. Editing the candidate name, roll number, photograph or centre yourself does not make it an official correction."
+        ]
+      },
+      {
+        "heading": "An application is not an affidavit",
+        "paragraphs": [
+          "A correction application explains the mismatch. Prepare an affidavit only when the authority requires one and specifies the format. Do not assume one affidavit, stamp value or attestation rule applies to every examination."
+        ]
+      },
+      {
+        "heading": "Prepare your request",
+        "paragraphs": [
+          "Keep the original admission certificate and copies of supporting identity or education evidence. Explain the recorded information, the correct information and the supporting proof. Use a PDF editor to fill your own request, not to alter an issued certificate as an authorized correction."
+        ]
+      },
+      {
+        "heading": "Fictional request example",
+        "paragraphs": [
+          "“Subject: request to reconcile name spelling. Please review my information against the attached evidence. Applicant: Test Kumar.” This is a practice sentence, not a legal affidavit or an institution-approved format."
+        ]
+      },
+      {
+        "heading": "Review and privacy",
+        "paragraphs": [
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent.",
+          "Obtain the corrected official copy from the issuer. Check the wording and attachments of your request against its current instructions."
         ]
       }
     ],
-    "steps": [
-      {
-        "title": "Open Admit Card",
-        "desc": "Select your UP Police recruitment PDF from your device."
-      },
-      {
-        "title": "Select Correction Area",
-        "desc": "Click on the candidate details box to mask the typo."
-      },
-      {
-        "title": "Type Hindi Unicode Text",
-        "desc": "Enter your correct name or father's name with perfect conjunct rendering."
-      },
-      {
-        "title": "Save Corrected PDF",
-        "desc": "Click Export PDF to download your high-resolution vector document."
-      }
-    ],
+    "steps": [],
     "faqs": [
       {
-        "q": "Can I edit PDF on my Android mobile?",
-        "a": "Yes. Hindi PDF Editor is fully responsive on mobile browsers and also offers a free native Android companion app on Google Play."
+        "q": "Should I replace my roll number or examination centre in the PDF?",
+        "a": "No. Ask the issuer for a corrected official certificate; visual changes do not update its systems."
       }
     ],
     "status": "published",
-    "publishedDate": "2026-08-23"
+    "publishedDate": "2026-08-23",
+    "reviewedDate": "2026-10-01",
+    "sources": [
+      {
+        "label": "SSC official portal and regional help information",
+        "url": "https://ssc.gov.in/"
+      },
+      {
+        "label": "UP Police Recruitment Board: official contact",
+        "url": "https://uppbpb.gov.in/home/contact"
+      }
+    ],
+    "relatedSlugs": [
+      "name-correction-application-and-affidavit-guide"
+    ]
   },
   {
     "slug": "merge-multiple-hindi-pdf-files-online",
-    "title": "How to Merge Multiple Hindi PDF Files Online in Order (100% Free & Private)",
+    "title": "Merge Hindi PDF files online: order and output checks",
     "category": "Document Management",
     "language": "en",
-    "metaDescription": "Learn how to combine and merge multiple Hindi PDF files into a single document in sequential order for free without file size limits or server uploads.",
-    "directAnswer": "To merge multiple Hindi PDF files, visit hindipdfeditor.com/edit/?tool=merge. Select or drag multiple PDF documents, arrange their sequence using the drag handles or arrow buttons, and click Merge PDFs. The files are combined 100% locally in your browser memory without uploading any data to external servers.",
+    "metaDescription": "Combine two or more PDFs in browser memory. Check the listed order, page count and exported copy; keep the original files.",
+    "directAnswer": "Select two or more PDFs, check their displayed order, add or remove files as needed and choose Merge & download. Files are merged in the order shown; the current UI has no drag-to-reorder control.",
     "readTime": "3 min read",
     "badgeTone": "tag-amber",
     "sections": [
       {
-        "heading": "Why Local PDF Merging is Safer",
+        "heading": "Select files in the intended order",
         "paragraphs": [
-          "Most online PDF merging tools require uploading all your PDF pages to cloud servers where they are processed remotely. For sensitive legal briefs, certificates, or financial records, this represents a significant data safety risk.",
-          "Hindi PDF Editor processes PDF merging directly inside your browser memory using WebAssembly, ensuring complete confidentiality."
+          "The queue displays numbered files. To change order, clear and select them in the desired sequence, or remove and append where suitable. Do not assume drag handles exist."
+        ]
+      },
+      {
+        "heading": "What merging preserves",
+        "paragraphs": [
+          "Merging copies pages into a new PDF without drawing new Hindi text. Check the page count and rendering in another viewer. Digital signatures or document-level metadata may not remain valid in a merged document."
+        ]
+      },
+      {
+        "heading": "Private local workflow",
+        "paragraphs": [
+          "This core task processes files in browser memory. No AI processing is needed. Keep the originals and review the exported file before sharing."
         ]
       }
     ],
     "steps": [
       {
-        "title": "Open Merge Tool",
-        "desc": "Go to the Merge PDF workspace at hindipdfeditor.com/edit/?tool=merge."
+        "title": "Select PDFs",
+        "desc": "Choose at least two PDFs."
       },
       {
-        "title": "Add Multiple PDFs",
-        "desc": "Select two or more PDF files from your phone or computer."
+        "title": "Check the queue",
+        "desc": "Verify the numbered order and remove unwanted files."
       },
       {
-        "title": "Arrange File Sequence",
-        "desc": "Drag and reorder cards to match your desired document order."
-      },
-      {
-        "title": "Download Combined PDF",
-        "desc": "Click Merge & Download to save your single unified PDF document."
+        "title": "Merge and inspect",
+        "desc": "Download merged.pdf and inspect every page."
       }
     ],
     "faqs": [
       {
-        "q": "Is there a limit on how many PDFs I can merge?",
-        "a": "No. There are no artificial page quotas or file count restrictions because the processing uses your local device resources."
+        "q": "Can I drag to reorder?",
+        "a": "The current queue has removal and append controls. Clear and select again when you need a different order."
       }
     ],
     "status": "published",
-    "publishedDate": "2026-08-24"
+    "publishedDate": "2026-08-24",
+    "reviewedDate": "2026-10-01",
+    "toolPath": "/tools/merge-pdf/",
+    "relatedSlugs": [
+      "how-to-edit-hindi-pdf"
+    ]
   },
   {
     "slug": "compress-scanned-hindi-pdf-without-blur",
-    "title": "How to Compress Large Scanned Hindi PDFs Without Quality Loss",
+    "title": "Compress scanned Hindi PDF: check clarity and file size",
     "category": "Document Management",
     "language": "en",
-    "metaDescription": "Learn how to reduce scanned Hindi PDF file size below 100KB, 200KB, or 500KB for government job portals without making Hindi matras blurry.",
-    "directAnswer": "To compress a large scanned Hindi PDF, open hindipdfeditor.com/edit/?tool=compress. Choose your preferred compression mode (Balanced, Strong, or Maximum Compression), and click Compress PDF. The tool optimizes image streams and removes redundant metadata while keeping Devanagari text razor-sharp for portal uploads.",
+    "metaDescription": "Create a smaller image-based PDF by changing JPEG quality. Compare output size and Hindi letter clarity; no fixed size or lossless result is guaranteed.",
+    "directAnswer": "Choose a PDF in Compress PDF and adjust Image quality. Compare the actual output size; not every document can meet a 100KB target.",
     "readTime": "3 min read",
     "badgeTone": "tag-coral",
     "sections": [
       {
-        "heading": "Meeting Sarkari Portal Upload Size Limits (100KB - 300KB)",
+        "heading": "Check the actual upload limit",
         "paragraphs": [
-          "Government job applications (UPSC, SSC, State PSCs) typically restrict document upload sizes to under 200KB. Naive online compressors often over-compress documents, turning Hindi matras and text into unreadable pixelated blur.",
-          "Hindi PDF Editor uses smart DPI scaling to balance file size reduction with maximum Devanagari text legibility."
+          "Check the portal’s current KB/MB and page requirements. This tool has no Portal Safe target-size preset."
+        ]
+      },
+      {
+        "heading": "Review character clarity",
+        "paragraphs": [
+          "Compression rasterizes pages to JPEG. Small vowel marks, numbers and fine scan lines may degrade. Lower quality can blur the page; this is not lossless compression."
+        ]
+      },
+      {
+        "heading": "Compare the download",
+        "paragraphs": [
+          "The result can be larger than the source. Retain the original and try another quality if size or clarity is not useful.",
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised."
         ]
       }
     ],
     "steps": [
       {
-        "title": "Select Large PDF",
-        "desc": "Open the Compress tool and upload your scanned Hindi document."
+        "title": "Choose the source",
+        "desc": "Open Compress PDF and select your PDF."
       },
       {
-        "title": "Pick Target Compression",
-        "desc": "Select from Balanced (optimal quality) or Strong (under 200KB)."
+        "title": "Adjust quality",
+        "desc": "Adjust the Image quality slider and download a new copy."
       },
       {
-        "title": "Compress In-Browser",
-        "desc": "The engine shrinks image streams locally without cloud transmission."
+        "title": "Inspect the result",
+        "desc": "Compare the file size and inspect every page."
+      }
+    ],
+    "faqs": [],
+    "status": "published",
+    "publishedDate": "2026-08-25",
+    "reviewedDate": "2026-10-01",
+    "toolPath": "/tools/compress-pdf/",
+    "relatedSlugs": [
+      "how-to-edit-hindi-pdf"
+    ]
+  },
+  {
+    "slug": "how-to-edit-hindi-pdf",
+    "title": "How to edit Hindi text in a PDF",
+    "category": "देवनागरी टाइपोग्राफी",
+    "language": "en",
+    "status": "published",
+    "publishedDate": "2026-10-01",
+    "metaDescription": "Add Unicode Hindi text to a PDF, work with scanned pages and review your exported copy. Includes a test PDF, font warnings and privacy limits.",
+    "directAnswer": "Open a copy, use Add text or Erase box, then download and review the new PDF. The web editor uses overlays; it does not convert every legacy Hindi font.",
+    "sections": [
+      {
+        "heading": "Which PDFs can you work with?",
+        "paragraphs": [
+          "A digital PDF may contain a text layer; a scan stores text as an image. The editor adds Unicode text and masks above the original page. It does not reflow paragraphs like Word or convert every embedded font.",
+          "If font inspection is inconclusive or a legacy encoding is detected, follow the warning. Obtain the source document or a verified Unicode copy rather than bypassing the restriction."
+        ]
       },
       {
-        "title": "Download Compressed File",
-        "desc": "Save your lightweight, portal-ready PDF document."
+        "heading": "Practice with a known sample",
+        "paragraphs": [
+          "Use the test PDF below. Add “क्ष त्र ज्ञ कि प्रार्थना — परीक्षण” to check conjuncts and the short-i vowel mark. These are fictional test words, not a person’s identity or official record.",
+          "Choose Add text, click the page and type with a Hindi keyboard. Review the box width and font size. An Erase box changes a visual copy; it does not authorize a correction to an official record."
+        ]
+      },
+      {
+        "heading": "When scan text is not detected",
+        "paragraphs": [
+          "Automatic recognition can miss or misread words. Try manual Add text or Erase box. If you choose AI detection, read which page data the consent sends before approving it."
+        ]
+      },
+      {
+        "heading": "Review the downloaded copy",
+        "paragraphs": [
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Practice on the sample first, then edit a copy of your own PDF. Retain the original separately. Follow the issuer’s correction process for official documents."
+        ]
+      },
+      {
+        "heading": "Privacy and practical limits",
+        "paragraphs": [
+          "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent.",
+          "Large or long PDFs may be slow on a mobile browser. Split the work where appropriate. Check page color, masks and text boxes. Starting a download does not prove the file was saved to disk."
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Open a sample",
+        "desc": "Download the fixture and choose Select PDF in the editor."
+      },
+      {
+        "title": "Add Hindi text",
+        "desc": "Choose Add text, click the page and type. Adjust the box and font size as needed."
+      },
+      {
+        "title": "Review the output",
+        "desc": "Choose Download edited PDF and reopen the new file."
       }
     ],
     "faqs": [
       {
-        "q": "Will Hindi text remain readable after compression?",
-        "a": "Yes. The compression algorithm is tuned specifically to preserve high contrast around thin Devanagari strokes and vowel matras."
+        "q": "Can I add Hindi text to a scan?",
+        "a": "Yes, as a new overlay. Check recognition and any mask covering the original word."
+      },
+      {
+        "q": "Does export change the source?",
+        "a": "Export produces a separate file. Keep the original safely."
+      }
+    ],
+    "reviewedDate": "2026-10-01",
+    "sample": true,
+    "alternateSlug": "hindi-pdf-kaise-edit-kare",
+    "relatedSlugs": [
+      "fix-broken-hindi-fonts-in-pdf",
+      "kruti-dev-pdf-unicode-converter-hindi"
+    ]
+  },
+  {
+    "slug": "hindi-pdf-font-kaise-thik-kare",
+    "title": "PDF में हिंदी फॉन्ट टूट रहे हैं? पहले कारण पहचानें",
+    "category": "Typography & Fonts",
+    "language": "hi",
+    "status": "published",
+    "publishedDate": "2026-10-01",
+    "metaDescription": "Unicode, पुराने फॉन्ट और स्कैन PDF में अंतर समझें। संयुक्त अक्षर का नमूना, सुरक्षित ओवरले और इमेज आधारित एक्सपोर्ट की जाँच करें।",
+    "directAnswer": "पहले देखें PDF में Unicode टेक्स्ट, पुरानी एन्कोडिंग या स्कैन पेज हैं। नया Unicode ओवरले दिखने वाले शब्द बदल सकता है; वह खोया टेक्स्ट मैप या सभी पुराने फॉन्ट वापस नहीं लाता।",
+    "sections": [
+      {
+        "heading": "एडिट करने से पहले समस्या पहचानें",
+        "paragraphs": [
+          "एक ही PDF को ब्राउज़र और दूसरे व्यूअर में देखें। स्रोत फाइल का टेक्स्ट ही गलत है तो नया फॉन्ट लगाने से खोया टेक्स्ट वापस नहीं आएगा। मूल PDF रखें और उपलब्ध हो तो संपादन योग्य स्रोत लें।",
+          "टेक्स्ट Unicode, पुरानी फॉन्ट एन्कोडिंग या स्कैन इमेज हो सकता है। कॉपी-पेस्ट में टूटे अक्षर टेक्स्ट मैप की समस्या दिखा सकते हैं; यह अकेले किसी पुराने फॉन्ट का प्रमाण नहीं है।"
+        ]
+      },
+      {
+        "heading": "एडिटर वास्तव में क्या करता है",
+        "paragraphs": [
+          "नए हिंदी ओवरले Unicode फॉन्ट और HTML शेपिंग से बनते हैं। मूल पेज का दृश्य बना रहता है; ऊपर सही टेक्स्ट जोड़ने से अंदर की पुरानी टेक्स्ट लेयर ठीक नहीं होती।",
+          "अस्पष्ट फॉन्ट जाँच और पुरानी एन्कोडिंग पर चेतावनी या एडिटिंग रोक आती है। वेब एडिटर सभी Kruti Dev PDF को डिकोड करने का टूल नहीं है।"
+        ]
+      },
+      {
+        "heading": "कठिन हिंदी अक्षर जाँचें",
+        "paragraphs": [
+          "नमूने में “क्ष”, “त्र”, “ज्ञ”, “कि” और “प्रार्थना” देखें। रेफ, मात्राएँ और लाइन ब्रेक इच्छित आकार में जाँचें।",
+          "मास्क केवल पुरानी स्याही ढके, पास की लाइन नहीं। पहले छोटा बदलाव करें और पेज से मिलता बैकग्राउंड रंग चुनें।"
+        ]
+      },
+      {
+        "heading": "एक्सपोर्ट की सीमाएँ",
+        "paragraphs": [
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।"
+        ]
+      },
+      {
+        "heading": "प्राइवेसी",
+        "paragraphs": [
+          "मुख्य PDF एडिटिंग आपके ब्राउज़र में होती है। AI OCR और अनुवाद अलग विकल्प हैं; उनके लिए सहमति देने पर चुना हुआ टेक्स्ट या पेज इमेज सेवा को भेजी जाती है।"
+        ]
+      }
+    ],
+    "steps": [],
+    "faqs": [
+      {
+        "q": "क्या फॉन्ट बदलने से हर PDF ठीक होगी?",
+        "a": "नहीं। गलत टेक्स्ट मैप या पुरानी एन्कोडिंग का कारण समझना जरूरी है; ओवरले का फॉन्ट मूल टेक्स्ट वापस नहीं लाता।"
+      },
+      {
+        "q": "क्या डाउनलोड किया टेक्स्ट चुन सकते हैं?",
+        "a": "वेब एक्सपोर्ट इमेज आधारित पेज बनाता है; टेक्स्ट चयन की गारंटी नहीं है।"
+      }
+    ],
+    "reviewedDate": "2026-10-01",
+    "sample": true,
+    "alternateSlug": "fix-broken-hindi-fonts-in-pdf",
+    "relatedSlugs": [
+      "kruti-dev-to-unicode-hindi-pdf-editor",
+      "how-to-edit-hindi-pdf"
+    ]
+  },
+  {
+    "slug": "parimarjan-plus-affidavit-pdf-guide",
+    "title": "Parimarjan Plus affidavit PDF: official format and preparation",
+    "category": "भूलेख और राजस्व",
+    "language": "en",
+    "metaDescription": "Find the official Bihar Parimarjan Plus format, prepare a correction request and review your PDF copy. Understand why editing a PDF does not change land records.",
+    "directAnswer": "Obtain the official format for your application, match the required fields against evidence and review the new PDF. The editor helps prepare an application; it does not correct the official Jamabandi record.",
+    "readTime": "4 min read",
+    "badgeTone": "tag-green",
+    "sections": [
+      {
+        "heading": "Find the official format",
+        "paragraphs": [
+          "Bihar Bhumi’s Jamabandi FAQ points applicants to Parimarjan Plus for correction requests. Check the application type and official instructions for your case. Obtain the applicable format there; a generic sample is not an approved affidavit."
+        ]
+      },
+      {
+        "heading": "An application is different from the record",
+        "paragraphs": [
+          "Changing a name or plot field in a PDF does not update an official Jamabandi record. Prepare a correction request and supporting evidence; the authority handles the record correction through its process.",
+          "This site is independent of the government. The editor does not determine acceptance, deadlines, stamp requirements or attestation."
+        ]
+      },
+      {
+        "heading": "Check the information before typing",
+        "paragraphs": [
+          "Match the fields in the official format against original evidence. Verify names, village, account/plot references and the area unit without guessing. Fill only the information required for your case.",
+          "Preserve supporting records as issued. Merge them only when the portal asks for one combined file; keep them separate when separate uploads are requested."
+        ]
+      },
+      {
+        "heading": "Fictional practice example only",
+        "paragraphs": [
+          "Example: “Applicant: Test Kumar; subject: request to reconcile name spelling; reference: supporting proof attached.” This is typing practice, not an affidavit format or evidence of land rights.",
+          "Check current instructions for affidavit wording, verification, signatures and attachments separately."
+        ]
+      },
+      {
+        "heading": "Final file review",
+        "paragraphs": [
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent.",
+          "Read every page before uploading. Check the portal for actual file-size and file-type limits. No guessed KB limit or acceptance guarantee is provided here."
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Check the official instructions",
+        "desc": "Use the Bihar Bhumi and Parimarjan Plus links below to find the applicable format."
+      },
+      {
+        "title": "Fill a copy",
+        "desc": "Open a copy in the editor and match each field against your evidence."
+      },
+      {
+        "title": "Review before submitting",
+        "desc": "Reopen the PDF and check signatures, attachments and the official submission process."
+      }
+    ],
+    "faqs": [
+      {
+        "q": "Is the practice sample an official affidavit?",
+        "a": "No. The sample here is a typing fixture. Obtain the applicable format from the official portal."
+      },
+      {
+        "q": "Does editing the PDF change the land record?",
+        "a": "No. The authority processes corrections to the official record."
       }
     ],
     "status": "published",
-    "publishedDate": "2026-08-25"
+    "publishedDate": "2026-10-01",
+    "reviewedDate": "2026-10-01",
+    "sources": [
+      {
+        "label": "बिहारभूमि: जमाबंदी और परिमार्जन FAQ",
+        "url": "https://biharbhumi.bihar.gov.in/biharbhumi/FAQ/12.html"
+      },
+      {
+        "label": "Parimarjan Plus: citizen portal and user manual",
+        "url": "https://parimarjanplus.bihar.gov.in/ParimarjanNew/userDashboard.aspx"
+      }
+    ],
+    "alternateSlug": "bihar-bhumi-parimarjan-plus-shapath-patra-pdf",
+    "relatedSlugs": [
+      "hindi-pdf-kaise-edit-kare",
+      "pdf-size-kam-kaise-kare-100kb-sarkari-form"
+    ]
+  },
+  {
+    "slug": "name-correction-application-and-affidavit-guide",
+    "title": "Name correction application and affidavit: admission certificate errors",
+    "category": "सरकारी भर्ती",
+    "language": "en",
+    "status": "published",
+    "publishedDate": "2026-10-01",
+    "metaDescription": "Contact the issuer about an admission certificate name error. Prepare your correction request PDF and obtain any required affidavit format from the authority.",
+    "directAnswer": "Ask the issuer for its correction process. You can prepare a request and supporting evidence as PDFs, but editing the issued certificate yourself is not an official correction. Make an affidavit only if required.",
+    "sections": [
+      {
+        "heading": "Start with the issuer",
+        "paragraphs": [
+          "If an admission certificate has an error, consult the examination authority’s current instructions and contact details. Editing the candidate name, roll number, photograph or centre yourself does not make it an official correction."
+        ]
+      },
+      {
+        "heading": "An application is not an affidavit",
+        "paragraphs": [
+          "A correction application explains the mismatch. Prepare an affidavit only when the authority requires one and specifies the format. Do not assume one affidavit, stamp value or attestation rule applies to every examination."
+        ]
+      },
+      {
+        "heading": "Prepare your request",
+        "paragraphs": [
+          "Keep the original admission certificate and copies of supporting identity or education evidence. Explain the recorded information, the correct information and the supporting proof. Use a PDF editor to fill your own request, not to alter an issued certificate as an authorized correction."
+        ]
+      },
+      {
+        "heading": "Fictional request example",
+        "paragraphs": [
+          "“Subject: request to reconcile name spelling. Please review my information against the attached evidence. Applicant: Test Kumar.” This is a practice sentence, not a legal affidavit or an institution-approved format."
+        ]
+      },
+      {
+        "heading": "Review and privacy",
+        "paragraphs": [
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent.",
+          "Obtain the corrected official copy from the issuer. Check the wording and attachments of your request against its current instructions."
+        ]
+      }
+    ],
+    "steps": [],
+    "faqs": [
+      {
+        "q": "Can I change the name on my admission certificate myself?",
+        "a": "Do not treat a self-edited PDF as an authorized replacement. Obtain the corrected certificate from the issuer."
+      },
+      {
+        "q": "Is an affidavit always required?",
+        "a": "No universal requirement is assumed. Ask the relevant authority for the current requirements and format."
+      }
+    ],
+    "reviewedDate": "2026-10-01",
+    "sources": [
+      {
+        "label": "SSC official portal and regional help information",
+        "url": "https://ssc.gov.in/"
+      },
+      {
+        "label": "UP Police Recruitment Board: official contact",
+        "url": "https://uppbpb.gov.in/home/contact"
+      }
+    ],
+    "alternateSlug": "sarkari-admit-card-name-correction-affidavit-hindi",
+    "relatedSlugs": [
+      "hindi-pdf-kaise-edit-kare",
+      "edit-sarkari-admit-card-hindi-pdf"
+    ]
   }
 ]

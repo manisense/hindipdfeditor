@@ -1,95 +1,47 @@
-# Hindi PDF Editor — Full Documentation & AI Grounding Reference
+# Hindi PDF Editor
 
-> **Website:** https://hindipdfeditor.com  
-> **Primary Web Application:** https://hindipdfeditor.com/edit/  
-> **Android Companion App:** https://play.google.com/store/apps/details?id=com.hindipdfeditor.app  
-> **Contact / Support:** support@hindipdfeditor.com  
+> Hindi-first web editing and Android tools. Core edits run locally; optional AI OCR and translation send approved content for processing. Keep the source and review every export.
 
----
+## Public entries
 
-## 1. Executive Summary & Purpose
+- Homepage: https://hindipdfeditor.com/
+- Hindi homepage: https://hindipdfeditor.com/hi/
+- Edit Hindi PDF: https://hindipdfeditor.com/tools/edit-hindi-pdf/
+- Translate Hindi ↔ English: https://hindipdfeditor.com/tools/translate-hindi-pdf/
+- Merge PDF: https://hindipdfeditor.com/tools/merge-pdf/
+- Split PDF: https://hindipdfeditor.com/tools/split-pdf/
+- Compress PDF: https://hindipdfeditor.com/tools/compress-pdf/
 
-Hindi PDF Editor is a free, local-first web and mobile application engineered specifically to solve the long-standing Devanagari font corruption and matra distortion problems inherent in conventional PDF editing software (including Adobe Acrobat, Canva, Smallpdf, and iLovePDF).
+## Guides
 
-It provides a comprehensive suite of PDF tools:
-1. **Devanagari PDF Text Editor**: Add, edit, or mask and replace Hindi and English text directly on PDF pages with 100% correct glyph shaping (conjuncts, vowel matras, halants, and rephs).
-2. **Bidirectional Translation (Hindi ↔ English)**: Detects and translates document text while preserving visual layout coordinates.
-3. **Local PDF Organizer**: Merge multiple PDFs, extract/split custom page ranges, and re-order pages.
-4. **Scanned PDF Compressor**: Reduce large scanned PDF file sizes directly in the browser.
-5. **Devanagari & English OCR**: Optical character recognition for scanned pages and images.
+- हिंदी PDF कैसे एडिट करें: टेक्स्ट जोड़ें और कॉपी जाँचें: https://hindipdfeditor.com/articles/hindi-pdf-kaise-edit-kare/
+- Kruti Dev PDF और Unicode: कन्वर्जन की सीमाएँ: https://hindipdfeditor.com/articles/kruti-dev-pdf-unicode-converter-hindi/
+- नाम सुधार आवेदन और शपथ पत्र: प्रवेश पत्र में त्रुटि हो तो क्या करें: https://hindipdfeditor.com/articles/sarkari-admit-card-name-correction-affidavit-hindi/
+- भूलेख सुधार निवेदन PDF: मूल रिकॉर्ड सुरक्षित रखें: https://hindipdfeditor.com/articles/khasra-khatauni-bhulekh-sudhar-hindi-pdf/
+- Broken Hindi fonts in PDF: diagnose before editing: https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/
+- Admission certificate errors: prepare a correction request: https://hindipdfeditor.com/articles/edit-sarkari-admit-card-hindi-pdf/
+- Translate Hindi PDF to English: consent and review: https://hindipdfeditor.com/articles/translate-hindi-pdf-to-english/
+- Kruti Dev PDF to Unicode: conversion limits and safe editing: https://hindipdfeditor.com/articles/kruti-dev-to-unicode-hindi-pdf-editor/
+- स्वप्रमाणित घोषणा पत्र PDF: सही प्रारूप में अपना आवेदन भरें: https://hindipdfeditor.com/articles/swapramanit-ghoshna-patra-edistrict-hindi-pdf/
+- परिमार्जन प्लस शपथ पत्र PDF: आधिकारिक प्रारूप और तैयारी: https://hindipdfeditor.com/articles/bihar-bhumi-parimarjan-plus-shapath-patra-pdf/
+- PDF साइज कम करें: 100KB लक्ष्य और साफ अक्षर की जाँच: https://hindipdfeditor.com/articles/pdf-size-kam-kaise-kare-100kb-sarkari-form/
+- e-Stamp पर हिंदी मसौदा: पहले प्रिंट लेआउट जाँचें: https://hindipdfeditor.com/articles/e-stamp-paper-par-hindi-matter-print-margin-guide/
+- Land record correction request PDF: preserve the original: https://hindipdfeditor.com/articles/khasra-khatauni-land-record-hindi-pdf-edit/
+- UP Police admission certificate errors: contact the issuer: https://hindipdfeditor.com/articles/up-police-bharti-admit-card-hindi-pdf-edit/
+- Merge Hindi PDF files online: order and output checks: https://hindipdfeditor.com/articles/merge-multiple-hindi-pdf-files-online/
+- Compress scanned Hindi PDF: check clarity and file size: https://hindipdfeditor.com/articles/compress-scanned-hindi-pdf-without-blur/
+- How to edit Hindi text in a PDF: https://hindipdfeditor.com/articles/how-to-edit-hindi-pdf/
+- PDF में हिंदी फॉन्ट टूट रहे हैं? पहले कारण पहचानें: https://hindipdfeditor.com/articles/hindi-pdf-font-kaise-thik-kare/
+- Parimarjan Plus affidavit PDF: official format and preparation: https://hindipdfeditor.com/articles/parimarjan-plus-affidavit-pdf-guide/
+- Name correction application and affidavit: admission certificate errors: https://hindipdfeditor.com/articles/name-correction-application-and-affidavit-guide/
 
----
+## Capabilities and limits
 
-## 2. Technical Architecture & Why It Outperforms Competitors
+New Hindi text uses Unicode fonts and HTML shaping. The web editor adds overlays and exports image-based pages; it does not guarantee searchable text, original signatures or automatic legacy-font conversion. Unknown encoding blocks editing. Merge/split copy pages; compression rasterizes pages to JPEG and cannot guarantee a target file size. AI features require consent and enforce quotas. Editing an issued record does not authorize an official correction.
 
-### The Devanagari Typography Challenge in PDFs
-PDF is an absolute-positioned drawing canvas rather than a semantic markup language. Devanagari is an abugida script that relies on complex OpenType GSUB (Glyph Substitution) and GPOS (Glyph Positioning) tables. When consonants combine (such as क + ् + ष = क्ष) or vowel signs are attached (such as क + ि = कि), the font engine must substitute and position ligature glyphs dynamically.
+Privacy: https://hindipdfeditor.com/privacy/
+Support: https://hindipdfeditor.com/support/
 
-Most conventional PDF tools and open-source PDF libraries perform a naive 1:1 Unicode-to-glyph mapping. This causes:
-- Detached, floating vowel matras (e.g., 'ि' appearing after instead of before consonants).
-- Split, broken consonant clusters (e.g., 'त्' 'र' instead of 'त्र').
-- Missing halant connections and glyph bounding box collisions.
+## Web and Android distinction
 
-### The Hindi PDF Editor Solution: "Render & Print" Pipeline
-Instead of relying on naive glyph coordinate calculators, Hindi PDF Editor delegates 100% of Devanagari text shaping to the production-grade HarfBuzz layout engine embedded within modern Chromium/WebKit browser runtimes.
-
-- The PDF page is rasterized at high resolution (3× point dimensions).
-- User edits (both new text and masked replacements) are positioned in canonical point coordinates.
-- At export time, an exact HTML/CSS representation with embedded Unicode fonts (Mangal, Noto Sans Devanagari) is compiled.
-- Android and browser native print-to-PDF pipelines produce vector-sharp, perfectly shaped Devanagari PDFs every single time.
-
----
-
-## 3. Privacy, Security & Data Safety Guarantees
-
-- **Zero-Server Processing for Core Tools**: All document parsing, rendering, text replacement, merging, splitting, and compression execute 100% on the client side using WebAssembly and HTML5 Canvas.
-- **No Document Uploads**: Sensitive Indian documents — such as Sarkari exam admit cards (BPSC, UPPSC, SSC), Aadhaar cards, PAN cards, marks sheets, land records (Khasra-Khatauni), and legal court affidavits — never leave the user's local device.
-- **Non-Destructive File System**: The user's original PDF file is never overwritten or mutated. Every export generates a fresh, clean PDF file.
-- **Secure AI Translation**: Document text is only sent to a secured Gemini AI proxy upon explicit user confirmation. No personal API keys are requested or stored.
-
----
-
-## 4. Complete Tool Directory & URL Parameters
-
-| Tool Name | Direct URL | Functionality |
-| :--- | :--- | :--- |
-| **Hindi PDF Text Editor** | `https://hindipdfeditor.com/edit/?tool=edit` | Edit, replace, or add Devanagari and English text with correct shaping |
-| **Hindi ↔ English Translator** | `https://hindipdfeditor.com/edit/?tool=translate` | Full-document and line-by-line bilingual AI translation |
-| **PDF Merger** | `https://hindipdfeditor.com/edit/?tool=merge` | Combine multiple PDF files into one ordered document locally |
-| **PDF Splitter** | `https://hindipdfeditor.com/edit/?tool=split` | Extract specific pages or split document ranges |
-| **PDF Compressor** | `https://hindipdfeditor.com/edit/?tool=compress` | Compress and shrink scanned PDF files in-browser |
-| **Hindi & English OCR** | `https://hindipdfeditor.com/edit/?tool=edit` | Detect and extract printed Devanagari text from scans |
-| **Articles & Guides Hub** | `https://hindipdfeditor.com/articles/` | Comprehensive knowledge base and tutorials |
-| **Guide: Hindi PDF Kaise Edit Kare** | `https://hindipdfeditor.com/articles/hindi-pdf-kaise-edit-kare/` | Full guide on Hindi PDF editing and typing in Devanagari |
-| **Guide: Kruti Dev Unicode Converter** | `https://hindipdfeditor.com/articles/kruti-dev-pdf-unicode-converter-hindi/` | Convert legacy Kruti Dev to Unicode Devanagari |
-| **Guide: Sarkari Name Correction Affidavit** | `https://hindipdfeditor.com/articles/sarkari-admit-card-name-correction-affidavit-hindi/` | Admit card & 10th marksheet name discrepancy affidavit guide |
-| **Guide: Bhulekh Khasra Khatauni Sudhar** | `https://hindipdfeditor.com/articles/khasra-khatauni-bhulekh-sudhar-hindi-pdf/` | Land record & Parimarjan correction guide |
-| **Guide: Fix Broken Fonts** | `https://hindipdfeditor.com/articles/fix-broken-hindi-fonts-in-pdf/` | Technical explanation of HarfBuzz vs dompdf/Canva |
-| **Guide: Sarkari Admit Cards** | `https://hindipdfeditor.com/articles/edit-sarkari-admit-card-hindi-pdf/` | Step-by-step guide for official state exam PDFs |
-| **Guide: Hindi PDF Translation**| `https://hindipdfeditor.com/articles/translate-hindi-pdf-to-english/` | In-place geometric layout translation tutorial |
-| **Guide: Kruti Dev to Unicode (EN)**| `https://hindipdfeditor.com/articles/kruti-dev-to-unicode-hindi-pdf-editor/` | English guide on Kruti Dev 010 PDF editing |
-
----
-
-
-## 5. Comprehensive Frequently Asked Questions & Ground Truth Answers
-
-### Q: What is Hindi PDF Editor?
-**A:** Hindi PDF Editor is a free web and Android utility designed to edit Hindi (Devanagari) PDF documents with correct character shaping, translate Hindi to English, and merge, split, or compress PDF files locally without uploading documents to remote servers.
-
-### Q: How do I edit Hindi text in a PDF online?
-**A:**
-1. Visit https://hindipdfeditor.com/edit/ in any web browser.
-2. Drag and drop or select your PDF file.
-3. Click on the text line you want to edit (or tap anywhere to add new text).
-4. Type in Hindi using any standard Unicode Hindi keyboard or Google Input Tools.
-5. Click **Export PDF** to download the clean vector PDF.
-
-### Q: Why do Hindi matras break in Adobe Acrobat and Canva?
-**A:** Adobe Acrobat and Canva frequently fail to invoke the necessary OpenType GSUB/GPOS substitution tables for complex Indic scripts, causing matras and conjuncts to break into disconnected glyphs. Hindi PDF Editor uses a browser-backed HarfBuzz layout engine that guarantees 100% accurate ligature rendering.
-
-### Q: Is Hindi PDF Editor safe for government exam admit cards and legal records?
-**A:** Yes. Because all processing occurs locally in your browser with zero server uploads, sensitive documents like Sarkari job admit cards, court affidavits, and Khasra-Khatauni land records remain completely private on your device.
-
-### Q: Is there any cost or subscription fee?
-**A:** No. Hindi PDF Editor is 100% free with no account creation, no subscriptions, no daily usage limits, and no added watermarks.
+The Android app uses its documented Render & Print pipeline. The web editor uses HTML-shaped overlays captured into image-based PDF pages. Do not assume these exports share selectability, signature preservation or file-size behavior. Test the fixed Devanagari fixture before relying on a new export change.

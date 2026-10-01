@@ -31,3 +31,8 @@
 - Translation requires explicit text/image-processing consent. Font inspection failures and nameless referenced fonts block processing instead of silently assuming a safe encoding. Compact Turnstile layout and script-load errors are handled.
 - Tool outcome events use coarse payloads. Page analytics excludes query strings and raw referrers; analytics runs only on production hostnames. English/Hindi privacy disclosures now describe actual AI and analytics processing.
 - Final editor verification: 85 tests across 21 files, lint and TypeScript/build passed. Additional article, analytics and routing tests: 7 passed.
+
+### Reviewed article system
+- Replaced legacy generated layouts and unsupported claims with a shared design-system article template and reviewed source data for twenty guides, including four new translated counterparts.
+- Five genuine article language pairs use reciprocal hreflang. Unpaired articles have no invented alternate URLs. Government guides link official sources and distinguish preparing an application from changing an issued record.
+- Publication requires review metadata; regenerated source/output parity, visible FAQ/schema correspondence, internal links, sitemap dates and article hub are checked. Machine-readable site summaries now match product limitations.

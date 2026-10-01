@@ -1,4 +1,4 @@
-# Allow search and answer-engine crawlers. PDFs opened in tools never leave the user's device;
+# Allow search and answer-engine crawlers. Core editing is local; optional AI uses consented processing;
 # this file only governs public marketing/tool pages.
 User-agent: *
 Allow: /
