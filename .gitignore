@@ -46,3 +46,6 @@ mobile-app/play-store-assets/play-store-assets.zip
 
 web-app/editor/dist-ssr/
 web-app/.wrangler/
+
+# Project-only Cloudflare deployment credentials
+/.env.cloudflare

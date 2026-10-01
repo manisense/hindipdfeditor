@@ -79,3 +79,20 @@ test("remote tool URLs redirect without losing language or mode", () => {
     }
   }
 });
+
+test("www normalizes to the apex and preserves retired task state in one redirect", async () => {
+  const env = { ASSETS: { fetch: async () => new Response("asset") } };
+  for (const path of ["/privacy/?source=old", "/edit/?tool=merge&mode=edit"]) {
+    const response = await worker.fetch(
+      new Request(`https://www.hindipdfeditor.com${path}`),
+      env,
+    );
+    assert.equal(response.status, 301);
+    const target = new URL(response.headers.get("Location"));
+    assert.equal(target.hostname, "hindipdfeditor.com");
+    assert.equal(
+      target.pathname,
+      path.startsWith("/edit") ? "/tools/merge-pdf/" : "/privacy/",
+    );
+  }
+});

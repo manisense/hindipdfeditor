@@ -64,3 +64,7 @@ Final expanded Chrome acceptance passed: homepage widths 320/360/390/768/1024/14
 ## Remote main merge
 
 Remote main was fetched before integration. Its mobile/native/release changes are retained. Overlapping web architectures are reconciled around the verified shared manifest/prerender build; the remote implementation's root-level and Hindi tool URLs permanently redirect to equivalent tool routes with language and mode preserved. Remote PDF.js legacy browser compatibility, bilingual labels/recovery, About pages, IndexNow and paused publication schedule remain. Rebuilt merged web release and reran lint and 85 tests successfully; browser export acceptance is repeated for the compatibility change. Previous Lighthouse scores refer to the pre-merge build.
+
+## Production deployment preparation
+
+The first push exposed a failed Workers Builds check: production is hosted by the existing Worker, not Pages. The hosting assumption is corrected in web ADR 0006, both Wrangler configs, deployment docs and the companion-web spec. Project-only token verification confirmed the owning account and local wrapper; no global authentication changed. The token is ignored by Git and never included in the publish artifact. Worker/ASSETS dry-run passed, with alias and www normalization tests. Live release verification follows upload.

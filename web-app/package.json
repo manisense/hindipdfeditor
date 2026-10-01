@@ -7,7 +7,7 @@
     "build": "npm run build:editor",
     "test:routing": "node --test scripts/migration-worker.test.mjs",
     "dev:editor": "npm --prefix editor run dev",
-    "deploy": "wrangler pages deploy dist --project-name hindipdfeditor",
+    "deploy": "node scripts/wrangler-project.mjs deploy",
     "check:publish": "node scripts/check-publish.mjs",
     "test:content": "node --test scripts/article-template.test.mjs && node scripts/check-content.mjs",
     "refresh:content": "node scripts/seo-worker.mjs --refresh-published",

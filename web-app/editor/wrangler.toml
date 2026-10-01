@@ -1,4 +1,11 @@
+# Existing production Workers Builds deployment (project-installed Wrangler).
 name = "hindipdfeditor"
+account_id = "4fa19d6815eb757bda0b564476970849"
+main = "../scripts/migration-worker.mjs"
 compatibility_date = "2026-07-07"
 
-pages_build_output_dir = "../dist"
+[assets]
+directory = "../dist"
+binding = "ASSETS"
+not_found_handling = "404-page"
+run_worker_first = true

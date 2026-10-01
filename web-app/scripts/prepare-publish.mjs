@@ -223,3 +223,9 @@ if (!sitemap.includes("https://hindipdfeditor.com/hi/")) {
 }
 const bytes = statSync(path.join(distDir, "index.html")).size;
 console.log(`prepare-publish: wrote ${distDir} (index.html ${bytes} bytes)`);
+
+// Workers static assets must not publish the Pages compatibility metadata as assets.
+writeFileSync(
+  path.join(distDir, ".assetsignore"),
+  "_worker.js\n_routes.json\n",
+);

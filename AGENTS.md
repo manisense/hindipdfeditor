@@ -117,7 +117,7 @@ Standard pyramid, mapped to this project:
 ### Web SEO routing baseline
 
 - The public marketing homepage is `/`, with its full Hindi equivalent at `/hi/`. Public PDF tasks use the shared `web-app/tool-routes.json` manifest.
-- Build-time HTML and client metadata must agree on each canonical. Preserve old `/edit/?tool=` task intent and supported parameters through the Cloudflare Pages migration worker; never restore a root-to-editor redirect.
+- Build-time HTML and client metadata must agree on each canonical. Preserve old `/edit/?tool=` task intent and supported parameters through the Cloudflare Workers migration script with an ASSETS binding; never restore a root-to-editor redirect.
 - Keep shared web colors and geometry derived from this file and `design-system.md` in `web-app/assets/brand-tokens.css`. Validate real responsive screenshots when changing public layouts.
 - Web-only delivery records live in `web-app/CHANGELOG.md` and `web-app/docs/decisions/`; record cross-platform behavior changes in the mobile changelog as well.
 

@@ -28,7 +28,8 @@ export function migrationDestination(url) {
 
 export default {
   async fetch(request, env) {
-    const destination = migrationDestination(new URL(request.url));
+    const requestUrl = new URL(request.url);
+    const destination = migrationDestination(requestUrl);
     if (destination === "invalid") {
       return new Response(
         "Unknown PDF tool. Return to the homepage to choose a tool.",
@@ -40,6 +41,11 @@ export default {
           },
         },
       );
+    }
+    if (requestUrl.hostname === "www.hindipdfeditor.com") {
+      const canonical = destination || requestUrl;
+      canonical.hostname = "hindipdfeditor.com";
+      return Response.redirect(canonical.href, 301);
     }
     if (destination) return Response.redirect(destination.href, 301);
     return env.ASSETS.fetch(request);

@@ -47,3 +47,7 @@
 - Fetched remote main before merging. Retained mobile renderer/release work, bilingual recovery and tool labels, PDF.js legacy browser compatibility, About pages and publishing integrations. One shared canonical/build system supersedes the parallel SSR implementation; aliases preserve its previously published tool URLs.
 
 - Article Person schema and visible bylines are aligned with the retained Manish About profile after merge. Source/output and article tests passed.
+
+### Production Workers hosting and project credentials
+- GitHub build evidence identifies the existing production Worker; replaced Pages-only deployment config with a Worker entrypoint and ASSETS binding, preserving the verified artifact and redirects. Added www-to-apex normalization.
+- Project-installed Wrangler explicitly reads local, ignored credentials or an explicit CI token. The owning account is verified; global OAuth configuration is unchanged.

@@ -1,34 +1,26 @@
-# Cloudflare Pages website deployment
+# Cloudflare Workers deployment
 
-The public site lives in `web-app/` and deploys as a Cloudflare Pages project for
-`hindipdfeditor.com`. The browser PDF tools build from `web-app/editor/` into
-`web-app/edit/`, then `npm run build` assembles a clean publish folder at
-`web-app/dist/`.
+The production site is the existing `hindipdfeditor` Worker in account `4fa19d6815eb757bda0b564476970849` (localcode.ai@gmail.com). GitHub's Workers Builds check confirms this hosting path. The public React site and PDF tools build into `web-app/dist/`; a small migration Worker delegates static content to the `ASSETS` binding.
 
-## Cloudflare dashboard settings (required)
+## Build and deploy
 
-Use these so Git builds do not fail:
+Cloudflare Workers Builds can use root directory `web-app`, build command `npm run build`, and deploy command `npm run deploy` (or its managed `npx wrangler deploy`). The equivalent `web-app/editor` root uses its own `npm run build` and `npm run deploy`. Both Wrangler configurations target the same Worker and artifact. The project-local wrapper explicitly supplies a token and never falls back to global OAuth.
 
-| Setting | Value |
-| --- | --- |
-| Root directory | `web-app` |
-| Build command | `npm run build` |
-| Deploy command | `npx wrangler pages deploy dist --project-name hindipdfeditor` |
-| Build output directory | `dist` (if the UI asks for one instead of a deploy command) |
+For local deployment from the repository root:
 
-If the root directory is `web-app/editor`, build with `npm run build` and deploy with
-`npx wrangler pages deploy ../dist --project-name hindipdfeditor`. Both configurations
-publish the same Pages artifact. Do not use the former Workers-only `wrangler deploy`
-path: it does not run the Pages migration worker.
+```bash
+npm --prefix web-app/editor run build
+node web-app/scripts/wrangler-project.mjs whoami
+npm --prefix web-app run deploy
+```
 
-## Root and tool migration
+Project credentials live only in root `.env.cloudflare`, ignored by Git with owner-only permissions. Copy `.env.cloudflare.example` when setting up another checkout and supply the token privately. CI may explicitly supply `CLOUDFLARE_API_TOKEN`; no secret is embedded in the bundle or tracked files. The wrapper uses `web-app/node_modules/wrangler`, leaving global authentication unchanged.
 
-The build prerenders `/` and `/hi/` from React and generates `/tools/` task entries.
-It includes `_worker.js` and `_routes.json` for query-aware permanent redirects from
-`/edit/` and root tool-query links. The worker preserves mode/language parameters.
-Hashed application assets still live under `/edit/assets/`; do not redirect that prefix.
-The homepage has no root-to-editor redirect. Verify using the local Pages preview before
-publishing and keep migration redirects for at least a year.
+## Routing and assets
+
+`web-app/scripts/migration-worker.mjs` handles retired `/edit/?tool=` links, root-level/Hindi tool aliases and www-to-apex normalization, preserving task/mode/language/tracking state. Other requests go to `env.ASSETS.fetch`; real missing pages stay 404. Root and Hindi homepages have build-time HTML. Task assets remain `/edit/assets/`.
+
+Workers must invoke the migration script before assets so query redirects and host normalization cannot be bypassed by a matching static file. `dist/.assetsignore` excludes the Pages compatibility `_worker.js` and `_routes.json` from Workers asset upload. Keep migration URLs available for at least one year. The former Pages-only deploy configuration is superseded by the verified live Workers hosting path.
 
 ## Target account
 
@@ -63,14 +55,14 @@ ready if the site deploy must happen first.
 cd /Users/manish/Downloads/Projects/hindi-pdf-editor/web-app
 npm install
 npm run build
-npx wrangler pages deploy dist --project-name hindipdfeditor --branch main
+npm run deploy
 ```
 
 ## Domain wiring
 
-In Cloudflare Pages:
+In the existing Cloudflare Worker custom domains:
 
-1. Open the `hindipdfeditor` Pages project.
+1. Open the `hindipdfeditor` Worker.
 2. Add custom domain `hindipdfeditor.com`.
 3. Add custom domain `www.hindipdfeditor.com`.
 4. Configure `www` to redirect to the apex domain if desired.
