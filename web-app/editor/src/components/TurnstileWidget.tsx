@@ -13,6 +13,7 @@ type TurnstileApi = {
       "expired-callback": () => void;
       "error-callback": () => void;
       theme: "light";
+      size: "compact";
     },
   ) => string;
   remove: (widgetId: string) => void;
@@ -50,13 +51,17 @@ export function TurnstileWidget({
       widgetId = window.turnstile.render(containerRef.current, {
         sitekey,
         action: "ai-session",
-        callback: (token) => onToken(token),
+        callback: (token) => {
+          setError(null);
+          onToken(token);
+        },
         "expired-callback": () => onToken(null),
         "error-callback": () => {
           onToken(null);
           setError("Security check failed. Reload and try again.");
         },
         theme: "light",
+        size: "compact",
       });
     };
     let script = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
@@ -69,11 +74,19 @@ export function TurnstileWidget({
       script.defer = true;
       document.head.appendChild(script);
     }
+    const onScriptError = () => {
+      onToken(null);
+      setError(
+        "Security check could not load. Check your connection and reload to retry.",
+      );
+    };
+    script.addEventListener("error", onScriptError);
     script.addEventListener("load", render);
     render();
     return () => {
       cancelled = true;
       script?.removeEventListener("load", render);
+      script?.removeEventListener("error", onScriptError);
       if (widgetId) window.turnstile?.remove(widgetId);
       onToken(null);
     };
@@ -81,7 +94,11 @@ export function TurnstileWidget({
 
   return (
     <div className="turnstile-widget">
-      <div className="turnstile-widget__frame" ref={containerRef} aria-label="Security check" />
+      <div
+        className="turnstile-widget__frame"
+        ref={containerRef}
+        aria-label="Security check"
+      />
       {error && <AppStatus tone="error">{error}</AppStatus>}
     </div>
   );

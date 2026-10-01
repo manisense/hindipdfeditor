@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { trackToolEvent } from "../lib/analytics";
+import { useState } from "react";
 
-import { AppButton } from '../components/AppButton';
-import { AppStatus } from '../components/AppStatus';
-import { DropZone } from '../components/DropZone';
-import { SelectedFileSummary } from '../components/SelectedFileSummary';
-import { ToolShell } from '../components/ToolShell';
-import { compressPdfFile, downloadPdfBytes } from '../lib/pdfOps';
-import { getTool } from '../lib/tools';
-import './UtilityTool.css';
+import { AppButton } from "../components/AppButton";
+import { AppStatus } from "../components/AppStatus";
+import { DropZone } from "../components/DropZone";
+import { SelectedFileSummary } from "../components/SelectedFileSummary";
+import { ToolShell } from "../components/ToolShell";
+import { compressPdfFile, downloadPdfBytes } from "../lib/pdfOps";
+import { getTool } from "../lib/tools";
+import "./UtilityTool.css";
 
-const tool = getTool('compress')!;
+const tool = getTool("compress")!;
 
 type Result = {
   filename: string;
@@ -34,15 +35,21 @@ export function CompressPdfTool() {
   const step = result ? 3 : file ? 2 : 1;
 
   const runCompress = async () => {
+    if (busy) return;
     if (!file) return;
     setBusy(true);
     setError(null);
     setResult(null);
     try {
-      const { bytes, pageCount, originalBytes } = await compressPdfFile(file, quality);
-      const base = file.name.replace(/\.pdf$/i, '') || 'compressed';
+      const { bytes, pageCount, originalBytes } = await compressPdfFile(
+        file,
+        quality,
+      );
+      trackToolEvent("pdf_open_success", "compress");
+      const base = file.name.replace(/\.pdf$/i, "") || "compressed";
       const filename = `${base}-compressed.pdf`;
       downloadPdfBytes(bytes, filename);
+      trackToolEvent("export_success", "compress");
       setResult({
         filename,
         originalBytes,
@@ -50,6 +57,7 @@ export function CompressPdfTool() {
         pageCount,
       });
     } catch (err) {
+      trackToolEvent("export_failed", "compress");
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
@@ -61,9 +69,9 @@ export function CompressPdfTool() {
       tool={tool}
       compact={Boolean(file)}
       steps={[
-        { label: 'Select PDF', active: step === 1, done: step > 1 },
-        { label: 'Compress', active: step === 2, done: step > 2 },
-        { label: 'Download', active: step === 3, done: step === 3 },
+        { label: "Select PDF", active: step === 1, done: step > 1 },
+        { label: "Compress", active: step === 2, done: step > 2 },
+        { label: "Download", active: step === 3, done: step === 3 },
       ]}
     >
       <div className="utility-tool">
@@ -81,7 +89,10 @@ export function CompressPdfTool() {
           />
         ) : (
           <div className="utility-tool__panel">
-            <SelectedFileSummary name={file.name} meta={formatBytes(file.size)} />
+            <SelectedFileSummary
+              name={file.name}
+              meta={formatBytes(file.size)}
+            />
             <div className="utility-tool__setting-card">
               <div className="utility-tool__setting-heading">
                 <div>
@@ -91,14 +102,20 @@ export function CompressPdfTool() {
                 <output>{Math.round(quality * 100)}%</output>
               </div>
               <label className="utility-tool__slider">
-                <span className="utility-tool__sr-only">Compression quality</span>
+                <span className="utility-tool__sr-only">
+                  Compression quality
+                </span>
                 <input
                   type="range"
+                  disabled={busy}
                   min={0.4}
                   max={0.92}
                   step={0.02}
                   value={quality}
-                  onChange={(e) => setQuality(Number(e.target.value))}
+                  onChange={(e) => {
+                    setQuality(Number(e.target.value));
+                    setResult(null);
+                  }}
                 />
               </label>
               <div className="utility-tool__range-labels" aria-hidden="true">
@@ -106,12 +123,14 @@ export function CompressPdfTool() {
                 <span>Sharper pages</span>
               </div>
               <p className="utility-tool__note">
-                Compression rasterizes each page, so text will no longer be selectable in the output.
+                Compression rasterizes each page, so text will no longer be
+                selectable in the output.
               </p>
             </div>
             <div className="utility-tool__actions">
               <AppButton
                 title="Choose another"
+                disabled={busy}
                 variant="ghost"
                 small
                 onClick={() => {
@@ -121,18 +140,23 @@ export function CompressPdfTool() {
                 }}
               />
               <AppButton
-                title={busy ? 'Compressing…' : 'Compress & download'}
+                title={busy ? "Compressing…" : "Compress & download"}
                 onClick={() => void runCompress()}
                 disabled={busy}
               />
             </div>
           </div>
         )}
-        {error && <AppStatus tone="error" title="Compression failed">{error}</AppStatus>}
+        {error && (
+          <AppStatus tone="error" title="Compression failed">
+            {error}
+          </AppStatus>
+        )}
         {result && (
           <AppStatus tone="success" title="Your smaller PDF is ready">
-            Downloaded {result.filename} · {result.pageCount} pages ·{' '}
-            {formatBytes(result.originalBytes)} → {formatBytes(result.compressedBytes)}
+            Downloaded {result.filename} · {result.pageCount} pages ·{" "}
+            {formatBytes(result.originalBytes)} →{" "}
+            {formatBytes(result.compressedBytes)}
           </AppStatus>
         )}
       </div>

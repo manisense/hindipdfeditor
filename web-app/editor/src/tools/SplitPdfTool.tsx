@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { trackToolEvent } from "../lib/analytics";
+import { useState } from "react";
 
-import { AppButton } from '../components/AppButton';
-import { AppStatus } from '../components/AppStatus';
-import { DropZone } from '../components/DropZone';
-import { SelectedFileSummary } from '../components/SelectedFileSummary';
-import { ToolShell } from '../components/ToolShell';
-import { downloadPdfBytes, getPdfPageCount, splitPdfFile } from '../lib/pdfOps';
-import { getTool } from '../lib/tools';
-import './UtilityTool.css';
+import { AppButton } from "../components/AppButton";
+import { AppStatus } from "../components/AppStatus";
+import { DropZone } from "../components/DropZone";
+import { SelectedFileSummary } from "../components/SelectedFileSummary";
+import { ToolShell } from "../components/ToolShell";
+import { downloadPdfBytes, getPdfPageCount, splitPdfFile } from "../lib/pdfOps";
+import { getTool } from "../lib/tools";
+import "./UtilityTool.css";
 
-const tool = getTool('split')!;
+const tool = getTool("split")!;
 
 export function SplitPdfTool() {
   const [file, setFile] = useState<File | null>(null);
@@ -27,6 +28,7 @@ export function SplitPdfTool() {
     setDoneName(null);
     try {
       const count = await getPdfPageCount(next);
+      trackToolEvent("pdf_open_success", "split");
       setFile(next);
       setPageCount(count);
       setFromPage(1);
@@ -37,17 +39,20 @@ export function SplitPdfTool() {
   };
 
   const runSplit = async () => {
+    if (busy) return;
     if (!file) return;
     setBusy(true);
     setError(null);
     setDoneName(null);
     try {
       const bytes = await splitPdfFile(file, fromPage, toPage);
-      const base = file.name.replace(/\.pdf$/i, '') || 'split';
+      const base = file.name.replace(/\.pdf$/i, "") || "split";
       const filename = `${base}-p${fromPage}-${toPage}.pdf`;
       downloadPdfBytes(bytes, filename);
+      trackToolEvent("export_success", "split");
       setDoneName(filename);
     } catch (err) {
+      trackToolEvent("export_failed", "split");
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
@@ -59,9 +64,9 @@ export function SplitPdfTool() {
       tool={tool}
       compact={Boolean(file)}
       steps={[
-        { label: 'Select PDF', active: step === 1, done: step > 1 },
-        { label: 'Choose pages', active: step === 2, done: step > 2 },
-        { label: 'Download', active: step === 3, done: step === 3 },
+        { label: "Select PDF", active: step === 1, done: step > 1 },
+        { label: "Choose pages", active: step === 2, done: step > 2 },
+        { label: "Download", active: step === 3, done: step === 3 },
       ]}
     >
       <div className="utility-tool">
@@ -77,7 +82,7 @@ export function SplitPdfTool() {
           <div className="utility-tool__panel">
             <SelectedFileSummary
               name={file.name}
-              meta={`${pageCount} page${pageCount === 1 ? '' : 's'}`}
+              meta={`${pageCount} page${pageCount === 1 ? "" : "s"}`}
             />
             <div className="utility-tool__setting-card">
               <div className="utility-tool__setting-heading">
@@ -91,21 +96,31 @@ export function SplitPdfTool() {
                   From page
                   <input
                     type="number"
+                    disabled={busy}
                     min={1}
                     max={pageCount}
                     value={fromPage}
-                    onChange={(e) => setFromPage(Number(e.target.value))}
+                    onChange={(e) => {
+                      setFromPage(Number(e.target.value));
+                      setDoneName(null);
+                    }}
                   />
                 </label>
-                <span className="utility-tool__range-arrow" aria-hidden="true">→</span>
+                <span className="utility-tool__range-arrow" aria-hidden="true">
+                  →
+                </span>
                 <label>
                   To page
                   <input
                     type="number"
+                    disabled={busy}
                     min={1}
                     max={pageCount}
                     value={toPage}
-                    onChange={(e) => setToPage(Number(e.target.value))}
+                    onChange={(e) => {
+                      setToPage(Number(e.target.value));
+                      setDoneName(null);
+                    }}
                   />
                 </label>
               </div>
@@ -113,6 +128,7 @@ export function SplitPdfTool() {
             <div className="utility-tool__actions">
               <AppButton
                 title="Choose another"
+                disabled={busy}
                 variant="ghost"
                 small
                 onClick={() => {
@@ -122,14 +138,18 @@ export function SplitPdfTool() {
                 }}
               />
               <AppButton
-                title={busy ? 'Splitting…' : 'Split & download'}
+                title={busy ? "Splitting…" : "Split & download"}
                 onClick={() => void runSplit()}
                 disabled={busy}
               />
             </div>
           </div>
         )}
-        {error && <AppStatus tone="error" title="Couldn’t split this PDF">{error}</AppStatus>}
+        {error && (
+          <AppStatus tone="error" title="Couldn’t split this PDF">
+            {error}
+          </AppStatus>
+        )}
         {doneName && (
           <AppStatus tone="success" title="Split PDF ready">
             Downloaded {doneName}

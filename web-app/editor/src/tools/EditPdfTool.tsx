@@ -912,7 +912,7 @@ export function EditPdfTool() {
               ? `No tappable text found yet — try Enhance with AI, Erase box, or Add text.${zoomHint}`
               : `Edit text — click a highlighted line to change it. Press Esc to finish.${zoomHint}`;
 
-  const step = status.state === "saved" ? 3 : document ? 2 : 1;
+  const step = status.state === "saved" && !dirty ? 3 : document ? 2 : 1;
 
   const closeWithoutChanges = () => {
     setDiscardVisible(false);
@@ -945,18 +945,23 @@ export function EditPdfTool() {
         {
           label: "Download",
           active: step === 3,
-          done: status.state === "saved",
+          done: status.state === "saved" && !dirty,
         },
       ]}
       actions={
         document ? (
           <AppButton
             title="Open another"
+            disabled={
+              status.state === "opening" ||
+              status.state === "saving" ||
+              translating ||
+              enhancingPage !== null
+            }
             icon={<RotateCcw size={16} aria-hidden="true" />}
             small
             variant="secondary"
             onClick={handleCloseDocument}
-            disabled={status.state === "opening" || status.state === "saving"}
           />
         ) : null
       }
@@ -1231,9 +1236,9 @@ export function EditPdfTool() {
             onClick={() => void saveAndExport()}
             disabled={status.state === "saving"}
           />
-          {status.state === "saved" && (
-            <AppStatus tone="success" title="Edited PDF downloaded">
-              Exported successfully as {status.filename}
+          {status.state === "saved" && !dirty && (
+            <AppStatus tone="success" title="Edited PDF ready">
+              Download started as {status.filename}
             </AppStatus>
           )}
           {status.state === "error" && (

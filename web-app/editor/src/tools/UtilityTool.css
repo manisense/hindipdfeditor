@@ -318,4 +318,20 @@
   }
 }
 
-
+.utility-tool__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  line-height: 1.6;
+}
+.utility-tool__consent input {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  accent-color: var(--brand);
+}

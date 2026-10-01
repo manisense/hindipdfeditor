@@ -1,3 +1,5 @@
+import { inspectFontsOrBlock } from "../lib/fontInspectionPolicy";
+import { trackToolEvent } from "../lib/analytics";
 import { useRef, useState } from "react";
 import {
   AI_LIMITS,
@@ -46,11 +48,10 @@ import "./UtilityTool.css";
 const tool = getTool("translate")!;
 const RASTER_SCALE = 2;
 const MASK_SAMPLE_MARGIN_PX = 16;
-const UNKNOWN_ENCODING_FONT_NAME = "unknown (font inspection failed)";
 
 /** Soft caps so a phone/tab browser does not OOM on huge scans. */
-const MAX_FILE_BYTES = 40 * 1024 * 1024;
-const MAX_PAGES = 40;
+const MAX_FILE_BYTES = AI_LIMITS.maxDocumentBytes;
+const MAX_PAGES = AI_LIMITS.maxDocumentPages;
 const DETECT_PAGES = 5;
 const LATIN_RE = /[A-Za-z]/u;
 
@@ -90,22 +91,12 @@ async function detectDirectionFromPdf(
   return detectTranslationDirection(texts);
 }
 
-async function detectLegacyFontWarnings(
-  pageCount: number,
-): Promise<{ page: number; fontName: string }[]> {
-  try {
-    const base64 = await getPdfBase64();
-    return await detectLegacyFonts(base64);
-  } catch (error) {
-    console.warn(
-      "legacyFontDetector failed during translate; forcing OCR (fail closed)",
-      error,
-    );
-    return Array.from({ length: pageCount }, (_, page) => ({
-      page,
-      fontName: UNKNOWN_ENCODING_FONT_NAME,
-    }));
-  }
+async function detectLegacyFontWarnings(): Promise<
+  { page: number; fontName: string }[]
+> {
+  return inspectFontsOrBlock(async () =>
+    detectLegacyFonts(await getPdfBase64()),
+  );
 }
 
 async function buildTranslatedDocument(
@@ -138,7 +129,7 @@ async function buildTranslatedDocument(
   }
 
   onProgress({ phase: "loading", detail: "Checking fonts…" });
-  const legacyFontWarnings = await detectLegacyFontWarnings(pageCount);
+  const legacyFontWarnings = await detectLegacyFontWarnings();
   throwIfAborted(signal);
   const forceOcrPages = new Set(
     legacyFontWarnings.map((warning) => warning.page),
@@ -357,6 +348,7 @@ export function TranslatePdfTool() {
   const [detectingLanguage, setDetectingLanguage] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [consented, setConsented] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [direction, setDirection] = useState<TranslationDirection | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -369,6 +361,7 @@ export function TranslatePdfTool() {
   };
 
   const selectFile = async (next: File) => {
+    setConsented(false);
     setFile(next);
     setResult(null);
     setError(null);
@@ -377,6 +370,7 @@ export function TranslatePdfTool() {
     try {
       const bytes = new Uint8Array(await next.arrayBuffer());
       const detected = await detectDirectionFromPdf(bytes);
+      trackToolEvent("pdf_open_success", "translate");
       setDirection(detected);
       if (!detected) {
         setError(
@@ -392,7 +386,7 @@ export function TranslatePdfTool() {
   };
 
   const runTranslate = async () => {
-    if (!file || busy || !direction) return;
+    if (!file || busy || !direction || !consented) return;
     const controller = new AbortController();
     abortRef.current = controller;
     setBusy(true);
@@ -440,6 +434,7 @@ export function TranslatePdfTool() {
       const base = file.name.replace(/\.pdf$/i, "") || "translated";
       const filename = `${base}-${targetCode}.pdf`;
       downloadPdfBlob(blob, filename);
+      trackToolEvent("export_success", "translate");
       setResult({
         filename,
         pageCount: doc.pageCount,
@@ -451,6 +446,7 @@ export function TranslatePdfTool() {
       if (err instanceof DOMException && err.name === "AbortError") {
         setError("Translation cancelled.");
       } else {
+        trackToolEvent("export_failed", "translate");
         setError(err instanceof Error ? err.message : String(err));
       }
     } finally {
@@ -500,13 +496,37 @@ export function TranslatePdfTool() {
                     <small>Auto-detected</small>
                   </div>
                 ) : (
-                  <AppStatus tone="warning">No clear Hindi or English source text detected.</AppStatus>
+                  <AppStatus tone="warning">
+                    No clear Hindi or English source text detected.
+                  </AppStatus>
                 )}
               </fieldset>
               <p className="utility-tool__note">
-                Detected lines are sent securely through our Gemini proxy. Difficult pages may use
-                consented AI OCR; the source PDF is never modified.
+                Detected lines are sent securely through our Gemini proxy.
+                Difficult pages may use consented AI OCR; the source PDF is
+                never modified.
               </p>
+              <p className="utility-tool__note">
+                AI allowance: up to {AI_LIMITS.anonymousDocumentsPerDay}{" "}
+                documents and {AI_LIMITS.anonymousPagesPerDay} pages per day.
+                The service enforces the current limits.
+              </p>
+              <label className="utility-tool__consent">
+                <input
+                  type="checkbox"
+                  checked={consented}
+                  disabled={busy}
+                  onChange={(event) => setConsented(event.target.checked)}
+                />
+                <span>
+                  I agree to send detected text to the AI service for
+                  translation and, where needed, page images for AI OCR. I will
+                  review the translated PDF before using it.{" "}
+                  <a href="/privacy/" target="_blank" rel="noopener noreferrer">
+                    Privacy details
+                  </a>
+                </span>
+              </label>
               <div className="utility-tool__security-check">
                 <span>One quick security check</span>
                 <TurnstileWidget onToken={setTurnstileToken} />
@@ -535,17 +555,26 @@ export function TranslatePdfTool() {
                 <AppButton
                   title="Translate & download"
                   onClick={() => void runTranslate()}
-                  disabled={!turnstileToken || !direction || detectingLanguage}
+                  disabled={
+                    !consented ||
+                    !turnstileToken ||
+                    !direction ||
+                    detectingLanguage
+                  }
                 />
               )}
             </div>
           </div>
         )}
         {progress && (
-          <AppStatus busy title="Translation in progress">{progress.detail}</AppStatus>
+          <AppStatus busy title="Translation in progress">
+            {progress.detail}
+          </AppStatus>
         )}
         {error && (
-          <AppStatus tone="error" title="Translation couldn’t finish">{error}</AppStatus>
+          <AppStatus tone="error" title="Translation couldn’t finish">
+            {error}
+          </AppStatus>
         )}
         {result && (
           <AppStatus tone="success" title="Translated PDF ready">

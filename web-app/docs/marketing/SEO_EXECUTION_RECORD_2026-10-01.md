@@ -38,3 +38,9 @@ Compatible updates applied with `npm --prefix web-app/editor audit fix`; current
 ## Follow-up 2: unexported work
 
 Navigation guard and open-another confirmation implemented. The snapshot excludes OCR/viewport state and compares against the actual exported version. Lint, 81 tests and production build passed. Browser smoke confirmed the dialog preserves the document, dirty state cancels beforeunload, and the exported state permits navigation. Browser-native warnings depend on browser interaction policy; language toggles preserve the document.
+
+## Follow-up 3: utility reliability, consent and analytics
+
+Merge/split/compress exports now pass parse-back and expected page-count validation. File/settings mutations are disabled while operations run and stale completion messages are cleared when inputs change. Actual browser downloads produced two-page merge and one-page split/compression outputs. Translation starts only after explicit consent for text and possible OCR page-image processing; the browser check waits for language detection and verifies no translation request occurs without consent. Unknown font inspection is blocked, including referenced fonts with no inspectable name. Public capability checks confirmed both translation directions, a two-document/fifty-page daily quota and consent-required OCR; authenticated production completion remains unverified.
+
+The final editor run passed 85 tests in 21 files and lint. Seven Node tests cover routing, truthful article language pairs and analytics privacy. Analytics events exclude document data, query strings and raw referrers; GA4 account configuration still requires review. English/Hindi privacy pages describe coarse telemetry, quota identifiers and consented AI processing accurately.

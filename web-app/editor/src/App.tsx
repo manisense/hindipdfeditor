@@ -47,10 +47,10 @@ function useToolId(): ToolId | null {
       setToolId(nextTool);
       // Client-side tool switches (popstate) need an explicit page_view; first load
       // is already counted by analytics.js gtag('config', ...).
-      const path = `${window.location.pathname}${window.location.search}`;
+      const path = window.location.pathname;
       window.gtag?.("event", "page_view", {
         page_path: path,
-        page_location: window.location.href,
+        page_location: window.location.origin + path,
         page_title: document.title,
       });
     };

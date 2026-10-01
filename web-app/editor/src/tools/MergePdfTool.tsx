@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { trackToolEvent } from "../lib/analytics";
+import { useState } from "react";
 
-import { AppButton } from '../components/AppButton';
-import { AppStatus } from '../components/AppStatus';
-import { DropZone } from '../components/DropZone';
-import { SelectedFileSummary } from '../components/SelectedFileSummary';
-import { ToolShell } from '../components/ToolShell';
-import { downloadPdfBytes, mergePdfFiles } from '../lib/pdfOps';
-import { getTool } from '../lib/tools';
-import './UtilityTool.css';
+import { AppButton } from "../components/AppButton";
+import { AppStatus } from "../components/AppStatus";
+import { DropZone } from "../components/DropZone";
+import { SelectedFileSummary } from "../components/SelectedFileSummary";
+import { ToolShell } from "../components/ToolShell";
+import { downloadPdfBytes, mergePdfFiles } from "../lib/pdfOps";
+import { getTool } from "../lib/tools";
+import "./UtilityTool.css";
 
-const tool = getTool('merge')!;
+const tool = getTool("merge")!;
 
 export function MergePdfTool() {
   const [files, setFiles] = useState<File[]>([]);
@@ -19,16 +20,25 @@ export function MergePdfTool() {
 
   const step = doneName ? 3 : files.length >= 2 ? 2 : 1;
 
+  const updateQueue = (next: File[]) => {
+    setFiles(next);
+    setDoneName(null);
+    setError(null);
+  };
   const runMerge = async () => {
+    if (busy) return;
     setBusy(true);
     setError(null);
     setDoneName(null);
     try {
       const bytes = await mergePdfFiles(files);
-      const filename = 'merged.pdf';
+      trackToolEvent("pdf_open_success", "merge");
+      const filename = "merged.pdf";
       downloadPdfBytes(bytes, filename);
+      trackToolEvent("export_success", "merge");
       setDoneName(filename);
     } catch (err) {
+      trackToolEvent("export_failed", "merge");
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
@@ -40,9 +50,9 @@ export function MergePdfTool() {
       tool={tool}
       compact={files.length > 0}
       steps={[
-        { label: 'Select PDFs', active: step === 1, done: step > 1 },
-        { label: 'Merge', active: step === 2, done: step > 2 },
-        { label: 'Download', active: step === 3, done: step === 3 },
+        { label: "Select PDFs", active: step === 1, done: step > 1 },
+        { label: "Merge", active: step === 2, done: step > 2 },
+        { label: "Download", active: step === 3, done: step === 3 },
       ]}
     >
       <div className="utility-tool">
@@ -64,7 +74,7 @@ export function MergePdfTool() {
             <SelectedFileSummary
               multiple
               label="Merge queue"
-              name={`${files.length} PDF${files.length === 1 ? '' : 's'} ready`}
+              name={`${files.length} PDF${files.length === 1 ? "" : "s"} ready`}
               meta="Files will be combined in the order shown below"
             />
             <ol className="utility-tool__list">
@@ -75,7 +85,10 @@ export function MergePdfTool() {
                   <button
                     type="button"
                     className="utility-tool__remove"
-                    onClick={() => setFiles((prev) => prev.filter((_, i) => i !== index))}
+                    disabled={busy}
+                    onClick={() =>
+                      updateQueue(files.filter((_, i) => i !== index))
+                    }
                   >
                     Remove
                   </button>
@@ -89,11 +102,13 @@ export function MergePdfTool() {
               title="Add more PDFs"
               subtitle="Drop additional files to append."
               buttonLabel="Add PDFs"
-              onFiles={(next) => setFiles((prev) => [...prev, ...next])}
+              disabled={busy}
+              onFiles={(next) => updateQueue([...files, ...next])}
             />
             <div className="utility-tool__actions">
               <AppButton
                 title="Clear"
+                disabled={busy}
                 variant="ghost"
                 small
                 onClick={() => {
@@ -103,14 +118,18 @@ export function MergePdfTool() {
                 }}
               />
               <AppButton
-                title={busy ? 'Merging…' : 'Merge & download'}
+                title={busy ? "Merging…" : "Merge & download"}
                 onClick={() => void runMerge()}
                 disabled={busy || files.length < 2}
               />
             </div>
           </div>
         )}
-        {error && <AppStatus tone="error" title="Merge failed">{error}</AppStatus>}
+        {error && (
+          <AppStatus tone="error" title="Merge failed">
+            {error}
+          </AppStatus>
+        )}
         {doneName && (
           <AppStatus tone="success" title="Merged PDF ready">
             Downloaded {doneName}
