@@ -51,3 +51,6 @@
 ### Production Workers hosting and project credentials
 - GitHub build evidence identifies the existing production Worker; replaced Pages-only deployment config with a Worker entrypoint and ASSETS binding, preserving the verified artifact and redirects. Added www-to-apex normalization.
 - Project-installed Wrangler explicitly reads local, ignored credentials or an explicit CI token. The owning account is verified; global OAuth configuration is unchanged.
+
+### Deployed release acceptance
+- Runtime/setup release `29181ad1` deployed to the owning production Worker; manual deploy and connected Git build succeeded. Live root/Hindi HTML, retired-tool redirects, www normalization, 404s, font delivery and expanded browser/PDF acceptance passed. Global OAuth is unchanged; the token remains local and untracked.

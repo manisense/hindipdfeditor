@@ -1,7 +1,7 @@
 # Production readiness checklist — hindipdfeditor.com
 
 Target Cloudflare account: `localcode.ai@gmail.com`.
-Historical verification below: 2026-07-24. The 1 October 2026 SEO migration is locally verified but not deployed; do not treat historical checked boxes as current production checks.
+Historical verification below: 2026-07-24. The 1 October 2026 release is deployed and has current live acceptance below; do not treat historical July checked boxes as current checks.
 
 ## Cloudflare account & auth
 
@@ -54,10 +54,10 @@ npx wrangler pages deploy dist --project-name hindipdfeditor --branch main
 
 ## Pending production SEO migration checks
 
-- [ ] Root `/` returns 200; bare `/edit/` permanently redirects to root without a loop.
-- [ ] Old query tools preserve task, mode and language on their `/tools/` destinations.
-- [ ] Root and `/hi/` have matching initial/client canonicals and reciprocal language links.
-- [ ] Each tool and hashed asset loads; unknown paths return 404.
+- [x] Root `/` returns 200; bare `/edit/` permanently redirects to root without a loop.
+- [x] Old query tools preserve task, mode and language on their `/tools/` destinations.
+- [x] Root and `/hi/` have matching initial/client canonicals and reciprocal language links.
+- [x] Each tool and hashed asset loads; unknown paths return 404.
 - [ ] Updated sitemap accepted and priority URLs inspected in GSC.
 - [ ] Consented AI completion tested against production API.
 - [ ] Analytics events and existing GA4 enhanced-measurement settings reviewed for privacy.
@@ -71,6 +71,10 @@ npx wrangler pages deploy dist --project-name hindipdfeditor --branch main
 - [x] UI font provenance/hash checks and deployment font-URL checks pass.
 - [x] Dependency audit reports zero findings.
 - [x] Local mobile Lighthouse: performance 89, accessibility 100, SEO 100; LCP 3.3 seconds, TBT 0, CLS 0.
-- [ ] Current session authenticated to the owning Cloudflare account: current authenticated account lists no website project.
-- [ ] Normalize the live www host (currently a separate 200) in the owning zone.
-- [ ] Run current production checks above after release; historical July results do not substitute.
+- [x] Project-only API token confirmed the owning localcode.ai account; global OAuth is unchanged.
+- [x] Live www requests redirect to the apex with path/query preserved.
+- [x] Current live Chrome acceptance passed with actual downloads and zero application errors.
+
+## Current deployment record
+
+Release commit `29181ad1`; project-token manual Worker version `02a7ab7f-d3f1-47aa-b773-e5ce6a26b9bb`; connected Workers Build also succeeded. Expected public Turnstile configuration verified in live Git-built chunks. GSC/GA4 account configuration, authenticated AI completion and field CWV remain unchecked above.

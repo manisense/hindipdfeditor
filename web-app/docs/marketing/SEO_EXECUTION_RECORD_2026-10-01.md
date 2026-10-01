@@ -24,8 +24,8 @@ The smoke test blocks external analytics and Google Fonts to keep it determinist
 
 ## Remaining work and release limits
 
-- The local implementation below is ready for release review; production is not deployed. Current Wrangler authentication has no owning website project. The live `www` host still returns a separate 200, so its normalization requires the owning zone/account.
-- Verify live redirects, asset caching, canonical/hreflang and schema after deployment. GSC selected canonicals, indexing, exact migration date, country/device/position data and before/after rankings require account access.
+- The release is deployed to the existing production Worker using the verified project token; www normalization is now live. See the production acceptance record below.
+- Live root/locale canonicals, compatibility redirects, fonts, assets and real 404s are verified. GSC selected canonicals, indexing, exact migration date, country/device/position data and before/after rankings still require account access.
 - Production GA4 enhanced-measurement privacy settings, real event delivery and field Core Web Vitals remain unverified. Local LCP is 3.3 seconds, so the good field LCP target is not yet demonstrated.
 - Authenticated Turnstile/AI completion, real translation output review and associated production evidence remain unverified. No user document was sent during local consent checks.
 - Editorial follow-up: add workflow-specific original screenshots and a consented source/translation example after the authenticated path is verified. Continue reviewed updates based on GSC query-page evidence and exports, rather than a keyword publication quota.
@@ -68,3 +68,18 @@ Remote main was fetched before integration. Its mobile/native/release changes ar
 ## Production deployment preparation
 
 The first push exposed a failed Workers Builds check: production is hosted by the existing Worker, not Pages. The hosting assumption is corrected in web ADR 0006, both Wrangler configs, deployment docs and the companion-web spec. Project-only token verification confirmed the owning account and local wrapper; no global authentication changed. The token is ignored by Git and never included in the publish artifact. Worker/ASSETS dry-run passed, with alias and www normalization tests. Live release verification follows upload.
+
+## Production release accepted — 1 October 2026
+
+Remote main was fetched and merged before push. Runtime/setup release commit: `29181ad1`. Project-installed Wrangler confirmed localcode.ai@gmail.com and account `4fa19d6815eb757bda0b564476970849` with the provided user API token. Credentials are in root `.env.cloudflare`, Git-ignored with owner-only permissions; global OAuth was not changed. Manual deployment succeeded: Worker version `02a7ab7f-d3f1-47aa-b773-e5ce6a26b9bb`. The connected Git Workers Build then also reported success for this release.
+
+Live acceptance passed:
+
+- Root and `/hi/` return 200; root contains the new prerendered HTML and apex canonical.
+- `/edit/` returns 301 to root. Old tool queries retain mode/language; remote root-level/Hindi tool aliases preserve task and Hindi UI preference.
+- www returns a one-step 301 to apex, retaining path/query and mapping old tasks directly.
+- Invalid paths and excluded `/_worker.js` return 404. Sitemap and pinned Hindi UI fonts return 200.
+- Expanded Chrome smoke on the real domain passed: responsive homepage/guides/legal pages, invalid input, navigation safeguards, actual edit/merge/split/compress downloads, unchecked AI consent and local UI fonts. Browser application errors: zero. The live exported Devanagari fixture reopened and was visually inspected.
+- The expected public Turnstile site key is present in the Git-built live AI chunks. This does not substitute for authenticated AI completion, which remains unverified.
+
+Python urllib's default user agent received the site's bot-rule 403; curl and normal Chrome requests returned the expected live responses. Actual Googlebot/indexing and AI crawler access remain account-level verification, not an inferred result from browser acceptance. GA4 configuration, field CWV and authenticated AI completion remain the release follow-up items above.
