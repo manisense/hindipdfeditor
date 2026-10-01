@@ -77,6 +77,8 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 
 ## Website, content and SEO rules (`web-app/`)
 
+- **Preserve existing UI and UX during SEO work.** SEO authorization does not authorize a homepage redesign. Keep the existing layout, navigation, components and interactions unless the user explicitly requests that design change. The original homepage was restored on 1 October 2026 after an unwanted redesign.
+
 - **Public claims must match the code.** Before a feature appears in page copy, FAQs, JSON-LD or `llms*.txt`, check it in the source.
   - The web export is page images, not vector or searchable text.
   - Legacy fonts are detected, never converted. The web editor blocks those pages; replacement mode is Android-only.

@@ -1,3 +1,4 @@
+import { translations } from "../home/translations";
 /* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -8,12 +9,14 @@ export interface I18nContextType {
   lang: Language;
   setLang: (lang: Language) => void;
   isHindi: boolean;
+  t: (key: string, defaultText?: string) => string;
 }
 
 const I18nContext = createContext<I18nContextType>({
   lang: "en",
   setLang: () => {},
   isHindi: false,
+  t: (key, fallback) => fallback ?? key,
 });
 
 export function LanguageProvider({
@@ -66,7 +69,15 @@ export function LanguageProvider({
   }, [lang]);
 
   return (
-    <I18nContext.Provider value={{ lang, setLang, isHindi: lang === "hi" }}>
+    <I18nContext.Provider
+      value={{
+        lang,
+        setLang,
+        isHindi: lang === "hi",
+        t: (key, fallback) =>
+          translations[lang][key] ?? translations.en[key] ?? fallback ?? key,
+      }}
+    >
       {children}
     </I18nContext.Provider>
   );

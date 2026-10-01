@@ -54,3 +54,7 @@
 
 ### Deployed release acceptance
 - Runtime/setup release `29181ad1` deployed to the owning production Worker; manual deploy and connected Git build succeeded. Live root/Hindi HTML, retired-tool redirects, www normalization, 404s, font delivery and expanded browser/PDF acceptance passed. Global OAuth is unchanged; the token remains local and untracked.
+
+### Restore the existing homepage
+- Restored the original homepage components, styles, section order, floating navigation, cards and animated headline from remote main before the SEO merge (`a4d15967`). Removed the replacement homepage stylesheet.
+- Retained crawlable root/Hindi HTML, canonical metadata, redirect compatibility and validated PDF tools. Added only compatibility adapters for the original translation labels and tool links. SEO work must preserve UI/UX unless a design change is explicitly requested.

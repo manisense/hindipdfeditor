@@ -42,7 +42,7 @@ for (const locale of ["/", "/hi/"]) {
     !/<link[^>]*modulepreload[^>]*(?:pdf-lib|jspdf|html2canvas)/.test(html),
     "Homepage must not eagerly preload PDF libraries",
   );
-  assert.equal((html.match(/<h1>/g) ?? []).length, 1);
+  assert.equal((html.match(/<h1(?:\s|>)/g) ?? []).length, 1);
   assert.ok(html.includes('id="seo-site-graph"'));
 }
 const worker = readFileSync(path.join(root, "_worker.js"), "utf8");

@@ -22,7 +22,7 @@ const { chromium } = require("playwright");
   for (const width of [320, 360, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(baseUrl + "/", { waitUntil: "networkidle" });
-    await page.locator(".hpe-home").waitFor();
+    await page.locator(".home-root").waitFor();
     if (
       await page.evaluate(
         () => document.documentElement.scrollWidth > innerWidth,
@@ -48,7 +48,9 @@ const { chromium } = require("playwright");
   )
     throw new Error("Homepage eagerly loads PDF tools");
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("link", { name: "हिन्दी", exact: true }).click();
+  await page
+    .getByRole("button", { name: "हिंदी भाषा में बदलें", exact: true })
+    .click();
   await page.waitForLoadState("networkidle");
   if ((await page.locator("html").getAttribute("lang")) !== "hi")
     throw new Error("Wrong locale");

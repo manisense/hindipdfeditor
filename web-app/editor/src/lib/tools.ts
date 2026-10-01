@@ -19,10 +19,10 @@ export function getTool(id: string | null): ToolMeta | null {
   return TOOLS.find((t) => t.id === id) ?? null;
 }
 
-export function toolHref(id: ToolId): string {
+export function toolHref(id: ToolId, language?: "en" | "hi"): string {
   const tool = getTool(id);
   if (!tool) throw new Error("Unknown PDF tool");
-  return tool.path;
+  return tool.path + (language === "hi" ? "?lang=hi" : "");
 }
 
 export function readToolIdFromLocation(): ToolId | null {

@@ -83,3 +83,7 @@ Live acceptance passed:
 - The expected public Turnstile site key is present in the Git-built live AI chunks. This does not substitute for authenticated AI completion, which remains unverified.
 
 Python urllib's default user agent received the site's bot-rule 403; curl and normal Chrome requests returned the expected live responses. Actual Googlebot/indexing and AI crawler access remain account-level verification, not an inferred result from browser acceptance. GA4 configuration, field CWV and authenticated AI completion remain the release follow-up items above.
+
+## Homepage restoration
+
+The user rejected the replacement homepage and clarified that SEO work must preserve UI/UX. Restored the original homepage from remote main `a4d15967`, including all original sections, floating navigation, card layouts, styles and interactions. The replacement homepage stylesheet is removed. Prerendering, canonicals, redirects and tool reliability remain; current-context translation/link adapters preserve the original component behavior. Earlier homepage redesign/performance measurements are historical and do not describe the restored homepage.
