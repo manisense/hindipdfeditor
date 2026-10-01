@@ -45,3 +45,5 @@
 
 ### Remote main integration
 - Fetched remote main before merging. Retained mobile renderer/release work, bilingual recovery and tool labels, PDF.js legacy browser compatibility, About pages and publishing integrations. One shared canonical/build system supersedes the parallel SSR implementation; aliases preserve its previously published tool URLs.
+
+- Article Person schema and visible bylines are aligned with the retained Manish About profile after merge. Source/output and article tests passed.

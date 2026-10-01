@@ -51,9 +51,10 @@ export function renderArticle(item, articles) {
         datePublished: item.publishedDate,
         dateModified: item.reviewedDate || item.publishedDate,
         author: {
-          "@type": "Organization",
-          name: "Hindi PDF Editor",
-          url: origin + "/",
+          "@type": "Person",
+          "@id": origin + "/about/#manish",
+          name: "Manish",
+          url: origin + "/about/",
         },
         publisher: {
           "@type": "Organization",
