@@ -4,6 +4,12 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Mobile Web Parity & Architecture Overhaul
 
+### Security — dependency updates before 1.0.1
+
+- `npm audit fix` (non-breaking) moved Expo to its latest SDK 56 patches (`expo` 56.0.23, `expo-modules-core` 56.0.28, `expo-updates` 56.0.27, `expo-file-system` 56.0.11) and patched transitive tooling such as `shell-quote`, `nanoid` and `@xmldom/xmldom`. Production audit findings went from 36 (1 critical) to 17 (0 critical). The remaining 17 are in Expo CLI and Metro build tooling, and clearing them needs a major Expo upgrade.
+- `npx expo install --fix` aligned six packages with SDK 56. `expo-linear-gradient` had been declared as `^57.0.1`, an SDK 57 release, and is now `~56.0.4`.
+- **Verified:** typecheck, lint and 173 Jest tests pass, and a local release build with R8 succeeds. **Not verified:** these native patch updates have not run on a device yet.
+
 ### Fixed — Android app stability (Play Console, 1.0.0 / versionCode 6)
 
 - **The release build could hang in R8.** With the template's 2 GB Gradle heap, `minifyReleaseWithR8` ran out of memory and Gradle hung until CI timed out. `app.config.ts` now sets `org.gradle.jvmargs=-Xmx6g` through a small config plugin, so EAS builds get it too. The CI smoke test then passed: the `:pdfrender` helper started for Files-tab thumbnails, the app survived a SIGSEGV of the helper, and the app process logged no fatal errors.
@@ -590,4 +596,5 @@ Template for each future phase, add above this line as phases complete:
 See web-app/CHANGELOG.md for the verified web implementation.
 
 ### Concurrent web release merge — 1 October 2026
+
 - Preserved remote native renderer, rotation and release changes. Web route ownership now follows the shared manifest, with redirects for ADR 0010 paths; its historical ADR is superseded and the companion-web spec is aligned. No native rendering behavior was changed during this merge.
