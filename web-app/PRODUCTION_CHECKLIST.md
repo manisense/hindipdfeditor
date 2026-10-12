@@ -24,6 +24,7 @@ Historical verification below: 2026-07-24. The 1 October 2026 release is deploye
 - [x] Vars: translation + OCR enabled; CORS/Turnstile hostnames for apex + www
 - [x] `GET https://api.hindipdfeditor.com/v1/capabilities` returns both directions
 - [x] Live smoke: Hindi → English and English → Hindi return `status: "translated"`
+- [x] 13 October 2026: the old `GEMINI_API_KEY` returned upstream 429 (quota), so every `/v1/translate` call failed with `RATE_LIMITED`. The key was replaced through `web-app/scripts/wrangler-project.mjs secret put GEMINI_API_KEY --name hindipdfeditor-ai-api`, and both directions returned HTTP 200 `translated` on an Android-platform session. The global wrangler login belongs to a different account, so always use the project-token wrapper.
 
 ## Web editor build
 
