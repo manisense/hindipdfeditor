@@ -7,3 +7,13 @@ export function formatFileSize(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
+
+/**
+ * How much smaller `newBytes` is than `originalBytes`, as a whole percent of the original. Both
+ * are in bytes. Returns 0 for an unknown (0) original, and 0 or a negative number when the new
+ * file is not smaller.
+ */
+export function percentSmaller(originalBytes: number, newBytes: number): number {
+  if (!originalBytes || originalBytes <= 0) return 0;
+  return Math.round(((originalBytes - newBytes) / originalBytes) * 100);
+}

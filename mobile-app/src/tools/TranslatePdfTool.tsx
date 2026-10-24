@@ -173,6 +173,7 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
         } catch {
           lines = [];
         }
+        throwIfCancelled();
 
         // Filter lines matching source direction
         const translatable = lines.filter((l) =>
@@ -186,6 +187,8 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
             total,
             lines: translatable.length,
           });
+          // Last check before page text goes online: no request starts after Cancel.
+          throwIfCancelled();
           const translationMap = await translateOcrLines(
             aiJobIdRef.current,
             direction,
@@ -269,6 +272,7 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
       const embeddedFonts: Record<string, { base64: string; cssFontWeight: '100 900' | '400' }> =
         {};
       for (const family of usedFamilies) {
+        throwIfCancelled();
         const base64 = await getFontBase64(family);
         embeddedFonts[family] = {
           base64,

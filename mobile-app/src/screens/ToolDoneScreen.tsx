@@ -3,7 +3,7 @@ import { Image, View } from 'react-native';
 
 import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
-import { formatFileSize } from '../lib/fileSize';
+import { formatFileSize, percentSmaller } from '../lib/fileSize';
 import { renderPage } from '../lib/pdfToImages';
 import { Icon } from '../ui/Icon';
 import { PillButton } from '../ui/PillButton';
@@ -20,6 +20,7 @@ const BADGE_SIZE = 48;
  * before). Shows a 160x226dp first-page preview with a green check badge, the file name and
  * `folder · pages · size · opens fine`. Open and Share sit in the action bar; Close and Android
  * back call `onClose`. `onSaveCopy` adds a text button that copies the file to a folder.
+ * `sizeChange` adds a `before → after · n% smaller` line; `note` adds a grey note box.
  */
 export function ToolDoneScreen({
   title,
@@ -33,6 +34,8 @@ export function ToolDoneScreen({
   onShare,
   onClose,
   onSaveCopy,
+  sizeChange,
+  note,
 }: {
   title: string;
   fileName: string;
@@ -47,6 +50,9 @@ export function ToolDoneScreen({
   onShare: () => void;
   onClose: () => void;
   onSaveCopy?: () => void;
+  /** Source and output sizes, in bytes, for tools that change the file size. */
+  sizeChange?: { fromBytes: number; toBytes: number };
+  note?: string;
 }) {
   const ui = useUi();
   const theme = useAppTheme();
@@ -75,6 +81,11 @@ export function ToolDoneScreen({
     formatFileSize(sizeBytes),
     tx('opens fine', 'ठीक से खुलती है'),
   ].join(' · ');
+  const smaller = sizeChange ? percentSmaller(sizeChange.fromBytes, sizeChange.toBytes) : 0;
+  const sizeLine = sizeChange
+    ? `${formatFileSize(sizeChange.fromBytes)} → ${formatFileSize(sizeChange.toBytes)}` +
+      (smaller > 0 ? ` · ${tx(`${smaller}% smaller`, `${smaller}% छोटी`)}` : '')
+    : null;
 
   return (
     <ToolScaffold
@@ -150,6 +161,31 @@ export function ToolDoneScreen({
         >
           {meta}
         </UiText>
+        {sizeLine ? (
+          <UiText
+            variant="meta"
+            color={ui.inkSecondary}
+            style={{ marginTop: 4, textAlign: 'center' }}
+          >
+            {sizeLine}
+          </UiText>
+        ) : null}
+        {note ? (
+          <View
+            style={{
+              marginTop: 16,
+              alignSelf: 'stretch',
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              borderRadius: 12,
+              backgroundColor: ui.fill,
+            }}
+          >
+            <UiText variant="meta" color={ui.inkLabel}>
+              {note}
+            </UiText>
+          </View>
+        ) : null}
         {onSaveCopy ? (
           <View style={{ marginTop: 16 }}>
             <PillButton

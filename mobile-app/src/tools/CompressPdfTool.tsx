@@ -72,6 +72,8 @@ export function CompressPdfTool({ initialFileUri, initialFileName, onClose, onOp
   const [level, setLevel] = useState<CompressionLevel>('balanced');
   const [compressing, setCompressing] = useState(false);
   const [saved, setSaved] = useState<SavedFile | null>(null);
+  /** Source size in bytes, for the Saved screen's before → after line. */
+  const [originalBytes, setOriginalBytes] = useState(0);
 
   useEffect(() => {
     if (!initialFileUri) return;
@@ -119,6 +121,7 @@ export function CompressPdfTool({ initialFileUri, initialFileName, onClose, onOp
         category: 'downloads',
         starred: false,
       });
+      setOriginalBytes(res.originalBytes || document.size || 0);
       setSaved({ uri: res.uri, name, ...verified, previewUri: document.thumbnailUri });
     } catch (error) {
       console.warn('Compression failed', error);
@@ -151,6 +154,17 @@ export function CompressPdfTool({ initialFileUri, initialFileName, onClose, onOp
           onShare={() => void actions.share(saved)}
           onSaveCopy={() => void actions.saveCopy(saved)}
           onClose={onClose}
+          sizeChange={
+            originalBytes > 0 ? { fromBytes: originalBytes, toBytes: saved.sizeBytes } : undefined
+          }
+          note={
+            originalBytes > 0 && saved.sizeBytes >= originalBytes
+              ? tx(
+                  'This setting made the file bigger. Try Strong or Balanced.',
+                  'इस सेटिंग से फ़ाइल बड़ी हो गई। ज़्यादा या संतुलित चुनकर देखें।',
+                )
+              : undefined
+          }
         />
         {errorDialog}
       </>
