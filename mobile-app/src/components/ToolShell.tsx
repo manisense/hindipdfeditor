@@ -177,16 +177,6 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
 
   return (
     <View style={[styles.container, activeTool ? { paddingTop: topInset } : null]}>
-      {/* Background ambient glowing orbs */}
-      <View style={styles.ambientAuraTopRight} pointerEvents="none" />
-      <View
-        style={[
-          styles.ambientAuraLeft,
-          { backgroundColor: currentTool ? currentTool.tint : theme.colors.brandTint },
-        ]}
-        pointerEvents="none"
-      />
-
       {/* Main View Area */}
       {activeTool ? (
         /* Full Screen Tool Workspace */
@@ -259,7 +249,8 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
             </View>
 
             {/* Tab 2: Files */}
-            <View style={[styles.tabPage, { width: windowWidth, paddingTop: topInset }]}>
+            <View style={{ width: windowWidth }}>
+              {activeTab === 'files' && <StatusBar style="light" />}
               <FilesScreen
                 onOpenTool={onSelectTool}
                 onOpenFile={handleOpenFile}
@@ -291,24 +282,6 @@ const getStyles = (theme: Theme) =>
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
-    },
-    ambientAuraTopRight: {
-      position: 'absolute',
-      top: -50,
-      right: -50,
-      width: 220,
-      height: 220,
-      borderRadius: 110,
-      backgroundColor: theme.colors.auraTopRight,
-    },
-    ambientAuraLeft: {
-      position: 'absolute',
-      top: 180,
-      left: -70,
-      width: 200,
-      height: 200,
-      borderRadius: 100,
-      opacity: 0.45,
     },
     mainTabContainer: {
       flex: 1,
