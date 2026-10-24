@@ -4,6 +4,7 @@ import { createBox, createText, useTheme as useRestyleTheme } from '@shopify/res
 
 import { useSettingsStore } from '../state/settingsStore';
 import { darkTheme, lightTheme, type Theme } from '../theme';
+import { ui, uiDark, type UiTokens } from '../ui/tokens';
 
 /**
  * Box and Text primitives from @shopify/restyle.
@@ -23,6 +24,12 @@ export function useAppTheme(): Theme {
   const isDark = themeSetting === 'dark' || (themeSetting === 'system' && systemScheme === 'dark');
 
   return isDark ? darkTheme : lightTheme;
+}
+
+/** Returns native UI tokens for the resolved light/dark theme. */
+export function useUi(): UiTokens {
+  const theme = useAppTheme();
+  return theme === darkTheme ? uiDark : ui;
 }
 
 /**

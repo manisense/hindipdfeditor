@@ -12,7 +12,7 @@
 | Token | Hex | Use |
 |---|---|---|
 | `brand.primary` | `#1843DD` | Primary CTAs, links, active states, brand mark (confirmed via site theme-color) |
-| `brand.primaryDeep` | `#3226B8` | Gradient end for primary buttons (blue → indigo gradient) |
+| `brand.primaryDeep` | `#3226B8` | No longer used for buttons; primary buttons are solid `#1843DD` |
 | `brand.primaryTint` | `#EEF2FF` | Selected/highlighted backgrounds (e.g. the "Hindi PDF Editor" column in comparison table) |
 
 ### Accent chips (per feature category)
@@ -62,7 +62,7 @@ Soft pastel radial blobs layered on white — blue, violet, pink, and yellow at 
 
 ## 4. Shape & elevation
 
-- **Corner radius:** cards & panels `16–20px`, icon chips `12px` (rounded square, not circle), buttons `full pill (9999px)`, small tags/badges `full pill`.
+- **Corner radius:** cards & panels `14dp`, buttons `full pill (9999px)`, small tags/badges `full pill`.
 - **Shadow:** one soft elevation used consistently — `0px 8px 24px rgba(20, 22, 31, 0.06)`. No heavy or colored shadows.
 - **Borders:** hairline `1px solid border.subtle` on cards sitting on white; cards on the cream background skip the border and rely on shadow alone.
 
@@ -72,11 +72,11 @@ Soft pastel radial blobs layered on white — blue, violet, pink, and yellow at 
 
 ## 6. Core components (mobile adaptation)
 
-- **Primary button:** full pill, blue→indigo gradient fill, white 600-weight label, optional leading icon. Height ~48dp.
+- **Primary button:** full pill, solid `#1843DD` fill, white 600-weight label, optional leading icon. Height ~48dp.
 - **Secondary button:** full pill, white fill, `border.subtle` outline, dark text, used for "Get it on Google Play" style secondary actions.
-- **Icon chip (feature badge):** 40–48dp rounded-square, tinted background per category from the accent table, solid-color line icon centered.
-- **Feature card:** white surface, `16px` radius, hairline border, icon chip top-left, bold title, secondary-gray description below.
-- **Tool row (bottom-sheet/list style, seen in the "One toolset, every job" card):** icon chip + label left-aligned, chevron right, subtle divider between rows — a strong pattern to reuse for the app's main tool list / home screen.
+- **Icons:** sit directly on the surface in their category colour; no tinted squares. Use `src/ui/Icon.tsx` (MaterialIcons) on mobile.
+- **Feature card:** white surface, 14dp radius, `0 0 0 1px rgba(9,9,11,0.06)` ring + 1dp shadow, icon top-left, bold title, secondary-gray description below.
+- **Tool row (bottom-sheet/list style, seen in the "One toolset, every job" card):** icon + label left-aligned, chevron right, subtle divider between rows — a strong pattern to reuse for the app's main tool list / home screen.
 - **Progress bar:** thin rounded track in `border.subtle`, filled with `brand.primary`, used to show live editing/processing feedback.
 - **Comparison/feature table → mobile:** collapse into a stacked comparison (one card per competitor, or a swipeable column) with the brand column tinted `brand.primaryTint` and check/x icons in `success`/`warning` colors.
 - **Accordion (FAQ):** plain list rows, `+`/`–` toggle in `brand.primary`, divider lines, no card wrapper.
@@ -89,6 +89,6 @@ Alternate `surface.white` and `surface.cream` full-bleed sections to break up a 
 ## 8. Principles to carry into the app
 
 1. **One brand color, many category tints.** Never let the accent colors compete with `brand.primary` for primary actions — accents label categories, blue drives action.
-2. **Devanagari gets equal typographic billing**, not smaller/secondary treatment next to English.
+2. **One language per screen**, chosen in Settings. Hindi screens render fully in Hindi in Noto Sans Devanagari; never stack English and Hindi on the same label.
 3. **Restraint everywhere except one CTA moment** — the colorful gradient mesh is used exactly once (final CTA); don't scatter decorative gradients through the app.
 4. **Local/private-by-design should be visually reinforced** — the green privacy card and "100% Client-Side Processing" footer line suggest a persistent trust signal (e.g. a small "processed on your device" badge) worth carrying into the app's editor screen.
