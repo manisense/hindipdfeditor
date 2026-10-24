@@ -102,6 +102,9 @@ export const TOOLS: ToolDef[] = [
 
 const CORE_TABS: MainTab[] = ['home', 'files', 'tools', 'settings'];
 
+/** Tools that draw their own band and back button with `ToolScaffold`; the shell adds no chrome. */
+const SCAFFOLD_TOOLS: ReadonlySet<ToolId> = new Set<ToolId>(['merge']);
+
 type Props = {
   activeTool: ToolId | null;
   onSelectTool: (tool: ToolId | null) => void;
@@ -175,10 +178,14 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
     }
   };
 
+  const scaffolded = activeTool !== null && SCAFFOLD_TOOLS.has(activeTool);
+
   return (
-    <View style={[styles.container, activeTool ? { paddingTop: topInset } : null]}>
+    <View style={[styles.container, activeTool && !scaffolded ? { paddingTop: topInset } : null]}>
       {/* Main View Area */}
-      {activeTool ? (
+      {scaffolded ? (
+        <View style={styles.fullScreenToolContainer}>{children}</View>
+      ) : activeTool ? (
         /* Full Screen Tool Workspace */
         <View style={styles.fullScreenToolContainer}>
           {/* Active Tool Header with Back Navigation */}

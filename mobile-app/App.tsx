@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View, useColorScheme } from 'react-native';
 import { useFonts } from 'expo-font';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from '@shopify/restyle';
@@ -61,54 +62,69 @@ export default function App() {
     setActiveTool(toolId);
   };
 
+  const closeTool = () => {
+    setActiveTool(null);
+    setOpenedFile(null);
+  };
+
   return (
-    <SafeAreaProvider>
-      <ThemeProvider theme={activeTheme}>
-        <SnackbarProvider>
-          <StatusBar style={statusBarStyle} />
-          <View style={[styles.root, { backgroundColor: activeTheme.colors.background }]}>
-            <ToolShell
-              activeTool={activeTool}
-              onSelectTool={(tool) => {
-                setActiveTool(tool);
-                if (!tool) setOpenedFile(null);
-              }}
-              onOpenFile={handleOpenFile}
-            >
-              {activeTool === 'viewer' && (
-                <ViewPdfTool
-                  initialFileUri={openedFile?.uri}
-                  initialFileName={openedFile?.name}
-                  onOpenEditor={(file) => handleOpenFile(file, 'edit')}
-                  onOpenTranslate={(file) => handleOpenFile(file, 'translate')}
-                />
-              )}
-              {activeTool === 'edit' && (
-                <EditPdfTool initialFileUri={openedFile?.uri} initialFileName={openedFile?.name} />
-              )}
-              {activeTool === 'translate' && (
-                <TranslatePdfTool
-                  initialFileUri={openedFile?.uri}
-                  initialFileName={openedFile?.name}
-                />
-              )}
-              {activeTool === 'merge' && (
-                <MergePdfTool initialFileUri={openedFile?.uri} initialFileName={openedFile?.name} />
-              )}
-              {activeTool === 'split' && (
-                <SplitPdfTool initialFileUri={openedFile?.uri} initialFileName={openedFile?.name} />
-              )}
-              {activeTool === 'compress' && (
-                <CompressPdfTool
-                  initialFileUri={openedFile?.uri}
-                  initialFileName={openedFile?.name}
-                />
-              )}
-            </ToolShell>
-          </View>
-        </SnackbarProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <ThemeProvider theme={activeTheme}>
+          <SnackbarProvider>
+            <StatusBar style={statusBarStyle} />
+            <View style={[styles.root, { backgroundColor: activeTheme.colors.background }]}>
+              <ToolShell
+                activeTool={activeTool}
+                onSelectTool={(tool) => (tool ? setActiveTool(tool) : closeTool())}
+                onOpenFile={handleOpenFile}
+              >
+                {activeTool === 'viewer' && (
+                  <ViewPdfTool
+                    initialFileUri={openedFile?.uri}
+                    initialFileName={openedFile?.name}
+                    onOpenEditor={(file) => handleOpenFile(file, 'edit')}
+                    onOpenTranslate={(file) => handleOpenFile(file, 'translate')}
+                  />
+                )}
+                {activeTool === 'edit' && (
+                  <EditPdfTool
+                    initialFileUri={openedFile?.uri}
+                    initialFileName={openedFile?.name}
+                  />
+                )}
+                {activeTool === 'translate' && (
+                  <TranslatePdfTool
+                    initialFileUri={openedFile?.uri}
+                    initialFileName={openedFile?.name}
+                  />
+                )}
+                {activeTool === 'merge' && (
+                  <MergePdfTool
+                    initialFileUri={openedFile?.uri}
+                    initialFileName={openedFile?.name}
+                    onClose={closeTool}
+                    onOpenFile={handleOpenFile}
+                  />
+                )}
+                {activeTool === 'split' && (
+                  <SplitPdfTool
+                    initialFileUri={openedFile?.uri}
+                    initialFileName={openedFile?.name}
+                  />
+                )}
+                {activeTool === 'compress' && (
+                  <CompressPdfTool
+                    initialFileUri={openedFile?.uri}
+                    initialFileName={openedFile?.name}
+                  />
+                )}
+              </ToolShell>
+            </View>
+          </SnackbarProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

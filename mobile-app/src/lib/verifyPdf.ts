@@ -4,13 +4,14 @@ import * as FileSystem from 'expo-file-system/legacy';
 /**
  * Parse-back check for a tool's output before the app reports success (AGENTS.md: "validate
  * before reporting success"). Confirms the file exists, is non-empty, re-parses with
- * `@cantoo/pdf-lib`, and has `expectedPageCount` pages (a count, unitless).
+ * `@cantoo/pdf-lib`, and, when `expectedPageCount` (a count, unitless) is given, has that many
+ * pages. Callers omit it only when a source's page count could not be read.
  *
  * @returns `sizeBytes` (bytes) and `pageCount` (pages) of the verified file.
  */
 export async function verifyPdfOutput(
   uri: string,
-  expectedPageCount: number,
+  expectedPageCount?: number,
 ): Promise<{ sizeBytes: number; pageCount: number }> {
   const info = await FileSystem.getInfoAsync(uri);
   const sizeBytes = info.exists && typeof info.size === 'number' ? info.size : 0;
@@ -28,7 +29,7 @@ export async function verifyPdfOutput(
       cause,
     });
   }
-  if (pageCount !== expectedPageCount) {
+  if (expectedPageCount !== undefined && pageCount !== expectedPageCount) {
     throw new Error(
       `verifyPdfOutput: expected ${expectedPageCount} page(s), found ${pageCount} in ${uri}`,
     );

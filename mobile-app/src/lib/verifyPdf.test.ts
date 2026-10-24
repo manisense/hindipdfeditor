@@ -47,3 +47,12 @@ it('rejects a page count that does not match', async () => {
   mockReadAsStringAsync.mockResolvedValue(await pdfBase64(2));
   await expect(verifyPdfOutput('file:///out.pdf', 3)).rejects.toThrow(/expected 3 page/);
 });
+
+it('skips the page count check when no count is expected', async () => {
+  mockGetInfoAsync.mockResolvedValue({ exists: true, size: 2048 });
+  mockReadAsStringAsync.mockResolvedValue(await pdfBase64(2));
+  await expect(verifyPdfOutput('file:///out.pdf')).resolves.toEqual({
+    sizeBytes: 2048,
+    pageCount: 2,
+  });
+});
