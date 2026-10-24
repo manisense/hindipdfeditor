@@ -259,7 +259,8 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
             </View>
 
             {/* Tab 3: Tools */}
-            <View style={[styles.tabPage, { width: windowWidth, paddingTop: topInset }]}>
+            <View style={{ width: windowWidth }}>
+              {activeTab === 'tools' && <StatusBar style="light" />}
               <ToolsScreen onOpenTool={onSelectTool} />
             </View>
 

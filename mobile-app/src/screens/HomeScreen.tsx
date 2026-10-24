@@ -14,6 +14,7 @@ import type { ToolId } from '../components/ToolShell';
 import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
+import { BandIconButton } from '../ui/BandIconButton';
 import { BrandBand } from '../ui/BrandBand';
 import { Icon, type IconName } from '../ui/Icon';
 import { uiFont, uiRadius } from '../ui/tokens';
@@ -88,20 +89,6 @@ function SearchPill({ placeholder, onPress }: { placeholder: string; onPress: ()
       <UiText color={ui.inkSecondary} numberOfLines={1} style={{ flex: 1 }}>
         {placeholder}
       </UiText>
-    </Pressable>
-  );
-}
-
-function MoreButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true, radius: 24 }}
-      style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}
-    >
-      <Icon name="more-vert" size={24} color="#FFFFFF" />
     </Pressable>
   );
 }
@@ -265,7 +252,8 @@ export function HomeScreen({ onOpenTool, onOpenFile, onSeeAll, onOpenSearch }: P
         title={tx('Hindi PDF', 'हिंदी PDF')}
         leading={<AppMark />}
         actions={
-          <MoreButton
+          <BandIconButton
+            icon="more-vert"
             label={tx('More options', 'और विकल्प')}
             onPress={() => setAboutVisible(true)}
           />

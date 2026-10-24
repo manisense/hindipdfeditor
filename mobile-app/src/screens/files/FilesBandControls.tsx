@@ -2,7 +2,7 @@ import type { RefObject } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { useIsHindi, useTx } from '../../i18n';
-import { Icon, type IconName } from '../../ui/Icon';
+import { Icon } from '../../ui/Icon';
 import { ui as lightUi, uiFont, uiRadius } from '../../ui/tokens';
 import { UiText } from '../../ui/UiText';
 
@@ -15,29 +15,6 @@ const TABS: { id: SourceTab; en: string; hi: string }[] = [
   { id: 'documents', en: 'Documents', hi: 'दस्तावेज़' },
   { id: 'starred', en: 'Starred', hi: 'स्टार किए' },
 ];
-
-/** 48x48dp white icon button for the brand band. */
-export function BandIconButton({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: IconName;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true, radius: 24 }}
-      style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}
-    >
-      <Icon name={icon} size={24} color="#FFFFFF" />
-    </Pressable>
-  );
-}
 
 /** White 48dp search pill on the band. Colours stay light-theme because the pill is always white. */
 export function BandSearchField({

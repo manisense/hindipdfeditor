@@ -16,6 +16,7 @@ import {
 import { fileTimeMs, secondsToMs } from '../lib/fileTimes';
 import { groupByRecency, type RecencyKey } from '../lib/recencyGroups';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
+import { BandIconButton } from '../ui/BandIconButton';
 import { BottomSheet } from '../ui/BottomSheet';
 import { BrandBand } from '../ui/BrandBand';
 import { Icon } from '../ui/Icon';
@@ -24,12 +25,7 @@ import { PillButton } from '../ui/PillButton';
 import { uiDark } from '../ui/tokens';
 import { UiText } from '../ui/UiText';
 import { FileRow } from './files/FileRow';
-import {
-  BandIconButton,
-  BandSearchField,
-  SourceTabs,
-  type SourceTab,
-} from './files/FilesBandControls';
+import { BandSearchField, SourceTabs, type SourceTab } from './files/FilesBandControls';
 import { NoAccessState } from './files/NoAccessState';
 
 type Props = {
