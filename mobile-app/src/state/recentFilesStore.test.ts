@@ -38,6 +38,56 @@ describe('recentFilesStore', () => {
     expect(mockWriteAsStringAsync).toHaveBeenCalledTimes(1);
   });
 
+  test('addFile records openedAt in epoch ms', async () => {
+    mockWriteAsStringAsync.mockResolvedValueOnce(undefined);
+    const before = Date.now();
+
+    await useRecentFilesStore.getState().addFile({
+      name: 'Opened.pdf',
+      uri: 'file:///storage/Opened.pdf',
+      sizeBytes: 1024,
+      pageCount: 1,
+      category: 'all',
+    });
+
+    const openedAt = useRecentFilesStore.getState().files[0].openedAt;
+    expect(openedAt).toBeGreaterThanOrEqual(before);
+    expect(openedAt).toBeLessThanOrEqual(Date.now());
+  });
+
+  test('initStore converts dateModified saved in seconds to ms', async () => {
+    mockGetInfoAsync.mockResolvedValueOnce({ exists: true });
+    mockReadAsStringAsync.mockResolvedValueOnce(
+      JSON.stringify([
+        {
+          id: 'a',
+          name: 'A.pdf',
+          uri: 'file:///a.pdf',
+          sizeBytes: 1,
+          pageCount: 1,
+          date: 'x',
+          category: 'all',
+          dateModified: 1_793_000_000,
+        },
+        {
+          id: 'b',
+          name: 'B.pdf',
+          uri: 'file:///b.pdf',
+          sizeBytes: 1,
+          pageCount: 1,
+          date: 'x',
+          category: 'all',
+          dateModified: 1_793_000_000_000,
+        },
+      ]),
+    );
+
+    await useRecentFilesStore.getState().initStore();
+
+    const files = useRecentFilesStore.getState().files;
+    expect(files.map((f) => f.dateModified)).toEqual([1_793_000_000_000, 1_793_000_000_000]);
+  });
+
   test('addFile deduplicates files by URI and name', async () => {
     mockWriteAsStringAsync.mockResolvedValue(undefined);
 

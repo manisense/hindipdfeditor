@@ -2,6 +2,7 @@ import { Image, Pressable, View } from 'react-native';
 
 import { useAppTheme, useUi } from '../../hooks/useAppTheme';
 import { useIsHindi, useTx } from '../../i18n';
+import { fileTimeMs } from '../../lib/fileTimes';
 import type { RecentFile } from '../../state/recentFilesStore';
 import { Icon } from '../../ui/Icon';
 import { UiText } from '../../ui/UiText';
@@ -44,11 +45,6 @@ function formatRelativeTime(
     month: 'short',
     year: 'numeric',
   });
-}
-
-/** Epoch ms used for grouping and relative time; NaN when the file has no parseable date. */
-export function fileTimeMs(file: RecentFile): number {
-  return file.dateModified ?? Date.parse(file.date);
 }
 
 /** 72dp file row: 40x56 thumbnail, name, meta line, star toggle and a more button. */

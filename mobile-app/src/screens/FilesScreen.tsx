@@ -13,6 +13,7 @@ import {
   requestStoragePermission,
   scanDevicePdfFiles,
 } from '../lib/pdfToImages';
+import { fileTimeMs, secondsToMs } from '../lib/fileTimes';
 import { groupByRecency, type RecencyKey } from '../lib/recencyGroups';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
 import { BottomSheet } from '../ui/BottomSheet';
@@ -22,7 +23,7 @@ import { ListRow } from '../ui/ListRow';
 import { PillButton } from '../ui/PillButton';
 import { uiDark } from '../ui/tokens';
 import { UiText } from '../ui/UiText';
-import { FileRow, fileTimeMs } from './files/FileRow';
+import { FileRow } from './files/FileRow';
 import {
   BandIconButton,
   BandSearchField,
@@ -120,8 +121,9 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
 
       const scanned = await scanDevicePdfFiles();
       const mapped: RecentFile[] = scanned.map((item) => {
-        const dateStr = item.dateModified
-          ? new Date(item.dateModified).toLocaleDateString('en-IN', {
+        const modifiedMs = secondsToMs(item.dateModified);
+        const dateStr = modifiedMs
+          ? new Date(modifiedMs).toLocaleDateString('en-IN', {
               day: 'numeric',
               month: 'short',
               year: 'numeric',
@@ -138,7 +140,7 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
           uri: item.uri,
           sizeBytes: item.sizeBytes,
           date: dateStr,
-          dateModified: item.dateModified,
+          dateModified: modifiedMs,
           folder: folderName,
           path: item.path,
           pageCount: item.pageCount ?? 1,
@@ -212,6 +214,10 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
     return () => sub.remove();
   }, [scanFiles]);
 
+  // Without storage access the band hides the source tabs and only the app's own files are listed.
+  const noAccess = hasPermission === false;
+  const category: SourceTab = noAccess ? 'all' : activeCategory;
+
   // Combine recent files store + scanned device storage files, removing duplicates by URI
   const mergedFiles: RecentFile[] = useMemo(() => {
     const recentMap = new Map<string, RecentFile>();
@@ -220,7 +226,7 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
     }
 
     const otherDeviceList: RecentFile[] = [];
-    for (const f of deviceFiles) {
+    for (const f of noAccess ? [] : deviceFiles) {
       if (!recentMap.has(f.uri)) {
         otherDeviceList.push(f);
       }
@@ -230,22 +236,22 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
 
     // Recent files always at top, followed by all device files
     return [...recentList, ...otherDeviceList];
-  }, [files, deviceFiles]);
+  }, [files, deviceFiles, noAccess]);
 
   // Filter files by category and search query
   const filteredFiles: RecentFile[] = useMemo(() => {
     return mergedFiles.filter((file) => {
       // 1. Category Filter
-      if (activeCategory === 'starred' && !file.starred) return false;
-      if (activeCategory === 'downloads') {
+      if (category === 'starred' && !file.starred) return false;
+      if (category === 'downloads') {
         const cat = classifyCategory(file.folder, file.path, file.name);
         if (cat !== 'downloads' && file.category !== 'downloads') return false;
       }
-      if (activeCategory === 'whatsapp') {
+      if (category === 'whatsapp') {
         const cat = classifyCategory(file.folder, file.path, file.name);
         if (cat !== 'whatsapp') return false;
       }
-      if (activeCategory === 'documents') {
+      if (category === 'documents') {
         const cat = classifyCategory(file.folder, file.path, file.name);
         if (cat !== 'documents') return false;
       }
@@ -261,7 +267,7 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
 
       return true;
     });
-  }, [mergedFiles, activeCategory, searchQuery]);
+  }, [mergedFiles, category, searchQuery]);
 
   // Sort filtered files — keeping recent files at the top in default date view
   const sortedFiles: RecentFile[] = useMemo(() => {
@@ -272,13 +278,13 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
           // Keep recently opened files on top
           if (a.isRecent && !b.isRecent) return -1;
           if (!a.isRecent && b.isRecent) return 1;
-          const tA = a.dateModified ?? (a.date ? new Date(a.date).getTime() : 0);
-          const tB = b.dateModified ?? (b.date ? new Date(b.date).getTime() : 0);
+          const tA = fileTimeMs(a) || 0;
+          const tB = fileTimeMs(b) || 0;
           return tB - tA;
         }
         case 'date_asc': {
-          const tA = a.dateModified ?? (a.date ? new Date(a.date).getTime() : 0);
-          const tB = b.dateModified ?? (b.date ? new Date(b.date).getTime() : 0);
+          const tA = fileTimeMs(a) || 0;
+          const tB = fileTimeMs(b) || 0;
           return tA - tB;
         }
         case 'name_asc':
@@ -420,7 +426,13 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
     [sortedFiles, tx, nowMs],
   );
   const sectionHeaderColor = ui === uiDark ? ui.inkSecondary : '#3F3F46';
-  const noAccess = hasPermission === false;
+
+  const noAccessCard = (
+    <NoAccessState
+      onAllow={() => void handleAskPermission()}
+      onPick={() => void handlePickFile()}
+    />
+  );
 
   const closeMenuThen = (action: (file: RecentFile) => void) => {
     const file = activeMenuFile;
@@ -479,11 +491,8 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
           </>
         }
       >
-        {noAccess ? (
-          <NoAccessState
-            onAllow={() => void handleAskPermission()}
-            onPick={() => void handlePickFile()}
-          />
+        {noAccess && files.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: 'center' }}>{noAccessCard}</View>
         ) : (
           <SectionList
             sections={sections}
@@ -504,21 +513,24 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
                 {section.title}
               </UiText>
             )}
+            ListHeaderComponent={noAccess ? noAccessCard : null}
             stickySectionHeadersEnabled={false}
             contentContainerStyle={{ paddingTop: 8, paddingBottom: 24, flexGrow: 1 }}
             initialNumToRender={12}
             maxToRenderPerBatch={10}
             windowSize={7}
             refreshControl={
-              <RefreshControl
-                refreshing={scanning}
-                onRefresh={() => {
-                  setNowMs(Date.now());
-                  void scanFiles(true);
-                }}
-                colors={[ui.brand]}
-                tintColor={ui.brand}
-              />
+              noAccess ? undefined : (
+                <RefreshControl
+                  refreshing={scanning}
+                  onRefresh={() => {
+                    setNowMs(Date.now());
+                    void scanFiles(true);
+                  }}
+                  colors={[ui.brand]}
+                  tintColor={ui.brand}
+                />
+              )
             }
             ListEmptyComponent={
               <View

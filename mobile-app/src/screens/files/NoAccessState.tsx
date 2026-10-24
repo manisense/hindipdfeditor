@@ -6,17 +6,16 @@ import { Icon } from '../../ui/Icon';
 import { PillButton } from '../../ui/PillButton';
 import { UiText } from '../../ui/UiText';
 
-/** Shown in the Files sheet while storage access is denied. */
+/** Storage-access card for the Files sheet: alone when there are no recents, else above them. */
 export function NoAccessState({ onAllow, onPick }: { onAllow: () => void; onPick: () => void }) {
   const ui = useUi();
   const tx = useTx();
   return (
     <View
       style={{
-        flex: 1,
         alignItems: 'center',
-        justifyContent: 'center',
         paddingHorizontal: 32,
+        paddingVertical: 32,
         gap: 16,
       }}
     >
