@@ -49,7 +49,7 @@ async function persistSettings(data: PersistedSettings): Promise<void> {
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
-  language: 'bilingual',
+  language: 'english',
   theme: 'light',
   lastCheckedForUpdates: null,
   isCheckingUpdate: false,
@@ -65,7 +65,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         const raw = await FileSystem.readAsStringAsync(STORAGE_PATH);
         const parsed = JSON.parse(raw) as Partial<PersistedSettings>;
         set({
-          language: parsed.language ?? 'bilingual',
+          language: parsed.language ?? 'english',
           theme: parsed.theme ?? 'light',
           lastCheckedForUpdates: parsed.lastCheckedForUpdates ?? null,
           loaded: true,
