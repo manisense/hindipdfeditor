@@ -119,6 +119,8 @@ export default function App() {
                   <CompressPdfTool
                     initialFileUri={openedFile?.uri}
                     initialFileName={openedFile?.name}
+                    onClose={closeTool}
+                    onOpenFile={handleOpenFile}
                   />
                 )}
               </ToolShell>

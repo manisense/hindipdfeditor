@@ -103,7 +103,7 @@ export const TOOLS: ToolDef[] = [
 const CORE_TABS: MainTab[] = ['home', 'files', 'tools', 'settings'];
 
 /** Tools that draw their own band and back button with `ToolScaffold`; the shell adds no chrome. */
-const SCAFFOLD_TOOLS: ReadonlySet<ToolId> = new Set<ToolId>(['merge', 'split']);
+const SCAFFOLD_TOOLS: ReadonlySet<ToolId> = new Set<ToolId>(['merge', 'split', 'compress']);
 
 type Props = {
   activeTool: ToolId | null;
