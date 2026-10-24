@@ -36,7 +36,7 @@ export function Chip({
           borderColor: ui.ring,
         }}
       >
-        <UiText variant="label" color={selected ? ui.brand : unselectedText}>
+        <UiText variant="label" color={selected ? ui.brandOnSurface : unselectedText}>
           {label}
         </UiText>
       </View>

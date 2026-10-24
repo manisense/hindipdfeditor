@@ -24,7 +24,7 @@ export function PillButton({
 }) {
   const ui = useUi();
   const bg = kind === 'primary' ? ui.brand : kind === 'tonal' ? ui.fill : 'transparent';
-  const fg = kind === 'primary' ? '#FFFFFF' : kind === 'tonal' ? ui.ink : ui.brand;
+  const fg = kind === 'primary' ? '#FFFFFF' : kind === 'tonal' ? ui.ink : ui.brandOnSurface;
   return (
     <Pressable
       accessibilityRole="button"

@@ -2,6 +2,8 @@
 export const ui = {
   brand: '#1843DD',
   brandTint: '#EEF2FF',
+  /** Brand colour for text and icons on surfaces; `brand` stays for fills. */
+  brandOnSurface: '#1843DD',
   chrome: '#14161F',
   readingBackdrop: '#E7E8F1',
   ink: '#09090B',
@@ -31,6 +33,7 @@ export const uiRadius = { tile: 14, sheet: 24, dialog: 28, fab: 16, pill: 9999 }
 export const uiDark = {
   ...ui,
   brandTint: '#1B2350',
+  brandOnSurface: '#A9BBFF',
   readingBackdrop: '#0E1017',
   ink: '#E8EAF0',
   inkSecondary: '#A9B1C2',

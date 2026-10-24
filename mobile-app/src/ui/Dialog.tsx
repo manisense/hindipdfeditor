@@ -62,7 +62,7 @@ export function Dialog({
         >
           {icon ? (
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
-              <Icon name={icon} size={24} color={iconColor ?? ui.brand} />
+              <Icon name={icon} size={24} color={iconColor ?? ui.brandOnSurface} />
             </View>
           ) : null}
           <UiText
@@ -92,7 +92,7 @@ export function Dialog({
                   justifyContent: 'center',
                 }}
               >
-                <UiText color={ui.brand} style={{ fontSize: 14, fontWeight: '600' }}>
+                <UiText color={ui.brandOnSurface} style={{ fontSize: 14, fontWeight: '600' }}>
                   {action.label}
                 </UiText>
               </Pressable>

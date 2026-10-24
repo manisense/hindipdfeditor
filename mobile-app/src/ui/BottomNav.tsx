@@ -65,7 +65,11 @@ export function BottomNav({
                 backgroundColor: selected ? ui.brandTint : 'transparent',
               }}
             >
-              <Icon name={tab.icon} size={24} color={selected ? ui.brand : ui.inkSecondary} />
+              <Icon
+                name={tab.icon}
+                size={24}
+                color={selected ? ui.brandOnSurface : ui.inkSecondary}
+              />
             </View>
             <UiText
               color={selected ? ui.ink : ui.inkSecondary}
