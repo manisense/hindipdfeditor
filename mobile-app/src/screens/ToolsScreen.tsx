@@ -8,7 +8,7 @@ import { useTx } from '../i18n';
 import { BandIconButton } from '../ui/BandIconButton';
 import { BrandBand } from '../ui/BrandBand';
 import { Icon, type IconName } from '../ui/Icon';
-import { uiRadius } from '../ui/tokens';
+import { NAV_CLEARANCE, uiRadius } from '../ui/tokens';
 import { UiText } from '../ui/UiText';
 
 type Props = {
@@ -127,14 +127,19 @@ export function ToolsScreen({ onOpenTool }: Props) {
           />
         }
       >
-        <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: NAV_CLEARANCE }}>
           {GROUPS.map((group) => (
             <View key={group.en}>
               <UiText
-                variant="section"
-                color={ui.inkSecondary}
+                color={ui.inkLabel}
                 accessibilityRole="header"
-                style={{ paddingTop: 12, paddingHorizontal: 16, paddingBottom: 8 }}
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  paddingTop: 12,
+                  paddingHorizontal: 16,
+                  paddingBottom: 8,
+                }}
               >
                 {tx(group.en, group.hi)}
               </UiText>
@@ -152,8 +157,8 @@ export function ToolsScreen({ onOpenTool }: Props) {
                       onPress={() => onOpenTool(tile.id)}
                       android_ripple={{ color: ui.fill }}
                       style={{
-                        flexGrow: 1,
-                        flexBasis: '45%',
+                        flexBasis: '47%',
+                        maxWidth: '47%',
                         minHeight: 48,
                         padding: 14,
                         gap: 6,
@@ -165,10 +170,10 @@ export function ToolsScreen({ onOpenTool }: Props) {
                       }}
                     >
                       <Icon name={tile.icon} size={28} color={ui.category[tile.color]} />
-                      <UiText variant="label" color={ui.ink}>
+                      <UiText color={ui.ink} style={{ fontSize: 15, fontWeight: '600' }}>
                         {name}
                       </UiText>
-                      <UiText variant="meta" color={ui.inkSecondary}>
+                      <UiText color={ui.inkSecondary} style={{ fontSize: 13 }}>
                         {description}
                       </UiText>
                     </Pressable>

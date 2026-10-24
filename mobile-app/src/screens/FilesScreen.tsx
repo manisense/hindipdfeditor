@@ -22,7 +22,6 @@ import { BrandBand } from '../ui/BrandBand';
 import { Icon } from '../ui/Icon';
 import { ListRow } from '../ui/ListRow';
 import { PillButton } from '../ui/PillButton';
-import { uiDark } from '../ui/tokens';
 import { UiText } from '../ui/UiText';
 import { FileRow } from './files/FileRow';
 import { BandSearchField, SourceTabs, type SourceTab } from './files/FilesBandControls';
@@ -421,7 +420,6 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
       })),
     [sortedFiles, tx, nowMs],
   );
-  const sectionHeaderColor = ui === uiDark ? ui.inkSecondary : '#3F3F46';
 
   const noAccessCard = (
     <NoAccessState
@@ -497,7 +495,7 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
             renderSectionHeader={({ section }) => (
               <UiText
                 accessibilityRole="header"
-                color={sectionHeaderColor}
+                color={ui.inkLabel}
                 style={{
                   fontSize: 14,
                   fontWeight: '600',

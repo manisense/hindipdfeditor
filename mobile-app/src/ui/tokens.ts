@@ -8,6 +8,8 @@ export const ui = {
   readingBackdrop: '#E7E8F1',
   ink: '#09090B',
   inkSecondary: '#52525B',
+  /** Group and section label text. */
+  inkLabel: '#3F3F46',
   inkTertiary: '#71717A',
   fill: '#F4F4F5',
   divider: 'rgba(9, 9, 11, 0.06)',
@@ -37,6 +39,7 @@ export const uiDark = {
   readingBackdrop: '#0E1017',
   ink: '#E8EAF0',
   inkSecondary: '#A9B1C2',
+  inkLabel: '#A9B1C2',
   inkTertiary: '#8A93A6',
   fill: '#23252F',
   divider: 'rgba(255, 255, 255, 0.08)',
@@ -47,3 +50,6 @@ export type UiTokens = typeof ui | typeof uiDark;
 
 /** Font family names registered in App.tsx. */
 export const uiFont = { latin: 'Inter', devanagari: 'NotoSansDevanagari' } as const;
+
+/** Bottom padding (dp) that lets scroll content clear the floating bottom navigation. */
+export const NAV_CLEARANCE = 96;

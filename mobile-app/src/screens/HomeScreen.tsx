@@ -17,7 +17,7 @@ import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore'
 import { BandIconButton } from '../ui/BandIconButton';
 import { BrandBand } from '../ui/BrandBand';
 import { Icon, type IconName } from '../ui/Icon';
-import { uiFont, uiRadius } from '../ui/tokens';
+import { NAV_CLEARANCE, uiFont, uiRadius } from '../ui/tokens';
 import { UiText } from '../ui/UiText';
 
 type Props = {
@@ -265,7 +265,7 @@ export function HomeScreen({ onOpenTool, onOpenFile, onSeeAll, onOpenSearch }: P
           />
         }
       >
-        <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: 96 }}>
+        <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: NAV_CLEARANCE }}>
           <UiText variant="section" style={{ paddingHorizontal: 16 }} accessibilityRole="header">
             {tx('Tools', 'टूल')}
           </UiText>
