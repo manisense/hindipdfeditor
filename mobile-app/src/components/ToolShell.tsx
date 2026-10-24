@@ -265,7 +265,8 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
             </View>
 
             {/* Tab 4: Settings */}
-            <View style={[styles.tabPage, { width: windowWidth, paddingTop: topInset }]}>
+            <View style={{ width: windowWidth }}>
+              {activeTab === 'settings' && <StatusBar style="light" />}
               <SettingsScreen />
             </View>
           </ScrollView>
@@ -290,10 +291,6 @@ const getStyles = (theme: Theme) =>
     },
     pagerScrollView: {
       flex: 1,
-    },
-    tabPage: {
-      flex: 1,
-      paddingHorizontal: spacing.md,
     },
     fullScreenToolContainer: {
       flex: 1,
