@@ -12,6 +12,7 @@ import { EditableTextOverlay } from '../components/EditableTextOverlay';
 import { EditToolbar } from '../components/EditToolbar';
 import { FontPickerModal } from '../components/FontPickerModal';
 import { LegacyFontWarning } from '../components/LegacyFontWarning';
+import { OldFontChip } from '../components/OldFontChip';
 import { MaskOverlay, type DrawnMaskRect } from '../components/MaskOverlay';
 import { OcrHighlightLayer } from '../components/OcrHighlightLayer';
 import { PdfPageViewer } from '../components/PdfPageViewer';
@@ -152,10 +153,13 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
   const [legacySheetDismissedPages, setLegacySheetDismissedPages] = useState<Set<number>>(
     new Set(),
   );
+  const [legacySheetReopened, setLegacySheetReopened] = useState(false);
   const legacySheetVisible =
-    currentPageLegacyFontNames.length > 0 &&
-    editingBlocked &&
-    !legacySheetDismissedPages.has(currentPageIndex);
+    legacySheetReopened ||
+    (currentPageLegacyFontNames.length > 0 &&
+      editingBlocked &&
+      !legacySheetDismissedPages.has(currentPageIndex));
+  const replacementModeOn = policy.knownLegacyFontNames.length > 0 && !editingBlocked;
   const reopenLegacySheet = () =>
     setLegacySheetDismissedPages((prev) => {
       const next = new Set(prev);
@@ -664,16 +668,28 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
             </View>
           </View>
 
+          {replacementModeOn && <OldFontChip onPress={() => setLegacySheetReopened(true)} />}
+
           <LegacyFontWarning
             visible={legacySheetVisible}
-            onClose={() =>
-              setLegacySheetDismissedPages((prev) => new Set(prev).add(currentPageIndex))
-            }
+            onClose={() => {
+              setLegacySheetReopened(false);
+              setLegacySheetDismissedPages((prev) => new Set(prev).add(currentPageIndex));
+            }}
             fontNames={policy.knownLegacyFontNames}
             inspectionFailed={policy.inspectionFailed}
             onEnableSafeReplacement={
               !policy.inspectionFailed
-                ? () => setLegacyBypassPages((prev) => new Set(prev).add(currentPageIndex))
+                ? () => {
+                    setLegacySheetReopened(false);
+                    setLegacyBypassPages((prev) => new Set(prev).add(currentPageIndex));
+                    snackbar.show(
+                      tx(
+                        'Old-font page: cover old text and type new text on top',
+                        'पुराने फ़ॉन्ट वाला पृष्ठ: पुराना टेक्स्ट ढककर ऊपर नया लिखें',
+                      ),
+                    );
+                  }
                 : undefined
             }
           />
