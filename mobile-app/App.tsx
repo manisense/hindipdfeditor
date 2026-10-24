@@ -111,6 +111,8 @@ export default function App() {
                   <SplitPdfTool
                     initialFileUri={openedFile?.uri}
                     initialFileName={openedFile?.name}
+                    onClose={closeTool}
+                    onOpenFile={handleOpenFile}
                   />
                 )}
                 {activeTool === 'compress' && (
