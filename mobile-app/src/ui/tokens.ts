@@ -41,3 +41,6 @@ export const uiDark = {
 } as const;
 
 export type UiTokens = typeof ui | typeof uiDark;
+
+/** Font family names registered in App.tsx. */
+export const uiFont = { latin: 'Inter', devanagari: 'NotoSansDevanagari' } as const;

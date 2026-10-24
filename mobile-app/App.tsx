@@ -26,6 +26,7 @@ import { ViewPdfTool } from './src/tools/ViewPdfTool';
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
     NotoSansDevanagari: require('./assets/fonts/NotoSansDevanagari-Variable.ttf'),
+    Inter: require('./assets/fonts/Inter-Variable.ttf'),
   });
 
   useOrientationPolicy();
