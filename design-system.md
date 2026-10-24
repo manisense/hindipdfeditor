@@ -3,8 +3,8 @@
 ## 1. Brand identity
 
 - **Personality:** confident, clean, trustworthy SaaS-utility — not playful, not corporate-cold. Reads as "a serious tool that happens to care about Hindi."
-- **Signature move:** every feature category gets its own pastel-tinted icon chip (blue = core editing, green = translation/privacy, purple = merge/split, orange = compression, teal = OCR), while the brand itself stays a single confident indigo-blue used sparingly for CTAs, links, and the one highlighted column in the comparison table.
-- **Devanagari is treated as a design element, not just content** — large Hindi headline text ("हिंदी दस्तावेज़।") sits directly under the English headline at equal visual weight, signaling this is a Hindi-first product, not a translated afterthought.
+- **Signature move:** every feature category gets its own icon colour (pastel-tinted chips on the web marketing site only; the app puts icons directly on the surface) (blue = core editing, green = translation/privacy, purple = merge/split, orange = compression, teal = OCR), while the brand itself stays a single confident indigo-blue used sparingly for CTAs, links, and the one highlighted column in the comparison table.
+- **Devanagari is treated as a design element, not just content** — on the web marketing site, large Hindi headline text ("हिंदी दस्तावेज़।") sits directly under the English headline at equal visual weight, signaling this is a Hindi-first product, not a translated afterthought. The app shows one language per screen and never stacks English and Hindi.
 
 ## 2. Color palette
 
@@ -15,13 +15,13 @@
 | `brand.primaryDeep` | `#3226B8` | No longer used for buttons; primary buttons are solid `#1843DD` |
 | `brand.primaryTint` | `#EEF2FF` | Selected/highlighted backgrounds (e.g. the "Hindi PDF Editor" column in comparison table) |
 
-### Accent chips (per feature category)
+### Category accents (the app uses the icon colour only; the tint column is web-only)
 | Token | Hex (icon/fg) | Hex (tint/bg) | Used for |
 |---|---|---|---|
 | `accent.blue` | `#1843DD` | `#E8EDFF` | Editing / core tools |
 | `accent.green` | `#16A34A` | `#E6F7EC` | Translation, local-first privacy |
 | `accent.purple` | `#7C3AED` | `#F1EAFE` | Merge & split |
-| `accent.orange` | `#F0700F` | `#FFF1E4` | Compression, Sarkari/govt tools |
+| `accent.orange` | `#F0700F` web / `#C2560A` app | `#FFF1E4` | Compression, Sarkari/govt tools |
 | `accent.teal` | `#0D9488` | `#E3F6F4` | OCR / detection |
 
 ### Neutrals
@@ -52,7 +52,7 @@ Soft pastel radial blobs layered on white — blue, violet, pink, and yellow at 
 
 | Role | Family | Weight | Size (mobile) | Notes |
 |---|---|---|---|---|
-| Display / Hero H1 | Inter + Noto Sans Devanagari | 700–800 | 32–36sp | Tight line-height (~1.1), Latin and Devanagari lines stack, not inline |
+| Display / Hero H1 | Inter + Noto Sans Devanagari | 700–800 | 32–36sp | Tight line-height (~1.1); web marketing: Latin and Devanagari lines stack, app: one language per screen |
 | Section heading (H2) | Inter | 700 | 24–26sp | |
 | Card title (H3) | Inter | 600 | 16–18sp | |
 | Body | Inter / Noto Sans Devanagari | 400 | 14–15sp | `text.secondary` color, line-height ~1.5 |
@@ -63,8 +63,8 @@ Soft pastel radial blobs layered on white — blue, violet, pink, and yellow at 
 ## 4. Shape & elevation
 
 - **Corner radius:** cards & panels `14dp`, buttons `full pill (9999px)`, small tags/badges `full pill`.
-- **Shadow:** one soft elevation used consistently — `0px 8px 24px rgba(20, 22, 31, 0.06)`. No heavy or colored shadows.
-- **Borders:** hairline `1px solid border.subtle` on cards sitting on white; cards on the cream background skip the border and rely on shadow alone.
+- **Shadow:** one soft elevation used consistently — `0px 8px 24px rgba(20, 22, 31, 0.06)` on the web; the app uses a `0 0 0 1px rgba(9,9,11,0.06)` ring + 1dp shadow. No heavy or colored shadows.
+- **Borders:** web: hairline `1px solid border.subtle` on cards sitting on white (app cards: white, 14dp radius, the ring above, no separate border); cards on the cream background skip the border and rely on shadow alone.
 
 ## 5. Spacing scale
 

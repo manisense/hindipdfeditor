@@ -10,12 +10,12 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
    - **Brand Primary**: `#1843DD` (Primary CTAs, links, active states, brand mark).
    - **Brand Primary Deep**: `#3226B8` (No longer used for buttons; primary buttons are solid `#1843DD`).
    - **Brand Primary Tint**: `#EEF2FF` (Selected/highlighted backgrounds).
-   - **Category Accent Chips**:
-     - Editing / core tools: `#1843DD` on `#E8EDFF`
-     - Translation & privacy: `#16A34A` on `#E6F7EC`
-     - Merge & split: `#7C3AED` on `#F1EAFE`
-     - Compression & Sarkari tools: `#F0700F` on `#FFF1E4`
-     - OCR / detection: `#0D9488` on `#E3F6F4`
+   - **Category icon colours** (app: icon colour only, no tinted backgrounds; the tint is kept for the web):
+     - Editing / core tools: `#1843DD` (web tint `#E8EDFF`)
+     - Translation & privacy: `#16A34A` (web tint `#E6F7EC`)
+     - Merge & split: `#7C3AED` (web tint `#F1EAFE`)
+     - Compression & Sarkari tools: `#C2560A` in the app (`src/ui/tokens.ts`); the web keeps `#F0700F` (tint `#FFF1E4`)
+     - OCR / detection: `#0D9488` (web tint `#E3F6F4`)
    - **Neutrals**:
      - `text.primary`: `#14161F` (High emphasis)
      - `text.secondary`: `#5B6472` (Body copy, descriptions)
@@ -28,8 +28,7 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 
 2. **Zero Emojis in UI**:
    - Never use raw emojis (e.g. 📄, ✂️, ✏️, 🗜️, 🌐, ℹ️, ➕, ☀️, 🌙, ⭐, etc.) as UI icons or glyphs anywhere in the app or web UI.
-   - Use `src/ui/Icon.tsx` (MaterialIcons) on mobile.
-   - Always use vector icons (`@expo/vector-icons` / `react-native-vector-icons` Ionicons and MaterialCommunityIcons on mobile, Lucide/SVG on web).
+   - Always use vector icons: on mobile `src/ui/Icon.tsx` (MaterialIcons); on web Lucide/SVG.
 
 3. **One Language Per Screen**:
    - One language per screen, chosen in Settings. Hindi screens render fully in Hindi in Noto Sans Devanagari; never stack English and Hindi on the same label.
