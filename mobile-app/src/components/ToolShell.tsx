@@ -17,6 +17,8 @@ import { FilesScreen } from '../screens/FilesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { ToolsScreen } from '../screens/ToolsScreen';
+import { resolveBack } from '../navigation/backStack';
+import { useHardwareBack } from '../navigation/useHardwareBack';
 import { useAppTheme, useThemedStyles } from '../hooks/useAppTheme';
 import type { RecentFile } from '../state/recentFilesStore';
 import { colors, radius, shadows, spacing, type Theme } from '../theme';
@@ -148,6 +150,19 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
       pagerRef.current.scrollTo({ x: index * windowWidth, animated: true });
     }
   };
+
+  useHardwareBack(() => {
+    const action = resolveBack({ activeTool, tab: activeTab });
+    if (action.type === 'closeTool') {
+      onSelectTool(null);
+      return true;
+    }
+    if (action.type === 'goHome') {
+      handleSelectTab('home');
+      return true;
+    }
+    return false;
+  });
 
   const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = e.nativeEvent.contentOffset.x;
