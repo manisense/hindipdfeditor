@@ -2,6 +2,7 @@ import { Image, Pressable, View } from 'react-native';
 
 import { useAppTheme, useUi } from '../../hooks/useAppTheme';
 import { useIsHindi, useTx } from '../../i18n';
+import { formatFileSize } from '../../lib/fileSize';
 import { fileTimeMs } from '../../lib/fileTimes';
 import type { RecentFile } from '../../state/recentFilesStore';
 import { Icon } from '../../ui/Icon';
@@ -11,12 +12,6 @@ const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 const STAR_COLOR = '#C2560A';
-
-function formatFileSize(bytes: number): string {
-  if (!bytes || bytes <= 0) return '0 KB';
-  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-}
 
 function formatRelativeTime(
   timeMs: number,
