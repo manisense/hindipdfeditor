@@ -97,6 +97,8 @@ export default function App() {
                   <TranslatePdfTool
                     initialFileUri={openedFile?.uri}
                     initialFileName={openedFile?.name}
+                    onClose={closeTool}
+                    onOpenFile={handleOpenFile}
                   />
                 )}
                 {activeTool === 'merge' && (

@@ -1,80 +1,120 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
-import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import type { TranslationDirection } from '@hindipdfeditor/translation-contract';
 
-import { AppButton } from '../components/AppButton';
-import { AppStatus } from '../components/AppStatus';
-import { DropZone } from '../components/DropZone';
+import { useUi } from '../hooks/useAppTheme';
+import { useTx } from '../i18n';
 import { ptSizeToImagePx, ptToImagePx } from '../lib/coordinateMath';
 import { exportPdf } from '../lib/exportPdf';
+import { formatFileSize } from '../lib/fileSize';
 import { fontFaceWeight, getFontBase64, type DevanagariFontFamily } from '../lib/fontAsset';
 import { containsDevanagari, containsLatin, translateOcrLines } from '../lib/geminiTranslate';
 import { detectTextLines } from '../lib/ocr';
 import { getPageCount, renderPage, sampleAverageColor } from '../lib/pdfToImages';
-import { savePdfToPickedDirectory } from '../lib/savePdf';
 import { geometryForTranslatedLine, successfulTranslations } from '../lib/translateEdits';
+import { verifyPdfOutput } from '../lib/verifyPdf';
+import { ToolDoneScreen } from '../screens/ToolDoneScreen';
+import { ToolFileRow } from '../screens/tools/ToolFileRow';
+import { ToolPickPrompt } from '../screens/tools/ToolPickPrompt';
+import { pagesLabel } from '../screens/tools/toolText';
+import { useSavedFileActions, type SavedFile } from '../screens/tools/useSavedFileActions';
 import type { DocumentState, PageState } from '../state/editStore';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
-import { useTx } from '../i18n';
-import { colors, radius, shadows, spacing } from '../theme';
-import { useSnackbar } from '../ui/Snackbar';
+import { Icon } from '../ui/Icon';
+import { PillButton } from '../ui/PillButton';
+import { SegmentedControl } from '../ui/SegmentedControl';
+import { ToolScaffold } from '../ui/ToolScaffold';
+import { uiDark } from '../ui/tokens';
+import { UiText } from '../ui/UiText';
 import { commonErrors, useErrorDialog } from '../ui/useErrorDialog';
+
+type SelectedDocument = {
+  name: string;
+  uri: string;
+  pageCount: number;
+  /** File size in bytes, when known. */
+  size?: number;
+};
+
+/** Where the run is; mapped to a translated message and a progress fraction. */
+type Progress =
+  | { step: 'reading'; page: number; total: number }
+  | { step: 'detecting'; page: number; total: number }
+  | { step: 'translating'; page: number; total: number; lines: number }
+  | { step: 'assembling'; total: number };
+
+/** Thrown between pages after the person taps Cancel; never shown as an error. */
+class TranslationCancelled extends Error {}
+
+/** Progress fraction 0..1: reading is the first half of the work, OCR and translation the rest. */
+function progressFraction(progress: Progress): number {
+  if (progress.step === 'assembling') return 0.95;
+  const done = progress.step === 'reading' ? progress.page - 1 : progress.total + progress.page - 1;
+  return Math.min(0.95, done / (progress.total * 2));
+}
+
+/** Loads page count and size. */
+async function loadDocument(uri: string, name: string, size?: number): Promise<SelectedDocument> {
+  const pageCount = await getPageCount(uri);
+  let bytes = size;
+  if (bytes === undefined) {
+    const info = await FileSystem.getInfoAsync(uri).catch(() => null);
+    if (info?.exists && typeof info.size === 'number') bytes = info.size;
+  }
+  return { name, uri, pageCount, size: bytes };
+}
 
 type Props = {
   initialFileUri?: string;
   initialFileName?: string;
+  onClose: () => void;
+  onOpenFile: (file: RecentFile) => void;
 };
 
 /**
- * Mobile Translate Tool - Translates entire Hindi/English documents into the other language.
- * Replaces recognized text boxes with accurately styled translations and exports via Plan A.
+ * Translate tool: reads each page, finds text, translates it online and exports a new PDF
+ * through the Plan A HTML/print pipeline (`exportPdf`). Cancel stops between pages.
  */
-export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}) {
+export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onOpenFile }: Props) {
   const tx = useTx();
-  const snackbar = useSnackbar();
+  const ui = useUi();
   const { errorDialog, showError } = useErrorDialog();
   const errors = commonErrors(tx);
+  const actions = useSavedFileActions(showError, onOpenFile);
   const addRecentFile = useRecentFilesStore((s) => s.addFile);
-  const [selectedDoc, setSelectedDoc] = useState<{
-    name: string;
-    uri: string;
-    pageCount: number;
-  } | null>(null);
-
+  const [selectedDoc, setSelectedDoc] = useState<SelectedDocument | null>(null);
   const [direction, setDirection] = useState<TranslationDirection>('hi-en');
-  const [translating, setTranslating] = useState(false);
-  const [progressMsg, setProgressMsg] = useState('');
-  const [outputPdfUri, setOutputPdfUri] = useState<string | null>(null);
+  const [progress, setProgress] = useState<Progress | null>(null);
+  const [saved, setSaved] = useState<SavedFile | null>(null);
   const aiJobIdRef = useRef(`translate-${Crypto.randomUUID()}`);
+  /** Id of the run that may still update the screen; Cancel and unmount bump it. */
+  const runIdRef = useRef(0);
 
   useEffect(() => {
     if (!initialFileUri) return;
     let isMounted = true;
-    async function loadInitial() {
-      try {
-        const count = await getPageCount(initialFileUri!);
-        if (isMounted) {
-          setSelectedDoc({
-            name: initialFileName ?? 'document.pdf',
-            uri: initialFileUri!,
-            pageCount: count,
-          });
-          setOutputPdfUri(null);
-          aiJobIdRef.current = `translate-${Crypto.randomUUID()}`;
-        }
-      } catch (err) {
-        console.warn('Failed to load initial file in TranslatePdfTool', err);
-      }
-    }
-    void loadInitial();
+    loadDocument(initialFileUri, initialFileName ?? 'document.pdf')
+      .then((doc) => {
+        if (!isMounted) return;
+        setSelectedDoc(doc);
+        aiJobIdRef.current = `translate-${Crypto.randomUUID()}`;
+      })
+      .catch((err) => console.warn('Failed to load initial file in TranslatePdfTool', err));
     return () => {
       isMounted = false;
     };
   }, [initialFileUri, initialFileName]);
+
+  // Stop a running translation if the tool goes away.
+  useEffect(
+    () => () => {
+      runIdRef.current += 1;
+    },
+    [],
+  );
 
   const pickPdf = async () => {
     try {
@@ -82,17 +122,9 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
         type: 'application/pdf',
         copyToCacheDirectory: true,
       });
-
       if (result.canceled || !result.assets || result.assets.length === 0) return;
       const asset = result.assets[0];
-
-      const count = await getPageCount(asset.uri);
-      setSelectedDoc({
-        name: asset.name,
-        uri: asset.uri,
-        pageCount: count,
-      });
-      setOutputPdfUri(null);
+      setSelectedDoc(await loadDocument(asset.uri, asset.name, asset.size));
       aiJobIdRef.current = `translate-${Crypto.randomUUID()}`;
     } catch (error) {
       console.warn('Translate open failed', error);
@@ -102,14 +134,20 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
 
   const runTranslation = async () => {
     if (!selectedDoc) return;
-
-    setTranslating(true);
-    setProgressMsg('Rasterizing pages...');
+    runIdRef.current += 1;
+    const runId = runIdRef.current;
+    // Checked between pages: a cancelled run stops at the next page and never touches the screen.
+    const throwIfCancelled = () => {
+      if (runIdRef.current !== runId) throw new TranslationCancelled();
+    };
+    const total = selectedDoc.pageCount;
+    setProgress({ step: 'reading', page: 1, total });
     try {
       // 1. Rasterize pages
       const pages: PageState[] = [];
-      for (let i = 0; i < selectedDoc.pageCount; i++) {
-        setProgressMsg(`Reading page ${i + 1} of ${selectedDoc.pageCount}...`);
+      for (let i = 0; i < total; i++) {
+        throwIfCancelled();
+        setProgress({ step: 'reading', page: i + 1, total });
         const img = await renderPage(selectedDoc.uri, i, 3);
         pages.push({
           pageIndex: i,
@@ -125,8 +163,9 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
 
       // 2. Perform OCR and translation for each page
       for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+        throwIfCancelled();
         const pageState = pages[pageIndex];
-        setProgressMsg(`Detecting text on page ${pageIndex + 1}...`);
+        setProgress({ step: 'detecting', page: pageIndex + 1, total });
 
         let lines: PageState['ocrLines'] = [];
         try {
@@ -141,7 +180,12 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
         );
 
         if (translatable.length > 0) {
-          setProgressMsg(`Translating ${translatable.length} lines on page ${pageIndex + 1}...`);
+          setProgress({
+            step: 'translating',
+            page: pageIndex + 1,
+            total,
+            lines: translatable.length,
+          });
           const translationMap = await translateOcrLines(
             aiJobIdRef.current,
             direction,
@@ -211,7 +255,8 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
       }
 
       // 3. Assemble and export the translated PDF
-      setProgressMsg('Assembling final translated document...');
+      throwIfCancelled();
+      setProgress({ step: 'assembling', total });
       const usedFamilies = new Set<DevanagariFontFamily>(['NotoSansDevanagari']);
       for (const p of pages) {
         for (const e of p.edits) {
@@ -239,25 +284,27 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
         legacyFontWarnings: [],
       };
 
+      // exportPdf runs its own parse-back check (page count and sizes) before returning.
       const resultPdf = await exportPdf(docState, embeddedFonts);
-      setOutputPdfUri(resultPdf);
+      throwIfCancelled();
+      const verified = await verifyPdfOutput(resultPdf, pages.length);
 
-      const translatedDocName = `${selectedDoc.name.replace(/\.pdf$/i, '')}_${
-        direction === 'hi-en' ? 'English' : 'Hindi'
-      }.pdf`;
-      const fileData: Omit<RecentFile, 'id' | 'date'> = {
-        name: translatedDocName,
-        hindiName: `${selectedDoc.name.replace(/\.pdf$/i, '')}_अनुवादित.pdf`,
+      const base = selectedDoc.name.replace(/\.pdf$/i, '');
+      const name = `${base}_${direction === 'hi-en' ? 'English' : 'Hindi'}.pdf`;
+      throwIfCancelled();
+      await addRecentFile({
+        name,
+        hindiName: `${base}_अनुवादित.pdf`,
         uri: resultPdf,
         thumbnailUri: pages[0]?.backgroundImageUri,
-        sizeBytes: 0,
-        pageCount: pages.length,
+        sizeBytes: verified.sizeBytes,
+        pageCount: verified.pageCount,
         category: 'downloads',
         starred: false,
-      };
-      await addRecentFile(fileData);
-      snackbar.show(tx('Saved', 'सेव हो गई'));
+      });
+      setSaved({ uri: resultPdf, name, ...verified });
     } catch (error) {
+      if (error instanceof TranslationCancelled || runIdRef.current !== runId) return;
       console.warn('Translation failed', error);
       showError({
         title: tx("Couldn't translate the PDF", 'PDF का अनुवाद नहीं हो सका'),
@@ -268,216 +315,164 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
         onRetry: () => void runTranslation(),
       });
     } finally {
-      setTranslating(false);
-      setProgressMsg('');
+      if (runIdRef.current === runId) setProgress(null);
     }
   };
 
-  const handleShare = async () => {
-    if (!outputPdfUri) return;
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(outputPdfUri, { mimeType: 'application/pdf' });
-    }
+  const cancel = () => {
+    runIdRef.current += 1;
+    setProgress(null);
   };
 
-  const handleSaveToDevice = async () => {
-    if (!outputPdfUri) return;
-    try {
-      const saved = await savePdfToPickedDirectory(outputPdfUri, 'translated-document.pdf');
-      if (saved) snackbar.show(tx('Saved', 'सेव हो गई'));
-    } catch (error) {
-      console.warn('Translate save failed', error);
-      showError({ ...errors.save, onRetry: () => void handleSaveToDevice() });
-    }
-  };
+  const title = tx('Translate', 'अनुवाद');
+
+  if (saved) {
+    return (
+      <>
+        <ToolDoneScreen
+          title={title}
+          fileName={saved.name}
+          fileUri={saved.uri}
+          folderLabel={tx('Files', 'फ़ाइलें')}
+          pageCount={saved.pageCount}
+          sizeBytes={saved.sizeBytes}
+          onOpen={() => actions.open(saved)}
+          onShare={() => void actions.share(saved)}
+          onSaveCopy={() => void actions.saveCopy(saved)}
+          onClose={onClose}
+        />
+        {errorDialog}
+      </>
+    );
+  }
+
+  if (progress) {
+    const message =
+      progress.step === 'reading'
+        ? tx(
+            `Reading page ${progress.page} of ${progress.total}`,
+            `पृष्ठ ${progress.page} / ${progress.total} पढ़ा जा रहा है`,
+          )
+        : progress.step === 'detecting'
+          ? tx(
+              `Detecting text on page ${progress.page}`,
+              `पृष्ठ ${progress.page} पर टेक्स्ट ढूँढ़ा जा रहा है`,
+            )
+          : progress.step === 'translating'
+            ? tx(
+                `Translating ${progress.lines} lines on page ${progress.page}`,
+                `पृष्ठ ${progress.page} की ${progress.lines} पंक्तियों का अनुवाद`,
+              )
+            : tx('Assembling final translated document', 'अनुवादित फ़ाइल बन रही है');
+    const fraction = progressFraction(progress);
+    return (
+      <ToolScaffold title={title} leadingIcon="close" onLeading={cancel}>
+        <View style={{ paddingTop: 96, paddingHorizontal: 32, alignItems: 'center', gap: 12 }}>
+          <Icon name="translate" size={48} color={ui.category.translate} />
+          <UiText variant="title" accessibilityRole="header" style={{ marginTop: 8 }}>
+            {tx('Translating', 'अनुवाद हो रहा है')}
+          </UiText>
+          <UiText
+            variant="body"
+            color={ui.inkLabel}
+            accessibilityLiveRegion="polite"
+            style={{ textAlign: 'center' }}
+          >
+            {message}
+          </UiText>
+          <View
+            accessibilityRole="progressbar"
+            accessibilityValue={{ min: 0, max: 100, now: Math.round(fraction * 100) }}
+            style={{
+              alignSelf: 'stretch',
+              height: 6,
+              marginTop: 12,
+              borderRadius: 9999,
+              backgroundColor: ui === uiDark ? ui.fill : '#E4E4E7',
+              overflow: 'hidden',
+            }}
+          >
+            <View
+              style={{
+                width: `${Math.round(fraction * 100)}%`,
+                height: '100%',
+                borderRadius: 9999,
+                backgroundColor: ui.brand,
+              }}
+            />
+          </View>
+          <UiText variant="meta" color={ui.inkSecondary} style={{ marginTop: 12 }}>
+            {tx('Keep the app open until it finishes.', 'पूरा होने तक ऐप खुला रखें।')}
+          </UiText>
+          <PillButton kind="text" title={tx('Cancel', 'रद्द करें')} onPress={cancel} />
+        </View>
+      </ToolScaffold>
+    );
+  }
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
+    <ToolScaffold
+      title={title}
+      onLeading={onClose}
+      primary={
+        selectedDoc
+          ? { title: tx('Translate', 'अनुवाद करें'), onPress: () => void runTranslation() }
+          : { title: tx('Choose a PDF', 'PDF चुनें'), onPress: () => void pickPdf() }
+      }
     >
-      <DropZone
-        title="Translate Hindi PDF"
-        subtitle="Translate Hindi documents to English or English documents to Hindi seamlessly."
-        buttonLabel={selectedDoc ? 'Change PDF' : 'Select PDF file'}
-        badgeAccent={colors.accent}
-        badgeTint={colors.accentTint}
-        onSelect={pickPdf}
-      />
-
-      {selectedDoc && (
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="document-text-outline" size={16} color={colors.brand} />
-              <Text style={styles.docName} numberOfLines={1}>
-                {selectedDoc.name}
-              </Text>
-            </View>
-            <Text style={styles.docPages}>{selectedDoc.pageCount} page(s) detected</Text>
-          </View>
-
-          {/* Direction Selector */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Translation direction</Text>
-            <View style={styles.choiceRow}>
-              <ChoiceChip
-                label="Hindi → English"
-                sub="हिंदी से अंग्रेजी"
-                selected={direction === 'hi-en'}
-                onSelect={() => setDirection('hi-en')}
-              />
-              <ChoiceChip
-                label="English → Hindi"
-                sub="अंग्रेजी से हिंदी"
-                selected={direction === 'en-hi'}
-                onSelect={() => setDirection('en-hi')}
-              />
-            </View>
-          </View>
-
-          {translating && (
-            <AppStatus title="Translating document..." subtitle={progressMsg} tone="loading" />
+      {!selectedDoc ? (
+        <ToolPickPrompt
+          icon="translate"
+          iconColor={ui.category.translate}
+          title={tx('Choose a PDF to translate', 'अनुवाद के लिए PDF चुनें')}
+          body={tx(
+            'Hindi to English or English to Hindi. The translation is saved as a new PDF.',
+            'हिंदी से अंग्रेज़ी या अंग्रेज़ी से हिंदी। अनुवाद नई PDF में सेव होता है।',
           )}
-
-          <AppButton
-            title={translating ? 'Processing...' : 'Translate & Export PDF'}
-            variant="primary"
-            loading={translating}
-            disabled={translating}
-            onPress={runTranslation}
-            style={{ backgroundColor: colors.accent, borderColor: colors.accent }}
+        />
+      ) : (
+        <View>
+          <ToolFileRow
+            name={selectedDoc.name}
+            meta={[
+              pagesLabel(tx, selectedDoc.pageCount),
+              selectedDoc.size !== undefined ? formatFileSize(selectedDoc.size) : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            onChange={() => void pickPdf()}
           />
-        </View>
-      )}
-
-      {outputPdfUri && (
-        <View style={styles.resultCard}>
-          <AppStatus
-            title="Translation complete & ready"
-            subtitle="Your translated PDF is ready to share or save."
-            tone="success"
-          />
-          <View style={styles.resultActions}>
-            <AppButton
-              title="Share PDF"
-              variant="primary"
-              onPress={handleShare}
-              style={styles.resultBtn}
+          <View style={{ marginTop: 8, marginHorizontal: 16 }}>
+            <SegmentedControl
+              label={tx('Translate from', 'किस भाषा से')}
+              value={direction}
+              onChange={setDirection}
+              options={[
+                { value: 'hi-en', label: tx('Hindi to English', 'हिंदी से अंग्रेज़ी') },
+                { value: 'en-hi', label: tx('English to Hindi', 'अंग्रेज़ी से हिंदी') },
+              ]}
             />
-            <AppButton
-              title="Save to folder"
-              variant="secondary"
-              onPress={handleSaveToDevice}
-              style={styles.resultBtn}
-            />
+          </View>
+          <View
+            style={{
+              marginTop: 16,
+              marginHorizontal: 16,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              borderRadius: 12,
+              backgroundColor: ui.fill,
+            }}
+          >
+            <UiText variant="meta" color={ui.inkLabel}>
+              {tx(
+                'Text found on the pages is sent online to be translated. Everything else stays on your phone.',
+                'पृष्ठों पर मिला टेक्स्ट अनुवाद के लिए ऑनलाइन भेजा जाता है। बाकी सब आपके फ़ोन पर ही रहता है।',
+              )}
+            </UiText>
           </View>
         </View>
       )}
       {errorDialog}
-    </ScrollView>
+    </ToolScaffold>
   );
 }
-
-function ChoiceChip({
-  label,
-  sub,
-  selected,
-  onSelect,
-}: {
-  label: string;
-  sub: string;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      onPress={onSelect}
-      style={[styles.choiceChip, selected && styles.choiceChipActive]}
-    >
-      <Text style={[styles.choiceLabel, selected && styles.choiceLabelActive]}>{label}</Text>
-      <Text style={styles.choiceSub}>{sub}</Text>
-    </Pressable>
-  );
-}
-
-const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-  },
-  container: {
-    paddingVertical: spacing.sm,
-    gap: spacing.md,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    padding: spacing.lg,
-    gap: spacing.lg,
-    ...shadows.card,
-  },
-  header: {
-    gap: 3,
-  },
-  docName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  docPages: {
-    fontSize: 12.5,
-    color: colors.textSecondary,
-  },
-  section: {
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  choiceRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  choiceChip: {
-    flex: 1,
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.chip,
-    padding: spacing.sm,
-    borderWidth: 1.5,
-    borderColor: colors.borderSubtle,
-    gap: 3,
-  },
-  choiceChipActive: {
-    backgroundColor: colors.accentGreenTint,
-    borderColor: colors.accentGreen,
-  },
-  choiceLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  choiceLabelActive: {
-    color: colors.accentGreen,
-  },
-  choiceSub: {
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  resultCard: {
-    gap: spacing.sm,
-  },
-  resultActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  resultBtn: {
-    flex: 1,
-  },
-});
