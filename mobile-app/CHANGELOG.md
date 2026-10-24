@@ -4,6 +4,10 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Mobile Web Parity & Architecture Overhaul
 
+### Changed — native UI redesign
+
+- Home tab rebuilt edge to edge with the brand band, search pill, six tool tiles and a recent-files strip; the greeting and "100% Offline" badge are gone.
+
 ### Security — dependency updates before 1.0.1
 
 - `npm audit fix` (non-breaking) moved Expo to its latest SDK 56 patches (`expo` 56.0.23, `expo-modules-core` 56.0.28, `expo-updates` 56.0.27, `expo-file-system` 56.0.11) and patched transitive tooling such as `shell-quote`, `nanoid` and `@xmldom/xmldom`. Production audit findings went from 36 (1 critical) to 17 (0 critical). The remaining 17 are in Expo CLI and Metro build tooling, and clearing them needs a major Expo upgrade.

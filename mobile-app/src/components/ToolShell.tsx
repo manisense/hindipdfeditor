@@ -10,6 +10,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomNav, type MainTab } from '../ui/BottomNav';
@@ -122,6 +123,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
   // The app draws edge to edge, so the safe-area inset already includes the status bar.
   const topInset = insets.top;
   const [activeTab, setActiveTab] = useState<MainTab>('home');
+  const [focusSearchToken, setFocusSearchToken] = useState(0);
   const activeTabOffsetX = Math.max(CORE_TABS.indexOf(activeTab), 0) * windowWidth;
 
   // Keep the pager on the active tab when the width changes (rotation, foldable, split screen);
@@ -174,7 +176,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
   };
 
   return (
-    <View style={[styles.container, { paddingTop: topInset }]}>
+    <View style={[styles.container, activeTool ? { paddingTop: topInset } : null]}>
       {/* Background ambient glowing orbs */}
       <View style={styles.ambientAuraTopRight} pointerEvents="none" />
       <View
@@ -243,22 +245,35 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
             style={styles.pagerScrollView}
           >
             {/* Tab 1: Home */}
-            <View style={[styles.tabPage, { width: windowWidth }]}>
-              <HomeScreen onOpenTool={onSelectTool} onOpenFile={handleOpenFile} />
+            <View style={{ width: windowWidth }}>
+              {activeTab === 'home' && <StatusBar style="light" />}
+              <HomeScreen
+                onOpenTool={onSelectTool}
+                onOpenFile={handleOpenFile}
+                onSeeAll={() => handleSelectTab('files')}
+                onOpenSearch={() => {
+                  setFocusSearchToken((token) => token + 1);
+                  handleSelectTab('files');
+                }}
+              />
             </View>
 
             {/* Tab 2: Files */}
-            <View style={[styles.tabPage, { width: windowWidth }]}>
-              <FilesScreen onOpenTool={onSelectTool} onOpenFile={handleOpenFile} />
+            <View style={[styles.tabPage, { width: windowWidth, paddingTop: topInset }]}>
+              <FilesScreen
+                onOpenTool={onSelectTool}
+                onOpenFile={handleOpenFile}
+                focusSearchToken={focusSearchToken}
+              />
             </View>
 
             {/* Tab 3: Tools */}
-            <View style={[styles.tabPage, { width: windowWidth }]}>
+            <View style={[styles.tabPage, { width: windowWidth, paddingTop: topInset }]}>
               <ToolsScreen onOpenTool={onSelectTool} />
             </View>
 
             {/* Tab 4: Settings */}
-            <View style={[styles.tabPage, { width: windowWidth }]}>
+            <View style={[styles.tabPage, { width: windowWidth, paddingTop: topInset }]}>
               <SettingsScreen />
             </View>
           </ScrollView>
