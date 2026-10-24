@@ -152,7 +152,7 @@ Live editing and export both ultimately depend on the same underlying HarfBuzz-b
     PdfPageViewer.tsx        // shows current page: JPEG background + live overlays
     EditableTextOverlay.tsx  // the tap-to-edit TextInput
     MaskOverlay.tsx          // drag-to-select mask rectangle for "replace text" edits
-    LegacyFontWarning.tsx    // banner shown when a page uses a non-Unicode legacy font
+    LegacyFontWarning.tsx    // bottom sheet shown when a page uses a non-Unicode legacy font
   /lib
     pdfToImages.ts           // wraps the in-house pdf-page-image local Expo Module
     htmlCompositor.ts        // builds per-page HTML for export

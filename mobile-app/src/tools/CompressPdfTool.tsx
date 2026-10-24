@@ -5,13 +5,15 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 
 import { AppButton } from '../components/AppButton';
-import { useAppPopup } from '../components/appPopupContext';
 import { DropZone } from '../components/DropZone';
 import { getPageCount } from '../lib/pdfToImages';
 import { compressPdfFile } from '../lib/pdfOps';
 import { savePdfToPickedDirectory } from '../lib/savePdf';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
+import { useTx } from '../i18n';
 import { colors, radius, shadows, spacing } from '../theme';
+import { useSnackbar } from '../ui/Snackbar';
+import { commonErrors, useErrorDialog } from '../ui/useErrorDialog';
 
 type SelectedDocument = {
   name: string;
@@ -37,7 +39,10 @@ function formatBytes(bytes: number): string {
  * Mobile Compress PDF Tool - Shrinks scanned/image-heavy documents locally.
  */
 export function CompressPdfTool({ initialFileUri, initialFileName }: Props = {}) {
-  const { showPopup } = useAppPopup();
+  const tx = useTx();
+  const snackbar = useSnackbar();
+  const { errorDialog, showError } = useErrorDialog();
+  const errors = commonErrors(tx);
   const addRecentFile = useRecentFilesStore((s) => s.addFile);
   const [document, setDocument] = useState<SelectedDocument | null>(null);
   const [level, setLevel] = useState<CompressionLevel>('balanced');
@@ -91,11 +96,8 @@ export function CompressPdfTool({ initialFileUri, initialFileName }: Props = {})
       });
       setResult(null);
     } catch (error) {
-      await showPopup({
-        title: 'Could not open PDF',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Compress open failed', error);
+      showError({ ...errors.open, onRetry: () => void pickPdf() });
     }
   };
 
@@ -123,22 +125,16 @@ export function CompressPdfTool({ initialFileUri, initialFileName }: Props = {})
         starred: false,
       };
       await addRecentFile(fileData);
-
-      const savings = Math.max(
-        0,
-        Math.round(((res.originalBytes - res.compressedBytes) / res.originalBytes) * 100),
-      );
-
-      await showPopup({
-        title: 'Compression complete!',
-        message: `Your document was reduced by ${savings}% (${formatBytes(res.originalBytes)} → ${formatBytes(res.compressedBytes)}).`,
-        tone: 'success',
-      });
+      snackbar.show(tx('Saved', 'सेव हो गई'));
     } catch (error) {
-      await showPopup({
-        title: 'Compression failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
+      console.warn('Compression failed', error);
+      showError({
+        title: tx("Couldn't compress the PDF", 'PDF छोटी नहीं हो सकी'),
+        body: tx(
+          'The file may be damaged or too large for this phone. Try another level, or another file.',
+          'फ़ाइल खराब या इस फ़ोन के लिए बहुत बड़ी हो सकती है। दूसरा लेवल या दूसरी फ़ाइल आज़माएँ।',
+        ),
+        onRetry: () => void runCompress(),
       });
     } finally {
       setCompressing(false);
@@ -156,19 +152,10 @@ export function CompressPdfTool({ initialFileUri, initialFileName }: Props = {})
     if (!result) return;
     try {
       const saved = await savePdfToPickedDirectory(result.uri, 'compressed-document.pdf');
-      if (saved) {
-        await showPopup({
-          title: 'Saved to Files',
-          message: 'Compressed PDF successfully saved to your chosen folder.',
-          tone: 'success',
-        });
-      }
+      if (saved) snackbar.show(tx('Saved', 'सेव हो गई'));
     } catch (error) {
-      await showPopup({
-        title: 'Save failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Compress save failed', error);
+      showError({ ...errors.save, onRetry: () => void handleSaveToDevice() });
     }
   };
 
@@ -270,6 +257,7 @@ export function CompressPdfTool({ initialFileUri, initialFileName }: Props = {})
           </View>
         </View>
       )}
+      {errorDialog}
     </ScrollView>
   );
 }

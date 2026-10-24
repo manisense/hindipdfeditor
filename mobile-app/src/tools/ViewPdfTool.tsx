@@ -20,11 +20,14 @@ import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '../components/AppButton';
-import { useAppPopup } from '../components/appPopupContext';
 import { DropZone } from '../components/DropZone';
 import { getPageCount, renderPage } from '../lib/pdfToImages';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
+import { useUi } from '../hooks/useAppTheme';
+import { useTx } from '../i18n';
 import { colors, radius, shadows, spacing } from '../theme';
+import { UiText } from '../ui/UiText';
+import { commonErrors, useErrorDialog } from '../ui/useErrorDialog';
 
 type ViewMode = 'continuous' | 'single';
 type ReadingTheme = 'light' | 'sepia' | 'dark';
@@ -97,7 +100,9 @@ export function ViewPdfTool({
   onOpenTranslate,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const { showPopup } = useAppPopup();
+  const tx = useTx();
+  const ui = useUi();
+  const { errorDialog, showError } = useErrorDialog();
   const addFile = useRecentFilesStore((state) => state.addFile);
 
   const [fileUri, setFileUri] = useState<string | null>(initialFileUri ?? null);
@@ -113,6 +118,7 @@ export function ViewPdfTool({
 
   const [showJumpModal, setShowJumpModal] = useState<boolean>(false);
   const [jumpPageInput, setJumpPageInput] = useState<string>('1');
+  const [jumpError, setJumpError] = useState<string | null>(null);
   const [showDocInfoModal, setShowDocInfoModal] = useState<boolean>(false);
 
   // Cached page images
@@ -131,42 +137,35 @@ export function ViewPdfTool({
 
   const { width: screenWidth } = useWindowDimensions();
 
-  const loadDocument = useCallback(
-    async (uri: string, name?: string) => {
-      setLoadingDoc(true);
-      try {
-        const total = await getPageCount(uri);
-        const docName = name ?? uri.split('/').pop() ?? 'Document.pdf';
-        setFileUri(uri);
-        setFileName(docName);
-        setPageCount(total);
-        setCurrentPage(0);
-        setPageRenders({});
-        renderingRef.current.clear();
+  const loadDocument = async (uri: string, name?: string) => {
+    setLoadingDoc(true);
+    try {
+      const total = await getPageCount(uri);
+      const docName = name ?? uri.split('/').pop() ?? 'Document.pdf';
+      setFileUri(uri);
+      setFileName(docName);
+      setPageCount(total);
+      setCurrentPage(0);
+      setPageRenders({});
+      renderingRef.current.clear();
 
-        // Add to recent files store
-        await addFile({
-          name: docName,
-          hindiName: docName.replace(/\.pdf$/i, '') + '_हिंदी.pdf',
-          uri,
-          pageCount: total,
-          sizeBytes: 0,
-          category: 'all',
-          folder: 'Viewed',
-        });
-      } catch {
-        showPopup({
-          title: 'Error Opening PDF',
-          message:
-            'Could not load the selected PDF document. It may be password-protected or corrupted.',
-          tone: 'error',
-        });
-      } finally {
-        setLoadingDoc(false);
-      }
-    },
-    [addFile, showPopup],
-  );
+      // Add to recent files store
+      await addFile({
+        name: docName,
+        hindiName: docName.replace(/\.pdf$/i, '') + '_हिंदी.pdf',
+        uri,
+        pageCount: total,
+        sizeBytes: 0,
+        category: 'all',
+        folder: 'Viewed',
+      });
+    } catch (error) {
+      console.warn('Viewer open failed', error);
+      showError({ ...commonErrors(tx).open, onRetry: () => void handlePickFile() });
+    } finally {
+      setLoadingDoc(false);
+    }
+  };
 
   useEffect(() => {
     if (!initialFileUri) return;
@@ -271,13 +270,12 @@ export function ViewPdfTool({
   const handleJumpToPage = () => {
     const p = parseInt(jumpPageInput.trim(), 10);
     if (isNaN(p) || p < 1 || p > pageCount) {
-      showPopup({
-        title: 'Invalid Page Number',
-        message: `Please enter a valid page number between 1 and ${pageCount}.`,
-        tone: 'warning',
-      });
+      setJumpError(
+        tx(`Enter a page from 1 to ${pageCount}`, `1 से ${pageCount} तक का पृष्ठ लिखें`),
+      );
       return;
     }
+    setJumpError(null);
     const targetIndex = p - 1;
     setCurrentPage(targetIndex);
     setShowJumpModal(false);
@@ -321,6 +319,7 @@ export function ViewPdfTool({
           subtitle="Select any Hindi or English PDF file from your phone storage to read and view."
           buttonLabel="Select PDF to Read"
         />
+        {errorDialog}
       </View>
     );
   }
@@ -688,6 +687,7 @@ export function ViewPdfTool({
             accessibilityLabel="Jump to page"
             onPress={() => {
               setJumpPageInput(String(currentPage + 1));
+              setJumpError(null);
               setShowJumpModal(true);
             }}
             style={styles.pillPageBadge}
@@ -852,7 +852,10 @@ export function ViewPdfTool({
 
             <TextInput
               value={jumpPageInput}
-              onChangeText={setJumpPageInput}
+              onChangeText={(text) => {
+                setJumpPageInput(text);
+                setJumpError(null);
+              }}
               keyboardType="number-pad"
               maxLength={4}
               autoFocus
@@ -866,6 +869,11 @@ export function ViewPdfTool({
               ]}
               selectTextOnFocus
             />
+            {jumpError && (
+              <UiText variant="meta" color={ui.danger} accessibilityLiveRegion="polite">
+                {jumpError}
+              </UiText>
+            )}
 
             <View style={styles.jumpModalActions}>
               <Pressable
@@ -951,6 +959,7 @@ export function ViewPdfTool({
           </Pressable>
         </Pressable>
       </Modal>
+      {errorDialog}
     </View>
   );
 }

@@ -7,12 +7,16 @@ import * as Sharing from 'expo-sharing';
 import { AppButton } from '../components/AppButton';
 import { AppStatus } from '../components/AppStatus';
 import { DropZone } from '../components/DropZone';
-import { useAppPopup } from '../components/appPopupContext';
 import { mergePdfFiles } from '../lib/pdfOps';
 import { getPageCount, renderPage } from '../lib/pdfToImages';
 import { savePdfToPickedDirectory } from '../lib/savePdf';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
+import { useTx } from '../i18n';
 import { colors, radius, shadows, spacing } from '../theme';
+import { useUi } from '../hooks/useAppTheme';
+import { useSnackbar } from '../ui/Snackbar';
+import { UiText } from '../ui/UiText';
+import { commonErrors, useErrorDialog } from '../ui/useErrorDialog';
 
 type MergeItem = {
   id: string;
@@ -23,13 +27,27 @@ type MergeItem = {
   size?: number;
 };
 
+/** Display name for a merged output, suffixed with the last 4 digits of the current ms time. */
+function mergedOutputName(): string {
+  return `Merged_${Date.now().toString().slice(-4)}.pdf`;
+}
+
+/** Random-suffixed id for a queued merge item. */
+function newMergeItemId(): string {
+  return `pdf-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
 type Props = {
   initialFileUri?: string;
   initialFileName?: string;
 };
 
 export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
-  const { showPopup } = useAppPopup();
+  const tx = useTx();
+  const ui = useUi();
+  const snackbar = useSnackbar();
+  const { errorDialog, showError } = useErrorDialog();
+  const errors = commonErrors(tx);
   const addRecentFile = useRecentFilesStore((s) => s.addFile);
   const [files, setFiles] = useState<MergeItem[]>([]);
   const [merging, setMerging] = useState(false);
@@ -93,7 +111,7 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
         }
 
         newItems.push({
-          id: `pdf-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          id: newMergeItemId(),
           name: asset.name,
           uri: asset.uri,
           thumbnailUri: thumbUri,
@@ -105,10 +123,14 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
       setFiles((prev) => [...prev, ...newItems]);
       setMergedUri(null);
     } catch (error) {
-      await showPopup({
-        title: 'File pick error',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
+      console.warn('Merge file pick failed', error);
+      showError({
+        title: tx("Couldn't add the files", 'फ़ाइलें नहीं जुड़ सकीं'),
+        body: tx(
+          'The file picker closed with an error. Try picking the PDFs again.',
+          'फ़ाइल चुनते समय गड़बड़ी हुई। PDF फिर से चुनें।',
+        ),
+        onRetry: () => void pickMoreFiles(),
       });
     }
   };
@@ -141,14 +163,7 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
 
   const runMerge = async () => {
     const validUris = files.map((f) => f.uri).filter((uri) => uri.length > 0);
-    if (validUris.length < 2) {
-      await showPopup({
-        title: 'Select at least 2 files',
-        message: 'Please add at least 2 PDF documents to merge them into one file.',
-        tone: 'info',
-      });
-      return;
-    }
+    if (validUris.length < 2) return;
 
     setMerging(true);
     try {
@@ -156,7 +171,7 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
       setMergedUri(outUri);
 
       // Save to recent files store
-      const mergedFileName = `Merged_${Date.now().toString().slice(-4)}.pdf`;
+      const mergedFileName = mergedOutputName();
       const fileData: Omit<RecentFile, 'id' | 'date'> = {
         name: mergedFileName,
         hindiName: 'मर्ज_दस्तावेज़.pdf',
@@ -169,10 +184,14 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
       };
       await addRecentFile(fileData);
     } catch (error) {
-      await showPopup({
-        title: 'Merge failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
+      console.warn('Merge failed', error);
+      showError({
+        title: tx("Couldn't merge the PDFs", 'PDF नहीं जुड़ सकीं'),
+        body: tx(
+          'One of the files may be locked or damaged. Check the files, then try again.',
+          'कोई फ़ाइल लॉक या खराब हो सकती है। फ़ाइलें जाँचें, फिर से करें।',
+        ),
+        onRetry: () => void runMerge(),
       });
     } finally {
       setMerging(false);
@@ -189,11 +208,8 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
         });
       }
     } catch (error) {
-      await showPopup({
-        title: 'Share failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Merge share failed', error);
+      showError({ ...errors.share, onRetry: () => void handleShare() });
     }
   };
 
@@ -201,19 +217,10 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
     if (!mergedUri) return;
     try {
       const saved = await savePdfToPickedDirectory(mergedUri, 'merged-document.pdf');
-      if (saved) {
-        await showPopup({
-          title: 'Saved to Files',
-          message: 'Merged PDF successfully saved to your chosen folder.',
-          tone: 'success',
-        });
-      }
+      if (saved) snackbar.show(tx('Saved', 'सेव हो गई'));
     } catch (error) {
-      await showPopup({
-        title: 'Save failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Merge save failed', error);
+      showError({ ...errors.save, onRetry: () => void handleSaveToDevice() });
     }
   };
 
@@ -335,6 +342,11 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
             onPress={runMerge}
             style={styles.mainMergeBtn}
           />
+          {files.length < 2 && (
+            <UiText variant="meta" color={ui.inkSecondary} style={styles.mergeHint}>
+              {tx('Add at least 2 PDFs to merge', 'मर्ज करने के लिए कम से कम 2 PDF जोड़ें')}
+            </UiText>
+          )}
 
           {/* Result Actions */}
           {mergedUri && (
@@ -362,6 +374,7 @@ export function MergePdfTool({ initialFileUri, initialFileName }: Props = {}) {
           )}
         </View>
       )}
+      {errorDialog}
     </ScrollView>
   );
 }
@@ -548,6 +561,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand,
     borderColor: colors.brand,
     marginTop: spacing.xs,
+  },
+  mergeHint: {
+    textAlign: 'center',
   },
   resultCard: {
     backgroundColor: '#ffffff',

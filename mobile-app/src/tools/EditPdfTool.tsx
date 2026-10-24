@@ -7,7 +7,6 @@ import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '../components/AppButton';
-import { useAppPopup } from '../components/appPopupContext';
 import { DropZone } from '../components/DropZone';
 import { EditableTextOverlay } from '../components/EditableTextOverlay';
 import { EditToolbar } from '../components/EditToolbar';
@@ -42,7 +41,10 @@ import {
   type TextEdit,
 } from '../state/editStore';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
+import { useTx } from '../i18n';
 import { colors, radius, shadows, spacing } from '../theme';
+import { useSnackbar } from '../ui/Snackbar';
+import { commonErrors, useErrorDialog } from '../ui/useErrorDialog';
 
 const DEFAULT_FONT_SIZE_PT = 14;
 const RASTER_SCALE = 3;
@@ -72,6 +74,15 @@ async function detectLegacyFontWarnings(
   }
 }
 
+/** Opens the system picker for one PDF; resolves null when the person cancels. */
+async function pickOnePdf(): Promise<DocumentPicker.DocumentPickerAsset | null> {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: ['application/pdf'],
+    copyToCacheDirectory: true,
+  });
+  return result.canceled || !result.assets || result.assets.length === 0 ? null : result.assets[0];
+}
+
 type Props = {
   initialFileUri?: string;
   initialFileName?: string;
@@ -83,7 +94,10 @@ type Props = {
  */
 export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
   const insets = useSafeAreaInsets();
-  const { showPopup } = useAppPopup();
+  const tx = useTx();
+  const snackbar = useSnackbar();
+  const { errorDialog, showError } = useErrorDialog();
+  const errors = commonErrors(tx);
   const [opening, setOpening] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exportResultUri, setExportResultUri] = useState<string | null>(null);
@@ -135,6 +149,19 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
     [currentPageLegacyFontNames, legacyBypassPages, currentPageIndex],
   );
   const editingBlocked = policy.editingBlocked;
+  const [legacySheetDismissedPages, setLegacySheetDismissedPages] = useState<Set<number>>(
+    new Set(),
+  );
+  const legacySheetVisible =
+    currentPageLegacyFontNames.length > 0 &&
+    editingBlocked &&
+    !legacySheetDismissedPages.has(currentPageIndex);
+  const reopenLegacySheet = () =>
+    setLegacySheetDismissedPages((prev) => {
+      const next = new Set(prev);
+      next.delete(currentPageIndex);
+      return next;
+    });
 
   const ensureOcrForPage = async (doc: DocumentState, pageIndex: number): Promise<void> => {
     const pageState = doc.pages[pageIndex];
@@ -200,6 +227,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       ocrAttemptedPagesRef.current.clear();
       editPairingsRef.current.clear();
       setOcrStatusByPage({});
+      setLegacySheetDismissedPages(new Set());
       void ensureOcrForAllPages(newDoc);
 
       const fileData: Omit<RecentFile, 'id' | 'date'> = {
@@ -214,10 +242,13 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       };
       void addRecentFile(fileData);
     } catch (error) {
-      await showPopup({
-        title: 'Could not open PDF',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
+      console.warn('Editor open failed', error);
+      showError({
+        ...errors.open,
+        onRetry: () =>
+          void pickOnePdf()
+            .then((asset) => asset && loadPdfFromUri(asset.uri, asset.name))
+            .catch((pickError: unknown) => console.warn('Editor re-pick failed', pickError)),
       });
     } finally {
       setOpening(false);
@@ -241,25 +272,20 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
 
   const openPdfFile = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf'],
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled || !result.assets || result.assets.length === 0) return;
-      const asset = result.assets[0];
-      await loadPdfFromUri(asset.uri, asset.name);
+      const asset = await pickOnePdf();
+      if (asset) await loadPdfFromUri(asset.uri, asset.name);
     } catch (error) {
-      await showPopup({
-        title: 'Could not open PDF',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Editor open failed', error);
+      showError({ ...errors.open, onRetry: () => void openPdfFile() });
     }
   };
 
   const handleTap = async (xPt: number, yPt: number) => {
-    if (!page || editingBlocked) return;
+    if (!page) return;
+    if (editingBlocked) {
+      reopenLegacySheet();
+      return;
+    }
 
     if (focusedEditId) {
       setFocusedEditId(null);
@@ -359,7 +385,11 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
   };
 
   const handleMaskDrawn = async (drawn: DrawnMaskRect) => {
-    if (!page || editingBlocked) return;
+    if (!page) return;
+    if (editingBlocked) {
+      reopenLegacySheet();
+      return;
+    }
     checkpoint();
 
     const { x: xPx, y: yPx } = ptToImagePx(drawn.xPt, drawn.yPt, page.imagePxWidth, page.widthPt);
@@ -424,16 +454,16 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
 
       const outUri = await exportPdf(document, embeddedFonts);
       setExportResultUri(outUri);
-      await showPopup({
-        title: 'PDF ready to export!',
-        message: `Successfully shaped and exported ${document.pages.length} page(s).`,
-        tone: 'success',
-      });
+      snackbar.show(tx('PDF ready', 'PDF तैयार है'));
     } catch (error) {
-      await showPopup({
-        title: 'Export failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
+      console.warn('Export failed', error);
+      showError({
+        title: tx("Couldn't export the PDF", 'PDF एक्सपोर्ट नहीं हो सकी'),
+        body: tx(
+          'Something went wrong while building the PDF. Your edits are still here. Try again.',
+          'PDF बनाते समय गड़बड़ी हुई। आपके बदलाव सुरक्षित हैं। फिर से करें।',
+        ),
+        onRetry: () => void handleExport(),
       });
     } finally {
       setSaving(false);
@@ -451,19 +481,10 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
     if (!exportResultUri) return;
     try {
       const saved = await savePdfToPickedDirectory(exportResultUri, 'edited-document.pdf');
-      if (saved) {
-        await showPopup({
-          title: 'Saved to Files',
-          message: 'Edited PDF successfully saved to your chosen folder.',
-          tone: 'success',
-        });
-      }
+      if (saved) snackbar.show(tx('Saved', 'सेव हो गई'));
     } catch (error) {
-      await showPopup({
-        title: 'Save failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Editor save failed', error);
+      showError({ ...errors.save, onRetry: () => void handleSaveToDevice() });
     }
   };
 
@@ -511,10 +532,14 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily: family });
       setFontPickerVisible(false);
     } catch (err) {
-      await showPopup({
-        title: 'Font download failed',
-        message: err instanceof Error ? err.message : String(err),
-        tone: 'error',
+      console.warn('Font download failed', err);
+      showError({
+        title: tx("Couldn't download the font", 'फ़ॉन्ट डाउनलोड नहीं हो सका'),
+        body: tx(
+          'Check your internet connection, then try again.',
+          'इंटरनेट कनेक्शन जाँचें, फिर से करें।',
+        ),
+        onRetry: () => void handleSelectFont(family),
       });
     } finally {
       setDownloadingFont(null);
@@ -639,20 +664,19 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
             </View>
           </View>
 
-          {/* Legacy font warning if applicable */}
-          {currentPageLegacyFontNames.length > 0 && (
-            <LegacyFontWarning
-              fontNames={currentPageLegacyFontNames}
-              inspectionFailed={policy.inspectionFailed}
-              safeReplacementEnabled={!policy.editingBlocked && !policy.inspectionFailed}
-              onEnableSafeReplacement={
-                !policy.inspectionFailed
-                  ? () => setLegacyBypassPages((prev) => new Set(prev).add(currentPageIndex))
-                  : undefined
-              }
-              onChooseUnicodeFont={() => setFontPickerVisible(true)}
-            />
-          )}
+          <LegacyFontWarning
+            visible={legacySheetVisible}
+            onClose={() =>
+              setLegacySheetDismissedPages((prev) => new Set(prev).add(currentPageIndex))
+            }
+            fontNames={policy.knownLegacyFontNames}
+            inspectionFailed={policy.inspectionFailed}
+            onEnableSafeReplacement={
+              !policy.inspectionFailed
+                ? () => setLegacyBypassPages((prev) => new Set(prev).add(currentPageIndex))
+                : undefined
+            }
+          />
 
           {/* PDF Page Canvas */}
           <View style={styles.canvasCard}>
@@ -804,6 +828,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
           )}
         </View>
       )}
+      {errorDialog}
     </View>
   );
 }

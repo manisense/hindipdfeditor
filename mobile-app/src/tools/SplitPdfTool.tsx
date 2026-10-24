@@ -7,12 +7,14 @@ import * as Sharing from 'expo-sharing';
 import { AppButton } from '../components/AppButton';
 import { AppStatus } from '../components/AppStatus';
 import { DropZone } from '../components/DropZone';
-import { useAppPopup } from '../components/appPopupContext';
 import { extractPdfPages, splitPdfFile } from '../lib/pdfOps';
 import { getPageCount, renderPage } from '../lib/pdfToImages';
 import { savePdfToPickedDirectory } from '../lib/savePdf';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
+import { useTx } from '../i18n';
 import { colors, radius, shadows, spacing } from '../theme';
+import { useSnackbar } from '../ui/Snackbar';
+import { commonErrors, useErrorDialog } from '../ui/useErrorDialog';
 
 type SelectedDocument = {
   name: string;
@@ -29,7 +31,10 @@ type Props = {
 };
 
 export function SplitPdfTool({ initialFileUri, initialFileName }: Props = {}) {
-  const { showPopup } = useAppPopup();
+  const tx = useTx();
+  const snackbar = useSnackbar();
+  const { errorDialog, showError } = useErrorDialog();
+  const errors = commonErrors(tx);
   const addRecentFile = useRecentFilesStore((s) => s.addFile);
   const [document, setDocument] = useState<SelectedDocument | null>(null);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
@@ -104,11 +109,8 @@ export function SplitPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       setSplitMode('all');
       setSplitUri(null);
     } catch (error) {
-      await showPopup({
-        title: 'Error opening PDF',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Split open failed', error);
+      showError({ ...errors.open, onRetry: () => void pickPdf() });
     }
   };
 
@@ -127,6 +129,30 @@ export function SplitPdfTool({ initialFileUri, initialFileName }: Props = {}) {
 
   const runSplit = async () => {
     if (!document) return;
+    const splitError = tx("Couldn't split the PDF", 'PDF अलग नहीं हो सकी');
+    const from = Math.max(1, parseInt(fromPage, 10) || 1);
+    const to = Math.min(document.pageCount, parseInt(toPage, 10) || document.pageCount);
+    const sorted = Array.from(selectedPages).sort((a, b) => a - b);
+    if (splitMode === 'range' && from > to) {
+      showError({
+        title: splitError,
+        body: tx(
+          'The From page comes after the To page. Change the range, then split again.',
+          'शुरू का पृष्ठ आख़िरी पृष्ठ के बाद है। रेंज बदलें, फिर से अलग करें।',
+        ),
+      });
+      return;
+    }
+    if (splitMode === 'custom' && sorted.length === 0) {
+      showError({
+        title: splitError,
+        body: tx(
+          'No pages are selected. Tap the pages you want, then split again.',
+          'कोई पृष्ठ नहीं चुना गया। ज़रूरी पृष्ठ चुनें, फिर से अलग करें।',
+        ),
+      });
+      return;
+    }
     setSplitting(true);
     try {
       let outUri: string;
@@ -135,20 +161,11 @@ export function SplitPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       let splitDocName: string;
 
       if (splitMode === 'range') {
-        const from = Math.max(1, parseInt(fromPage, 10) || 1);
-        const to = Math.min(document.pageCount, parseInt(toPage, 10) || document.pageCount);
-        if (from > to) {
-          throw new Error('From page cannot be greater than To page');
-        }
         outUri = await splitPdfFile(document.uri, from, to);
         outputPageCount = to - from + 1;
         thumbnailUri = document.pageImages[from - 1];
         splitDocName = `${document.name.replace(/\.pdf$/i, '')}_p${from}-p${to}.pdf`;
       } else if (splitMode === 'custom') {
-        const sorted = Array.from(selectedPages).sort((a, b) => a - b);
-        if (sorted.length === 0) {
-          throw new Error('Please select at least 1 page to extract');
-        }
         outUri = await extractPdfPages(document.uri, sorted);
         outputPageCount = sorted.length;
         thumbnailUri = document.pageImages[sorted[0]];
@@ -177,10 +194,14 @@ export function SplitPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       };
       await addRecentFile(fileData);
     } catch (error) {
-      await showPopup({
-        title: 'Split failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
+      console.warn('Split failed', error);
+      showError({
+        title: splitError,
+        body: tx(
+          'The file may be locked or damaged. Check the file, then try again.',
+          'फ़ाइल लॉक या खराब हो सकती है। फ़ाइल जाँचें, फिर से करें।',
+        ),
+        onRetry: () => void runSplit(),
       });
     } finally {
       setSplitting(false);
@@ -197,11 +218,8 @@ export function SplitPdfTool({ initialFileUri, initialFileName }: Props = {}) {
         });
       }
     } catch (error) {
-      await showPopup({
-        title: 'Share failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Split share failed', error);
+      showError({ ...errors.share, onRetry: () => void handleShare() });
     }
   };
 
@@ -209,19 +227,10 @@ export function SplitPdfTool({ initialFileUri, initialFileName }: Props = {}) {
     if (!splitUri) return;
     try {
       const saved = await savePdfToPickedDirectory(splitUri, 'split-pages.pdf');
-      if (saved) {
-        await showPopup({
-          title: 'Saved to Files',
-          message: 'Extracted PDF successfully saved to your chosen folder.',
-          tone: 'success',
-        });
-      }
+      if (saved) snackbar.show(tx('Saved', 'सेव हो गई'));
     } catch (error) {
-      await showPopup({
-        title: 'Save failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Split save failed', error);
+      showError({ ...errors.save, onRetry: () => void handleSaveToDevice() });
     }
   };
 
@@ -410,6 +419,7 @@ export function SplitPdfTool({ initialFileUri, initialFileName }: Props = {}) {
           )}
         </View>
       )}
+      {errorDialog}
     </ScrollView>
   );
 }

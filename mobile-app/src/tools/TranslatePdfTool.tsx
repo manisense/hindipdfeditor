@@ -7,7 +7,6 @@ import * as Sharing from 'expo-sharing';
 import type { TranslationDirection } from '@hindipdfeditor/translation-contract';
 
 import { AppButton } from '../components/AppButton';
-import { useAppPopup } from '../components/appPopupContext';
 import { AppStatus } from '../components/AppStatus';
 import { DropZone } from '../components/DropZone';
 import { ptSizeToImagePx, ptToImagePx } from '../lib/coordinateMath';
@@ -20,7 +19,10 @@ import { savePdfToPickedDirectory } from '../lib/savePdf';
 import { geometryForTranslatedLine, successfulTranslations } from '../lib/translateEdits';
 import type { DocumentState, PageState } from '../state/editStore';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
+import { useTx } from '../i18n';
 import { colors, radius, shadows, spacing } from '../theme';
+import { useSnackbar } from '../ui/Snackbar';
+import { commonErrors, useErrorDialog } from '../ui/useErrorDialog';
 
 type Props = {
   initialFileUri?: string;
@@ -32,7 +34,10 @@ type Props = {
  * Replaces recognized text boxes with accurately styled translations and exports via Plan A.
  */
 export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}) {
-  const { showPopup } = useAppPopup();
+  const tx = useTx();
+  const snackbar = useSnackbar();
+  const { errorDialog, showError } = useErrorDialog();
+  const errors = commonErrors(tx);
   const addRecentFile = useRecentFilesStore((s) => s.addFile);
   const [selectedDoc, setSelectedDoc] = useState<{
     name: string;
@@ -90,11 +95,8 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
       setOutputPdfUri(null);
       aiJobIdRef.current = `translate-${Crypto.randomUUID()}`;
     } catch (error) {
-      await showPopup({
-        title: 'Could not open PDF',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Translate open failed', error);
+      showError({ ...errors.open, onRetry: () => void pickPdf() });
     }
   };
 
@@ -122,7 +124,6 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
       }
 
       // 2. Perform OCR and translation for each page
-      let totalTranslatedLines = 0;
       for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
         const pageState = pages[pageIndex];
         setProgressMsg(`Detecting text on page ${pageIndex + 1}...`);
@@ -148,7 +149,6 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
           );
 
           const successful = successfulTranslations(lines, translationMap);
-          totalTranslatedLines += successful.length;
 
           // Commit masks and translated text overlays
           for (const item of successful) {
@@ -256,17 +256,16 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
         starred: false,
       };
       await addRecentFile(fileData);
-
-      await showPopup({
-        title: 'Translation complete!',
-        message: `Translated ${totalTranslatedLines} text lines across ${pages.length} page(s).`,
-        tone: 'success',
-      });
+      snackbar.show(tx('Saved', 'सेव हो गई'));
     } catch (error) {
-      await showPopup({
-        title: 'Translation failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
+      console.warn('Translation failed', error);
+      showError({
+        title: tx("Couldn't translate the PDF", 'PDF का अनुवाद नहीं हो सका'),
+        body: tx(
+          'The translation stopped partway. Check your internet connection, then try again.',
+          'अनुवाद बीच में रुक गया। इंटरनेट कनेक्शन जाँचें, फिर से करें।',
+        ),
+        onRetry: () => void runTranslation(),
       });
     } finally {
       setTranslating(false);
@@ -285,19 +284,10 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
     if (!outputPdfUri) return;
     try {
       const saved = await savePdfToPickedDirectory(outputPdfUri, 'translated-document.pdf');
-      if (saved) {
-        await showPopup({
-          title: 'Saved to Files',
-          message: 'Translated PDF successfully saved to your chosen folder.',
-          tone: 'success',
-        });
-      }
+      if (saved) snackbar.show(tx('Saved', 'सेव हो गई'));
     } catch (error) {
-      await showPopup({
-        title: 'Save failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Translate save failed', error);
+      showError({ ...errors.save, onRetry: () => void handleSaveToDevice() });
     }
   };
 
@@ -385,6 +375,7 @@ export function TranslatePdfTool({ initialFileUri, initialFileName }: Props = {}
           </View>
         </View>
       )}
+      {errorDialog}
     </ScrollView>
   );
 }
