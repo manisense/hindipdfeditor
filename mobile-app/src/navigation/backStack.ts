@@ -1,4 +1,4 @@
-import type { MainTab } from '../components/BottomNavBar';
+import type { MainTab } from '../ui/BottomNav';
 import type { ToolId } from '../components/ToolShell';
 
 export type NavState = { activeTool: ToolId | null; tab: MainTab };

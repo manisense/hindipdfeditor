@@ -12,7 +12,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BottomNavBar, type MainTab } from './BottomNavBar';
+import { BottomNav, type MainTab } from '../ui/BottomNav';
 import { FilesScreen } from '../screens/FilesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -263,8 +263,8 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
             </View>
           </ScrollView>
 
-          {/* 4-Tab Bottom Navigation Bar */}
-          <BottomNavBar activeTab={activeTab} onSelectTab={handleSelectTab} />
+          {/* Flat bottom navigation */}
+          <BottomNav activeTab={activeTab} onSelectTab={handleSelectTab} />
         </View>
       )}
     </View>
