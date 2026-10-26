@@ -17,8 +17,9 @@ type Props = {
    */
   visible?: boolean;
   /**
-   * `'search'` fills each box with the brand tint (multiplied, so text stays readable) and the
-   * box whose id is `currentId` with the brand colour at 30%. Default `'outline'`.
+   * `'search'` fills each box with translucent brand colour (18%) so the text beneath stays
+   * readable on every Android version, and the box whose id is `currentId` with 35% plus a 2dp
+   * brand underline. Default `'outline'`.
    */
   tone?: 'outline' | 'search';
   /** Id of the line to emphasise in the `'search'` tone. */
@@ -72,17 +73,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(36, 83, 178, 0.06)',
     borderRadius: 2,
   },
-  // Pages are always white, so the light tokens are used in both app themes.
+  // rgba(24, 67, 221) is ui.brand. Pages are always white, so light tokens suit both app themes.
   match: {
     position: 'absolute',
-    backgroundColor: ui.brandTint,
-    mixBlendMode: 'multiply',
+    backgroundColor: 'rgba(24, 67, 221, 0.18)',
     borderRadius: 2,
   },
   current: {
     position: 'absolute',
-    backgroundColor: ui.brand,
-    opacity: 0.3,
+    backgroundColor: 'rgba(24, 67, 221, 0.35)',
+    borderBottomWidth: 2,
+    borderBottomColor: ui.brand,
     borderRadius: 2,
   },
 });

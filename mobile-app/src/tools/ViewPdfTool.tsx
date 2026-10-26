@@ -21,7 +21,7 @@ import { useTx } from '../i18n';
 import { ptToDp } from '../lib/coordinateMath';
 import { getPageCount } from '../lib/pdfToImages';
 import { currentPageAt, readerPageLayout } from '../lib/readerLayout';
-import { findMatches } from '../lib/textSearch';
+import { findMatches, indexOfMatch, matchKeyAt, stepMatch, type MatchKey } from '../lib/textSearch';
 import { useHardwareBack } from '../navigation/useHardwareBack';
 import { FileInfoSheet } from '../screens/reader/FileInfoSheet';
 import { FIND_PANEL_HEIGHT, FindBar, FindPanel } from '../screens/reader/FindInFile';
@@ -102,7 +102,8 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
   const [panel, setPanel] = useState<Panel | null>(null);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
-  const [matchIndex, setMatchIndex] = useState(0);
+  /** Selected match, kept as a key so it stays put while results for other pages arrive. */
+  const [selectedKey, setSelectedKey] = useState<MatchKey | null>(null);
   const listRef = useRef<FlatList<number>>(null);
 
   const fileUri = doc?.file.uri ?? null;
@@ -121,7 +122,7 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
       ),
     [pageText.pages, deferredQuery],
   );
-  const currentMatch = Math.min(matchIndex, Math.max(matches.length - 1, 0));
+  const currentMatch = indexOfMatch(matches, selectedKey);
 
   const topPad = BAR_HEIGHT + insets.top;
 
@@ -254,7 +255,7 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
   const closeSearch = () => {
     setSearching(false);
     setQuery('');
-    setMatchIndex(0);
+    setSelectedKey(null);
   };
 
   useHardwareBack(() => {
@@ -262,11 +263,11 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
     return true;
   }, searching);
 
-  /** Selects match `index` and scrolls so its line sits `MATCH_MARGIN` dp under the bar. */
-  const pickMatch = (index: number) => {
-    const m = matches[index];
-    if (!m) return;
-    setMatchIndex(index);
+  /** Selects the match `key` names and scrolls so its line sits `MATCH_MARGIN` dp under the bar. */
+  const selectMatch = (key: MatchKey | null) => {
+    const m = matches[indexOfMatch(matches, key)];
+    if (!key || !m) return;
+    setSelectedKey(key);
     Keyboard.dismiss();
     const text = pageText.pages.find((p) => p.pageIndex === m.pageIndex);
     const line = text?.lines[m.lineIndex];
@@ -494,7 +495,7 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
             query={query}
             onChangeQuery={(next) => {
               setQuery(next);
-              setMatchIndex(0);
+              setSelectedKey(null);
             }}
             onClose={closeSearch}
           />
@@ -572,7 +573,8 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
             done={pageText.done}
             pageCount={pageCount}
             failedPages={pageText.pages.filter((p) => p.failed).length}
-            onPick={pickMatch}
+            onPick={(index) => selectMatch(matchKeyAt(matches, index))}
+            onStep={(delta) => selectMatch(stepMatch(matches, selectedKey, delta))}
           />
         </View>
       ) : null}

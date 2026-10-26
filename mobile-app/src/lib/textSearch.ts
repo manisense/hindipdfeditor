@@ -57,3 +57,51 @@ export function searchOrder(startPage: number, pageCount: number): number[] {
   }
   return order;
 }
+
+/**
+ * Stable identity of one match: page and line (0-based) plus which occurrence in that line
+ * (0-based). Unlike a list index, it survives results arriving for earlier pages.
+ */
+export type MatchKey = { pageIndex: number; lineIndex: number; occurrence: number };
+
+/** Key of `matches[index]`; null when `index` is out of range. */
+export function matchKeyAt(matches: readonly TextMatch[], index: number): MatchKey | null {
+  const m = matches[index];
+  if (!m) return null;
+  let occurrence = 0;
+  for (let i = index - 1; i >= 0; i--) {
+    const prev = matches[i];
+    if (prev.pageIndex !== m.pageIndex || prev.lineIndex !== m.lineIndex) break;
+    occurrence++;
+  }
+  return { pageIndex: m.pageIndex, lineIndex: m.lineIndex, occurrence };
+}
+
+/** Index in `matches` of the match `key` names, or -1 when `key` is null or not found. */
+export function indexOfMatch(matches: readonly TextMatch[], key: MatchKey | null): number {
+  if (!key) return -1;
+  const first = matches.findIndex(
+    (m) => m.pageIndex === key.pageIndex && m.lineIndex === key.lineIndex,
+  );
+  if (first === -1) return -1;
+  const at = matches[first + key.occurrence];
+  return at && at.pageIndex === key.pageIndex && at.lineIndex === key.lineIndex
+    ? first + key.occurrence
+    : -1;
+}
+
+/**
+ * Key of the match `delta` steps (+1 next, -1 previous) from `key`, wrapping around. Without a
+ * found key, next starts at the first match and previous at the last. Null when there are none.
+ */
+export function stepMatch(
+  matches: readonly TextMatch[],
+  key: MatchKey | null,
+  delta: 1 | -1,
+): MatchKey | null {
+  const count = matches.length;
+  if (count === 0) return null;
+  const at = indexOfMatch(matches, key);
+  const next = at === -1 ? (delta === 1 ? 0 : count - 1) : (at + delta + count) % count;
+  return matchKeyAt(matches, next);
+}

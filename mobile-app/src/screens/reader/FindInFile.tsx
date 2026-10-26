@@ -96,7 +96,8 @@ function BarButton({
  * search field and the pages stay usable. The header shows reading progress until every page is
  * read (`done` of `pageCount`), then the match count, with previous / next buttons. Each row
  * shows the page number and the line with the match in brand colour; tapping it calls `onPick`
- * with the row's index in `matches`.
+ * with the row's index in `matches`; the arrows call `onStep` with -1 or +1. `currentIndex` is -1
+ * when no match is selected.
  */
 export function FindPanel({
   query,
@@ -106,6 +107,7 @@ export function FindPanel({
   pageCount,
   failedPages,
   onPick,
+  onStep,
 }: {
   query: string;
   matches: TextMatch[];
@@ -114,6 +116,7 @@ export function FindPanel({
   pageCount: number;
   failedPages: number;
   onPick: (index: number) => void;
+  onStep: (delta: 1 | -1) => void;
 }) {
   const ui = useUi();
   const theme = useAppTheme();
@@ -168,13 +171,13 @@ export function FindPanel({
           icon="keyboard-arrow-up"
           label={tx('Previous match', 'पिछला परिणाम')}
           disabled={!canStep}
-          onPress={() => onPick((currentIndex - 1 + count) % count)}
+          onPress={() => onStep(-1)}
         />
         <StepButton
           icon="keyboard-arrow-down"
           label={tx('Next match', 'अगला परिणाम')}
           disabled={!canStep}
-          onPress={() => onPick((currentIndex + 1) % count)}
+          onPress={() => onStep(1)}
         />
       </View>
       {failedPages > 0 ? (
