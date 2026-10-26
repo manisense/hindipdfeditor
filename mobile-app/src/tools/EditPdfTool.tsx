@@ -51,10 +51,13 @@ import { EditToolbarBar } from '../screens/editor/EditToolbarBar';
 import { LineEditSheet, MAX_FONT_SIZE_PT, MIN_FONT_SIZE_PT } from '../screens/editor/LineEditSheet';
 import {
   changeCounts,
+  createEditSession,
   defaultEditedName,
   editsSnapshot,
   hasUnsavedEdits,
+  isUntouchedReplacement,
   outputFileName,
+  type EditMode,
   type EditsSnapshot,
 } from '../screens/editor/editorDocument';
 import { SaveSheet } from '../screens/editor/SaveSheet';
@@ -78,7 +81,6 @@ const MASK_SAMPLE_MARGIN_PX = 16;
 const OCR_MASK_PAD_TOP_RATIO = 0.35;
 const EDIT_TEXT_WIDTH_SLACK_RATIO = 1.25;
 
-export type EditMode = 'edit' | 'addText' | 'erase';
 type OcrStatusByPage = Record<number, 'running' | 'done' | 'failed'>;
 
 async function detectLegacyFontWarnings(
@@ -178,6 +180,9 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
   const ocrAttemptedPagesRef = useRef(new Set<number>());
   /** Font size, in PDF points, of the line being resized when a two-finger pinch began. */
   const pinchStartSizeRef = useRef(0);
+  /** The open line as this tap created it; null when an existing line was reopened. */
+  const createdLineRef = useRef<TextEdit | null>(null);
+  const savingRef = useRef(false);
 
   const document = useEditStore((s) => s.document);
   const loadDocument = useEditStore((s) => s.loadDocument);
@@ -186,6 +191,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
   const addMaskEdit = useEditStore((s) => s.addMaskEdit);
   const updateTextEdit = useEditStore((s) => s.updateTextEdit);
   const removeEdit = useEditStore((s) => s.removeEdit);
+  const revertToCheckpoint = useEditStore((s) => s.revertToCheckpoint);
   const setOcrLines = useEditStore((s) => s.setOcrLines);
   const checkpoint = useEditStore((s) => s.checkpoint);
   const undo = useEditStore((s) => s.undo);
@@ -194,6 +200,20 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
   const canRedo = useEditStore((s) => s.future.length > 0);
   const insertPage = useEditStore((s) => s.insertPage);
   const addRecentFile = useRecentFilesStore((s) => s.addFile);
+  const [lineSession] = useState(() => createEditSession(checkpoint));
+
+  /** Opens the line sheet; `created` is the line when this tap just created it. */
+  const openLine = (id: string, created: TextEdit | null) => {
+    lineSession.start(created !== null);
+    createdLineRef.current = created;
+    setFocusedEditId(id);
+  };
+
+  /** Applies a change from the line sheet, as one undo step per sheet opening. */
+  const changeLine = (id: string, changes: Partial<TextEdit>) => {
+    lineSession.beforeChange();
+    updateTextEdit(currentPageIndex, id, changes);
+  };
 
   const [savedEdits, setSavedEdits] = useState<EditsSnapshot>(() =>
     document ? editsSnapshot(document) : [],
@@ -371,7 +391,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
       const textEdits = page.edits.filter((e): e is TextEdit => e.type === 'text');
       const existingText = findTextEditAt(textEdits, xPt, yPt);
       if (existingText) {
-        setFocusedEditId(existingText.id);
+        openLine(existingText.id, null);
         return;
       }
 
@@ -439,7 +459,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
         });
 
         setFirstEditMade(true);
-        setFocusedEditId(textEdit.id);
+        openLine(textEdit.id, textEdit);
         return;
       }
     }
@@ -455,7 +475,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
       fontFamily: 'NotoSansDevanagari',
     });
     setFirstEditMade(true);
-    setFocusedEditId(textEdit.id);
+    openLine(textEdit.id, textEdit);
   };
 
   const handleMaskDrawn = async (drawn: DrawnMaskRect) => {
@@ -501,7 +521,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
       replacement: { maskId: maskEdit.id },
     });
 
-    setFocusedEditId(textEdit.id);
+    openLine(textEdit.id, textEdit);
   };
 
   /**
@@ -510,8 +530,12 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
    * Saved screen (and the share sheet when `share` is true). The source file is never written.
    */
   const saveAs = async (typedName: string, share: boolean) => {
-    if (!document) return;
+    if (!document || savingRef.current) return;
+    savingRef.current = true;
     setSaveSheetVisible(false);
+    let exportedUri: string | null = null;
+    let copiedUri: string | null = null;
+    let succeeded = false;
     setExportProgress({ completedPages: 0, totalPages: document.pages.length });
     try {
       const usedFamilies = new Set<DevanagariFontFamily>(['NotoSansDevanagari']);
@@ -533,11 +557,11 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
         };
       }
 
-      const exportedUri = await exportPdf(document, embeddedFonts, setExportProgress);
+      exportedUri = await exportPdf(document, embeddedFonts, setExportProgress);
       const fileName = outputFileName(typedName, defaultEditedName(document.displayName));
       const { uri, name } = await copyToEditedFolder(exportedUri, fileName);
+      copiedUri = uri;
       const verified = await verifyPdfOutput(uri, document.pages.length);
-      void FileSystem.deleteAsync(exportedUri, { idempotent: true }).catch(() => {});
       await addRecentFile({
         name,
         hindiName: name,
@@ -549,6 +573,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
       });
       const file: SavedFile = { uri, name, ...verified };
       setSavedEdits(editsSnapshot(document));
+      succeeded = true;
       setSaved(file);
       if (share) void savedActions.share(file);
     } catch (error) {
@@ -562,6 +587,15 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
         onRetry: () => void saveAs(typedName, share),
       });
     } finally {
+      // The temporary export always goes; the copy goes too unless it passed every check.
+      // Neither is ever the source PDF (the copy is a fresh file in the Edited folder).
+      const leftovers = [exportedUri, succeeded ? null : copiedUri].filter(
+        (uri): uri is string => uri !== null && uri !== document.sourceUri,
+      );
+      await Promise.all(
+        leftovers.map((uri) => FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {})),
+      );
+      savingRef.current = false;
       setExportProgress(null);
     }
   };
@@ -586,11 +620,39 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
     setCurrentPageIndex(currentPageIndex + 1);
   };
 
-  /** Closes the line sheet; a new text box left empty is removed rather than kept invisible. */
+  /** Removes a line's text box and the cover it was paired with. */
+  const removeLine = (edit: TextEdit) => {
+    if (edit.replacement?.maskId) removeEdit(currentPageIndex, edit.replacement.maskId);
+    removeEdit(currentPageIndex, edit.id);
+  };
+
+  /**
+   * Closes the line sheet. A new text box left empty, or a detected line opened by this tap and
+   * left exactly as detected (same text, same style), is dropped with its cover, not kept.
+   */
   const finishEditing = () => {
-    if (focusedEdit && !focusedEdit.replacement && focusedEdit.text.trim() === '') {
-      removeEdit(currentPageIndex, focusedEdit.id);
+    if (focusedEdit) {
+      const created = createdLineRef.current;
+      const emptyNewBox = !focusedEdit.replacement && focusedEdit.text.trim() === '';
+      const untouched =
+        created?.id === focusedEdit.id && isUntouchedReplacement(created, focusedEdit);
+      // A line this tap created took its own checkpoint and nothing since, so reverting to it
+      // leaves the page and history exactly as before the tap.
+      if (created?.id === focusedEdit.id && (emptyNewBox || untouched)) revertToCheckpoint();
+      else if (emptyNewBox) removeLine(focusedEdit);
     }
+    createdLineRef.current = null;
+    setFocusedEditId(null);
+    Keyboard.dismiss();
+  };
+
+  /** Puts the open line back as it is in the source: drops its text box and cover (undoable). */
+  const restoreOriginal = () => {
+    if (focusedEdit) {
+      lineSession.beforeChange();
+      removeLine(focusedEdit);
+    }
+    createdLineRef.current = null;
     setFocusedEditId(null);
     Keyboard.dismiss();
   };
@@ -598,7 +660,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
   const handleSelectFont = async (family: DevanagariFontFamily) => {
     if (!focusedEdit) return;
     if (isFontFamilyLoaded(family)) {
-      updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily: family });
+      changeLine(focusedEdit.id, { fontFamily: family });
       setFontPickerVisible(false);
       return;
     }
@@ -606,7 +668,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
     setDownloadingFont(family);
     try {
       await installFontFamily(family);
-      updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily: family });
+      changeLine(focusedEdit.id, { fontFamily: family });
       setFontPickerVisible(false);
     } catch (err) {
       console.warn('Font download failed', err);
@@ -638,7 +700,9 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
     setEditMode(mode);
   };
 
+  // Registered after ToolShell's handler (the shell mounts first), so it runs first.
   useHardwareBack(() => {
+    if (savingRef.current) return true;
     if (focusedEditId) {
       finishEditing();
       return true;
@@ -735,7 +799,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
                 onTap={handleTap}
                 focusedEditId={focusedEditId}
                 onEditPinchStart={() => {
-                  checkpoint();
+                  lineSession.beforeChange();
                   pinchStartSizeRef.current = focusedEdit?.fontSizePt ?? DEFAULT_FONT_SIZE_PT;
                 }}
                 onEditPinchResize={(editId, scale) =>
@@ -858,22 +922,21 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
               key={focusedEdit.id}
               originalText={focusedEdit.replacement?.ocrLine?.text ?? ''}
               value={focusedEdit.text}
-              onChange={(text) => updateTextEdit(currentPageIndex, focusedEdit.id, { text })}
+              onChange={(text) => changeLine(focusedEdit.id, { text })}
               fontLabel={fontLabel(focusedEdit.fontFamily)}
               sizePt={focusedEdit.fontSizePt}
               color={focusedEdit.color}
               bold={focusedEdit.fontWeight === 'bold'}
               onFont={() => setFontPickerVisible(true)}
-              onSize={(fontSizePt) =>
-                updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
-              }
-              onColor={(color) => updateTextEdit(currentPageIndex, focusedEdit.id, { color })}
+              onSize={(fontSizePt) => changeLine(focusedEdit.id, { fontSizePt })}
+              onColor={(color) => changeLine(focusedEdit.id, { color })}
               onBold={() =>
-                updateTextEdit(currentPageIndex, focusedEdit.id, {
+                changeLine(focusedEdit.id, {
                   fontWeight: focusedEdit.fontWeight === 'bold' ? 'normal' : 'bold',
                 })
               }
               onDone={finishEditing}
+              onRestore={restoreOriginal}
             />
           )}
         </KeyboardAvoidingView>

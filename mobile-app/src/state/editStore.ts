@@ -142,6 +142,12 @@ export type EditStoreState = {
   undo: () => void;
   /** Re-applies the most recently undone document snapshot. No-op when `future` is empty. */
   redo: () => void;
+  /**
+   * Abandons everything since the newest checkpoint: returns to it and drops it, without a redo
+   * step, so a change that never took effect leaves no trace in history. OCR lines found since
+   * are kept (they are not edits). No-op when history is empty.
+   */
+  revertToCheckpoint: () => void;
   /** Replaces the whole in-memory document, e.g. after opening a file and rasterizing its pages. */
   loadDocument: (document: DocumentState) => void;
   /** Clears the in-memory document, e.g. before opening a different file. */
@@ -220,6 +226,22 @@ export function createEditStore(generateId: () => string = Crypto.randomUUID) {
         document: future[future.length - 1],
         history: [...history, document].slice(-HISTORY_LIMIT),
         future: future.slice(0, -1),
+      });
+    },
+
+    revertToCheckpoint: () => {
+      const { document, history } = get();
+      if (!document || history.length === 0) return;
+      const target = history[history.length - 1];
+      const samePages = target.pages.length === document.pages.length;
+      set({
+        document: {
+          ...target,
+          pages: samePages
+            ? target.pages.map((p, i) => ({ ...p, ocrLines: document.pages[i].ocrLines }))
+            : target.pages,
+        },
+        history: history.slice(0, -1),
       });
     },
 

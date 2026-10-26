@@ -2,7 +2,7 @@ import { Pressable, View } from 'react-native';
 
 import { useUi } from '../../hooks/useAppTheme';
 import { useTx } from '../../i18n';
-import type { EditMode } from '../../tools/EditPdfTool';
+import type { EditMode } from './editorDocument';
 import { Icon, type IconName } from '../../ui/Icon';
 
 /** Button size and active-mode circle size, in dp. */

@@ -424,6 +424,29 @@ describe('editStore', () => {
     expect(store.getState().document!.pages[0].edits.length).toBeGreaterThan(0);
   });
 
+  it('revertToCheckpoint abandons the newest change without a redo step and keeps new OCR lines', () => {
+    const store = makeStore();
+    store.getState().loadDocument(makeDocument());
+    const before = store.getState().document!;
+    store.getState().checkpoint();
+    store.getState().addTextEdit(0, {
+      xPt: 1,
+      yPt: 2,
+      fontSizePt: 12,
+      text: 'x',
+      color: '#000000',
+      fontFamily: 'NotoSansDevanagari',
+    });
+    const line = { id: 'l', text: 'नया', xPt: 0, yPt: 0, wPt: 5, hPt: 5 };
+    store.getState().setOcrLines(1, [line]);
+    store.getState().revertToCheckpoint();
+    const after = store.getState();
+    expect(after.document!.pages[0].edits).toBe(before.pages[0].edits);
+    expect(after.document!.pages[1].ocrLines).toEqual([line]);
+    expect(after.history).toHaveLength(0);
+    expect(after.future).toHaveLength(0);
+  });
+
   it('two store instances from createEditStore() are fully independent', () => {
     const storeA = makeStore();
     const storeB = makeStore();

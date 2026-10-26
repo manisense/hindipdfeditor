@@ -32,7 +32,7 @@ type Picker = 'size' | 'color' | null;
  * size, colour and bold, then Done. The page shows the new text live through the line's
  * `EditableTextOverlay`. The size chip opens a − / value / + picker and the colour dot a row of
  * swatches; the first swatch is the colour the line had when the sheet opened (the sampled ink
- * colour for a detected line).
+ * colour for a detected line). Restore original drops the change and its cover.
  *
  * @param sizePt Text size in PDF points, the same unit as `TextEdit.fontSizePt`.
  * @param onSize Receives the new size in PDF points, clamped to 6–72.
@@ -50,6 +50,7 @@ export function LineEditSheet({
   onColor,
   onBold,
   onDone,
+  onRestore,
 }: {
   originalText: string;
   value: string;
@@ -63,6 +64,8 @@ export function LineEditSheet({
   onColor: (c: string) => void;
   onBold: () => void;
   onDone: () => void;
+  /** Drops this line's change and its cover, so the page shows the source text again. */
+  onRestore: () => void;
 }) {
   const ui = useUi();
   const theme = useAppTheme();
@@ -213,7 +216,21 @@ export function LineEditSheet({
           })}
         </View>
       ) : null}
-      <View style={{ alignSelf: 'flex-end' }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+        }}
+      >
+        <PillButton
+          kind="text"
+          icon="restore"
+          title={tx('Restore original', 'मूल वापस लाएँ')}
+          onPress={onRestore}
+        />
         <PillButton title={tx('Done', 'हो गया')} onPress={onDone} />
       </View>
     </View>
