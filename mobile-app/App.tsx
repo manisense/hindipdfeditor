@@ -81,8 +81,8 @@ export default function App() {
               >
                 {activeTool === 'viewer' && (
                   <ViewPdfTool
-                    initialFileUri={openedFile?.uri}
-                    initialFileName={openedFile?.name}
+                    initialFile={openedFile ?? undefined}
+                    onClose={closeTool}
                     onOpenEditor={(file) => handleOpenFile(file, 'edit')}
                     onOpenTranslate={(file) => handleOpenFile(file, 'translate')}
                   />

@@ -102,12 +102,16 @@ export const TOOLS: ToolDef[] = [
 
 const CORE_TABS: MainTab[] = ['home', 'files', 'tools', 'settings'];
 
-/** Tools that draw their own band and back button with `ToolScaffold`; the shell adds no chrome. */
+/**
+ * Tools that draw their own top bar and back button (`ToolScaffold`, or the Reader's `ReaderBar`);
+ * the shell adds no chrome.
+ */
 const SCAFFOLD_TOOLS: ReadonlySet<ToolId> = new Set<ToolId>([
   'merge',
   'split',
   'compress',
   'translate',
+  'viewer',
 ]);
 
 type Props = {
