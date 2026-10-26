@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  View,
+} from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EditableTextOverlay } from '../components/EditableTextOverlay';
-import { EditToolbar } from '../components/EditToolbar';
 import { FontPickerModal } from '../components/FontPickerModal';
 import { LegacyFontWarning } from '../components/LegacyFontWarning';
 import { OldFontChip } from '../components/OldFontChip';
@@ -18,6 +24,7 @@ import { ptSizeToImagePx, ptToImagePx } from '../lib/coordinateMath';
 import { exportPdf, type ExportProgress } from '../lib/exportPdf';
 import {
   fontFaceWeight,
+  fontLabel,
   getFontBase64,
   installFontFamily,
   isFontFamilyLoaded,
@@ -33,7 +40,6 @@ import {
   useEditStore,
   type DocumentState,
   type MaskEdit,
-  type OcrLine,
   type PageState,
   type TextEdit,
 } from '../state/editStore';
@@ -42,6 +48,7 @@ import { useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { useHardwareBack } from '../navigation/useHardwareBack';
 import { EditToolbarBar } from '../screens/editor/EditToolbarBar';
+import { LineEditSheet, MAX_FONT_SIZE_PT, MIN_FONT_SIZE_PT } from '../screens/editor/LineEditSheet';
 import {
   editsSnapshot,
   hasUnsavedEdits,
@@ -67,7 +74,6 @@ const EDIT_TEXT_WIDTH_SLACK_RATIO = 1.25;
 
 export type EditMode = 'edit' | 'addText' | 'erase';
 type OcrStatusByPage = Record<number, 'running' | 'done' | 'failed'>;
-type EditPairing = { maskId?: string; ocrLine?: OcrLine };
 
 async function detectLegacyFontWarnings(
   sourceUri: string,
@@ -129,13 +135,13 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
   const [editMode, setEditMode] = useState<EditMode>('edit');
   const [focusedEditId, setFocusedEditId] = useState<string | null>(null);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  const [selectAllEditId, setSelectAllEditId] = useState<string | null>(null);
   const [fontPickerVisible, setFontPickerVisible] = useState(false);
   const [downloadingFont, setDownloadingFont] = useState<DevanagariFontFamily | null>(null);
   const [, setOcrStatusByPage] = useState<OcrStatusByPage>({});
 
   const ocrAttemptedPagesRef = useRef(new Set<number>());
-  const editPairingsRef = useRef(new Map<string, EditPairing>());
+  /** Font size, in PDF points, of the line being resized when a two-finger pinch began. */
+  const pinchStartSizeRef = useRef(0);
 
   const document = useEditStore((s) => s.document);
   const loadDocument = useEditStore((s) => s.loadDocument);
@@ -258,9 +264,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
       setFirstEditMade(false);
       setCurrentPageIndex(0);
       setFocusedEditId(null);
-      setSelectAllEditId(null);
       ocrAttemptedPagesRef.current.clear();
-      editPairingsRef.current.clear();
       setOcrStatusByPage({});
       setLegacySheetDismissedPages(new Set());
       void ensureOcrForAllPages(newDoc);
@@ -323,8 +327,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
     }
 
     if (focusedEditId) {
-      setFocusedEditId(null);
-      Keyboard.dismiss();
+      finishEditing();
       return;
     }
 
@@ -399,10 +402,8 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
           replacement: { maskId: maskEdit.id, ocrLine },
         });
 
-        editPairingsRef.current.set(textEdit.id, { maskId: maskEdit.id, ocrLine });
         setFirstEditMade(true);
         setFocusedEditId(textEdit.id);
-        setSelectAllEditId(textEdit.id);
         return;
       }
     }
@@ -541,15 +542,13 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
     setCurrentPageIndex(currentPageIndex + 1);
   };
 
-  const handleDeleteEdit = () => {
-    if (!focusedEditId || !page) return;
-    checkpoint();
-    const pairing = editPairingsRef.current.get(focusedEditId);
-    if (pairing?.maskId) {
-      removeEdit(currentPageIndex, pairing.maskId);
+  /** Closes the line sheet; a new text box left empty is removed rather than kept invisible. */
+  const finishEditing = () => {
+    if (focusedEdit && !focusedEdit.replacement && focusedEdit.text.trim() === '') {
+      removeEdit(currentPageIndex, focusedEdit.id);
     }
-    removeEdit(currentPageIndex, focusedEditId);
     setFocusedEditId(null);
+    Keyboard.dismiss();
   };
 
   const handleSelectFont = async (family: DevanagariFontFamily) => {
@@ -591,14 +590,13 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
   };
 
   const selectMode = (mode: EditMode) => {
+    finishEditing();
     setEditMode(mode);
-    setFocusedEditId(null);
   };
 
   useHardwareBack(() => {
     if (focusedEditId) {
-      setFocusedEditId(null);
-      Keyboard.dismiss();
+      finishEditing();
       return true;
     }
     requestClose();
@@ -623,7 +621,10 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
               <SaveButton
                 label={tx('Save', 'सेव करें')}
                 disabled={saving}
-                onPress={() => void handleExport()}
+                onPress={() => {
+                  finishEditing();
+                  void handleExport();
+                }}
               />
               <BandIconButton
                 icon="more-vert"
@@ -657,157 +658,159 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
           </View>
         )
       ) : (
-        <View style={{ flex: 1 }}>
-          {page && (
-            <PdfPageViewer
-              page={page}
-              onTap={handleTap}
-              renderOverlays={(viewWidthDp) =>
-                showingOriginal ? null : (
-                  <>
-                    <OcrHighlightLayer
-                      lines={page.ocrLines}
-                      viewWidthDp={viewWidthDp}
-                      pageWidthPt={page.widthPt}
-                      visible={editMode === 'edit'}
-                    />
-                    <MaskOverlay
-                      masks={page.edits.filter((e): e is MaskEdit => e.type === 'mask')}
-                      viewWidthDp={viewWidthDp}
-                      pageWidthPt={page.widthPt}
-                      active={editMode === 'erase'}
-                      onMaskDrawn={handleMaskDrawn}
-                    />
-                    {page.edits
-                      .filter((e): e is TextEdit => e.type === 'text')
-                      .map((textEdit) => (
-                        <EditableTextOverlay
-                          key={textEdit.id}
-                          edit={textEdit}
-                          viewWidthDp={viewWidthDp}
-                          pageWidthPt={page.widthPt}
-                          pageHeightPt={page.heightPt}
-                          zoom={1}
-                          focused={focusedEditId === textEdit.id}
-                          autoFocus={focusedEditId === textEdit.id}
-                          selectAllOnFocus={selectAllEditId === textEdit.id}
-                          onChangeText={(text) => {
-                            updateTextEdit(currentPageIndex, textEdit.id, { text });
-                          }}
-                          onFocus={() => {
-                            setFocusedEditId(textEdit.id);
-                          }}
-                          onBlur={() => {
-                            if (focusedEditId === textEdit.id) {
-                              setFocusedEditId(null);
-                            }
-                          }}
-                        />
-                      ))}
-                  </>
-                )
-              }
-            />
-          )}
-
-          <View
-            pointerEvents="box-none"
-            style={{
-              position: 'absolute',
-              top: 12,
-              left: 12,
-              right: 12,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-            }}
-          >
-            {replacementModeOn ? (
-              <OldFontChip onPress={() => setLegacySheetReopened(true)} />
-            ) : (
-              <View />
-            )}
-            {document.pages.length > 1 && (
-              <PagePill
-                pageIndex={currentPageIndex}
-                pageCount={document.pages.length}
-                onPage={(index) => {
-                  setFocusedEditId(null);
-                  setCurrentPageIndex(index);
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'android' ? 'height' : 'padding'}
+          style={{ flex: 1 }}
+        >
+          <View style={{ flex: 1 }}>
+            {page && (
+              <PdfPageViewer
+                page={page}
+                onTap={handleTap}
+                focusedEditId={focusedEditId}
+                onEditPinchStart={() => {
+                  checkpoint();
+                  pinchStartSizeRef.current = focusedEdit?.fontSizePt ?? DEFAULT_FONT_SIZE_PT;
                 }}
+                onEditPinchResize={(editId, scale) =>
+                  updateTextEdit(currentPageIndex, editId, {
+                    fontSizePt: Math.min(
+                      MAX_FONT_SIZE_PT,
+                      Math.max(MIN_FONT_SIZE_PT, pinchStartSizeRef.current * scale),
+                    ),
+                  })
+                }
+                renderOverlays={(viewWidthDp) =>
+                  showingOriginal ? null : (
+                    <>
+                      <OcrHighlightLayer
+                        lines={page.ocrLines}
+                        viewWidthDp={viewWidthDp}
+                        pageWidthPt={page.widthPt}
+                        visible={editMode === 'edit'}
+                      />
+                      <MaskOverlay
+                        masks={page.edits.filter((e): e is MaskEdit => e.type === 'mask')}
+                        viewWidthDp={viewWidthDp}
+                        pageWidthPt={page.widthPt}
+                        active={editMode === 'erase'}
+                        onMaskDrawn={handleMaskDrawn}
+                      />
+                      {page.edits
+                        .filter((e): e is TextEdit => e.type === 'text')
+                        .map((textEdit) => (
+                          <EditableTextOverlay
+                            key={textEdit.id}
+                            edit={textEdit}
+                            viewWidthDp={viewWidthDp}
+                            pageWidthPt={page.widthPt}
+                            focused={focusedEditId === textEdit.id}
+                          />
+                        ))}
+                    </>
+                  )
+                }
               />
             )}
-          </View>
 
-          {showHint && (
             <View
-              pointerEvents="none"
+              pointerEvents="box-none"
               style={{
                 position: 'absolute',
+                top: 12,
                 left: 12,
                 right: 12,
-                bottom: toolbarBottom + TOOLBAR_HEIGHT + 12,
+                flexDirection: 'row',
                 alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
               }}
             >
+              {replacementModeOn ? (
+                <OldFontChip onPress={() => setLegacySheetReopened(true)} />
+              ) : (
+                <View />
+              )}
+              {document.pages.length > 1 && (
+                <PagePill
+                  pageIndex={currentPageIndex}
+                  pageCount={document.pages.length}
+                  onPage={(index) => {
+                    finishEditing();
+                    setCurrentPageIndex(index);
+                  }}
+                />
+              )}
+            </View>
+
+            {showHint && (
               <View
-                accessibilityLiveRegion="polite"
+                pointerEvents="none"
                 style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 9999,
-                  backgroundColor: ui.chrome,
+                  position: 'absolute',
+                  left: 12,
+                  right: 12,
+                  bottom: toolbarBottom + TOOLBAR_HEIGHT + 12,
+                  alignItems: 'center',
                 }}
               >
-                <UiText variant="label" color="#FFFFFF">
-                  {tx('Tap a line to change it', 'बदलने के लिए पंक्ति टैप करें')}
-                </UiText>
+                <View
+                  accessibilityLiveRegion="polite"
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 9999,
+                    backgroundColor: ui.chrome,
+                  }}
+                >
+                  <UiText variant="label" color="#FFFFFF">
+                    {tx('Tap a line to change it', 'बदलने के लिए पंक्ति टैप करें')}
+                  </UiText>
+                </View>
               </View>
-            </View>
-          )}
+            )}
 
-          {focusedEdit ? (
-            <View style={{ position: 'absolute', left: 12, right: 12, bottom: toolbarBottom }}>
-              <EditToolbar
-                fontSizePt={focusedEdit.fontSizePt}
-                fontFamily={focusedEdit.fontFamily}
-                color={focusedEdit.color}
-                fontWeight={focusedEdit.fontWeight ?? 'normal'}
-                onFontSizeChange={(size) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt: size })
-                }
-                onFontFamilyChange={(family) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily: family })
-                }
-                onOpenFontPicker={() => setFontPickerVisible(true)}
-                onColorChange={(color) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { color })
-                }
-                onFontWeightChange={(weight) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontWeight: weight })
-                }
-                onDelete={handleDeleteEdit}
-                onDone={() => setFocusedEditId(null)}
-              />
-            </View>
-          ) : (
-            <View style={{ position: 'absolute', left: 12, right: 12, bottom: toolbarBottom }}>
-              <EditToolbarBar
-                mode={editMode}
-                onMode={selectMode}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                onUndo={undo}
-                onRedo={redo}
-                showingOriginal={showingOriginal}
-                onToggleOriginal={() => setShowingOriginal((on) => !on)}
-              />
-            </View>
-          )}
+            {!focusedEdit && (
+              <View style={{ position: 'absolute', left: 12, right: 12, bottom: toolbarBottom }}>
+                <EditToolbarBar
+                  mode={editMode}
+                  onMode={selectMode}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                  onUndo={undo}
+                  onRedo={redo}
+                  showingOriginal={showingOriginal}
+                  onToggleOriginal={() => setShowingOriginal((on) => !on)}
+                />
+              </View>
+            )}
 
-          {saving && <SavingOverlay progress={exportProgress} />}
-        </View>
+            {saving && <SavingOverlay progress={exportProgress} />}
+          </View>
+          {focusedEdit && (
+            <LineEditSheet
+              key={focusedEdit.id}
+              originalText={focusedEdit.replacement?.ocrLine?.text ?? ''}
+              value={focusedEdit.text}
+              onChange={(text) => updateTextEdit(currentPageIndex, focusedEdit.id, { text })}
+              fontLabel={fontLabel(focusedEdit.fontFamily)}
+              sizePt={focusedEdit.fontSizePt}
+              color={focusedEdit.color}
+              bold={focusedEdit.fontWeight === 'bold'}
+              onFont={() => setFontPickerVisible(true)}
+              onSize={(fontSizePt) =>
+                updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
+              }
+              onColor={(color) => updateTextEdit(currentPageIndex, focusedEdit.id, { color })}
+              onBold={() =>
+                updateTextEdit(currentPageIndex, focusedEdit.id, {
+                  fontWeight: focusedEdit.fontWeight === 'bold' ? 'normal' : 'bold',
+                })
+              }
+              onDone={finishEditing}
+            />
+          )}
+        </KeyboardAvoidingView>
       )}
 
       <LegacyFontWarning
