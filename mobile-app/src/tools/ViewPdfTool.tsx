@@ -1,8 +1,9 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
   FlatList,
+  Keyboard,
   Pressable,
   useWindowDimensions,
   View,
@@ -14,11 +15,16 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { OcrHighlightLayer } from '../components/OcrHighlightLayer';
 import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
+import { ptToDp } from '../lib/coordinateMath';
 import { getPageCount } from '../lib/pdfToImages';
 import { currentPageAt, readerPageLayout } from '../lib/readerLayout';
+import { findMatches } from '../lib/textSearch';
+import { useHardwareBack } from '../navigation/useHardwareBack';
 import { FileInfoSheet } from '../screens/reader/FileInfoSheet';
+import { FIND_PANEL_HEIGHT, FindBar, FindPanel } from '../screens/reader/FindInFile';
 import { PageGrid } from '../screens/reader/PageGrid';
 import { PageScroller } from '../screens/reader/PageScroller';
 import { ReaderMenu, type ReaderMenuAction } from '../screens/reader/ReaderMenu';
@@ -30,10 +36,12 @@ import {
   type ReadingTheme,
 } from '../screens/reader/ReadingThemeSheet';
 import { usePageRenders } from '../screens/reader/usePageRenders';
+import { usePageText } from '../screens/reader/usePageText';
 import { usePageThumbs } from '../screens/reader/usePageThumbs';
 import { useReaderChrome } from '../screens/reader/useReaderChrome';
 import { useSettledValue } from '../screens/reader/useSettledValue';
 import { ToolPickPrompt } from '../screens/tools/ToolPickPrompt';
+import type { OcrLine } from '../state/editStore';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
 import { BandIconButton } from '../ui/BandIconButton';
 import { Icon } from '../ui/Icon';
@@ -52,8 +60,17 @@ const FAB_SIZE = 56;
 const FAB_MARGIN = 16;
 /** How long the page must stay put before full-size renders start, in ms (skips scrub steps). */
 const SETTLE_MS = 150;
-/** Menu rows the Reader supports now; Find (Task 13) and Open with (Task 14) join later. */
-const MENU_ACTIONS: readonly ReaderMenuAction[] = ['goto', 'translate', 'theme', 'print', 'info'];
+/** Space kept above a found line when scrolling to it, in dp. */
+const MATCH_MARGIN = 48;
+/** Menu rows the Reader supports now; Open with (Task 14) joins later. */
+const MENU_ACTIONS: readonly ReaderMenuAction[] = [
+  'find',
+  'goto',
+  'translate',
+  'theme',
+  'print',
+  'info',
+];
 
 type Panel = 'menu' | 'grid' | 'theme' | 'info';
 type OpenDocument = { file: RecentFile; pageCount: number };
@@ -83,6 +100,9 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
   const [currentPage, setCurrentPage] = useState(0);
   const [readingTheme, setReadingTheme] = useState<ReadingTheme>('light');
   const [panel, setPanel] = useState<Panel | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState('');
+  const [matchIndex, setMatchIndex] = useState(0);
   const listRef = useRef<FlatList<number>>(null);
 
   const fileUri = doc?.file.uri ?? null;
@@ -91,6 +111,17 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
   const { renders, sizes } = usePageRenders(fileUri, pageCount, settledPage);
   const { thumbs, requestThumbs } = usePageThumbs(fileUri);
   const chrome = useReaderChrome();
+  const pageText = usePageText(fileUri, pageCount, searching, currentPage);
+  const deferredQuery = useDeferredValue(query);
+  const matches = useMemo(
+    () =>
+      findMatches(
+        pageText.pages.map((p) => ({ pageIndex: p.pageIndex, lines: p.lines.map((l) => l.text) })),
+        deferredQuery,
+      ),
+    [pageText.pages, deferredQuery],
+  );
+  const currentMatch = Math.min(matchIndex, Math.max(matches.length - 1, 0));
 
   const topPad = BAR_HEIGHT + insets.top;
 
@@ -175,12 +206,27 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
   );
 
   const wash = THEMES[readingTheme].pageWash;
-  const listExtra = useMemo(() => ({ renders, wash }), [renders, wash]);
+  // Matched lines per page; the current match is drawn stronger.
+  const highlights = useMemo(() => {
+    const byPage: Record<number, { lines: OcrLine[]; widthPt: number; currentId?: string }> = {};
+    if (!searching) return byPage;
+    matches.forEach((m, index) => {
+      const text = pageText.pages.find((p) => p.pageIndex === m.pageIndex);
+      const line = text?.lines[m.lineIndex];
+      if (!text || !line) return;
+      const entry = (byPage[m.pageIndex] ??= { lines: [], widthPt: text.widthPt });
+      if (!entry.lines.includes(line)) entry.lines.push(line);
+      if (index === currentMatch) entry.currentId = line.id;
+    });
+    return byPage;
+  }, [searching, matches, pageText.pages, currentMatch]);
+  const listExtra = useMemo(() => ({ renders, wash, highlights }), [renders, wash, highlights]);
   const pages = useMemo(() => Array.from({ length: pageCount }, (_, i) => i), [pageCount]);
 
   // The current page follows the scroll offset (works however many pages fit on screen).
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    chrome.onScroll(event);
+    // The find bar stays put while searching.
+    if (!searching) chrome.onScroll(event);
     const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
     setCurrentPage(
       currentPageAt(
@@ -198,6 +244,40 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
     chrome.ignoreNextScroll();
     listRef.current?.scrollToIndex({ index: page, animated: false, viewOffset: topPad });
     setCurrentPage(page);
+  };
+
+  const openSearch = () => {
+    chrome.show();
+    setSearching(true);
+  };
+
+  const closeSearch = () => {
+    setSearching(false);
+    setQuery('');
+    setMatchIndex(0);
+  };
+
+  useHardwareBack(() => {
+    closeSearch();
+    return true;
+  }, searching);
+
+  /** Selects match `index` and scrolls so its line sits `MATCH_MARGIN` dp under the bar. */
+  const pickMatch = (index: number) => {
+    const m = matches[index];
+    if (!m) return;
+    setMatchIndex(index);
+    Keyboard.dismiss();
+    const text = pageText.pages.find((p) => p.pageIndex === m.pageIndex);
+    const line = text?.lines[m.lineIndex];
+    const lineTopDp =
+      text && line && text.widthPt > 0 ? ptToDp(line.xPt, line.yPt, width, text.widthPt).yDp : 0;
+    chrome.ignoreNextScroll();
+    listRef.current?.scrollToOffset({
+      offset: Math.max(layout.offsets[m.pageIndex] + lineTopDp - topPad - MATCH_MARGIN, 0),
+      animated: false,
+    });
+    setCurrentPage(m.pageIndex);
   };
 
   const handleScrubTo = (page: number) => {
@@ -239,6 +319,9 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
   const handleMenuAction = (action: ReaderMenuAction) => {
     if (!doc) return;
     switch (action) {
+      case 'find':
+        openSearch();
+        break;
       case 'goto':
         setPanel('grid');
         break;
@@ -309,10 +392,12 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
         })}
         contentContainerStyle={{
           paddingTop: topPad,
-          paddingBottom: insets.bottom + FAB_SIZE + FAB_MARGIN * 2,
+          paddingBottom:
+            insets.bottom + (searching ? FIND_PANEL_HEIGHT : FAB_SIZE + FAB_MARGIN * 2),
         }}
         renderItem={({ item: page }) => {
           const render = renders[page];
+          const found = highlights[page];
           return (
             <View style={{ marginBottom: PAGE_GAP }}>
               <ReaderPage
@@ -323,16 +408,28 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
                 uri={render?.uri}
                 failed={render !== undefined && !render.uri}
                 wash={wash}
-                onPress={chrome.toggle}
+                onPress={searching ? Keyboard.dismiss : chrome.toggle}
               />
+              {found && found.widthPt > 0 ? (
+                <OcrHighlightLayer
+                  visible
+                  tone="search"
+                  lines={found.lines}
+                  currentId={found.currentId}
+                  viewWidthDp={width}
+                  pageWidthPt={found.widthPt}
+                />
+              ) : null}
             </View>
           );
         }}
       />
 
       <View
-        pointerEvents="box-none"
+        pointerEvents={searching ? 'none' : 'box-none'}
+        importantForAccessibility={searching ? 'no-hide-descendants' : 'auto'}
         style={{
+          opacity: searching ? 0 : 1,
           position: 'absolute',
           right: 0,
           top: topPad + 56,
@@ -392,30 +489,46 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
           ],
         }}
       >
-        <ReaderBar
-          title={title}
-          leadingIcon="arrow-back"
-          onLeading={onClose}
-          actions={
-            <>
-              <BandIconButton
-                icon="share"
-                label={tx('Share', 'शेयर करें')}
-                onPress={() => void handleShare()}
-              />
-              <BandIconButton
-                icon="more-vert"
-                label={tx('More options', 'और विकल्प')}
-                onPress={() => setPanel('menu')}
-              />
-            </>
-          }
-        />
+        {searching ? (
+          <FindBar
+            query={query}
+            onChangeQuery={(next) => {
+              setQuery(next);
+              setMatchIndex(0);
+            }}
+            onClose={closeSearch}
+          />
+        ) : (
+          <ReaderBar
+            title={title}
+            leadingIcon="arrow-back"
+            onLeading={onClose}
+            actions={
+              <>
+                <BandIconButton
+                  icon="search"
+                  label={tx('Find in file', 'फ़ाइल में खोजें')}
+                  onPress={openSearch}
+                />
+                <BandIconButton
+                  icon="share"
+                  label={tx('Share', 'शेयर करें')}
+                  onPress={() => void handleShare()}
+                />
+                <BandIconButton
+                  icon="more-vert"
+                  label={tx('More options', 'और विकल्प')}
+                  onPress={() => setPanel('menu')}
+                />
+              </>
+            }
+          />
+        )}
       </Animated.View>
 
       <Animated.View
-        pointerEvents={chrome.visible ? 'box-none' : 'none'}
-        importantForAccessibility={hiddenA11y}
+        pointerEvents={chrome.visible && !searching ? 'box-none' : 'none'}
+        importantForAccessibility={searching ? 'no-hide-descendants' : hiddenA11y}
         style={{
           position: 'absolute',
           right: FAB_MARGIN,
@@ -449,6 +562,20 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
           <Icon name="edit" size={24} color="#FFFFFF" />
         </Pressable>
       </Animated.View>
+
+      {searching ? (
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
+          <FindPanel
+            query={deferredQuery}
+            matches={matches}
+            currentIndex={currentMatch}
+            done={pageText.done}
+            pageCount={pageCount}
+            failedPages={pageText.pages.filter((p) => p.failed).length}
+            onPick={pickMatch}
+          />
+        </View>
+      ) : null}
 
       <ReaderMenu
         visible={panel === 'menu'}
