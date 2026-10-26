@@ -12,8 +12,8 @@ type Props = {
   /** The source page's width, in PDF points. */
   pageWidthPt: number;
   /**
-   * When true, shows faint boxes so the user can see what's tappable (debug/onboarding).
-   * Default false for a clean Canva-like canvas - hit-testing still works in `App.tsx`.
+   * When true, shows brand-tint boxes so the user can see what's tappable (the editor's Change
+   * text mode). Default false - hit-testing still works in the caller.
    */
   visible?: boolean;
   /**
@@ -66,11 +66,10 @@ export function OcrHighlightLayer({
 }
 
 const styles = StyleSheet.create({
+  // 8% ui.brand over a white page is ui.brandTint (#EEF2FF); translucent so the text shows.
   highlight: {
     position: 'absolute',
-    borderWidth: 1,
-    borderColor: 'rgba(36, 83, 178, 0.35)',
-    backgroundColor: 'rgba(36, 83, 178, 0.06)',
+    backgroundColor: 'rgba(24, 67, 221, 0.08)',
     borderRadius: 2,
   },
   // rgba(24, 67, 221) is ui.brand. Pages are always white, so light tokens suit both app themes.

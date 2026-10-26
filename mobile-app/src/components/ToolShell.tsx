@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomNav, type MainTab } from '../ui/BottomNav';
 import { FilesScreen } from '../screens/FilesScreen';
@@ -20,9 +17,9 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { ToolsScreen } from '../screens/ToolsScreen';
 import { resolveBack } from '../navigation/backStack';
 import { useHardwareBack } from '../navigation/useHardwareBack';
-import { useAppTheme, useThemedStyles } from '../hooks/useAppTheme';
+import { useThemedStyles } from '../hooks/useAppTheme';
 import type { RecentFile } from '../state/recentFilesStore';
-import { colors, radius, shadows, spacing, type Theme } from '../theme';
+import { colors, type Theme } from '../theme';
 
 export type ToolId = 'edit' | 'translate' | 'merge' | 'split' | 'compress' | 'viewer';
 
@@ -102,18 +99,6 @@ export const TOOLS: ToolDef[] = [
 
 const CORE_TABS: MainTab[] = ['home', 'files', 'tools', 'settings'];
 
-/**
- * Tools that draw their own top bar and back button (`ToolScaffold`, or the Reader's `ReaderBar`);
- * the shell adds no chrome.
- */
-const SCAFFOLD_TOOLS: ReadonlySet<ToolId> = new Set<ToolId>([
-  'merge',
-  'split',
-  'compress',
-  'translate',
-  'viewer',
-]);
-
 type Props = {
   activeTool: ToolId | null;
   onSelectTool: (tool: ToolId | null) => void;
@@ -126,14 +111,10 @@ type Props = {
  * and immersive full-screen tool workspaces.
  */
 export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Props) {
-  const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const pagerRef = useRef<ScrollView>(null);
-  const theme = useAppTheme();
   const styles = useThemedStyles(getStyles);
 
-  // The app draws edge to edge, so the safe-area inset already includes the status bar.
-  const topInset = insets.top;
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const [focusSearchToken, setFocusSearchToken] = useState(0);
   const activeTabOffsetX = Math.max(CORE_TABS.indexOf(activeTab), 0) * windowWidth;
@@ -147,7 +128,6 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
     lastPagerWidthRef.current = windowWidth;
     pagerRef.current?.scrollTo({ x: activeTabOffsetX, animated: false });
   }, [windowWidth, activeTabOffsetX]);
-  const currentTool = TOOLS.find((t) => t.id === activeTool) ?? null;
 
   const handleOpenFile = (file: RecentFile, toolId?: ToolId) => {
     if (onOpenFile) {
@@ -187,54 +167,11 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
     }
   };
 
-  const scaffolded = activeTool !== null && SCAFFOLD_TOOLS.has(activeTool);
-
   return (
-    <View style={[styles.container, activeTool && !scaffolded ? { paddingTop: topInset } : null]}>
-      {/* Main View Area */}
-      {scaffolded ? (
+    <View style={styles.container}>
+      {/* Every tool draws its own top bar and back button (`ToolScaffold` or `ReaderBar`). */}
+      {activeTool ? (
         <View style={styles.fullScreenToolContainer}>{children}</View>
-      ) : activeTool ? (
-        /* Full Screen Tool Workspace */
-        <View style={styles.fullScreenToolContainer}>
-          {/* Active Tool Header with Back Navigation */}
-          <View style={styles.activeHeader}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back to home"
-              onPress={() => onSelectTool(null)}
-              style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-              hitSlop={8}
-            >
-              <Ionicons name="chevron-back" size={16} color={theme.colors.brand} />
-              <Text style={styles.backLabel}>Back</Text>
-            </Pressable>
-
-            {currentTool && (
-              <View
-                style={[
-                  styles.activeToolBadge,
-                  {
-                    backgroundColor: currentTool.tint,
-                    borderColor: currentTool.accent,
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name={currentTool.iconName}
-                  size={16}
-                  color={currentTool.accent}
-                />
-                <Text style={[styles.activeToolName, { color: currentTool.accent }]}>
-                  {currentTool.name}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Active Tool Body */}
-          <View style={styles.toolWorkspace}>{children}</View>
-        </View>
       ) : (
         /* Swipeable / Slideable 4-Tab Interface (Home, Files, Tools, Settings) */
         <View style={styles.mainTabContainer}>
@@ -310,58 +247,5 @@ const getStyles = (theme: Theme) =>
     },
     fullScreenToolContainer: {
       flex: 1,
-    },
-    activeHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: theme.colors.activeHeaderBg,
-      borderRadius: radius.xl,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      paddingVertical: 8,
-      paddingHorizontal: spacing.md,
-      marginHorizontal: spacing.md,
-      marginTop: spacing.sm + 2,
-      marginBottom: spacing.sm + 2,
-      ...shadows.soft,
-      zIndex: 10,
-    },
-    backButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.colors.surfaceSubtle,
-      paddingVertical: 5,
-      paddingHorizontal: 12,
-      borderRadius: radius.full,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      gap: 4,
-    },
-    backButtonPressed: {
-      backgroundColor: theme.colors.borderStrong,
-      transform: [{ scale: 0.97 }],
-    },
-    backLabel: {
-      fontSize: 12.5,
-      fontWeight: '700',
-      color: theme.colors.textPrimary,
-    },
-    activeToolBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 5,
-      paddingHorizontal: 11,
-      borderRadius: radius.full,
-      borderWidth: 1,
-      gap: 5,
-    },
-    activeToolName: {
-      fontSize: 12.5,
-      fontWeight: '700',
-    },
-    toolWorkspace: {
-      flex: 1,
-      paddingHorizontal: spacing.md,
     },
   });

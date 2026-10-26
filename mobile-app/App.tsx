@@ -91,6 +91,7 @@ export default function App() {
                   <EditPdfTool
                     initialFileUri={openedFile?.uri}
                     initialFileName={openedFile?.name}
+                    onClose={closeTool}
                   />
                 )}
                 {activeTool === 'translate' && (
