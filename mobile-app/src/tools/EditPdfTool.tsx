@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EditableTextOverlay } from '../components/EditableTextOverlay';
@@ -36,6 +35,7 @@ import { detectTextLines } from '../lib/ocr';
 import { findOcrTargetAt, findTextEditAt } from '../lib/ocrHitTest';
 import { getPageCount, renderPage, sampleAverageColor, sampleTextColor } from '../lib/pdfToImages';
 import { fontSizeForOcrLine, textBoxGeometry } from '../lib/textEditGeometry';
+import { verifyPdfOutput } from '../lib/verifyPdf';
 import {
   useEditStore,
   type DocumentState,
@@ -50,11 +50,17 @@ import { useHardwareBack } from '../navigation/useHardwareBack';
 import { EditToolbarBar } from '../screens/editor/EditToolbarBar';
 import { LineEditSheet, MAX_FONT_SIZE_PT, MIN_FONT_SIZE_PT } from '../screens/editor/LineEditSheet';
 import {
+  changeCounts,
+  defaultEditedName,
   editsSnapshot,
   hasUnsavedEdits,
+  outputFileName,
   type EditsSnapshot,
 } from '../screens/editor/editorDocument';
+import { SaveSheet } from '../screens/editor/SaveSheet';
+import { ToolDoneScreen } from '../screens/ToolDoneScreen';
 import { ToolPickPrompt } from '../screens/tools/ToolPickPrompt';
+import { useSavedFileActions, type SavedFile } from '../screens/tools/useSavedFileActions';
 import { BandIconButton } from '../ui/BandIconButton';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Dialog } from '../ui/Dialog';
@@ -106,10 +112,35 @@ async function pickOnePdf(): Promise<DocumentPicker.DocumentPickerAsset | null> 
 const TOOLBAR_HEIGHT = 56;
 const TOOLBAR_BOTTOM_GAP = 24;
 
+/**
+ * Copies an export into the app's `Edited` folder as `fileName`, adding ` (2)`, ` (3)`… when
+ * that name is taken, so no earlier file (and never the source) is overwritten. Returns the
+ * copy's `file://` URI (name percent-encoded) and its plain file name.
+ */
+async function copyToEditedFolder(
+  exportedUri: string,
+  fileName: string,
+): Promise<{ uri: string; name: string }> {
+  if (!FileSystem.documentDirectory) throw new Error('App storage is unavailable');
+  const folder = `${FileSystem.documentDirectory}Edited/`;
+  await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
+  const base = fileName.replace(/\.pdf$/i, '');
+  for (let n = 1; ; n++) {
+    const name = `${n === 1 ? base : `${base} (${n})`}.pdf`;
+    const uri = `${folder}${encodeURIComponent(name)}`;
+    if (!(await FileSystem.getInfoAsync(uri)).exists) {
+      await FileSystem.copyAsync({ from: exportedUri, to: uri });
+      return { uri, name };
+    }
+  }
+}
+
 type Props = {
   initialFileUri?: string;
   initialFileName?: string;
   onClose: () => void;
+  /** Opens a saved file in the Reader (the Saved screen's Open button). */
+  onOpenFile: (file: RecentFile) => void;
 };
 
 /**
@@ -118,18 +149,23 @@ type Props = {
  * `EditToolbarBar` (Change text, Add text, Cover old text, undo, redo, Show original). Close
  * and Android back ask before discarding unsaved edits.
  */
-export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props) {
+export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFile }: Props) {
   const insets = useSafeAreaInsets();
   const ui = useUi();
   const tx = useTx();
   const snackbar = useSnackbar();
   const { errorDialog, showError } = useErrorDialog();
   const errors = commonErrors(tx);
+  const savedActions = useSavedFileActions(showError, onOpenFile);
   const [opening, setOpening] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [showingOriginal, setShowingOriginal] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [discardVisible, setDiscardVisible] = useState(false);
+  const [saveSheetVisible, setSaveSheetVisible] = useState(false);
+  /** Bumped each time the save sheet opens, so its name field starts from the default again. */
+  const [saveSheetKey, setSaveSheetKey] = useState(0);
+  const [saved, setSaved] = useState<SavedFile | null>(null);
   const [firstEditMade, setFirstEditMade] = useState(false);
 
   const [editMode, setEditMode] = useState<EditMode>('edit');
@@ -468,18 +504,14 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
     setFocusedEditId(textEdit.id);
   };
 
-  const handleShare = async (uri: string) => {
-    try {
-      if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is unavailable');
-      await Sharing.shareAsync(uri, { mimeType: 'application/pdf' });
-    } catch (error) {
-      console.warn('Share failed', error);
-      showError({ ...errors.share, onRetry: () => void handleShare(uri) });
-    }
-  };
-
-  const handleExport = async () => {
+  /**
+   * Exports through the print pipeline, copies the result to the app's Edited folder under the
+   * sanitised `typedName`, re-checks that copy with `verifyPdfOutput`, and only then shows the
+   * Saved screen (and the share sheet when `share` is true). The source file is never written.
+   */
+  const saveAs = async (typedName: string, share: boolean) => {
     if (!document) return;
+    setSaveSheetVisible(false);
     setExportProgress({ completedPages: 0, totalPages: document.pages.length });
     try {
       const usedFamilies = new Set<DevanagariFontFamily>(['NotoSansDevanagari']);
@@ -501,21 +533,33 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
         };
       }
 
-      const outUri = await exportPdf(document, embeddedFonts, setExportProgress);
-      setSavedEdits(editsSnapshot(document));
-      snackbar.show(tx('PDF ready', 'PDF तैयार है'), {
-        label: tx('Share', 'शेयर करें'),
-        onPress: () => void handleShare(outUri),
+      const exportedUri = await exportPdf(document, embeddedFonts, setExportProgress);
+      const fileName = outputFileName(typedName, defaultEditedName(document.displayName));
+      const { uri, name } = await copyToEditedFolder(exportedUri, fileName);
+      const verified = await verifyPdfOutput(uri, document.pages.length);
+      void FileSystem.deleteAsync(exportedUri, { idempotent: true }).catch(() => {});
+      await addRecentFile({
+        name,
+        hindiName: name,
+        uri,
+        sizeBytes: verified.sizeBytes,
+        pageCount: verified.pageCount,
+        category: 'downloads',
+        starred: false,
       });
+      const file: SavedFile = { uri, name, ...verified };
+      setSavedEdits(editsSnapshot(document));
+      setSaved(file);
+      if (share) void savedActions.share(file);
     } catch (error) {
-      console.warn('Export failed', error);
+      console.warn('Editor save failed', error);
       showError({
-        title: tx("Couldn't export the PDF", 'PDF एक्सपोर्ट नहीं हो सकी'),
+        title: tx("Couldn't save the PDF", 'PDF सेव नहीं हो सकी'),
         body: tx(
           'Something went wrong while building the PDF. Your edits are still here. Try again.',
           'PDF बनाते समय गड़बड़ी हुई। आपके बदलाव सुरक्षित हैं। फिर से करें।',
         ),
-        onRetry: () => void handleExport(),
+        onRetry: () => void saveAs(typedName, share),
       });
     } finally {
       setExportProgress(null);
@@ -603,7 +647,28 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
     return true;
   });
 
+  if (saved) {
+    return (
+      <>
+        <ToolDoneScreen
+          title={tx('Edit PDF', 'PDF बदलें')}
+          fileName={saved.name}
+          fileUri={saved.uri}
+          folderLabel={tx('Files', 'फ़ाइलें')}
+          pageCount={saved.pageCount}
+          sizeBytes={saved.sizeBytes}
+          onOpen={() => savedActions.open(saved)}
+          onShare={() => void savedActions.share(saved)}
+          onSaveCopy={() => void savedActions.saveCopy(saved)}
+          onClose={close}
+        />
+        {errorDialog}
+      </>
+    );
+  }
+
   const title = document?.displayName ?? tx('Edit PDF', 'PDF बदलें');
+  const changes = document ? changeCounts(document) : { lines: 0, pages: 0 };
   const saving = exportProgress !== null;
   const showHint =
     !firstEditMade && editMode === 'edit' && !editingBlocked && !focusedEdit && !showingOriginal;
@@ -623,7 +688,8 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
                 disabled={saving}
                 onPress={() => {
                   finishEditing();
-                  void handleExport();
+                  setSaveSheetKey((k) => k + 1);
+                  setSaveSheetVisible(true);
                 }}
               />
               <BandIconButton
@@ -863,6 +929,21 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose }: Props)
           }}
         />
       </BottomSheet>
+
+      {document && (
+        <SaveSheet
+          key={saveSheetKey}
+          visible={saveSheetVisible}
+          defaultName={defaultEditedName(document.displayName)}
+          changedSummary={tx(
+            changes.lines + ' lines changed on ' + changes.pages + ' pages',
+            changes.pages + ' पृष्ठों पर ' + changes.lines + ' पंक्तियाँ बदलीं',
+          )}
+          onSave={(name) => void saveAs(name, false)}
+          onShare={(name) => void saveAs(name, true)}
+          onClose={() => setSaveSheetVisible(false)}
+        />
+      )}
 
       <Dialog
         visible={discardVisible}

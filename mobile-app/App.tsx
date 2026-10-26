@@ -92,6 +92,7 @@ export default function App() {
                     initialFileUri={openedFile?.uri}
                     initialFileName={openedFile?.name}
                     onClose={closeTool}
+                    onOpenFile={handleOpenFile}
                   />
                 )}
                 {activeTool === 'translate' && (
