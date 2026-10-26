@@ -19,6 +19,7 @@ import { OcrHighlightLayer } from '../components/OcrHighlightLayer';
 import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { ptToDp } from '../lib/coordinateMath';
+import { openWith } from '../lib/openWith';
 import { getPageCount } from '../lib/pdfToImages';
 import { currentPageAt, readerPageLayout } from '../lib/readerLayout';
 import { findMatches, indexOfMatch, matchKeyAt, stepMatch, type MatchKey } from '../lib/textSearch';
@@ -62,13 +63,14 @@ const FAB_MARGIN = 16;
 const SETTLE_MS = 150;
 /** Space kept above a found line when scrolling to it, in dp. */
 const MATCH_MARGIN = 48;
-/** Menu rows the Reader supports now; Open with (Task 14) joins later. */
+/** Menu rows the Reader supports, in menu order. */
 const MENU_ACTIONS: readonly ReaderMenuAction[] = [
   'find',
   'goto',
   'translate',
   'theme',
   'print',
+  'openWith',
   'info',
 ];
 
@@ -317,6 +319,22 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
     }
   };
 
+  const handleOpenWith = async () => {
+    if (!doc) return;
+    try {
+      await openWith(doc.file.uri);
+    } catch (error) {
+      console.warn('Open with failed', error);
+      showError({
+        title: tx('No app can open this PDF', 'इस PDF को खोलने वाला कोई ऐप नहीं मिला'),
+        body: tx(
+          'Install a PDF app such as Google Drive or Files, or share the PDF instead.',
+          'Google Drive या Files जैसा कोई PDF ऐप इंस्टॉल करें, या PDF को शेयर करें।',
+        ),
+      });
+    }
+  };
+
   const handleMenuAction = (action: ReaderMenuAction) => {
     if (!doc) return;
     switch (action) {
@@ -334,6 +352,9 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
         break;
       case 'print':
         void handlePrint();
+        break;
+      case 'openWith':
+        void handleOpenWith();
         break;
       case 'info':
         setPanel('info');
