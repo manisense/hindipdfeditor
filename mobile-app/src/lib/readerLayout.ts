@@ -56,3 +56,84 @@ export function createThrottle(intervalMs: number, now: () => number = Date.now)
     },
   };
 }
+
+/**
+ * Zero-based page at a point of the list content.
+ *
+ * @param offsets Top of each page from the top of the list content, in dp (from `readerPageLayout`).
+ * @param probeDp Point to look up, in dp from the top of the list content.
+ * @returns The last page whose top is at or above `probeDp` (0 above the first page).
+ */
+export function pageAtOffset(offsets: readonly number[], probeDp: number): number {
+  let low = 0;
+  let high = offsets.length - 1;
+  let found = 0;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    if (offsets[mid] <= probeDp) {
+      found = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return found;
+}
+
+/**
+ * The page the Reader is on, from its scroll position. The probe sits 40% down the part of the
+ * screen below the bar; at the very end of the list it is the last page.
+ *
+ * @param offsets Page tops from `readerPageLayout`, in dp.
+ * @param scrollYDp Scroll offset, in dp.
+ * @param viewportDp Visible list height, in dp.
+ * @param contentDp Total list content height, in dp.
+ * @param topPadDp Height covered by the bar at the top, in dp.
+ */
+export function currentPageAt(
+  offsets: readonly number[],
+  scrollYDp: number,
+  viewportDp: number,
+  contentDp: number,
+  topPadDp: number,
+): number {
+  if (offsets.length === 0) return 0;
+  if (scrollYDp + viewportDp >= contentDp - 1) return offsets.length - 1;
+  return pageAtOffset(offsets, scrollYDp + topPadDp + (viewportDp - topPadDp) * 0.4);
+}
+
+/**
+ * Next page to render around `center` (zero-based): the center first, then the page after, then
+ * the page before, out to `radius` pages away. Returns null when every page in reach is `done`.
+ */
+export function nextPageToRender(
+  center: number,
+  pageCount: number,
+  radius: number,
+  done: (page: number) => boolean,
+): number | null {
+  for (let distance = 0; distance <= radius; distance++) {
+    for (const page of distance === 0 ? [center] : [center + distance, center - distance]) {
+      if (page >= 0 && page < pageCount && !done(page)) return page;
+    }
+  }
+  return null;
+}
+
+/** True when zero-based `page` is at most `radius` pages from `center`. */
+export function isWithin(page: number, center: number, radius: number): boolean {
+  return Math.abs(page - center) <= radius;
+}
+
+/** Copy of `byPage` keeping only pages at most `radius` pages from `center` (all zero-based). */
+export function keepNear<T>(
+  byPage: Readonly<Record<number, T>>,
+  center: number,
+  radius: number,
+): Record<number, T> {
+  const kept: Record<number, T> = {};
+  for (const [key, value] of Object.entries(byPage)) {
+    if (isWithin(Number(key), center, radius)) kept[Number(key)] = value;
+  }
+  return kept;
+}

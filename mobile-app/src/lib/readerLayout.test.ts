@@ -1,4 +1,13 @@
-import { A4_ASPECT, createThrottle, readerPageLayout } from './readerLayout';
+import {
+  A4_ASPECT,
+  createThrottle,
+  currentPageAt,
+  isWithin,
+  keepNear,
+  nextPageToRender,
+  pageAtOffset,
+  readerPageLayout,
+} from './readerLayout';
 
 describe('readerPageLayout', () => {
   it('stacks pages under the top padding with a gap after each', () => {
@@ -46,5 +55,59 @@ describe('createThrottle', () => {
     expect(throttle.pass(3, true)).toBe(false);
     throttle.reset();
     expect(throttle.pass(3, false)).toBe(true);
+  });
+});
+
+describe('pageAtOffset', () => {
+  const offsets = [80, 186, 292];
+  it('finds the page whose top is at or above the probe', () => {
+    expect(pageAtOffset(offsets, 0)).toBe(0);
+    expect(pageAtOffset(offsets, 185)).toBe(0);
+    expect(pageAtOffset(offsets, 186)).toBe(1);
+    expect(pageAtOffset(offsets, 10_000)).toBe(2);
+  });
+});
+
+describe('currentPageAt', () => {
+  // Landscape tablet: pages taller than the 800dp viewport would need 40% item visibility.
+  const { offsets } = readerPageLayout(5, {}, 1280, 72, 6);
+  const content = offsets[4] + 1280 / A4_ASPECT + 6 + 100;
+  it('follows the scroll position on screens where no page is 40% visible', () => {
+    expect(currentPageAt(offsets, 0, 800, content, 72)).toBe(0);
+    expect(currentPageAt(offsets, offsets[2] - 72, 800, content, 72)).toBe(2);
+  });
+  it('is the last page at the end of the list', () => {
+    expect(currentPageAt(offsets, content - 800, 800, content, 72)).toBe(4);
+  });
+  it('is 0 for an empty file', () => {
+    expect(currentPageAt([], 0, 800, 0, 72)).toBe(0);
+  });
+});
+
+describe('nextPageToRender', () => {
+  it('goes center, after, before', () => {
+    const done = new Set<number>();
+    const order: number[] = [];
+    for (let p = nextPageToRender(5, 10, 1, (x) => done.has(x)); p !== null;) {
+      order.push(p);
+      done.add(p);
+      p = nextPageToRender(5, 10, 1, (x) => done.has(x));
+    }
+    expect(order).toEqual([5, 6, 4]);
+  });
+  it('stays inside the file', () => {
+    expect(nextPageToRender(0, 1, 1, (p) => p === 0)).toBeNull();
+    expect(nextPageToRender(0, 2, 1, (p) => p === 0)).toBe(1);
+  });
+});
+
+describe('keepNear', () => {
+  it('drops pages further than the radius', () => {
+    expect(keepNear({ 0: 'a', 3: 'b', 5: 'c', 6: 'd', 9: 'e' }, 5, 2)).toEqual({
+      3: 'b',
+      5: 'c',
+      6: 'd',
+    });
+    expect(isWithin(7, 5, 1)).toBe(false);
   });
 });

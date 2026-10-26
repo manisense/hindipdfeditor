@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -6,7 +6,8 @@ import {
   Pressable,
   useWindowDimensions,
   View,
-  type ViewToken,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Print from 'expo-print';
@@ -16,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { getPageCount } from '../lib/pdfToImages';
-import { readerPageLayout } from '../lib/readerLayout';
+import { currentPageAt, readerPageLayout } from '../lib/readerLayout';
 import { FileInfoSheet } from '../screens/reader/FileInfoSheet';
 import { PageGrid } from '../screens/reader/PageGrid';
 import { PageScroller } from '../screens/reader/PageScroller';
@@ -31,6 +32,7 @@ import {
 import { usePageRenders } from '../screens/reader/usePageRenders';
 import { usePageThumbs } from '../screens/reader/usePageThumbs';
 import { useReaderChrome } from '../screens/reader/useReaderChrome';
+import { useSettledValue } from '../screens/reader/useSettledValue';
 import { ToolPickPrompt } from '../screens/tools/ToolPickPrompt';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
 import { BandIconButton } from '../ui/BandIconButton';
@@ -48,7 +50,8 @@ const PAGE_GAP = 6;
 /** Edit button size and its margin from the screen edges, in dp. */
 const FAB_SIZE = 56;
 const FAB_MARGIN = 16;
-const VIEWABILITY = { itemVisiblePercentThreshold: 40 };
+/** How long the page must stay put before full-size renders start, in ms (skips scrub steps). */
+const SETTLE_MS = 150;
 /** Menu rows the Reader supports now; Find (Task 13) and Open with (Task 14) join later. */
 const MENU_ACTIONS: readonly ReaderMenuAction[] = ['goto', 'translate', 'theme', 'print', 'info'];
 
@@ -84,7 +87,8 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
 
   const fileUri = doc?.file.uri ?? null;
   const pageCount = doc?.pageCount ?? 0;
-  const renders = usePageRenders(fileUri, pageCount, currentPage);
+  const settledPage = useSettledValue(currentPage, SETTLE_MS);
+  const { renders, sizes } = usePageRenders(fileUri, pageCount, settledPage);
   const { thumbs, requestThumbs } = usePageThumbs(fileUri);
   const chrome = useReaderChrome();
 
@@ -166,21 +170,28 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
   // Pages not rendered yet borrow the first rendered page's shape, so most files lay out once
   // and scrolling to a far page lands where expected.
   const layout = useMemo(
-    () => readerPageLayout(pageCount, renders, width, topPad, PAGE_GAP),
-    [renders, pageCount, width, topPad],
+    () => readerPageLayout(pageCount, sizes, width, topPad, PAGE_GAP),
+    [sizes, pageCount, width, topPad],
   );
 
   const wash = THEMES[readingTheme].pageWash;
   const listExtra = useMemo(() => ({ renders, wash }), [renders, wash]);
   const pages = useMemo(() => Array.from({ length: pageCount }, (_, i) => i), [pageCount]);
 
-  const handleViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken<number>[] }) => {
-      const first = viewableItems[0];
-      if (first && first.index !== null) setCurrentPage(first.index);
-    },
-    [],
-  );
+  // The current page follows the scroll offset (works however many pages fit on screen).
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    chrome.onScroll(event);
+    const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+    setCurrentPage(
+      currentPageAt(
+        layout.offsets,
+        contentOffset.y,
+        layoutMeasurement.height,
+        contentSize.height,
+        topPad,
+      ),
+    );
+  };
 
   /** Scrolls so page `page` (zero-based) starts just under the bar. */
   const scrollToPage = (page: number) => {
@@ -289,10 +300,8 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
         extraData={listExtra}
         windowSize={5}
         showsVerticalScrollIndicator={false}
-        onScroll={chrome.onScroll}
+        onScroll={handleScroll}
         scrollEventThrottle={16}
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={VIEWABILITY}
         getItemLayout={(_data, index) => ({
           length: layout.heights[index] + PAGE_GAP,
           offset: layout.offsets[index],
