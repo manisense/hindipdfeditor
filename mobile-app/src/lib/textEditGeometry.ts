@@ -41,3 +41,28 @@ export function textBoxGeometry(
 export function fontSizeForOcrLine(lineHeightPt: number): number {
   return Math.max(MIN_OCR_FONT_SIZE_PT, lineHeightPt * OCR_FONT_SIZE_RATIO);
 }
+
+/** Extra cover above the OCR box, as a share of its height, for matras and reph. */
+const OCR_MASK_PAD_TOP_RATIO = 0.35;
+/** Extra cover on each side of the OCR box, as a share of its height. */
+const OCR_MASK_PAD_SIDE_RATIO = 0.05;
+
+export type MaskRect = { xPt: number; yPt: number; wPt: number; hPt: number };
+
+/**
+ * Returns the rectangle that hides an OCR-detected word, sized to that word only, so
+ * neighbouring words stay visible. Pads the top for matras and reph above the headline.
+ *
+ * @param pageWidthPt Page width in PDF points.
+ * @param pageHeightPt Page height in PDF points.
+ * @param box OCR box (x, y, width, height) in PDF points.
+ */
+export function ocrMaskRect(pageWidthPt: number, pageHeightPt: number, box: MaskRect): MaskRect {
+  const topPadPt = box.hPt * OCR_MASK_PAD_TOP_RATIO;
+  const sidePadPt = box.hPt * OCR_MASK_PAD_SIDE_RATIO;
+  const xPt = Math.max(0, box.xPt - sidePadPt);
+  const yPt = Math.max(0, box.yPt - topPadPt);
+  const wPt = Math.min(pageWidthPt - xPt, box.wPt + 2 * sidePadPt);
+  const hPt = Math.min(pageHeightPt - yPt, box.hPt + topPadPt);
+  return { xPt, yPt, wPt, hPt };
+}

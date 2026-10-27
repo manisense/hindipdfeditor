@@ -1,4 +1,4 @@
-import { fontSizeForOcrLine, textBoxGeometry } from './textEditGeometry';
+import { fontSizeForOcrLine, ocrMaskRect, textBoxGeometry } from './textEditGeometry';
 
 describe('textBoxGeometry', () => {
   it('uses a stable proportional width for a normal page', () => {
@@ -29,5 +29,24 @@ describe('fontSizeForOcrLine', () => {
 
   it('keeps noisy short detections readable', () => {
     expect(fontSizeForOcrLine(2)).toBe(6);
+  });
+});
+
+describe('ocrMaskRect', () => {
+  it('covers only the detected word, not a minimum-width box', () => {
+    // A short word (25 pt wide) must not grow to cover its neighbours.
+    const rect = ocrMaskRect(612, 792, { xPt: 100, yPt: 200, wPt: 25, hPt: 20 });
+    expect(rect.xPt).toBeCloseTo(99);
+    expect(rect.wPt).toBeCloseTo(27);
+    expect(rect.yPt).toBeCloseTo(193);
+    expect(rect.hPt).toBeCloseTo(27);
+  });
+
+  it('stays inside the page', () => {
+    const rect = ocrMaskRect(612, 792, { xPt: 0, yPt: 0, wPt: 620, hPt: 10 });
+    expect(rect.xPt).toBe(0);
+    expect(rect.yPt).toBe(0);
+    expect(rect.xPt + rect.wPt).toBeLessThanOrEqual(612);
+    expect(rect.yPt + rect.hPt).toBeLessThanOrEqual(792);
   });
 });

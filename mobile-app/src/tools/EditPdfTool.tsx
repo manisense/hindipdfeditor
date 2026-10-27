@@ -35,7 +35,7 @@ import { legacyEditingPolicy, UNKNOWN_ENCODING_FONT_NAME } from '../lib/legacyEd
 import { detectTextLines } from '../lib/ocr';
 import { findOcrTargetAt, findTextEditAt } from '../lib/ocrHitTest';
 import { getPageCount, renderPage, sampleAverageColor, sampleTextColor } from '../lib/pdfToImages';
-import { fontSizeForOcrLine, textBoxGeometry } from '../lib/textEditGeometry';
+import { fontSizeForOcrLine, ocrMaskRect, textBoxGeometry } from '../lib/textEditGeometry';
 import { discardTemporaryOutput, persistOutput } from '../lib/persistOutput';
 import {
   deletableRenderUris,
@@ -82,7 +82,6 @@ const RASTER_SCALE = 3;
 /** Scale, in px per PDF point, of the recents thumbnail (the same as the other tools'). */
 const THUMBNAIL_SCALE = 0.5;
 const MASK_SAMPLE_MARGIN_PX = 16;
-const OCR_MASK_PAD_TOP_RATIO = 0.35;
 const EDIT_TEXT_WIDTH_SLACK_RATIO = 1.25;
 
 type OcrStatusByPage = Record<number, 'running' | 'done' | 'failed'>;
@@ -426,17 +425,10 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
       if (ocrLine) {
         checkpoint();
         const geom = textBoxGeometry(page.widthPt, ocrLine.xPt, ocrLine.wPt);
-        const topPadPt = ocrLine.hPt * OCR_MASK_PAD_TOP_RATIO;
-        const maskYPt = Math.max(0, ocrLine.yPt - topPadPt);
-        const maskHPt = Math.min(page.heightPt - maskYPt, ocrLine.hPt + topPadPt);
+        const mask = ocrMaskRect(page.widthPt, page.heightPt, ocrLine);
 
-        const { x: xPx, y: yPx } = ptToImagePx(geom.xPt, maskYPt, page.imagePxWidth, page.widthPt);
-        const { wPx, hPx } = ptSizeToImagePx(
-          geom.widthPt,
-          maskHPt,
-          page.imagePxWidth,
-          page.widthPt,
-        );
+        const { x: xPx, y: yPx } = ptToImagePx(mask.xPt, mask.yPt, page.imagePxWidth, page.widthPt);
+        const { wPx, hPx } = ptSizeToImagePx(mask.wPt, mask.hPt, page.imagePxWidth, page.widthPt);
         const sampledColor = await sampleAverageColor(
           page.backgroundImageUri,
           xPx,
@@ -447,13 +439,13 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
         ).catch(() => '#ffffff');
 
         const { x: textXPx, y: textYPx } = ptToImagePx(
-          geom.xPt,
+          ocrLine.xPt,
           ocrLine.yPt,
           page.imagePxWidth,
           page.widthPt,
         );
         const { wPx: textWPx, hPx: textHPx } = ptSizeToImagePx(
-          geom.widthPt,
+          ocrLine.wPt,
           ocrLine.hPt,
           page.imagePxWidth,
           page.widthPt,
@@ -466,13 +458,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
           textHPx,
         ).catch(() => '#15172c');
 
-        const maskEdit = addMaskEdit(currentPageIndex, {
-          xPt: geom.xPt,
-          yPt: maskYPt,
-          wPt: geom.widthPt,
-          hPt: maskHPt,
-          color: sampledColor,
-        });
+        const maskEdit = addMaskEdit(currentPageIndex, { ...mask, color: sampledColor });
 
         const textEdit = addTextEdit(currentPageIndex, {
           xPt: geom.xPt,
