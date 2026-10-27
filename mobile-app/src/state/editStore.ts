@@ -190,6 +190,22 @@ function withUpdatedPage(document: DocumentState, page: number, edits: Edit[]): 
 }
 
 /**
+ * Every page background image (`backgroundImageUri`) the store still references, across the
+ * current document and the undo and redo history, each listed once. The editor deletes these
+ * render files when it closes, since nothing else uses them.
+ */
+export function pageImageUris(
+  state: Pick<EditStoreState, 'document' | 'history' | 'future'>,
+): string[] {
+  const docs = [state.document, ...state.history, ...state.future];
+  const uris = new Set<string>();
+  for (const doc of docs) {
+    for (const page of doc?.pages ?? []) uris.add(page.backgroundImageUri);
+  }
+  return [...uris];
+}
+
+/**
  * Creates an independent edit store instance. The app uses the default singleton export
  * (`useEditStore`) below; this factory exists so tests can create a fresh, isolated store
  * per test instead of sharing module-level state across the whole suite.

@@ -1,4 +1,4 @@
-import { createEditStore, type DocumentState } from './editStore';
+import { createEditStore, pageImageUris, type DocumentState } from './editStore';
 
 function makeDocument(pageCount = 2): DocumentState {
   return {
@@ -452,5 +452,38 @@ describe('editStore', () => {
     const storeB = makeStore();
     storeA.getState().loadDocument(makeDocument(1));
     expect(storeB.getState().document).toBeNull();
+  });
+});
+
+describe('pageImageUris', () => {
+  it('lists every page render in the document and its history once', () => {
+    const store = makeStore();
+    store.getState().loadDocument(makeDocument());
+    store.getState().checkpoint();
+    store.getState().insertPage(2, {
+      widthPt: 595,
+      heightPt: 842,
+      backgroundImageUri: 'file:///fake/blank.png',
+      imagePxWidth: 1785,
+      imagePxHeight: 2526,
+      edits: [],
+      ocrLines: [],
+      isBlank: true,
+    });
+    store.getState().checkpoint();
+    store.getState().undo();
+    expect(pageImageUris(store.getState()).sort()).toEqual([
+      'file:///fake/blank.png',
+      'file:///fake/page-0.jpg',
+      'file:///fake/page-1.jpg',
+    ]);
+  });
+
+  it('is empty once the document is closed', () => {
+    const store = makeStore();
+    store.getState().loadDocument(makeDocument());
+    store.getState().checkpoint();
+    store.getState().closeDocument();
+    expect(pageImageUris(store.getState())).toEqual([]);
   });
 });

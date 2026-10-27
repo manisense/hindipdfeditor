@@ -44,6 +44,10 @@ All notable changes to this project are documented here, grouped by phase (see `
   - The changed-lines count includes a line whose text was emptied.
   - Bottom sheets rise above the keyboard (`KeyboardAvoidingView` inside the Modal). **Not verified on a device.**
 
+### Fixed — native UI redesign, whole-branch review
+
+- Leaving the editor by any route (Close, Android back, or the Saved screen's Open) now drops its document, undo history and page renders, which are deleted from the app cache (`pageImageUris`, tested). Before, Saved → Open kept the last file in memory, and the next Edit tile skipped the picker and reopened it. **Not verified on a device:** Edit → Save → Open → back → Edit should show the picker.
+
 ## [Unreleased] — Mobile Web Parity & Architecture Overhaul
 
 ### Security — dependency updates before 1.0.1

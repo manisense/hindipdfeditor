@@ -37,6 +37,7 @@ import { getPageCount, renderPage, sampleAverageColor, sampleTextColor } from '.
 import { fontSizeForOcrLine, textBoxGeometry } from '../lib/textEditGeometry';
 import { verifyPdfOutput } from '../lib/verifyPdf';
 import {
+  pageImageUris,
   useEditStore,
   type DocumentState,
   type MaskEdit,
@@ -137,6 +138,22 @@ async function copyToEditedFolder(
   }
 }
 
+/**
+ * Drops the editor's document, its undo history and its page renders. Render files are deleted
+ * only when they sit in the app cache, so nothing outside the editor's own output is touched.
+ */
+function releaseEditorDocument(): void {
+  const state = useEditStore.getState();
+  const cache = FileSystem.cacheDirectory;
+  const renders = pageImageUris(state).filter(
+    (uri) => cache !== null && uri.startsWith(cache) && uri !== state.document?.sourceUri,
+  );
+  state.closeDocument();
+  for (const uri of renders) {
+    FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => undefined);
+  }
+}
+
 type Props = {
   initialFileUri?: string;
   initialFileName?: string;
@@ -186,7 +203,6 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
 
   const document = useEditStore((s) => s.document);
   const loadDocument = useEditStore((s) => s.loadDocument);
-  const closeDocument = useEditStore((s) => s.closeDocument);
   const addTextEdit = useEditStore((s) => s.addTextEdit);
   const addMaskEdit = useEditStore((s) => s.addMaskEdit);
   const updateTextEdit = useEditStore((s) => s.updateTextEdit);
@@ -349,6 +365,10 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
       setOpening(false);
     }
   };
+
+  // Every exit (Close, Android back, the Saved screen's Open) unmounts the editor, so the
+  // document is released here rather than in one exit path.
+  useEffect(() => releaseEditorDocument, []);
 
   useEffect(() => {
     let active = true;
@@ -685,14 +705,9 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
     }
   };
 
-  const close = () => {
-    closeDocument();
-    onClose();
-  };
-
   const requestClose = () => {
     if (unsaved) setDiscardVisible(true);
-    else close();
+    else onClose();
   };
 
   const selectMode = (mode: EditMode) => {
@@ -724,7 +739,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
           onOpen={() => savedActions.open(saved)}
           onShare={() => void savedActions.share(saved)}
           onSaveCopy={() => void savedActions.saveCopy(saved)}
-          onClose={close}
+          onClose={onClose}
         />
         {errorDialog}
       </>
@@ -1020,7 +1035,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
         onCancel={() => setDiscardVisible(false)}
         onConfirm={() => {
           setDiscardVisible(false);
-          close();
+          onClose();
         }}
       />
       {errorDialog}
