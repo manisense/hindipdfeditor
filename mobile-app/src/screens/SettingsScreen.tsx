@@ -6,6 +6,7 @@ import { APP_VERSION, PLAY_STORE_URL, PRIVACY_POLICY_URL } from '../constants/le
 import { useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { useSettingsStore, type CheckUpdateResult } from '../state/settingsStore';
+import { AppMark } from '../ui/AppMark';
 import { BrandBand, useBandCollapse } from '../ui/BrandBand';
 import { Dialog } from '../ui/Dialog';
 import { Icon } from '../ui/Icon';
@@ -85,6 +86,7 @@ export function SettingsScreen() {
     <>
       <BrandBand
         title={tx('Settings', 'सेटिंग्स')}
+        leading={<AppMark />}
         scrollY={band.scrollY}
         onCollapseDistance={band.setDistance}
       >

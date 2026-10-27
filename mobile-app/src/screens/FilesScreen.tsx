@@ -18,6 +18,7 @@ import { groupByRecency, type RecencyKey } from '../lib/recencyGroups';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
 import { BandIconButton } from '../ui/BandIconButton';
 import { BottomSheet } from '../ui/BottomSheet';
+import { AppMark } from '../ui/AppMark';
 import { BrandBand, useBandCollapse } from '../ui/BrandBand';
 import { Icon } from '../ui/Icon';
 import { ListRow } from '../ui/ListRow';
@@ -466,6 +467,7 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
     <>
       <BrandBand
         title={tx('Files', 'फ़ाइलें')}
+        leading={<AppMark />}
         scrollY={band.scrollY}
         onCollapseDistance={band.setDistance}
         actions={

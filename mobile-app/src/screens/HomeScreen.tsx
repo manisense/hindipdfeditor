@@ -1,13 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import {
-  FlatList,
-  Image,
-  Pressable,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { useState } from 'react';
+import { FlatList, Image, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { AboutModal } from '../components/AboutModal';
 import type { ToolId } from '../components/ToolShell';
@@ -15,9 +7,10 @@ import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
 import { BandIconButton } from '../ui/BandIconButton';
-import { BrandBand, useBandCollapse } from '../ui/BrandBand';
+import { AppMark } from '../ui/AppMark';
+import { BrandBand } from '../ui/BrandBand';
 import { Icon, type IconName } from '../ui/Icon';
-import { NAV_CLEARANCE, uiFont, uiRadius } from '../ui/tokens';
+import { uiRadius } from '../ui/tokens';
 import { UiText } from '../ui/UiText';
 
 type Props = {
@@ -39,33 +32,8 @@ const TILES: { id: ToolId; icon: IconName; color: TileColor; en: string; hi: str
 ];
 
 const GAP = 10;
-const THUMB_W = 104;
-const THUMB_H = 146;
-
-function AppMark() {
-  const ui = useUi();
-  return (
-    <View
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: 8,
-        marginHorizontal: 12,
-        backgroundColor: '#FFFFFF',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Text
-        style={{ fontFamily: uiFont.devanagari, fontSize: 17, fontWeight: '700', color: ui.brand }}
-      >
-        हि
-      </Text>
-    </View>
-  );
-}
+const THUMB_W = 92;
+const THUMB_H = 130;
 
 function SearchPill({ placeholder, onPress }: { placeholder: string; onPress: () => void }) {
   const ui = useUi();
@@ -245,17 +213,14 @@ export function HomeScreen({ onOpenTool, onOpenFile, onSeeAll, onOpenSearch }: P
   const tx = useTx();
   const recentFiles = useRecentFilesStore((state) => state.files);
   const [aboutVisible, setAboutVisible] = useState(false);
-  const bandListRef = useRef<ScrollView>(null);
-  const band = useBandCollapse(
-    useCallback((y) => bandListRef.current?.scrollTo({ y, animated: true }), []),
-  );
+  // Home stays still; it only scrolls when large text pushes the content past the screen.
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
 
   return (
     <>
       <BrandBand
         title={tx('Hindi PDF', 'हिंदी PDF')}
-        scrollY={band.scrollY}
-        onCollapseDistance={band.setDistance}
         leading={<AppMark />}
         actions={
           <BandIconButton
@@ -272,12 +237,11 @@ export function HomeScreen({ onOpenTool, onOpenFile, onSeeAll, onOpenSearch }: P
         }
       >
         <ScrollView
-          contentContainerStyle={{ paddingTop: 8, paddingBottom: NAV_CLEARANCE }}
-          onScroll={band.onScroll}
-          scrollEventThrottle={band.scrollEventThrottle}
-          ref={bandListRef}
-          onScrollEndDrag={band.onScrollEndDrag}
-          onMomentumScrollEnd={band.onMomentumScrollEnd}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 8 }}
+          scrollEnabled={contentHeight > viewportHeight + 1}
+          overScrollMode="never"
+          onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
+          onContentSizeChange={(_width, height) => setContentHeight(height)}
         >
           <UiText variant="section" style={{ paddingHorizontal: 16 }} accessibilityRole="header">
             {tx('Tools', 'टूल')}

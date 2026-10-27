@@ -6,6 +6,7 @@ import type { ToolId } from '../components/ToolShell';
 import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { BandIconButton } from '../ui/BandIconButton';
+import { AppMark } from '../ui/AppMark';
 import { BrandBand, useBandCollapse } from '../ui/BrandBand';
 import { Icon, type IconName } from '../ui/Icon';
 import { NAV_CLEARANCE, uiRadius } from '../ui/tokens';
@@ -123,6 +124,7 @@ export function ToolsScreen({ onOpenTool }: Props) {
     <>
       <BrandBand
         title={tx('Tools', 'टूल')}
+        leading={<AppMark />}
         scrollY={band.scrollY}
         onCollapseDistance={band.setDistance}
         actions={
