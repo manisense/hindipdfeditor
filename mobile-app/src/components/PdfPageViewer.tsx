@@ -87,6 +87,9 @@ export function PdfPageViewer({
   const horizontalScrollRef = useRef<ScrollView>(null);
   const verticalScrollRef = useRef<ScrollView>(null);
   const scrollOffsetRef = useRef({ x: 0, y: 0 });
+  // Container origin in dp, in the same space as touch pageX/pageY. Measured with
+  // measure(), not measureInWindow(): edge-to-edge Android leaves the status bar out
+  // of measureInWindow, which shifted every tap one status bar lower.
   const containerOriginRef = useRef({ x: 0, y: 0 });
   const containerRef = useRef<View>(null);
 
@@ -180,7 +183,7 @@ export function PdfPageViewer({
       width,
       height,
     };
-    containerRef.current?.measureInWindow((x, y) => {
+    containerRef.current?.measure((_x, _y, _w, _h, x, y) => {
       containerOriginRef.current = { x, y };
     });
   };
@@ -200,7 +203,7 @@ export function PdfPageViewer({
   const beginPinch = (touches: readonly NativeTouchEvent[]) => {
     const dist = pinchDistance(touches);
     if (dist <= 0) return;
-    containerRef.current?.measureInWindow((x, y) => {
+    containerRef.current?.measure((_x, _y, _w, _h, x, y) => {
       containerOriginRef.current = { x, y };
     });
     const editId = focusedEditIdRef.current;
@@ -300,7 +303,7 @@ export function PdfPageViewer({
       if (!disablePress && !touchMovedRef.current && touchStartRef.current) {
         const { pageX, pageY } = touchStartRef.current;
         if (baseViewWidthDp > 0) {
-          containerRef.current?.measureInWindow((x, y) => {
+          containerRef.current?.measure((_x, _y, _w, _h, x, y) => {
             containerOriginRef.current = { x, y };
             const { xPt, yPt } = pageCoordsFromTouch(pageX, pageY);
             onTap(xPt, yPt);
