@@ -2,7 +2,6 @@ import { useDeferredValue, useEffect, useEffectEvent, useMemo, useRef, useState 
 import {
   ActivityIndicator,
   Animated,
-  FlatList,
   Keyboard,
   Pressable,
   useWindowDimensions,
@@ -10,6 +9,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import { FlatList } from 'react-native-gesture-handler';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -18,14 +18,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OcrHighlightLayer } from '../components/OcrHighlightLayer';
 import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
-import { ptToDp } from '../lib/coordinateMath';
 import { openWith } from '../lib/openWith';
 import { getPageCount } from '../lib/pdfToImages';
-import { currentPageAt, readerPageLayout } from '../lib/readerLayout';
+import { A4_ASPECT } from '../lib/readerLayout';
+import { fitPage } from '../lib/zoomMath';
 import { findMatches, indexOfMatch, matchKeyAt, stepMatch, type MatchKey } from '../lib/textSearch';
 import { useHardwareBack } from '../navigation/useHardwareBack';
 import { FileInfoSheet } from '../screens/reader/FileInfoSheet';
-import { FIND_PANEL_HEIGHT, FindBar, FindPanel } from '../screens/reader/FindInFile';
+import { FindBar, FindPanel } from '../screens/reader/FindInFile';
 import { PageGrid } from '../screens/reader/PageGrid';
 import { PageScroller } from '../screens/reader/PageScroller';
 import { ReaderMenu, type ReaderMenuAction } from '../screens/reader/ReaderMenu';
@@ -41,6 +41,7 @@ import { usePageText } from '../screens/reader/usePageText';
 import { usePageThumbs } from '../screens/reader/usePageThumbs';
 import { useReaderChrome } from '../screens/reader/useReaderChrome';
 import { useSettledValue } from '../screens/reader/useSettledValue';
+import { ZoomablePage } from '../screens/reader/ZoomablePage';
 import { ToolPickPrompt } from '../screens/tools/ToolPickPrompt';
 import type { OcrLine } from '../state/editStore';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
@@ -54,15 +55,13 @@ import { commonErrors, useErrorDialog } from '../ui/useErrorDialog';
 
 /** Reader bar height without the top inset, in dp (matches `ReaderBar`). */
 const BAR_HEIGHT = 72;
-/** Gap between pages, in dp. */
-const PAGE_GAP = 6;
+/** Space around a fitted page, in dp. */
+const PAGE_MARGIN = 8;
 /** Edit button size and its margin from the screen edges, in dp. */
 const FAB_SIZE = 56;
 const FAB_MARGIN = 16;
 /** How long the page must stay put before full-size renders start, in ms (skips scrub steps). */
 const SETTLE_MS = 150;
-/** Space kept above a found line when scrolling to it, in dp. */
-const MATCH_MARGIN = 48;
 /** Menu rows the Reader supports, in menu order. */
 const MENU_ACTIONS: readonly ReaderMenuAction[] = [
   'find',
@@ -93,7 +92,7 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
   const ui = useUi();
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const { errorDialog, showError } = useErrorDialog();
   const addFile = useRecentFilesStore((state) => state.addFile);
 
@@ -107,6 +106,8 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
   /** Selected match, kept as a key so it stays put while results for other pages arrive. */
   const [selectedKey, setSelectedKey] = useState<MatchKey | null>(null);
   const listRef = useRef<FlatList<number>>(null);
+  /** True while the current page is zoomed in; the list then stops turning pages. */
+  const [zoomed, setZoomed] = useState(false);
 
   const fileUri = doc?.file.uri ?? null;
   const pageCount = doc?.pageCount ?? 0;
@@ -201,12 +202,22 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
     };
   }, [initialFile]);
 
-  // Pages not rendered yet borrow the first rendered page's shape, so most files lay out once
-  // and scrolling to a far page lands where expected.
-  const layout = useMemo(
-    () => readerPageLayout(pageCount, sizes, width, topPad, PAGE_GAP),
-    [sizes, pageCount, width, topPad],
-  );
+  // Each page fits the screen like a book page. Pages not rendered yet borrow the first rendered
+  // page's shape, so most files lay out once.
+  const fallbackAspect = useMemo(() => {
+    const known = Object.values(sizes).find((s) => s.width && s.height);
+    return known?.width && known.height ? known.width / known.height : A4_ASPECT;
+  }, [sizes]);
+  const pageArea = {
+    width: width - PAGE_MARGIN * 2,
+    // Below the bar, so the top of the page is never hidden under it.
+    height: height - topPad - insets.bottom - PAGE_MARGIN * 2,
+  };
+  const fittedSize = (page: number) => {
+    const size = sizes[page];
+    const aspect = size?.width && size.height ? size.width / size.height : fallbackAspect;
+    return fitPage(pageArea.width, pageArea.height, aspect);
+  };
 
   const wash = THEMES[readingTheme].pageWash;
   // Matched lines per page; the current match is drawn stronger.
@@ -226,26 +237,18 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
   const listExtra = useMemo(() => ({ renders, wash, highlights }), [renders, wash, highlights]);
   const pages = useMemo(() => Array.from({ length: pageCount }, (_, i) => i), [pageCount]);
 
-  // The current page follows the scroll offset (works however many pages fit on screen).
+  // One page per screen width; the current page is the one most on screen.
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     // The find bar stays put while searching.
     if (!searching) chrome.onScroll(event);
-    const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
-    setCurrentPage(
-      currentPageAt(
-        layout.offsets,
-        contentOffset.y,
-        layoutMeasurement.height,
-        contentSize.height,
-        topPad,
-      ),
-    );
+    const page = Math.round(event.nativeEvent.contentOffset.x / width);
+    setCurrentPage(Math.min(Math.max(page, 0), Math.max(pageCount - 1, 0)));
   };
 
-  /** Scrolls so page `page` (zero-based) starts just under the bar. */
+  /** Turns to page `page` (zero-based). */
   const scrollToPage = (page: number) => {
     chrome.ignoreNextScroll();
-    listRef.current?.scrollToIndex({ index: page, animated: false, viewOffset: topPad });
+    listRef.current?.scrollToIndex({ index: page, animated: false });
     setCurrentPage(page);
   };
 
@@ -265,22 +268,13 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
     return true;
   }, searching);
 
-  /** Selects the match `key` names and scrolls so its line sits `MATCH_MARGIN` dp under the bar. */
+  /** Selects the match `key` names and turns to its page. */
   const selectMatch = (key: MatchKey | null) => {
     const m = matches[indexOfMatch(matches, key)];
     if (!key || !m) return;
     setSelectedKey(key);
     Keyboard.dismiss();
-    const text = pageText.pages.find((p) => p.pageIndex === m.pageIndex);
-    const line = text?.lines[m.lineIndex];
-    const lineTopDp =
-      text && line && text.widthPt > 0 ? ptToDp(line.xPt, line.yPt, width, text.widthPt).yDp : 0;
-    chrome.ignoreNextScroll();
-    listRef.current?.scrollToOffset({
-      offset: Math.max(layout.offsets[m.pageIndex] + lineTopDp - topPad - MATCH_MARGIN, 0),
-      animated: false,
-    });
-    setCurrentPage(m.pageIndex);
+    scrollToPage(m.pageIndex);
   };
 
   const handleScrubTo = (page: number) => {
@@ -401,47 +395,59 @@ export function ViewPdfTool({ initialFile, onClose, onOpenEditor, onOpenTranslat
       <FlatList
         ref={listRef}
         data={pages}
+        horizontal
+        pagingEnabled
+        scrollEnabled={!zoomed}
         keyExtractor={(page) => `page-${page}`}
         extraData={listExtra}
-        windowSize={5}
-        showsVerticalScrollIndicator={false}
+        windowSize={3}
+        showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        getItemLayout={(_data, index) => ({
-          length: layout.heights[index] + PAGE_GAP,
-          offset: layout.offsets[index],
-          index,
-        })}
-        contentContainerStyle={{
-          paddingTop: topPad,
-          paddingBottom:
-            insets.bottom + (searching ? FIND_PANEL_HEIGHT : FAB_SIZE + FAB_MARGIN * 2),
-        }}
+        getItemLayout={(_data, index) => ({ length: width, offset: width * index, index })}
         renderItem={({ item: page }) => {
           const render = renders[page];
           const found = highlights[page];
+          const size = fittedSize(page);
           return (
-            <View style={{ marginBottom: PAGE_GAP }}>
-              <ReaderPage
-                page={page}
-                pageCount={pageCount}
-                width={width}
-                height={layout.heights[page]}
-                uri={render?.uri}
-                failed={render !== undefined && !render.uri}
-                wash={wash}
-                onPress={searching ? Keyboard.dismiss : chrome.toggle}
-              />
-              {found && found.widthPt > 0 ? (
-                <OcrHighlightLayer
-                  visible
-                  tone="search"
-                  lines={found.lines}
-                  currentId={found.currentId}
-                  viewWidthDp={width}
-                  pageWidthPt={found.widthPt}
+            <View
+              style={{
+                width,
+                height,
+                paddingTop: topPad,
+                paddingBottom: insets.bottom,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ZoomablePage
+                width={size.width}
+                height={size.height}
+                active={page === currentPage}
+                onTap={searching ? Keyboard.dismiss : chrome.toggle}
+                onZoomedChange={setZoomed}
+              >
+                <ReaderPage
+                  page={page}
+                  pageCount={pageCount}
+                  width={size.width}
+                  height={size.height}
+                  uri={render?.uri}
+                  failed={render !== undefined && !render.uri}
+                  wash={wash}
+                  onPress={searching ? Keyboard.dismiss : chrome.toggle}
                 />
-              ) : null}
+                {found && found.widthPt > 0 ? (
+                  <OcrHighlightLayer
+                    visible
+                    tone="search"
+                    lines={found.lines}
+                    currentId={found.currentId}
+                    viewWidthDp={size.width}
+                    pageWidthPt={found.widthPt}
+                  />
+                ) : null}
+              </ZoomablePage>
             </View>
           );
         }}

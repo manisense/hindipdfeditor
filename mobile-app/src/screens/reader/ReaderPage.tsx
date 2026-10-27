@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { ActivityIndicator, Image, Pressable, View } from 'react-native';
+import { ActivityIndicator, Image, View } from 'react-native';
 
 import { useTx } from '../../i18n';
 import { Icon } from '../../ui/Icon';
@@ -10,7 +10,8 @@ import { UiText } from '../../ui/UiText';
  * One page in the Reader list, `width` x `height` dp on white. Shows the rendered image when
  * `uri` is set, a spinner while it renders, and a notice when the render `failed`. `wash` is an
  * optional colour laid over the image for the reading theme. Pages are always white, so the
- * light tokens are used in both app themes. A tap calls `onPress`.
+ * light tokens are used in both app themes. Taps come from the zoomable page around it; `onPress`
+ * is the screen-reader activation.
  */
 export const ReaderPage = memo(function ReaderPage({
   page,
@@ -34,14 +35,15 @@ export const ReaderPage = memo(function ReaderPage({
 }) {
   const tx = useTx();
   return (
-    <Pressable
+    <View
+      accessible
       accessibilityRole="imagebutton"
       accessibilityLabel={tx(
         `Page ${page + 1} of ${pageCount}`,
         `पृष्ठ ${page + 1} / ${pageCount}`,
       )}
       accessibilityHint={tx('Shows or hides the controls', 'कंट्रोल दिखाता या छिपाता है')}
-      onPress={onPress}
+      onAccessibilityTap={onPress}
       style={{ width, height, backgroundColor: '#FFFFFF' }}
     >
       {uri ? (
@@ -73,6 +75,6 @@ export const ReaderPage = memo(function ReaderPage({
           }}
         />
       ) : null}
-    </Pressable>
+    </View>
   );
 });
