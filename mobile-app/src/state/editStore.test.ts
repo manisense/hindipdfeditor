@@ -1,4 +1,9 @@
-import { createEditStore, pageImageUris, type DocumentState } from './editStore';
+import {
+  createEditStore,
+  deletableRenderUris,
+  pageImageUris,
+  type DocumentState,
+} from './editStore';
 
 function makeDocument(pageCount = 2): DocumentState {
   return {
@@ -485,5 +490,28 @@ describe('pageImageUris', () => {
     store.getState().checkpoint();
     store.getState().closeDocument();
     expect(pageImageUris(store.getState())).toEqual([]);
+  });
+});
+
+describe('deletableRenderUris', () => {
+  it('keeps files outside the cache and the source PDF', () => {
+    const cache = 'file:///data/cache/';
+    const source = 'file:///data/cache/DocumentPicker/source.pdf';
+    expect(
+      deletableRenderUris(
+        [
+          'file:///data/cache/pdf-page-image-1.jpg',
+          source,
+          'file:///data/files/Edited/x.pdf',
+          'content://media/1',
+        ],
+        cache,
+        [source],
+      ),
+    ).toEqual(['file:///data/cache/pdf-page-image-1.jpg']);
+  });
+
+  it('deletes nothing when the cache directory is unknown', () => {
+    expect(deletableRenderUris(['file:///data/cache/a.jpg'], null, [])).toEqual([]);
   });
 });

@@ -38,6 +38,7 @@ import { getPageCount, renderPage, sampleAverageColor, sampleTextColor } from '.
 import { fontSizeForOcrLine, textBoxGeometry } from '../lib/textEditGeometry';
 import { discardTemporaryOutput, persistOutput } from '../lib/persistOutput';
 import {
+  deletableRenderUris,
   pageImageUris,
   useEditStore,
   type DocumentState,
@@ -78,6 +79,8 @@ import { commonErrors, useErrorDialog } from '../ui/useErrorDialog';
 
 const DEFAULT_FONT_SIZE_PT = 14;
 const RASTER_SCALE = 3;
+/** Scale, in px per PDF point, of the recents thumbnail (the same as the other tools'). */
+const THUMBNAIL_SCALE = 0.5;
 const MASK_SAMPLE_MARGIN_PX = 16;
 const OCR_MASK_PAD_TOP_RATIO = 0.35;
 const EDIT_TEXT_WIDTH_SLACK_RATIO = 1.25;
@@ -121,12 +124,15 @@ const TOOLBAR_BOTTOM_GAP = 24;
  */
 function releaseEditorDocument(): void {
   const state = useEditStore.getState();
-  const cache = FileSystem.cacheDirectory;
-  const renders = pageImageUris(state).filter(
-    (uri) => cache !== null && uri.startsWith(cache) && uri !== state.document?.sourceUri,
-  );
+  const renders = pageImageUris(state);
+  const sourceUri = state.document?.sourceUri;
   state.closeDocument();
-  for (const uri of renders) {
+  deleteRenders(renders, sourceUri);
+}
+
+/** Best-effort delete of editor page renders (cache files only, never `sourceUri`). */
+function deleteRenders(uris: readonly string[], sourceUri: string | undefined): void {
+  for (const uri of deletableRenderUris(uris, FileSystem.cacheDirectory, [sourceUri])) {
     FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => undefined);
   }
 }
@@ -177,6 +183,8 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
   /** The open line as this tap created it; null when an existing line was reopened. */
   const createdLineRef = useRef<TextEdit | null>(null);
   const savingRef = useRef(false);
+  /** Bumped by each load and by unmount, so only the latest load still mounted may finish. */
+  const loadRunRef = useRef(0);
 
   const document = useEditStore((s) => s.document);
   const loadDocument = useEditStore((s) => s.loadDocument);
@@ -280,12 +288,21 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
   };
 
   const loadPdfFromUri = async (uri: string, name: string) => {
+    const run = ++loadRunRef.current;
+    const pages: PageState[] = [];
+    let thumbnailUri: string | undefined;
+    /** True, after releasing this load's renders, when the editor closed or another load began. */
+    const superseded = () => {
+      if (loadRunRef.current === run) return false;
+      deleteRenders([...pages.map((p) => p.backgroundImageUri), thumbnailUri ?? ''], uri);
+      return true;
+    };
     setOpening(true);
     try {
       const pageCount = await getPageCount(uri);
-      const pages: PageState[] = [];
 
       for (let i = 0; i < pageCount; i++) {
+        if (superseded()) return;
         const image = await renderPage(uri, i, RASTER_SCALE);
         pages.push({
           pageIndex: i,
@@ -300,6 +317,11 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
       }
 
       const legacyFontWarnings = await detectLegacyFontWarnings(uri, pageCount);
+      // Recents get their own small render: the editor deletes its page renders when it closes.
+      thumbnailUri = await renderPage(uri, 0, THUMBNAIL_SCALE)
+        .then((image) => image.uri)
+        .catch(() => undefined);
+      if (superseded()) return;
       const newDoc: DocumentState = {
         sourceUri: uri,
         displayName: name,
@@ -322,7 +344,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
         name,
         hindiName: name.replace(/\.pdf$/i, '') + '_संपादित.pdf',
         uri,
-        thumbnailUri: pages[0]?.backgroundImageUri,
+        thumbnailUri,
         sizeBytes: 0,
         pageCount,
         category: 'all',
@@ -330,6 +352,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
       };
       void addRecentFile(fileData);
     } catch (error) {
+      if (superseded()) return;
       console.warn('Editor open failed', error);
       showError({
         ...errors.open,
@@ -339,13 +362,20 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
             .catch((pickError: unknown) => console.warn('Editor re-pick failed', pickError)),
       });
     } finally {
-      setOpening(false);
+      if (loadRunRef.current === run) setOpening(false);
     }
   };
 
   // Every exit (Close, Android back, the Saved screen's Open) unmounts the editor, so the
   // document is released here rather than in one exit path.
-  useEffect(() => releaseEditorDocument, []);
+  // A load still running then is dropped: bumping the run id makes it discard its renders.
+  useEffect(() => {
+    const loadRun = loadRunRef;
+    return () => {
+      loadRun.current += 1;
+      releaseEditorDocument();
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;

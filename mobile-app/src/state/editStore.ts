@@ -206,6 +206,19 @@ export function pageImageUris(
 }
 
 /**
+ * The editor's render files that are safe to delete: the `uris` inside `cacheDirectory`, minus
+ * every URI in `keep` (the source PDF, which may itself be a picker copy in the cache).
+ */
+export function deletableRenderUris(
+  uris: readonly string[],
+  cacheDirectory: string | null,
+  keep: readonly (string | undefined)[],
+): string[] {
+  if (!cacheDirectory) return [];
+  return uris.filter((uri) => uri.startsWith(cacheDirectory) && !keep.includes(uri));
+}
+
+/**
  * Creates an independent edit store instance. The app uses the default singleton export
  * (`useEditStore`) below; this factory exists so tests can create a fresh, isolated store
  * per test instead of sharing module-level state across the whole suite.
