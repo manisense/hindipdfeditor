@@ -1,4 +1,9 @@
-import { fontSizeForOcrLine, ocrMaskRect, textBoxGeometry } from './textEditGeometry';
+import {
+  fontSizeForOcrLine,
+  ocrMaskRect,
+  textBoxGeometry,
+  textTopForOcrLine,
+} from './textEditGeometry';
 
 describe('textBoxGeometry', () => {
   it('uses a stable proportional width for a normal page', () => {
@@ -23,8 +28,10 @@ describe('textBoxGeometry', () => {
 });
 
 describe('fontSizeForOcrLine', () => {
-  it('does not create the consistently undersized replacement produced by a sub-1 ratio', () => {
-    expect(fontSizeForOcrLine(20)).toBeCloseTo(21.6);
+  it('matches the source size for a Devanagari word box', () => {
+    // Device measurement: a 28pt Noto Sans Devanagari word in fixtures/devanagari-fixture.pdf
+    // gives an ML Kit word box about 30.6pt tall (matras above and below the headline).
+    expect(fontSizeForOcrLine(30.6)).toBeCloseTo(28, 0);
   });
 
   it('keeps noisy short detections readable', () => {
@@ -48,5 +55,12 @@ describe('ocrMaskRect', () => {
     expect(rect.yPt).toBe(0);
     expect(rect.xPt + rect.wPt).toBeLessThanOrEqual(612);
     expect(rect.yPt + rect.hPt).toBeLessThanOrEqual(792);
+  });
+});
+
+describe('textTopForOcrLine', () => {
+  it('puts the replacement on the original line', () => {
+    // Device measurement: with the text box at the OCR top, a 28pt word drew 6.3pt too high.
+    expect(textTopForOcrLine(167.7, 28)).toBeCloseTo(174, 0);
   });
 });

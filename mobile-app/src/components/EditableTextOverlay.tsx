@@ -4,6 +4,9 @@ import { ptSizeToDp, ptToDp } from '../lib/coordinateMath';
 import type { TextEdit } from '../state/editStore';
 import { ui } from '../ui/tokens';
 
+/** Extra room above and below the line, as a share of the font size, for marks outside it. */
+const GLYPH_ROOM_RATIO = 0.5;
+
 type Props = {
   edit: TextEdit;
   /** The `PdfPageViewer`'s currently measured width, in dp - see that component's docstring. */
@@ -29,6 +32,10 @@ type Props = {
 export function EditableTextOverlay({ edit, viewWidthDp, pageWidthPt, focused }: Props) {
   const { xDp, yDp } = ptToDp(edit.xPt, edit.yPt, viewWidthDp, pageWidthPt);
   const fontSizeDp = edit.fontSizePt * (viewWidthDp / pageWidthPt);
+  // Matras, bindu and reph draw outside a line box as tall as the font size, and Android clips
+  // them at the view edge. Pad the box and move it up by the same amount, so the text stays
+  // where the export puts it but has room to draw.
+  const glyphRoomDp = fontSizeDp * GLYPH_ROOM_RATIO;
   const desiredFallbackWidthPt = Math.max(120, pageWidthPt * 0.35);
   const availableWidthPt = Math.max(24, pageWidthPt - edit.xPt - 4);
   const effectiveWidthPt = edit.widthPt ?? Math.min(desiredFallbackWidthPt, availableWidthPt);
@@ -52,7 +59,8 @@ export function EditableTextOverlay({ edit, viewWidthDp, pageWidthPt, focused }:
         styles.input,
         {
           left: xDp,
-          top: yDp,
+          top: yDp - glyphRoomDp,
+          paddingVertical: glyphRoomDp,
           width: widthDp,
           fontSize: fontSizeDp,
           lineHeight: fontSizeDp,
@@ -70,7 +78,7 @@ const styles = StyleSheet.create({
   input: {
     includeFontPadding: false,
     position: 'absolute',
-    padding: 0,
+    paddingHorizontal: 0,
     margin: 0,
     minWidth: 40,
     backgroundColor: 'transparent',

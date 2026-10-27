@@ -35,7 +35,12 @@ import { legacyEditingPolicy, UNKNOWN_ENCODING_FONT_NAME } from '../lib/legacyEd
 import { detectTextLines } from '../lib/ocr';
 import { findOcrTargetAt, findTextEditAt } from '../lib/ocrHitTest';
 import { getPageCount, renderPage, sampleAverageColor, sampleTextColor } from '../lib/pdfToImages';
-import { fontSizeForOcrLine, ocrMaskRect, textBoxGeometry } from '../lib/textEditGeometry';
+import {
+  fontSizeForOcrLine,
+  ocrMaskRect,
+  textBoxGeometry,
+  textTopForOcrLine,
+} from '../lib/textEditGeometry';
 import { discardTemporaryOutput, persistOutput } from '../lib/persistOutput';
 import {
   deletableRenderUris,
@@ -339,12 +344,13 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
       setLegacySheetDismissedPages(new Set());
       void ensureOcrForAllPages(newDoc);
 
+      const info = await FileSystem.getInfoAsync(uri).catch(() => null);
       const fileData: Omit<RecentFile, 'id' | 'date'> = {
         name,
         hindiName: name.replace(/\.pdf$/i, '') + '_संपादित.pdf',
         uri,
         thumbnailUri,
-        sizeBytes: 0,
+        sizeBytes: info?.exists ? info.size : 0,
         pageCount,
         category: 'all',
         starred: false,
@@ -462,7 +468,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
 
         const textEdit = addTextEdit(currentPageIndex, {
           xPt: geom.xPt,
-          yPt: ocrLine.yPt,
+          yPt: textTopForOcrLine(ocrLine.yPt, fontSizeForOcrLine(ocrLine.hPt)),
           fontSizePt: fontSizeForOcrLine(ocrLine.hPt),
           text: ocrLine.text,
           color: sampledTextColor,
@@ -576,10 +582,15 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
         fileName,
         document.pages.length,
       );
+      // Home cards show only a stored thumbnail, so give the new file its own.
+      const thumbnailUri = await renderPage(file.uri, 0, THUMBNAIL_SCALE)
+        .then((image) => image.uri)
+        .catch(() => undefined);
       await addRecentFile({
         name: file.name,
         hindiName: file.name,
         uri: file.uri,
+        thumbnailUri,
         sizeBytes: file.sizeBytes,
         pageCount: file.pageCount,
         category: 'downloads',

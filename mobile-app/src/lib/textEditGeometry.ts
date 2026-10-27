@@ -1,4 +1,5 @@
-const OCR_FONT_SIZE_RATIO = 1.08;
+// Font size per point of ML Kit word-box height, measured on the Devanagari fixture (28pt to a 30.6pt box).
+const OCR_FONT_SIZE_RATIO = 0.915;
 const MIN_OCR_FONT_SIZE_PT = 6;
 const DEFAULT_TEXT_WIDTH_RATIO = 0.42;
 const MIN_TEXT_WIDTH_PT = 72;
@@ -65,4 +66,21 @@ export function ocrMaskRect(pageWidthPt: number, pageHeightPt: number, box: Mask
   const wPt = Math.min(pageWidthPt - xPt, box.wPt + 2 * sidePadPt);
   const hPt = Math.min(pageHeightPt - yPt, box.hPt + topPadPt);
   return { xPt, yPt, wPt, hPt };
+}
+
+/**
+ * How far below the OCR box top the text box starts, per point of font size. ML Kit word boxes
+ * have a uniform line-like height that starts above the matras; with the box top as the text
+ * top, a 28pt word in fixtures/devanagari-fixture.pdf drew 6.3pt above the original.
+ */
+const OCR_TEXT_TOP_OFFSET_RATIO = 0.225;
+
+/**
+ * Returns the text-box top that puts a replacement on the original line.
+ *
+ * @param ocrTopPt OCR box top in PDF points.
+ * @param fontSizePt Replacement font size in PDF points.
+ */
+export function textTopForOcrLine(ocrTopPt: number, fontSizePt: number): number {
+  return ocrTopPt + fontSizePt * OCR_TEXT_TOP_OFFSET_RATIO;
 }
