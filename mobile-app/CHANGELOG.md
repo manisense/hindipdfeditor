@@ -4,7 +4,7 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 ## [Unreleased] — Native UI redesign (1.1.0, versionCode 8)
 
-**Device verification pending.** Nothing in this section has run on a phone: no device was connected, and no preview build has been made. The pass still to do is the Task 16 matrix (every screen in English and Hindi, light and dark, 130% font size), TalkBack, Android back behaviour and a Home to Edit to Save smoke test on the installed APK.
+**Device verification partly done.** A local release APK has run on a phone. Checked there: Files, Home, the logo on all four tabs, the launcher icon, Reader page turns, double-tap zoom and Find, dark-mode chrome, and the bottom navigation in light and dark, English and Hindi. Still to do: Reader pinch zoom, the rest of the Task 16 matrix (every screen in English and Hindi, light and dark, 130% font size), TalkBack, Android back behaviour, and a Home to Edit to Save smoke test on a preview build.
 
 ### Added — version 1.1.0
 
