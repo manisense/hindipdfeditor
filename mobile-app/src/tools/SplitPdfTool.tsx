@@ -8,7 +8,7 @@ import { useTx } from '../i18n';
 import { formatFileSize } from '../lib/fileSize';
 import { extractPdfPages, splitPdfFile } from '../lib/pdfOps';
 import { getPageCount, renderPage } from '../lib/pdfToImages';
-import { verifyPdfOutput } from '../lib/verifyPdf';
+import { persistOutput } from '../lib/persistOutput';
 import { ToolDoneScreen } from '../screens/ToolDoneScreen';
 import { ToolFileRow } from '../screens/tools/ToolFileRow';
 import { ToolPickPrompt } from '../screens/tools/ToolPickPrompt';
@@ -171,18 +171,18 @@ export function SplitPdfTool({ initialFileUri, initialFileName, onClose, onOpenF
         thumbnailUri = document.pageImages[0];
         name = `${base}_extracted.pdf`;
       }
-      const verified = await verifyPdfOutput(outUri, chosenCount);
+      const output = await persistOutput(outUri, 'Split', name, chosenCount);
       await addRecentFile({
-        name,
+        name: output.name,
         hindiName: `${base}_विभाजित.pdf`,
-        uri: outUri,
+        uri: output.uri,
         thumbnailUri,
-        sizeBytes: verified.sizeBytes,
-        pageCount: verified.pageCount,
+        sizeBytes: output.sizeBytes,
+        pageCount: output.pageCount,
         category: 'downloads',
         starred: false,
       });
-      setSaved({ uri: outUri, name, ...verified, previewUri: thumbnailUri });
+      setSaved({ ...output, previewUri: thumbnailUri });
     } catch (error) {
       console.warn('Split failed', error);
       showError({
@@ -207,7 +207,6 @@ export function SplitPdfTool({ initialFileUri, initialFileName, onClose, onOpenF
           title={title}
           fileName={saved.name}
           fileUri={saved.uri}
-          folderLabel={tx('Files', 'फ़ाइलें')}
           pageCount={saved.pageCount}
           sizeBytes={saved.sizeBytes}
           previewUri={saved.previewUri}

@@ -17,16 +17,17 @@ const BADGE_SIZE = 48;
 
 /**
  * "Saved" screen every file tool shows once its output has passed the parse-back check (never
- * before). Shows a 160x226dp first-page preview with a green check badge, the file name and
- * `folder · pages · size · opens fine`. Open and Share sit in the action bar; Close and Android
- * back call `onClose`. `onSaveCopy` adds a text button that copies the file to a folder.
+ * before). Shows a 160x226dp first-page preview with a green check badge, the file name,
+ * `pages · size`, and where the file is: in this app's own storage (`persistOutput`), reachable
+ * here through Open, Share and the Reader's Open with. Open and Share sit in the action bar;
+ * Close and Android back call `onClose`. `onSaveCopy` adds a text button that copies the file to
+ * a folder the person picks.
  * `sizeChange` adds a `before → after · n% smaller` line; `note` adds a grey note box.
  */
 export function ToolDoneScreen({
   title,
   fileName,
   fileUri,
-  folderLabel,
   pageCount,
   sizeBytes,
   previewUri,
@@ -40,7 +41,6 @@ export function ToolDoneScreen({
   title: string;
   fileName: string;
   fileUri: string;
-  folderLabel: string;
   /** Pages in the saved file. */
   pageCount: number;
   /** Size of the saved file, in bytes. */
@@ -75,12 +75,7 @@ export function ToolDoneScreen({
   }, [fileUri, previewUri]);
 
   const preview = previewUri ?? renderedPreview;
-  const meta = [
-    folderLabel,
-    pagesLabel(tx, pageCount),
-    formatFileSize(sizeBytes),
-    tx('opens fine', 'ठीक से खुलती है'),
-  ].join(' · ');
+  const meta = `${pagesLabel(tx, pageCount)} · ${formatFileSize(sizeBytes)}`;
   const smaller = sizeChange ? percentSmaller(sizeChange.fromBytes, sizeChange.toBytes) : 0;
   const sizeLine = sizeChange
     ? `${formatFileSize(sizeChange.fromBytes)} → ${formatFileSize(sizeChange.toBytes)}` +
@@ -170,6 +165,16 @@ export function ToolDoneScreen({
             {sizeLine}
           </UiText>
         ) : null}
+        <UiText
+          variant="meta"
+          color={ui.inkSecondary}
+          style={{ marginTop: 12, textAlign: 'center' }}
+        >
+          {tx(
+            'Saved in this app and listed in Files. Use Share, or Open with in the Reader, to use it in another app.',
+            'इस ऐप में सेव है और फ़ाइलें में दिखेगी। दूसरे ऐप में इस्तेमाल के लिए शेयर करें, या रीडर में इससे खोलें चुनें।',
+          )}
+        </UiText>
         {note ? (
           <View
             style={{

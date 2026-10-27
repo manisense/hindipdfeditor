@@ -9,7 +9,7 @@ import { formatFileSize } from '../lib/fileSize';
 import { mergePdfFiles } from '../lib/pdfOps';
 import { getPageCount, renderPage } from '../lib/pdfToImages';
 import { moveItem } from '../lib/reorder';
-import { verifyPdfOutput } from '../lib/verifyPdf';
+import { persistOutput } from '../lib/persistOutput';
 import { ToolDoneScreen } from '../screens/ToolDoneScreen';
 import { PageThumb } from '../screens/tools/PageThumb';
 import { SortableList } from '../screens/tools/SortableList';
@@ -131,19 +131,18 @@ export function MergePdfTool({ initialFileUri, initialFileName, onClose, onOpenF
       const expectedPages = allCounted
         ? files.reduce((acc, f) => acc + (f.pageCount ?? 0), 0)
         : undefined;
-      const verified = await verifyPdfOutput(outUri, expectedPages);
-      const name = mergedOutputName();
+      const output = await persistOutput(outUri, 'Merged', mergedOutputName(), expectedPages);
       await addRecentFile({
-        name,
+        name: output.name,
         hindiName: 'मर्ज_दस्तावेज़.pdf',
-        uri: outUri,
+        uri: output.uri,
         thumbnailUri: files[0]?.thumbnailUri,
-        sizeBytes: verified.sizeBytes,
-        pageCount: verified.pageCount,
+        sizeBytes: output.sizeBytes,
+        pageCount: output.pageCount,
         category: 'downloads',
         starred: false,
       });
-      setSaved({ uri: outUri, name, ...verified, previewUri: files[0]?.thumbnailUri });
+      setSaved({ ...output, previewUri: files[0]?.thumbnailUri });
     } catch (error) {
       console.warn('Merge failed', error);
       showError({
@@ -168,7 +167,6 @@ export function MergePdfTool({ initialFileUri, initialFileName, onClose, onOpenF
           title={title}
           fileName={saved.name}
           fileUri={saved.uri}
-          folderLabel={tx('Files', 'फ़ाइलें')}
           pageCount={saved.pageCount}
           sizeBytes={saved.sizeBytes}
           previewUri={saved.previewUri}

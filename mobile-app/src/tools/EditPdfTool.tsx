@@ -21,6 +21,7 @@ import { PdfPageViewer } from '../components/PdfPageViewer';
 import { createBlankPage } from '../lib/blankPage';
 import { ptSizeToImagePx, ptToImagePx } from '../lib/coordinateMath';
 import { exportPdf, type ExportProgress } from '../lib/exportPdf';
+import { outputFileName } from '../lib/outputFileName';
 import {
   fontFaceWeight,
   fontLabel,
@@ -35,7 +36,7 @@ import { detectTextLines } from '../lib/ocr';
 import { findOcrTargetAt, findTextEditAt } from '../lib/ocrHitTest';
 import { getPageCount, renderPage, sampleAverageColor, sampleTextColor } from '../lib/pdfToImages';
 import { fontSizeForOcrLine, textBoxGeometry } from '../lib/textEditGeometry';
-import { verifyPdfOutput } from '../lib/verifyPdf';
+import { discardTemporaryOutput, persistOutput } from '../lib/persistOutput';
 import {
   pageImageUris,
   useEditStore,
@@ -57,7 +58,6 @@ import {
   editsSnapshot,
   hasUnsavedEdits,
   isUntouchedReplacement,
-  outputFileName,
   type EditMode,
   type EditsSnapshot,
 } from '../screens/editor/editorDocument';
@@ -114,29 +114,6 @@ async function pickOnePdf(): Promise<DocumentPicker.DocumentPickerAsset | null> 
 /** Toolbar height (48dp buttons + 4dp padding each side) and its gap above the bottom inset, in dp. */
 const TOOLBAR_HEIGHT = 56;
 const TOOLBAR_BOTTOM_GAP = 24;
-
-/**
- * Copies an export into the app's `Edited` folder as `fileName`, adding ` (2)`, ` (3)`… when
- * that name is taken, so no earlier file (and never the source) is overwritten. Returns the
- * copy's `file://` URI (name percent-encoded) and its plain file name.
- */
-async function copyToEditedFolder(
-  exportedUri: string,
-  fileName: string,
-): Promise<{ uri: string; name: string }> {
-  if (!FileSystem.documentDirectory) throw new Error('App storage is unavailable');
-  const folder = `${FileSystem.documentDirectory}Edited/`;
-  await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
-  const base = fileName.replace(/\.pdf$/i, '');
-  for (let n = 1; ; n++) {
-    const name = `${n === 1 ? base : `${base} (${n})`}.pdf`;
-    const uri = `${folder}${encodeURIComponent(name)}`;
-    if (!(await FileSystem.getInfoAsync(uri)).exists) {
-      await FileSystem.copyAsync({ from: exportedUri, to: uri });
-      return { uri, name };
-    }
-  }
-}
 
 /**
  * Drops the editor's document, its undo history and its page renders. Render files are deleted
@@ -546,7 +523,7 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
 
   /**
    * Exports through the print pipeline, copies the result to the app's Edited folder under the
-   * sanitised `typedName`, re-checks that copy with `verifyPdfOutput`, and only then shows the
+   * sanitised `typedName` (`persistOutput`, which re-checks the copy), and only then shows the
    * Saved screen (and the share sheet when `share` is true). The source file is never written.
    */
   const saveAs = async (typedName: string, share: boolean) => {
@@ -554,8 +531,6 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
     savingRef.current = true;
     setSaveSheetVisible(false);
     let exportedUri: string | null = null;
-    let copiedUri: string | null = null;
-    let succeeded = false;
     setExportProgress({ completedPages: 0, totalPages: document.pages.length });
     try {
       const usedFamilies = new Set<DevanagariFontFamily>(['NotoSansDevanagari']);
@@ -579,21 +554,22 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
 
       exportedUri = await exportPdf(document, embeddedFonts, setExportProgress);
       const fileName = outputFileName(typedName, defaultEditedName(document.displayName));
-      const { uri, name } = await copyToEditedFolder(exportedUri, fileName);
-      copiedUri = uri;
-      const verified = await verifyPdfOutput(uri, document.pages.length);
+      const file: SavedFile = await persistOutput(
+        exportedUri,
+        'Edited',
+        fileName,
+        document.pages.length,
+      );
       await addRecentFile({
-        name,
-        hindiName: name,
-        uri,
-        sizeBytes: verified.sizeBytes,
-        pageCount: verified.pageCount,
+        name: file.name,
+        hindiName: file.name,
+        uri: file.uri,
+        sizeBytes: file.sizeBytes,
+        pageCount: file.pageCount,
         category: 'downloads',
         starred: false,
       });
-      const file: SavedFile = { uri, name, ...verified };
       setSavedEdits(editsSnapshot(document));
-      succeeded = true;
       setSaved(file);
       if (share) void savedActions.share(file);
     } catch (error) {
@@ -607,14 +583,9 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
         onRetry: () => void saveAs(typedName, share),
       });
     } finally {
-      // The temporary export always goes; the copy goes too unless it passed every check.
-      // Neither is ever the source PDF (the copy is a fresh file in the Edited folder).
-      const leftovers = [exportedUri, succeeded ? null : copiedUri].filter(
-        (uri): uri is string => uri !== null && uri !== document.sourceUri,
-      );
-      await Promise.all(
-        leftovers.map((uri) => FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {})),
-      );
+      // persistOutput removes the export and any unverified copy; this covers a failure before
+      // it ran. Only app-cache files are ever deleted, so the source PDF is never touched.
+      if (exportedUri) await discardTemporaryOutput(exportedUri);
       savingRef.current = false;
       setExportProgress(null);
     }
@@ -733,7 +704,6 @@ export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFi
           title={tx('Edit PDF', 'PDF बदलें')}
           fileName={saved.name}
           fileUri={saved.uri}
-          folderLabel={tx('Files', 'फ़ाइलें')}
           pageCount={saved.pageCount}
           sizeBytes={saved.sizeBytes}
           onOpen={() => savedActions.open(saved)}

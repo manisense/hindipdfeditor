@@ -15,7 +15,7 @@ import { containsDevanagari, containsLatin, translateOcrLines } from '../lib/gem
 import { detectTextLines } from '../lib/ocr';
 import { getPageCount, renderPage, sampleAverageColor } from '../lib/pdfToImages';
 import { geometryForTranslatedLine, successfulTranslations } from '../lib/translateEdits';
-import { verifyPdfOutput } from '../lib/verifyPdf';
+import { discardTemporaryOutput, persistOutput } from '../lib/persistOutput';
 import { ToolDoneScreen } from '../screens/ToolDoneScreen';
 import { ToolFileRow } from '../screens/tools/ToolFileRow';
 import { ToolPickPrompt } from '../screens/tools/ToolPickPrompt';
@@ -288,25 +288,35 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
         legacyFontWarnings: [],
       };
 
-      // exportPdf runs its own parse-back check (page count and sizes) before returning.
+      // exportPdf runs its own parse-back check (page count and sizes) before returning;
+      // persistOutput checks the kept copy again.
       const resultPdf = await exportPdf(docState, embeddedFonts);
-      throwIfCancelled();
-      const verified = await verifyPdfOutput(resultPdf, pages.length);
-
+      if (runIdRef.current !== runId) {
+        await discardTemporaryOutput(resultPdf);
+        return;
+      }
       const base = selectedDoc.name.replace(/\.pdf$/i, '');
-      const name = `${base}_${direction === 'hi-en' ? 'English' : 'Hindi'}.pdf`;
-      throwIfCancelled();
+      const output = await persistOutput(
+        resultPdf,
+        'Translated',
+        `${base}_${direction === 'hi-en' ? 'English' : 'Hindi'}.pdf`,
+        pages.length,
+      );
+      if (runIdRef.current !== runId) {
+        await FileSystem.deleteAsync(output.uri, { idempotent: true }).catch(() => undefined);
+        return;
+      }
       await addRecentFile({
-        name,
+        name: output.name,
         hindiName: `${base}_अनुवादित.pdf`,
-        uri: resultPdf,
+        uri: output.uri,
         thumbnailUri: pages[0]?.backgroundImageUri,
-        sizeBytes: verified.sizeBytes,
-        pageCount: verified.pageCount,
+        sizeBytes: output.sizeBytes,
+        pageCount: output.pageCount,
         category: 'downloads',
         starred: false,
       });
-      setSaved({ uri: resultPdf, name, ...verified });
+      setSaved(output);
     } catch (error) {
       if (error instanceof TranslationCancelled || runIdRef.current !== runId) return;
       console.warn('Translation failed', error);
@@ -337,7 +347,6 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
           title={title}
           fileName={saved.name}
           fileUri={saved.uri}
-          folderLabel={tx('Files', 'फ़ाइलें')}
           pageCount={saved.pageCount}
           sizeBytes={saved.sizeBytes}
           onOpen={() => actions.open(saved)}

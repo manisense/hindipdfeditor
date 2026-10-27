@@ -10,8 +10,8 @@ import { UiText } from '../../ui/UiText';
 
 /**
  * "Save as a new PDF" sheet: the never-changed promise, a file-name field (prefilled with
- * `defaultName`, `.pdf` shown after it), the `changedSummary` line, then Save to phone and
- * Share. Both pass the typed name up unchanged; the caller sanitises it. Mount it with a new
+ * `defaultName`, `.pdf` shown after it), the `changedSummary` line, then Save in this app and
+ * Share (both keep the new file in the app's storage). Both pass the typed name up unchanged; the caller sanitises it. Mount it with a new
  * `key` each time it opens so the field starts from `defaultName` again.
  */
 export function SaveSheet({
@@ -79,7 +79,10 @@ export function SaveSheet({
             {changedSummary}
           </UiText>
         </View>
-        <PillButton title={tx('Save to phone', 'फ़ोन में सेव करें')} onPress={() => onSave(name)} />
+        <PillButton
+          title={tx('Save in this app', 'इस ऐप में सेव करें')}
+          onPress={() => onSave(name)}
+        />
         <PillButton
           kind="tonal"
           icon="share"

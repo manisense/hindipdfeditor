@@ -8,7 +8,7 @@ import { useTx } from '../i18n';
 import { formatFileSize } from '../lib/fileSize';
 import { compressPdfFile } from '../lib/pdfOps';
 import { getPageCount, renderPage } from '../lib/pdfToImages';
-import { verifyPdfOutput } from '../lib/verifyPdf';
+import { persistOutput } from '../lib/persistOutput';
 import { ToolDoneScreen } from '../screens/ToolDoneScreen';
 import { ToolFileRow } from '../screens/tools/ToolFileRow';
 import { ToolPickPrompt } from '../screens/tools/ToolPickPrompt';
@@ -108,21 +108,25 @@ export function CompressPdfTool({ initialFileUri, initialFileName, onClose, onOp
     setCompressing(true);
     try {
       const res = await compressPdfFile(document.uri, document.pageCount, LEVEL_SCALE[level]);
-      const verified = await verifyPdfOutput(res.uri, document.pageCount);
       const base = document.name.replace(/\.pdf$/i, '');
-      const name = `${base}_compressed.pdf`;
+      const output = await persistOutput(
+        res.uri,
+        'Compressed',
+        `${base}_compressed.pdf`,
+        document.pageCount,
+      );
       await addRecentFile({
-        name,
+        name: output.name,
         hindiName: `${base}_कंप्रेस्ड.pdf`,
-        uri: res.uri,
+        uri: output.uri,
         thumbnailUri: document.thumbnailUri,
-        sizeBytes: verified.sizeBytes,
-        pageCount: verified.pageCount,
+        sizeBytes: output.sizeBytes,
+        pageCount: output.pageCount,
         category: 'downloads',
         starred: false,
       });
       setOriginalBytes(res.originalBytes || document.size || 0);
-      setSaved({ uri: res.uri, name, ...verified, previewUri: document.thumbnailUri });
+      setSaved({ ...output, previewUri: document.thumbnailUri });
     } catch (error) {
       console.warn('Compression failed', error);
       showError({
@@ -147,7 +151,6 @@ export function CompressPdfTool({ initialFileUri, initialFileName, onClose, onOp
           title={title}
           fileName={saved.name}
           fileUri={saved.uri}
-          folderLabel={tx('Files', 'फ़ाइलें')}
           pageCount={saved.pageCount}
           sizeBytes={saved.sizeBytes}
           onOpen={() => actions.open(saved)}
