@@ -91,7 +91,6 @@ export function SettingsScreen() {
               options={[
                 { value: 'english', label: 'English' },
                 { value: 'hindi', label: 'हिंदी' },
-                { value: 'bilingual', label: tx('Both', 'दोनों') },
               ]}
             />
             <UiText style={{ marginTop: 8 }}>{tx('Theme', 'थीम')}</UiText>

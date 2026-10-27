@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { APP_VERSION } from '../constants/legal';
 import { safeUpdates } from '../lib/safeUpdates';
 
-export type AppLanguage = 'bilingual' | 'english' | 'hindi';
+export type AppLanguage = 'english' | 'hindi';
 export type AppTheme = 'light' | 'dark' | 'system';
 
 export type CheckUpdateResult = {
@@ -37,6 +37,12 @@ type PersistedSettings = {
   lastCheckedForUpdates: string | null;
 };
 
+/** Maps a stored language to a valid one; the removed 'bilingual' option becomes Hindi. */
+function sanitizeLanguage(stored: unknown): AppLanguage {
+  if (stored === 'english' || stored === 'hindi') return stored;
+  return stored === 'bilingual' ? 'hindi' : 'english';
+}
+
 const STORAGE_PATH = `${FileSystem.documentDirectory ?? ''}app_settings.json`;
 
 async function persistSettings(data: PersistedSettings): Promise<void> {
@@ -65,7 +71,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         const raw = await FileSystem.readAsStringAsync(STORAGE_PATH);
         const parsed = JSON.parse(raw) as Partial<PersistedSettings>;
         set({
-          language: parsed.language ?? 'english',
+          language: sanitizeLanguage(parsed.language),
           theme: parsed.theme ?? 'light',
           lastCheckedForUpdates: parsed.lastCheckedForUpdates ?? null,
           loaded: true,

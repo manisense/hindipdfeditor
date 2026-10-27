@@ -2,11 +2,10 @@ import { useCallback } from 'react';
 
 import { useSettingsStore, type AppLanguage } from '../state/settingsStore';
 
-/** Chooses the label for the current app language. Bilingual joins both with a middle dot. */
+/** Chooses the label for the current app language. Falls back to English when Hindi is empty. */
 export function pickText(language: AppLanguage, en: string, hi: string): string {
   if (language === 'english' || !hi) return en;
-  if (language === 'hindi') return hi;
-  return `${en} · ${hi}`;
+  return hi;
 }
 
 /** Hook returning `tx(en, hi)` bound to the current language. */

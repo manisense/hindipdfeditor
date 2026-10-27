@@ -27,7 +27,7 @@ describe('settingsStore', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useSettingsStore.setState({
-      language: 'bilingual',
+      language: 'english',
       theme: 'light',
       lastCheckedForUpdates: null,
       isCheckingUpdate: false,
@@ -91,5 +91,25 @@ describe('settingsStore', () => {
     expect(useSettingsStore.getState().language).toBe('english');
     expect(useSettingsStore.getState().theme).toBe('system');
     expect(useSettingsStore.getState().lastCheckedForUpdates).toBe('Yesterday at 10:00 AM');
+  });
+
+  test('initStore migrates a saved "bilingual" language to hindi', async () => {
+    mockGetInfoAsync.mockResolvedValueOnce({ exists: true });
+    mockReadAsStringAsync.mockResolvedValueOnce(
+      JSON.stringify({ language: 'bilingual', theme: 'light' }),
+    );
+
+    await useSettingsStore.getState().initStore();
+
+    expect(useSettingsStore.getState().language).toBe('hindi');
+  });
+
+  test('initStore falls back to english for an unknown saved language', async () => {
+    mockGetInfoAsync.mockResolvedValueOnce({ exists: true });
+    mockReadAsStringAsync.mockResolvedValueOnce(JSON.stringify({ language: 'klingon' }));
+
+    await useSettingsStore.getState().initStore();
+
+    expect(useSettingsStore.getState().language).toBe('english');
   });
 });
