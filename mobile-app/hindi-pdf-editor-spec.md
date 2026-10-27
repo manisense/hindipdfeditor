@@ -419,6 +419,22 @@ Added after Phase 4, driven by real use: on a scanned document (no text layer at
 - [x] Desktop compositor fixture: real Devanagari pages with conjuncts/reph were printed and merged, then rendered independently with Poppler backends without blank/black pages or vertical text.
 - [ ] Re-run the canonical fixture on the production Android build: visually compare 3× raster quality, a multi-page export, a blank inserted page, legacy safe replacement, downloaded Mukta, and File Manager persistence. This cannot be marked passed from a desktop Chromium fixture alone.
 
+### UI — native redesign (Android, 1.1.0) — IMPLEMENTED, device verification pending
+
+Visual rules live in `../design-system.md` and ADR 0013; the language rule in ADR 0014. No export, coordinate or compositor logic changed.
+
+- **One language per screen.** Settings holds English or हिंदी (no "Both"; a saved `bilingual` value loads as Hindi). Every user-facing string goes through `tx(en, hi)`; screens never stack both languages.
+- **Tabs (edge to edge, flat bottom nav):**
+  - **Home:** brand band with a search pill (focuses the Files search field), a 3x2 grid of six tool tiles (icon in category colour, no tinted box) and a horizontal recent-files strip. The page itself does not scroll.
+  - **Files:** band with search and source tabs, rows grouped Today / This week / Earlier, star and ⋮ sheet per row, sort and more-options sheets, and an "Allow access" state with a single-file picker.
+  - **Tools:** four groups (Change text, Pages, File size, Reading) of two-column tiles with short descriptions.
+  - **Settings:** App language, Theme, Check for updates, Privacy policy, Rate, Share, About (bottom sheet).
+- **File tools (Merge, Split, Compress, Translate)** share `ToolScaffold`. Each ends on `ToolDoneScreen` (first-page preview, name, `folder · pages · size · opens fine`, Open, Share, Save a copy) only after `verifyPdfOutput` passes the parse-back check. Errors open a dialog with Try again and Close; quick confirmations are snackbars.
+- **Reader:** dark bar (back, name, Share, ⋮) that hides on scroll down; edge-to-edge pages rendered at 2.5 px per pt, one render at a time near the current page; right-edge fast scroller with a page-thumbnail bubble; ⋮ menu with Go to page (page grid), Translate, Reading theme (Day / Sepia / Night), Print, File info and Open with; Find in file (on-device OCR per page, highlights matches); an Edit button that opens the editor.
+- **Editor:** dark bar (Close, name, Save pill, ⋮ Add a blank page); floating dark toolbar (Change text, Add text, Cover old text, Undo, Redo, hold Show original); a line sheet above the keyboard (Was, input, Font, size in pt, colour, bold, Restore original, Done); font and old-font bottom sheets; a "Save as a new PDF" sheet (file name, changed-line count, Save to phone or Share) that exports through the unchanged print pipeline, copies into the app's `Edited` folder without overwriting, verifies the copy, and opens the Saved screen. Close and Android back ask "Discard changes?" only when edits are unsaved. The source PDF is never modified.
+- **Back button:** sheets and Find close first, then the screen; the editor prompts before discarding.
+- **Verification status:** unit tests cover the pure logic (grouping, reorder, page layout, find, save naming, edit sessions, settings migration). Layout, TalkBack, keyboard docking, the language and theme matrix and 130% font size are unverified until a device pass.
+
 ### Phase 5 — Optional, later, only if Phase 0–4 is in real use and you need it
 
 A vector-preserving, smaller-diff alternative export path: `@cantoo/pdf-lib` (see Section 4.1 for why this fork over the unmaintained original `pdf-lib`) + `harfbuzzjs` (the actual HarfBuzz C++ project compiled to WASM by the HarfBuzz maintainers themselves, not a reimplementation — safer than `fontkit` for a script this edge-case-heavy). `harfbuzzjs.shape()` returns glyph IDs and x/y advances via `getGlyphInfosAndPositions()`; walk that array and call the library's low-level glyph-placement API (not its string-based `drawText()`) to place each shaped glyph at its exact coordinate, with font subsetting to keep file size down. This requires real, non-trivial plumbing (font-unit-to-point conversion, subsetting, no shortcuts) — do not attempt this before Phases 0–4 are working and validated in practice.

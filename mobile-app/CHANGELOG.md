@@ -2,7 +2,17 @@
 
 All notable changes to this project are documented here, grouped by phase (see `hindi-pdf-editor-spec.md` Section 10 for the phase definitions). Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased] — Mobile Web Parity & Architecture Overhaul
+## [Unreleased] — Native UI redesign (1.1.0, versionCode 8)
+
+**Device verification pending.** Nothing in this section has run on a phone: no device was connected, and no preview build has been made. The pass still to do is the Task 16 matrix (every screen in English and Hindi, light and dark, 130% font size), TalkBack, Android back behaviour and a Home to Edit to Save smoke test on the installed APK.
+
+### Added — version 1.1.0
+
+- App version 1.1.0, versionCode 8. The redesign adds native modules (`react-native-gesture-handler`, `react-native-reanimated`, `react-native-worklets`, `expo-intent-launcher`). `runtimeVersion` follows the app version, so the bump keeps over-the-air JS updates for this code away from 1.0.x binaries that lack them.
+
+### Removed — "Both" language option
+
+- Settings offers English and हिंदी only; the "Both" option (`English · हिंदी` on every label) is gone because the redesigned screens are single-language and the joined text overflowed tiles and tabs (ADR `0014-remove-both-language-option.md`). A saved `bilingual` choice becomes Hindi on load, and any unknown saved value falls back to English (tested). The unused `TOOLS` catalogue in `ToolShell.tsx`, which held the last "bilingual" wording, is deleted.
 
 ### Changed — native UI redesign
 
@@ -10,7 +20,7 @@ All notable changes to this project are documented here, grouped by phase (see `
 - Files tab rebuilt edge to edge: the brand band holds a search field and source tabs (All, Downloads, WhatsApp, Documents, Starred), and the list is grouped into Today, This week and Earlier (`groupByRecency`, tested). Rows are 72dp with a thumbnail, size, page count, relative time, a star toggle and a ⋮ sheet (Open, Edit, Share, and Remove from list for opened files). Sort and more options open bottom sheets. Without storage access the sheet shows an "Allow access" state with a single-file picker. The Home search pill now focuses the Files search field. The file-details dialog and the Translate, Compress, Split and Merge shortcuts in the row menu are gone; those tools stay on Home and Tools. Scanning, permission, starring and thumbnail logic are unchanged. Without storage access the card sits above the app's own recent and starred files, which are still listed by date.
 - Device-scan file times are now converted from epoch seconds to ms when mapped (they had been read as ms, so every scanned file dated to January 1970). Starred entries saved in seconds are normalised on load, and `addFile` records an `openedAt` time (epoch ms) used for dates when a file has no modified time.
 - Tools tab rebuilt edge to edge: brand band with a ⋮ About action and four groups (Change text, Pages, File size, Reading) of two-column tiles, each with a short description. The old tool list and badges are gone. The band's 48dp icon button is now the shared `BandIconButton`.
-- Settings tab rebuilt edge to edge: on-screen App language (English, हिंदी, Both) and Theme (Light, Dark, System) switches, a Check for updates row (result in a dialog or snackbar), and Privacy policy, Rate on Play Store, Share the app and About rows. The About pop-up is now a bottom sheet with the app mark, version and the same links. The "100% Offline" badge and "Build" line are gone. All four tabs are now edge to edge.
+- Settings tab rebuilt edge to edge: on-screen App language (English, हिंदी) and Theme (Light, Dark, System) switches, a Check for updates row (result in a dialog or snackbar), and Privacy policy, Rate on Play Store, Share the app and About rows. The About pop-up is now a bottom sheet with the app mark, version and the same links. The "100% Offline" badge and "Build" line are gone. All four tabs are now edge to edge.
 - The ambient background circles behind tabs and tools are removed.
 - New shared Saved screen (`ToolDoneScreen`) for file tools: a first-page preview with a green check, the file name, and `folder · pages · size · opens fine`, with Open and Share buttons and an optional Save a copy to a folder button. It is shown only after the output passes a parse-back check (`verifyPdfOutput`, tested: non-empty, re-parses with pdf-lib, expected page count). File sizes now share one formatter (`formatFileSize`, tested).
 - Merge rebuilt on the tool layout (`ToolScaffold`): 76dp rows with a thumbnail, `pages · size`, a remove button and a drag handle. Hold the handle for 200ms and drag to reorder; the lifted row scales up with a shadow and the handle turns blue. Row offsets come from a key-to-slot map on the UI thread (`moveSlot`, tested), so the dropped row does not jump when the list reorders, and a cancelled or interrupted drag puts the rows back without reordering. TalkBack gets Move up, Move down and Remove actions (`moveItem`, tested). The Merge button stays disabled with "Add at least 2 files" until two files are added. After the merged file passes the parse-back check, the Saved screen opens; Open shows it in the Reader. Drag uses `react-native-gesture-handler` ~2.31.1 and `react-native-reanimated` 4.3.1 (+ `react-native-worklets` 0.8.3), the SDK 56 versions; the app root is wrapped in `GestureHandlerRootView`. These are native modules, so the dev client must be rebuilt. `react-native-draggable-flatlist` was rejected: last release May 2025 and open New Architecture flicker issues (#602, #621).
@@ -33,6 +43,8 @@ All notable changes to this project are documented here, grouped by phase (see `
   - Save can't start twice, and Android back is ignored while saving.
   - The changed-lines count includes a line whose text was emptied.
   - Bottom sheets rise above the keyboard (`KeyboardAvoidingView` inside the Modal). **Not verified on a device.**
+
+## [Unreleased] — Mobile Web Parity & Architecture Overhaul
 
 ### Security — dependency updates before 1.0.1
 
