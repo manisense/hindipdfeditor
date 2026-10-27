@@ -15,7 +15,7 @@ import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
 import { BandIconButton } from '../ui/BandIconButton';
-import { BrandBand } from '../ui/BrandBand';
+import { BrandBand, useBandCollapse } from '../ui/BrandBand';
 import { Icon, type IconName } from '../ui/Icon';
 import { NAV_CLEARANCE, uiFont, uiRadius } from '../ui/tokens';
 import { UiText } from '../ui/UiText';
@@ -245,11 +245,13 @@ export function HomeScreen({ onOpenTool, onOpenFile, onSeeAll, onOpenSearch }: P
   const tx = useTx();
   const recentFiles = useRecentFilesStore((state) => state.files);
   const [aboutVisible, setAboutVisible] = useState(false);
+  const band = useBandCollapse();
 
   return (
     <>
       <BrandBand
         title={tx('Hindi PDF', 'हिंदी PDF')}
+        scrollY={band.scrollY}
         leading={<AppMark />}
         actions={
           <BandIconButton
@@ -265,7 +267,11 @@ export function HomeScreen({ onOpenTool, onOpenFile, onSeeAll, onOpenSearch }: P
           />
         }
       >
-        <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: NAV_CLEARANCE }}>
+        <ScrollView
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: NAV_CLEARANCE }}
+          onScroll={band.onScroll}
+          scrollEventThrottle={band.scrollEventThrottle}
+        >
           <UiText variant="section" style={{ paddingHorizontal: 16 }} accessibilityRole="header">
             {tx('Tools', 'टूल')}
           </UiText>

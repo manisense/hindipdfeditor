@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { useHardwareBack } from '../navigation/useHardwareBack';
-import { BrandBand } from './BrandBand';
+import { BrandBand, useBandCollapse } from './BrandBand';
 import { Icon } from './Icon';
 import { PillButton } from './PillButton';
 
@@ -36,6 +36,7 @@ export function ToolScaffold({
   const theme = useAppTheme();
   const tx = useTx();
   const insets = useSafeAreaInsets();
+  const band = useBandCollapse();
 
   useHardwareBack(() => {
     onLeading();
@@ -55,8 +56,14 @@ export function ToolScaffold({
   );
 
   return (
-    <BrandBand title={title} leading={leading}>
-      <ScrollView contentContainerStyle={{ paddingTop: 8 }}>{children}</ScrollView>
+    <BrandBand title={title} leading={leading} scrollY={band.scrollY}>
+      <ScrollView
+        contentContainerStyle={{ paddingTop: 8 }}
+        onScroll={band.onScroll}
+        scrollEventThrottle={band.scrollEventThrottle}
+      >
+        {children}
+      </ScrollView>
       {primary ? (
         <View
           style={{

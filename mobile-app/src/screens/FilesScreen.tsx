@@ -18,7 +18,7 @@ import { groupByRecency, type RecencyKey } from '../lib/recencyGroups';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
 import { BandIconButton } from '../ui/BandIconButton';
 import { BottomSheet } from '../ui/BottomSheet';
-import { BrandBand } from '../ui/BrandBand';
+import { BrandBand, useBandCollapse } from '../ui/BrandBand';
 import { Icon } from '../ui/Icon';
 import { ListRow } from '../ui/ListRow';
 import { PillButton } from '../ui/PillButton';
@@ -99,6 +99,7 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
 
   const files = useRecentFilesStore((state) => state.files);
   const addFile = useRecentFilesStore((state) => state.addFile);
+  const band = useBandCollapse();
   const toggleStar = useRecentFilesStore((state) => state.toggleStar);
   const removeFile = useRecentFilesStore((state) => state.removeFile);
 
@@ -459,6 +460,7 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
     <>
       <BrandBand
         title={tx('Files', 'फ़ाइलें')}
+        scrollY={band.scrollY}
         actions={
           <>
             <BandIconButton
@@ -489,6 +491,8 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
         ) : (
           <SectionList
             sections={sections}
+            onScroll={band.onScroll}
+            scrollEventThrottle={band.scrollEventThrottle}
             keyExtractor={(item) => item.id}
             renderItem={renderFileItem}
             renderSectionHeader={({ section }) => (

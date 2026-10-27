@@ -6,7 +6,7 @@ import type { ToolId } from '../components/ToolShell';
 import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { BandIconButton } from '../ui/BandIconButton';
-import { BrandBand } from '../ui/BrandBand';
+import { BrandBand, useBandCollapse } from '../ui/BrandBand';
 import { Icon, type IconName } from '../ui/Icon';
 import { NAV_CLEARANCE, uiRadius } from '../ui/tokens';
 import { UiText } from '../ui/UiText';
@@ -114,11 +114,13 @@ export function ToolsScreen({ onOpenTool }: Props) {
   const ui = useUi();
   const surface = useAppTheme().colors.surface;
   const [aboutVisible, setAboutVisible] = useState(false);
+  const band = useBandCollapse();
 
   return (
     <>
       <BrandBand
         title={tx('Tools', 'टूल')}
+        scrollY={band.scrollY}
         actions={
           <BandIconButton
             icon="more-vert"
@@ -127,7 +129,11 @@ export function ToolsScreen({ onOpenTool }: Props) {
           />
         }
       >
-        <ScrollView contentContainerStyle={{ paddingBottom: NAV_CLEARANCE }}>
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: NAV_CLEARANCE }}
+          onScroll={band.onScroll}
+          scrollEventThrottle={band.scrollEventThrottle}
+        >
           {GROUPS.map((group) => (
             <View key={group.en}>
               <UiText

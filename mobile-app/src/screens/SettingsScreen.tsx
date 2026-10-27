@@ -6,7 +6,7 @@ import { APP_VERSION, PLAY_STORE_URL, PRIVACY_POLICY_URL } from '../constants/le
 import { useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { useSettingsStore, type CheckUpdateResult } from '../state/settingsStore';
-import { BrandBand } from '../ui/BrandBand';
+import { BrandBand, useBandCollapse } from '../ui/BrandBand';
 import { Dialog } from '../ui/Dialog';
 import { Icon } from '../ui/Icon';
 import { ListRow } from '../ui/ListRow';
@@ -22,6 +22,7 @@ export function SettingsScreen() {
   const tx = useTx();
   const ui = useUi();
   const snackbar = useSnackbar();
+  const band = useBandCollapse();
   const {
     language,
     theme,
@@ -79,8 +80,12 @@ export function SettingsScreen() {
 
   return (
     <>
-      <BrandBand title={tx('Settings', 'सेटिंग्स')}>
-        <ScrollView contentContainerStyle={{ paddingBottom: NAV_CLEARANCE }}>
+      <BrandBand title={tx('Settings', 'सेटिंग्स')} scrollY={band.scrollY}>
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: NAV_CLEARANCE }}
+          onScroll={band.onScroll}
+          scrollEventThrottle={band.scrollEventThrottle}
+        >
           {sectionLabel(tx('Appearance', 'दिखावट'))}
           <View style={{ paddingHorizontal: 16, gap: 8, paddingBottom: 8 }}>
             <UiText>{tx('App language', 'ऐप की भाषा')}</UiText>
