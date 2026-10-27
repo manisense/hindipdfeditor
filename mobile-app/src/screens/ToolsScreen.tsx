@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { AboutModal } from '../components/AboutModal';
@@ -114,13 +114,17 @@ export function ToolsScreen({ onOpenTool }: Props) {
   const ui = useUi();
   const surface = useAppTheme().colors.surface;
   const [aboutVisible, setAboutVisible] = useState(false);
-  const band = useBandCollapse();
+  const bandListRef = useRef<ScrollView>(null);
+  const band = useBandCollapse(
+    useCallback((y) => bandListRef.current?.scrollTo({ y, animated: true }), []),
+  );
 
   return (
     <>
       <BrandBand
         title={tx('Tools', 'टूल')}
         scrollY={band.scrollY}
+        onCollapseDistance={band.setDistance}
         actions={
           <BandIconButton
             icon="more-vert"
@@ -133,6 +137,9 @@ export function ToolsScreen({ onOpenTool }: Props) {
           contentContainerStyle={{ paddingBottom: NAV_CLEARANCE }}
           onScroll={band.onScroll}
           scrollEventThrottle={band.scrollEventThrottle}
+          ref={bandListRef}
+          onScrollEndDrag={band.onScrollEndDrag}
+          onMomentumScrollEnd={band.onMomentumScrollEnd}
         >
           {GROUPS.map((group) => (
             <View key={group.en}>

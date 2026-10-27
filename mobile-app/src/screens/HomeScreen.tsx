@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   FlatList,
   Image,
@@ -245,13 +245,17 @@ export function HomeScreen({ onOpenTool, onOpenFile, onSeeAll, onOpenSearch }: P
   const tx = useTx();
   const recentFiles = useRecentFilesStore((state) => state.files);
   const [aboutVisible, setAboutVisible] = useState(false);
-  const band = useBandCollapse();
+  const bandListRef = useRef<ScrollView>(null);
+  const band = useBandCollapse(
+    useCallback((y) => bandListRef.current?.scrollTo({ y, animated: true }), []),
+  );
 
   return (
     <>
       <BrandBand
         title={tx('Hindi PDF', 'हिंदी PDF')}
         scrollY={band.scrollY}
+        onCollapseDistance={band.setDistance}
         leading={<AppMark />}
         actions={
           <BandIconButton
@@ -271,6 +275,9 @@ export function HomeScreen({ onOpenTool, onOpenFile, onSeeAll, onOpenSearch }: P
           contentContainerStyle={{ paddingTop: 8, paddingBottom: NAV_CLEARANCE }}
           onScroll={band.onScroll}
           scrollEventThrottle={band.scrollEventThrottle}
+          ref={bandListRef}
+          onScrollEndDrag={band.onScrollEndDrag}
+          onMomentumScrollEnd={band.onMomentumScrollEnd}
         >
           <UiText variant="section" style={{ paddingHorizontal: 16 }} accessibilityRole="header">
             {tx('Tools', 'टूल')}

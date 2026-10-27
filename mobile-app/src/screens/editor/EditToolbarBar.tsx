@@ -52,6 +52,8 @@ export function EditToolbarBar({
         paddingVertical: 4,
         borderRadius: 9999,
         backgroundColor: ui.chrome,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
         elevation: 8,
       }}
     >

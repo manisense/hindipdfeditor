@@ -36,7 +36,9 @@ export const uiDark = {
   ...ui,
   brandTint: '#1B2350',
   brandOnSurface: '#A9BBFF',
-  readingBackdrop: '#0E1017',
+  // Bars and the floating toolbar sit a step above the backdrop so they stay visible in dark mode.
+  chrome: '#262A36',
+  readingBackdrop: '#14161F',
   ink: '#E8EAF0',
   inkSecondary: '#A9B1C2',
   inkLabel: '#A9B1C2',
@@ -44,6 +46,14 @@ export const uiDark = {
   fill: '#23252F',
   divider: 'rgba(255, 255, 255, 0.08)',
   ring: 'rgba(255, 255, 255, 0.08)',
+  // Lighter category hues keep icons at 3:1 or more on the dark surfaces.
+  category: {
+    edit: '#7B93FF',
+    translate: '#34C26A',
+    pages: '#B48CFF',
+    size: '#F08A3C',
+    read: '#2DBFAF',
+  },
 } as const;
 
 export type UiTokens = typeof ui | typeof uiDark;

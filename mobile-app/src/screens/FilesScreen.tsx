@@ -99,7 +99,13 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
 
   const files = useRecentFilesStore((state) => state.files);
   const addFile = useRecentFilesStore((state) => state.addFile);
-  const band = useBandCollapse();
+  const bandListRef = useRef<SectionList<RecentFile, { key: string; title: string }>>(null);
+  const band = useBandCollapse(
+    useCallback(
+      (y) => bandListRef.current?.getScrollResponder()?.scrollTo({ y, animated: true }),
+      [],
+    ),
+  );
   const toggleStar = useRecentFilesStore((state) => state.toggleStar);
   const removeFile = useRecentFilesStore((state) => state.removeFile);
 
@@ -461,6 +467,7 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
       <BrandBand
         title={tx('Files', 'फ़ाइलें')}
         scrollY={band.scrollY}
+        onCollapseDistance={band.setDistance}
         actions={
           <>
             <BandIconButton
@@ -493,6 +500,9 @@ export function FilesScreen({ onOpenFile, focusSearchToken = 0 }: Props) {
             sections={sections}
             onScroll={band.onScroll}
             scrollEventThrottle={band.scrollEventThrottle}
+            ref={bandListRef}
+            onScrollEndDrag={band.onScrollEndDrag}
+            onMomentumScrollEnd={band.onMomentumScrollEnd}
             keyExtractor={(item) => item.id}
             renderItem={renderFileItem}
             renderSectionHeader={({ section }) => (

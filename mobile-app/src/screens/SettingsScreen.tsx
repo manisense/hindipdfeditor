@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Linking, ScrollView, Share, View } from 'react-native';
 
 import { AboutModal } from '../components/AboutModal';
@@ -22,7 +22,10 @@ export function SettingsScreen() {
   const tx = useTx();
   const ui = useUi();
   const snackbar = useSnackbar();
-  const band = useBandCollapse();
+  const bandListRef = useRef<ScrollView>(null);
+  const band = useBandCollapse(
+    useCallback((y) => bandListRef.current?.scrollTo({ y, animated: true }), []),
+  );
   const {
     language,
     theme,
@@ -80,11 +83,18 @@ export function SettingsScreen() {
 
   return (
     <>
-      <BrandBand title={tx('Settings', 'सेटिंग्स')} scrollY={band.scrollY}>
+      <BrandBand
+        title={tx('Settings', 'सेटिंग्स')}
+        scrollY={band.scrollY}
+        onCollapseDistance={band.setDistance}
+      >
         <ScrollView
           contentContainerStyle={{ paddingBottom: NAV_CLEARANCE }}
           onScroll={band.onScroll}
           scrollEventThrottle={band.scrollEventThrottle}
+          ref={bandListRef}
+          onScrollEndDrag={band.onScrollEndDrag}
+          onMomentumScrollEnd={band.onMomentumScrollEnd}
         >
           {sectionLabel(tx('Appearance', 'दिखावट'))}
           <View style={{ paddingHorizontal: 16, gap: 8, paddingBottom: 8 }}>

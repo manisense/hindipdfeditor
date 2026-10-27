@@ -1,5 +1,5 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import { Animated, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Animated, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme, useUi } from '../hooks/useAppTheme';
@@ -9,12 +9,17 @@ import { UiText } from './UiText';
 const SHEET_OVERLAP = 24;
 const SHEET_RADIUS = 24;
 
+type ScrollEndEvent = NativeSyntheticEvent<NativeScrollEvent>;
+
 /**
- * Scroll state for a collapsing BrandBand. Pass `scrollY` to the band and spread `onScroll`
- * and `scrollEventThrottle` onto the list inside it.
+ * Scroll state for a collapsing BrandBand. Pass `scrollY` and `onCollapseDistance` to the band,
+ * and `onScroll`, `scrollEventThrottle`, `onScrollEndDrag` and `onMomentumScrollEnd` to the list
+ * inside it. When scrolling stops part-way through the collapse, `scrollToY` (offset in dp) is
+ * called to settle the list fully open or fully collapsed.
  */
-export function useBandCollapse() {
+export function useBandCollapse(scrollToY: (offsetY: number) => void) {
   const [scrollY] = useState(() => new Animated.Value(0));
+  const distanceRef = useRef(0);
   const onScroll = useMemo(
     () =>
       Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
@@ -22,7 +27,49 @@ export function useBandCollapse() {
       }),
     [scrollY],
   );
-  return { scrollY, onScroll, scrollEventThrottle: 16 };
+  const snap = useCallback(
+    (offsetY: number) => {
+      const target = snapOffset(offsetY, distanceRef.current);
+      if (target !== null) scrollToY(target);
+    },
+    [scrollToY],
+  );
+  const onScrollEndDrag = useCallback(
+    (event: ScrollEndEvent) => {
+      // A fling ends in onMomentumScrollEnd instead.
+      if (Math.abs(event.nativeEvent.velocity?.y ?? 0) < 0.05) {
+        snap(event.nativeEvent.contentOffset.y);
+      }
+    },
+    [snap],
+  );
+  const onMomentumScrollEnd = useCallback(
+    (event: ScrollEndEvent) => snap(event.nativeEvent.contentOffset.y),
+    [snap],
+  );
+  const setDistance = useCallback((distance: number) => {
+    distanceRef.current = distance;
+  }, []);
+  return {
+    scrollY,
+    setDistance,
+    onScroll,
+    scrollEventThrottle: 16,
+    onScrollEndDrag,
+    onMomentumScrollEnd,
+  };
+}
+
+/**
+ * Where a list stopped part-way through the band collapse should settle: the nearer of fully
+ * open (0) and fully collapsed (`distance`), or null when it needs no snap.
+ *
+ * @param offsetY Scroll offset in dp.
+ * @param distance Collapse distance in dp.
+ */
+export function snapOffset(offsetY: number, distance: number): number | null {
+  if (distance <= 0 || offsetY <= 0 || offsetY >= distance) return null;
+  return offsetY < distance / 2 ? 0 : distance;
 }
 
 /**
@@ -37,6 +84,7 @@ export function BrandBand({
   actions,
   bandExtra,
   scrollY,
+  onCollapseDistance,
   children,
 }: {
   title: string;
@@ -44,6 +92,8 @@ export function BrandBand({
   actions?: ReactNode;
   bandExtra?: ReactNode;
   scrollY?: Animated.Value;
+  /** Receives the total collapse distance in dp whenever it changes. */
+  onCollapseDistance?: (distance: number) => void;
   children: ReactNode;
 }) {
   const ui = useUi();
@@ -92,6 +142,10 @@ export function BrandBand({
       : undefined;
 
   const sheetStart = bandExtra !== undefined ? extraHeight : 0;
+  const collapseDistance = sheetStart + SHEET_OVERLAP;
+  useEffect(() => {
+    if (collapsing) onCollapseDistance?.(collapseDistance);
+  }, [collapsing, collapseDistance, onCollapseDistance]);
   const sheetProgress =
     collapsing && scrollY
       ? scrollY.interpolate({

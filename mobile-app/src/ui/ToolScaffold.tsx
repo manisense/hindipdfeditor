@@ -1,3 +1,4 @@
+import { useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,7 +37,10 @@ export function ToolScaffold({
   const theme = useAppTheme();
   const tx = useTx();
   const insets = useSafeAreaInsets();
-  const band = useBandCollapse();
+  const bandListRef = useRef<ScrollView>(null);
+  const band = useBandCollapse(
+    useCallback((y) => bandListRef.current?.scrollTo({ y, animated: true }), []),
+  );
 
   useHardwareBack(() => {
     onLeading();
@@ -56,11 +60,19 @@ export function ToolScaffold({
   );
 
   return (
-    <BrandBand title={title} leading={leading} scrollY={band.scrollY}>
+    <BrandBand
+      title={title}
+      leading={leading}
+      scrollY={band.scrollY}
+      onCollapseDistance={band.setDistance}
+    >
       <ScrollView
         contentContainerStyle={{ paddingTop: 8 }}
         onScroll={band.onScroll}
         scrollEventThrottle={band.scrollEventThrottle}
+        ref={bandListRef}
+        onScrollEndDrag={band.onScrollEndDrag}
+        onMomentumScrollEnd={band.onMomentumScrollEnd}
       >
         {children}
       </ScrollView>
