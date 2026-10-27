@@ -7,7 +7,6 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
 import { BottomNav, type MainTab } from '../ui/BottomNav';
@@ -19,83 +18,9 @@ import { resolveBack } from '../navigation/backStack';
 import { useHardwareBack } from '../navigation/useHardwareBack';
 import { useThemedStyles } from '../hooks/useAppTheme';
 import type { RecentFile } from '../state/recentFilesStore';
-import { colors, type Theme } from '../theme';
+import type { Theme } from '../theme';
 
 export type ToolId = 'edit' | 'translate' | 'merge' | 'split' | 'compress' | 'viewer';
-
-export type ToolDef = {
-  id: ToolId;
-  name: string;
-  hindiName: string;
-  desc: string;
-  badge: string;
-  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
-  accent: string;
-  tint: string;
-};
-
-export const TOOLS: ToolDef[] = [
-  {
-    id: 'edit',
-    name: 'Edit Hindi PDF',
-    hindiName: 'संपादित करें',
-    badge: 'Devanagari OCR',
-    desc: 'Tap detected text to edit, add Hindi overlays, or erase lines.',
-    iconName: 'file-document-edit-outline',
-    accent: colors.accentBlue,
-    tint: colors.accentBlueTint,
-  },
-  {
-    id: 'translate',
-    name: 'Translate PDF',
-    hindiName: 'अनुवाद',
-    badge: 'Bilingual AI',
-    desc: 'Full document Hindi ↔ English bilingual translation.',
-    iconName: 'translate',
-    accent: colors.accentGreen,
-    tint: colors.accentGreenTint,
-  },
-  {
-    id: 'merge',
-    name: 'Merge PDFs',
-    hindiName: 'मर्ज करें',
-    badge: 'Multi-Document',
-    desc: 'Combine multiple PDF documents into a single unified file.',
-    iconName: 'layers-triple-outline',
-    accent: colors.accentPurple,
-    tint: colors.accentPurpleTint,
-  },
-  {
-    id: 'split',
-    name: 'Split PDF',
-    hindiName: 'विभाजित करें',
-    badge: 'Page Range',
-    desc: 'Extract individual pages or custom page ranges visually.',
-    iconName: 'content-cut',
-    accent: colors.accentPurple,
-    tint: colors.accentPurpleTint,
-  },
-  {
-    id: 'compress',
-    name: 'Compress PDF',
-    hindiName: 'कंप्रेस करें',
-    badge: 'Size Reducer',
-    desc: 'Reduce PDF file size while maintaining high visual clarity.',
-    iconName: 'archive-arrow-down-outline',
-    accent: colors.accentOrange,
-    tint: colors.accentOrangeTint,
-  },
-  {
-    id: 'viewer',
-    name: 'PDF Reader',
-    hindiName: 'पढ़ें और देखें',
-    badge: 'Reading Mode',
-    desc: 'Read Hindi and English PDFs comfortably with night mode and zoom.',
-    iconName: 'book-open-page-variant-outline',
-    accent: colors.accentTeal,
-    tint: colors.accentTealTint,
-  },
-];
 
 const CORE_TABS: MainTab[] = ['home', 'files', 'tools', 'settings'];
 
