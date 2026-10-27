@@ -1,14 +1,25 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Pressable,
+  ScrollView,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme, useUi } from '../hooks/useAppTheme';
 import { useTx } from '../i18n';
 import { UiText } from './UiText';
 
+/** Tallest a sheet may be, as a share of the window height (unitless). */
+const MAX_HEIGHT_RATIO = 0.9;
+
 /**
  * Modal bottom sheet with a 28dp top radius. Closes on scrim tap and on Android back
  * (handled by `Modal.onRequestClose`). Rises above the keyboard when a field in it is focused.
+ * It is at most 90% of the window height; taller content scrolls under the title.
  */
 export function BottomSheet({
   visible,
@@ -25,6 +36,7 @@ export function BottomSheet({
   const theme = useAppTheme();
   const tx = useTx();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   return (
     <Modal
       visible={visible}
@@ -54,6 +66,7 @@ export function BottomSheet({
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
             paddingBottom: 24 + insets.bottom,
+            maxHeight: windowHeight * MAX_HEIGHT_RATIO,
           }}
         >
           <View
@@ -72,7 +85,13 @@ export function BottomSheet({
               {title}
             </UiText>
           ) : null}
-          {children}
+          <ScrollView
+            style={{ flexGrow: 0, flexShrink: 1 }}
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>

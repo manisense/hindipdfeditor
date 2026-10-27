@@ -129,11 +129,7 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
             {/* Tab 2: Files */}
             <View style={{ width: windowWidth }}>
               {activeTab === 'files' && <StatusBar style="light" />}
-              <FilesScreen
-                onOpenTool={onSelectTool}
-                onOpenFile={handleOpenFile}
-                focusSearchToken={focusSearchToken}
-              />
+              <FilesScreen onOpenFile={handleOpenFile} focusSearchToken={focusSearchToken} />
             </View>
 
             {/* Tab 3: Tools */}

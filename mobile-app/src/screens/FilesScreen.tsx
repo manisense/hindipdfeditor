@@ -29,7 +29,6 @@ import { NoAccessState } from './files/NoAccessState';
 
 type Props = {
   onOpenFile: (file: RecentFile, toolId?: ToolId) => void;
-  onOpenTool?: (tool: ToolId | null) => void;
   /** Increments each time Home asks Files to focus its search field. */
   focusSearchToken?: number;
 };

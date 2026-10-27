@@ -34,7 +34,7 @@ type SelectedDocument = {
 type SplitMode = 'all' | 'range' | 'custom';
 
 const GRID_COLUMNS = 4;
-const GRID_GAP = 10;
+const GRID_GAP = 12;
 
 /** Loads page count, size and one thumbnail per page (scale 1 px per pt). */
 async function loadDocument(uri: string, name: string, size?: number): Promise<SelectedDocument> {

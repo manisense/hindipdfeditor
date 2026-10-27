@@ -5,7 +5,8 @@ import * as IntentLauncher from 'expo-intent-launcher';
 const GRANT_READ_URI_PERMISSION = 1;
 
 /**
- * Opens a PDF in another app the person picks from the Android chooser. `uri` is a file:// URI
+ * Opens a PDF in another app through the system app picker (Android's resolver for
+ * `ACTION_VIEW`, which may open the default PDF app directly). `uri` is a file:// URI
  * (app storage, shared through the app's FileProvider) or a content:// URI (picked via SAF,
  * passed through as is). Rejects when the URI cannot be shared or no app can open PDFs.
  */
