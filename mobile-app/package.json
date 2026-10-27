@@ -38,6 +38,7 @@
   },
   "devDependencies": {
     "@react-native/jest-preset": "0.85.3",
+    "@react-native/metro-config": "0.85.3",
     "@types/jest": "29.5.14",
     "@types/node": "^26.1.0",
     "@types/react": "~19.2.2",

@@ -10,6 +10,10 @@ All notable changes to this project are documented here, grouped by phase (see `
 
 - App version 1.1.0, versionCode 8. The redesign adds native modules (`react-native-gesture-handler`, `react-native-reanimated`, `react-native-worklets`, `expo-intent-launcher`). `runtimeVersion` follows the app version, so the bump keeps over-the-air JS updates for this code away from 1.0.x binaries that lack them.
 
+### Fixed — EAS install
+
+- `@react-native/metro-config` 0.85.3 is a direct dev dependency. `react-native-worklets` requires it as a peer, but npm 11 left it out of the lock file, so `npm ci` on EAS (npm 10) stopped with "package.json and package-lock.json are not in sync" and the 1.1.0 production build failed. Clean installs now pass with npm 10.9.4 and 11.19.1.
+
 ### Removed — "Both" language option
 
 - Settings offers English and हिंदी only; the "Both" option (`English · हिंदी` on every label) is gone because the redesigned screens are single-language and the joined text overflowed tiles and tabs (ADR `0014-remove-both-language-option.md`). A saved `bilingual` choice becomes Hindi on load, and any unknown saved value falls back to English (tested). The unused `TOOLS` catalogue in `ToolShell.tsx`, which held the last "bilingual" wording, is deleted.
