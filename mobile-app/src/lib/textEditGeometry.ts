@@ -1,4 +1,5 @@
-const OCR_FONT_SIZE_RATIO = 1.08;
+// Font size per point of ML Kit word-box height, measured on the Devanagari fixture (28pt to a 30.6pt box).
+const OCR_FONT_SIZE_RATIO = 0.915;
 const MIN_OCR_FONT_SIZE_PT = 6;
 const DEFAULT_TEXT_WIDTH_RATIO = 0.42;
 const MIN_TEXT_WIDTH_PT = 72;
@@ -40,4 +41,46 @@ export function textBoxGeometry(
  */
 export function fontSizeForOcrLine(lineHeightPt: number): number {
   return Math.max(MIN_OCR_FONT_SIZE_PT, lineHeightPt * OCR_FONT_SIZE_RATIO);
+}
+
+/** Extra cover above the OCR box, as a share of its height, for matras and reph. */
+const OCR_MASK_PAD_TOP_RATIO = 0.35;
+/** Extra cover on each side of the OCR box, as a share of its height. */
+const OCR_MASK_PAD_SIDE_RATIO = 0.05;
+
+export type MaskRect = { xPt: number; yPt: number; wPt: number; hPt: number };
+
+/**
+ * Returns the rectangle that hides an OCR-detected word, sized to that word only, so
+ * neighbouring words stay visible. Pads the top for matras and reph above the headline.
+ *
+ * @param pageWidthPt Page width in PDF points.
+ * @param pageHeightPt Page height in PDF points.
+ * @param box OCR box (x, y, width, height) in PDF points.
+ */
+export function ocrMaskRect(pageWidthPt: number, pageHeightPt: number, box: MaskRect): MaskRect {
+  const topPadPt = box.hPt * OCR_MASK_PAD_TOP_RATIO;
+  const sidePadPt = box.hPt * OCR_MASK_PAD_SIDE_RATIO;
+  const xPt = Math.max(0, box.xPt - sidePadPt);
+  const yPt = Math.max(0, box.yPt - topPadPt);
+  const wPt = Math.min(pageWidthPt - xPt, box.wPt + 2 * sidePadPt);
+  const hPt = Math.min(pageHeightPt - yPt, box.hPt + topPadPt);
+  return { xPt, yPt, wPt, hPt };
+}
+
+/**
+ * How far below the OCR box top the text box starts, per point of font size. ML Kit word boxes
+ * have a uniform line-like height that starts above the matras; with the box top as the text
+ * top, a 28pt word in fixtures/devanagari-fixture.pdf drew 6.3pt above the original.
+ */
+const OCR_TEXT_TOP_OFFSET_RATIO = 0.225;
+
+/**
+ * Returns the text-box top that puts a replacement on the original line.
+ *
+ * @param ocrTopPt OCR box top in PDF points.
+ * @param fontSizePt Replacement font size in PDF points.
+ */
+export function textTopForOcrLine(ocrTopPt: number, fontSizePt: number): number {
+  return ocrTopPt + fontSizePt * OCR_TEXT_TOP_OFFSET_RATIO;
 }

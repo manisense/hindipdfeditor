@@ -8,14 +8,14 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 
 1. **Strict Token Adherence (Single Source of Truth: `design-system.md`)**:
    - **Brand Primary**: `#1843DD` (Primary CTAs, links, active states, brand mark).
-   - **Brand Primary Deep**: `#3226B8` (Gradient end for primary buttons: `#1843DD` → `#3226B8`).
+   - **Brand Primary Deep**: `#3226B8` (No longer used for buttons; primary buttons are solid `#1843DD`).
    - **Brand Primary Tint**: `#EEF2FF` (Selected/highlighted backgrounds).
-   - **Category Accent Chips**:
-     - Editing / core tools: `#1843DD` on `#E8EDFF`
-     - Translation & privacy: `#16A34A` on `#E6F7EC`
-     - Merge & split: `#7C3AED` on `#F1EAFE`
-     - Compression & Sarkari tools: `#F0700F` on `#FFF1E4`
-     - OCR / detection: `#0D9488` on `#E3F6F4`
+   - **Category icon colours** (app: icon colour only, no tinted backgrounds; the tint is kept for the web):
+     - Editing / core tools: `#1843DD` (web tint `#E8EDFF`)
+     - Translation & privacy: `#16A34A` (web tint `#E6F7EC`)
+     - Merge & split: `#7C3AED` (web tint `#F1EAFE`)
+     - Compression & Sarkari tools: `#C2560A` in the app (`src/ui/tokens.ts`); the web keeps `#F0700F` (tint `#FFF1E4`)
+     - OCR / detection: `#0D9488` (web tint `#E3F6F4`)
    - **Neutrals**:
      - `text.primary`: `#14161F` (High emphasis)
      - `text.secondary`: `#5B6472` (Body copy, descriptions)
@@ -28,17 +28,17 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 
 2. **Zero Emojis in UI**:
    - Never use raw emojis (e.g. 📄, ✂️, ✏️, 🗜️, 🌐, ℹ️, ➕, ☀️, 🌙, ⭐, etc.) as UI icons or glyphs anywhere in the app or web UI.
-   - Always use vector icons (`@expo/vector-icons` / `react-native-vector-icons` Ionicons and MaterialCommunityIcons on mobile, Lucide/SVG on web).
+   - Always use vector icons: on mobile `src/ui/Icon.tsx` (MaterialIcons); on web Lucide/SVG.
 
-3. **Devanagari Equal Typographic Weight**:
-   - Devanagari headline text (e.g., "हिंदी दस्तावेज़।", "संपादित करें") must sit with equal visual weight next to or directly below English headlines, never as smaller, greyed-out, or secondary afterthought text.
+3. **One Language Per Screen**:
+   - One language per screen, chosen in Settings. Hindi screens render fully in Hindi in Noto Sans Devanagari; never stack English and Hindi on the same label.
    - Latin typeface: Inter / Manrope / Plus Jakarta Sans.
    - Devanagari typeface: Noto Sans Devanagari (Variable).
 
 4. **Component Geometries & Radius**:
    - Buttons: Full pill (`borderRadius: 9999` / `full`). Height ~48dp.
-   - Icon chips: `12px` / `12dp` rounded square (not circles), 40–48dp size, pastel tinted background from category accent table with solid-color centered vector icon.
-   - Cards: `16–20px` / `16–20dp` border radius, hairline `1px solid #E7E8F1` on white, soft elevation (`0px 8px 24px rgba(20, 22, 31, 0.06)`).
+   - Icons sit directly on the surface in their category colour; no tinted squares.
+   - Cards: white, 14dp radius, `0 0 0 1px rgba(9,9,11,0.06)` ring + 1dp shadow.
    - Badges / tags: Full pill (`9999`).
 
 5. **Spacing Scale**:

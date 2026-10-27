@@ -1,26 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import {
+  ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  View,
+} from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AppButton } from '../components/AppButton';
-import { useAppPopup } from '../components/appPopupContext';
-import { DropZone } from '../components/DropZone';
 import { EditableTextOverlay } from '../components/EditableTextOverlay';
-import { EditToolbar } from '../components/EditToolbar';
 import { FontPickerModal } from '../components/FontPickerModal';
 import { LegacyFontWarning } from '../components/LegacyFontWarning';
+import { OldFontChip } from '../components/OldFontChip';
 import { MaskOverlay, type DrawnMaskRect } from '../components/MaskOverlay';
 import { OcrHighlightLayer } from '../components/OcrHighlightLayer';
 import { PdfPageViewer } from '../components/PdfPageViewer';
 import { createBlankPage } from '../lib/blankPage';
 import { ptSizeToImagePx, ptToImagePx } from '../lib/coordinateMath';
-import { exportPdf } from '../lib/exportPdf';
+import { exportPdf, type ExportProgress } from '../lib/exportPdf';
+import { outputFileName } from '../lib/outputFileName';
 import {
   fontFaceWeight,
+  fontLabel,
   getFontBase64,
   installFontFamily,
   isFontFamilyLoaded,
@@ -31,28 +35,61 @@ import { legacyEditingPolicy, UNKNOWN_ENCODING_FONT_NAME } from '../lib/legacyEd
 import { detectTextLines } from '../lib/ocr';
 import { findOcrTargetAt, findTextEditAt } from '../lib/ocrHitTest';
 import { getPageCount, renderPage, sampleAverageColor, sampleTextColor } from '../lib/pdfToImages';
-import { savePdfToPickedDirectory } from '../lib/savePdf';
-import { fontSizeForOcrLine, textBoxGeometry } from '../lib/textEditGeometry';
 import {
+  fontSizeForOcrLine,
+  ocrMaskRect,
+  textBoxGeometry,
+  textTopForOcrLine,
+} from '../lib/textEditGeometry';
+import { discardTemporaryOutput, persistOutput } from '../lib/persistOutput';
+import {
+  deletableRenderUris,
+  pageImageUris,
   useEditStore,
   type DocumentState,
   type MaskEdit,
-  type OcrLine,
   type PageState,
   type TextEdit,
 } from '../state/editStore';
 import { useRecentFilesStore, type RecentFile } from '../state/recentFilesStore';
-import { colors, radius, shadows, spacing } from '../theme';
+import { useUi } from '../hooks/useAppTheme';
+import { useTx } from '../i18n';
+import { useHardwareBack } from '../navigation/useHardwareBack';
+import { EditToolbarBar } from '../screens/editor/EditToolbarBar';
+import { LineEditSheet, MAX_FONT_SIZE_PT, MIN_FONT_SIZE_PT } from '../screens/editor/LineEditSheet';
+import {
+  changeCounts,
+  createEditSession,
+  defaultEditedName,
+  editsSnapshot,
+  hasUnsavedEdits,
+  isUntouchedReplacement,
+  type EditMode,
+  type EditsSnapshot,
+} from '../screens/editor/editorDocument';
+import { SaveSheet } from '../screens/editor/SaveSheet';
+import { ToolDoneScreen } from '../screens/ToolDoneScreen';
+import { ToolPickPrompt } from '../screens/tools/ToolPickPrompt';
+import { useSavedFileActions, type SavedFile } from '../screens/tools/useSavedFileActions';
+import { BandIconButton } from '../ui/BandIconButton';
+import { BottomSheet } from '../ui/BottomSheet';
+import { Dialog } from '../ui/Dialog';
+import { Icon } from '../ui/Icon';
+import { ListRow } from '../ui/ListRow';
+import { PillButton } from '../ui/PillButton';
+import { ReaderBar } from '../ui/ReaderBar';
+import { useSnackbar } from '../ui/Snackbar';
+import { UiText } from '../ui/UiText';
+import { commonErrors, useErrorDialog } from '../ui/useErrorDialog';
 
 const DEFAULT_FONT_SIZE_PT = 14;
 const RASTER_SCALE = 3;
+/** Scale, in px per PDF point, of the recents thumbnail (the same as the other tools'). */
+const THUMBNAIL_SCALE = 0.5;
 const MASK_SAMPLE_MARGIN_PX = 16;
-const OCR_MASK_PAD_TOP_RATIO = 0.35;
 const EDIT_TEXT_WIDTH_SLACK_RATIO = 1.25;
 
-export type EditMode = 'edit' | 'addText' | 'erase';
 type OcrStatusByPage = Record<number, 'running' | 'done' | 'failed'>;
-type EditPairing = { maskId?: string; ocrLine?: OcrLine };
 
 async function detectLegacyFontWarnings(
   sourceUri: string,
@@ -72,32 +109,86 @@ async function detectLegacyFontWarnings(
   }
 }
 
+/** Opens the system picker for one PDF; resolves null when the person cancels. */
+async function pickOnePdf(): Promise<DocumentPicker.DocumentPickerAsset | null> {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: ['application/pdf'],
+    copyToCacheDirectory: true,
+  });
+  return result.canceled || !result.assets || result.assets.length === 0 ? null : result.assets[0];
+}
+
+/** Toolbar height (48dp buttons + 4dp padding each side) and its gap above the bottom inset, in dp. */
+const TOOLBAR_HEIGHT = 56;
+const TOOLBAR_BOTTOM_GAP = 24;
+
+/**
+ * Drops the editor's document, its undo history and its page renders. Render files are deleted
+ * only when they sit in the app cache, so nothing outside the editor's own output is touched.
+ */
+function releaseEditorDocument(): void {
+  const state = useEditStore.getState();
+  const renders = pageImageUris(state);
+  const sourceUri = state.document?.sourceUri;
+  state.closeDocument();
+  deleteRenders(renders, sourceUri);
+}
+
+/** Best-effort delete of editor page renders (cache files only, never `sourceUri`). */
+function deleteRenders(uris: readonly string[], sourceUri: string | undefined): void {
+  for (const uri of deletableRenderUris(uris, FileSystem.cacheDirectory, [sourceUri])) {
+    FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => undefined);
+  }
+}
+
 type Props = {
   initialFileUri?: string;
   initialFileName?: string;
+  onClose: () => void;
+  /** Opens a saved file in the Reader (the Saved screen's Open button). */
+  onOpenFile: (file: RecentFile) => void;
 };
 
 /**
- * Mobile Edit PDF Tool - Full WYSIWYG editor for Devanagari PDFs.
- * Supports smart tap-to-edit with OCR detection, new text placement, and drag-to-erase masks.
+ * Editor for Devanagari PDFs on the dark editor chrome: a `ReaderBar` (close, file name, Save,
+ * more), the page with OCR-detected lines tinted in Change text mode, and the floating
+ * `EditToolbarBar` (Change text, Add text, Cover old text, undo, redo, Show original). Close
+ * and Android back ask before discarding unsaved edits.
  */
-export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
+export function EditPdfTool({ initialFileUri, initialFileName, onClose, onOpenFile }: Props) {
   const insets = useSafeAreaInsets();
-  const { showPopup } = useAppPopup();
+  const ui = useUi();
+  const tx = useTx();
+  const snackbar = useSnackbar();
+  const { errorDialog, showError } = useErrorDialog();
+  const errors = commonErrors(tx);
+  const savedActions = useSavedFileActions(showError, onOpenFile);
   const [opening, setOpening] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [exportResultUri, setExportResultUri] = useState<string | null>(null);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const [showingOriginal, setShowingOriginal] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [discardVisible, setDiscardVisible] = useState(false);
+  const [saveSheetVisible, setSaveSheetVisible] = useState(false);
+  /** Bumped each time the save sheet opens, so its name field starts from the default again. */
+  const [saveSheetKey, setSaveSheetKey] = useState(0);
+  const [saved, setSaved] = useState<SavedFile | null>(null);
+  const [firstEditMade, setFirstEditMade] = useState(false);
 
   const [editMode, setEditMode] = useState<EditMode>('edit');
   const [focusedEditId, setFocusedEditId] = useState<string | null>(null);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  const [selectAllEditId, setSelectAllEditId] = useState<string | null>(null);
   const [fontPickerVisible, setFontPickerVisible] = useState(false);
   const [downloadingFont, setDownloadingFont] = useState<DevanagariFontFamily | null>(null);
   const [, setOcrStatusByPage] = useState<OcrStatusByPage>({});
 
   const ocrAttemptedPagesRef = useRef(new Set<number>());
-  const editPairingsRef = useRef(new Map<string, EditPairing>());
+  /** Font size, in PDF points, of the line being resized when a two-finger pinch began. */
+  const pinchStartSizeRef = useRef(0);
+  /** The open line as this tap created it; null when an existing line was reopened. */
+  const createdLineRef = useRef<TextEdit | null>(null);
+  const savingRef = useRef(false);
+  /** Bumped by each load and by unmount, so only the latest load still mounted may finish. */
+  const loadRunRef = useRef(0);
 
   const document = useEditStore((s) => s.document);
   const loadDocument = useEditStore((s) => s.loadDocument);
@@ -105,6 +196,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
   const addMaskEdit = useEditStore((s) => s.addMaskEdit);
   const updateTextEdit = useEditStore((s) => s.updateTextEdit);
   const removeEdit = useEditStore((s) => s.removeEdit);
+  const revertToCheckpoint = useEditStore((s) => s.revertToCheckpoint);
   const setOcrLines = useEditStore((s) => s.setOcrLines);
   const checkpoint = useEditStore((s) => s.checkpoint);
   const undo = useEditStore((s) => s.undo);
@@ -113,6 +205,25 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
   const canRedo = useEditStore((s) => s.future.length > 0);
   const insertPage = useEditStore((s) => s.insertPage);
   const addRecentFile = useRecentFilesStore((s) => s.addFile);
+  const [lineSession] = useState(() => createEditSession(checkpoint));
+
+  /** Opens the line sheet; `created` is the line when this tap just created it. */
+  const openLine = (id: string, created: TextEdit | null) => {
+    lineSession.start(created !== null);
+    createdLineRef.current = created;
+    setFocusedEditId(id);
+  };
+
+  /** Applies a change from the line sheet, as one undo step per sheet opening. */
+  const changeLine = (id: string, changes: Partial<TextEdit>) => {
+    lineSession.beforeChange();
+    updateTextEdit(currentPageIndex, id, changes);
+  };
+
+  const [savedEdits, setSavedEdits] = useState<EditsSnapshot>(() =>
+    document ? editsSnapshot(document) : [],
+  );
+  const unsaved = document !== null && hasUnsavedEdits(savedEdits, document);
 
   const page = document?.pages[currentPageIndex];
   const focusedEdit =
@@ -135,6 +246,22 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
     [currentPageLegacyFontNames, legacyBypassPages, currentPageIndex],
   );
   const editingBlocked = policy.editingBlocked;
+  const [legacySheetDismissedPages, setLegacySheetDismissedPages] = useState<Set<number>>(
+    new Set(),
+  );
+  const [legacySheetReopened, setLegacySheetReopened] = useState(false);
+  const legacySheetVisible =
+    legacySheetReopened ||
+    (currentPageLegacyFontNames.length > 0 &&
+      editingBlocked &&
+      !legacySheetDismissedPages.has(currentPageIndex));
+  const replacementModeOn = policy.knownLegacyFontNames.length > 0 && !editingBlocked;
+  const reopenLegacySheet = () =>
+    setLegacySheetDismissedPages((prev) => {
+      const next = new Set(prev);
+      next.delete(currentPageIndex);
+      return next;
+    });
 
   const ensureOcrForPage = async (doc: DocumentState, pageIndex: number): Promise<void> => {
     const pageState = doc.pages[pageIndex];
@@ -165,12 +292,21 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
   };
 
   const loadPdfFromUri = async (uri: string, name: string) => {
+    const run = ++loadRunRef.current;
+    const pages: PageState[] = [];
+    let thumbnailUri: string | undefined;
+    /** True, after releasing this load's renders, when the editor closed or another load began. */
+    const superseded = () => {
+      if (loadRunRef.current === run) return false;
+      deleteRenders([...pages.map((p) => p.backgroundImageUri), thumbnailUri ?? ''], uri);
+      return true;
+    };
     setOpening(true);
     try {
       const pageCount = await getPageCount(uri);
-      const pages: PageState[] = [];
 
       for (let i = 0; i < pageCount; i++) {
+        if (superseded()) return;
         const image = await renderPage(uri, i, RASTER_SCALE);
         pages.push({
           pageIndex: i,
@@ -185,6 +321,11 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       }
 
       const legacyFontWarnings = await detectLegacyFontWarnings(uri, pageCount);
+      // Recents get their own small render: the editor deletes its page renders when it closes.
+      thumbnailUri = await renderPage(uri, 0, THUMBNAIL_SCALE)
+        .then((image) => image.uri)
+        .catch(() => undefined);
+      if (superseded()) return;
       const newDoc: DocumentState = {
         sourceUri: uri,
         displayName: name,
@@ -194,35 +335,52 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       };
 
       loadDocument(newDoc);
+      setSavedEdits(editsSnapshot(newDoc));
+      setFirstEditMade(false);
       setCurrentPageIndex(0);
       setFocusedEditId(null);
-      setSelectAllEditId(null);
       ocrAttemptedPagesRef.current.clear();
-      editPairingsRef.current.clear();
       setOcrStatusByPage({});
+      setLegacySheetDismissedPages(new Set());
       void ensureOcrForAllPages(newDoc);
 
+      const info = await FileSystem.getInfoAsync(uri).catch(() => null);
       const fileData: Omit<RecentFile, 'id' | 'date'> = {
         name,
         hindiName: name.replace(/\.pdf$/i, '') + '_संपादित.pdf',
         uri,
-        thumbnailUri: pages[0]?.backgroundImageUri,
-        sizeBytes: 0,
+        thumbnailUri,
+        sizeBytes: info?.exists ? info.size : 0,
         pageCount,
         category: 'all',
         starred: false,
       };
       void addRecentFile(fileData);
     } catch (error) {
-      await showPopup({
-        title: 'Could not open PDF',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
+      if (superseded()) return;
+      console.warn('Editor open failed', error);
+      showError({
+        ...errors.open,
+        onRetry: () =>
+          void pickOnePdf()
+            .then((asset) => asset && loadPdfFromUri(asset.uri, asset.name))
+            .catch((pickError: unknown) => console.warn('Editor re-pick failed', pickError)),
       });
     } finally {
-      setOpening(false);
+      if (loadRunRef.current === run) setOpening(false);
     }
   };
+
+  // Every exit (Close, Android back, the Saved screen's Open) unmounts the editor, so the
+  // document is released here rather than in one exit path.
+  // A load still running then is dropped: bumping the run id makes it discard its renders.
+  useEffect(() => {
+    const loadRun = loadRunRef;
+    return () => {
+      loadRun.current += 1;
+      releaseEditorDocument();
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -241,29 +399,23 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
 
   const openPdfFile = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf'],
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled || !result.assets || result.assets.length === 0) return;
-      const asset = result.assets[0];
-      await loadPdfFromUri(asset.uri, asset.name);
+      const asset = await pickOnePdf();
+      if (asset) await loadPdfFromUri(asset.uri, asset.name);
     } catch (error) {
-      await showPopup({
-        title: 'Could not open PDF',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      console.warn('Editor open failed', error);
+      showError({ ...errors.open, onRetry: () => void openPdfFile() });
     }
   };
 
   const handleTap = async (xPt: number, yPt: number) => {
-    if (!page || editingBlocked) return;
+    if (!page) return;
+    if (editingBlocked) {
+      reopenLegacySheet();
+      return;
+    }
 
     if (focusedEditId) {
-      setFocusedEditId(null);
-      Keyboard.dismiss();
+      finishEditing();
       return;
     }
 
@@ -271,7 +423,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       const textEdits = page.edits.filter((e): e is TextEdit => e.type === 'text');
       const existingText = findTextEditAt(textEdits, xPt, yPt);
       if (existingText) {
-        setFocusedEditId(existingText.id);
+        openLine(existingText.id, null);
         return;
       }
 
@@ -279,17 +431,10 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       if (ocrLine) {
         checkpoint();
         const geom = textBoxGeometry(page.widthPt, ocrLine.xPt, ocrLine.wPt);
-        const topPadPt = ocrLine.hPt * OCR_MASK_PAD_TOP_RATIO;
-        const maskYPt = Math.max(0, ocrLine.yPt - topPadPt);
-        const maskHPt = Math.min(page.heightPt - maskYPt, ocrLine.hPt + topPadPt);
+        const mask = ocrMaskRect(page.widthPt, page.heightPt, ocrLine);
 
-        const { x: xPx, y: yPx } = ptToImagePx(geom.xPt, maskYPt, page.imagePxWidth, page.widthPt);
-        const { wPx, hPx } = ptSizeToImagePx(
-          geom.widthPt,
-          maskHPt,
-          page.imagePxWidth,
-          page.widthPt,
-        );
+        const { x: xPx, y: yPx } = ptToImagePx(mask.xPt, mask.yPt, page.imagePxWidth, page.widthPt);
+        const { wPx, hPx } = ptSizeToImagePx(mask.wPt, mask.hPt, page.imagePxWidth, page.widthPt);
         const sampledColor = await sampleAverageColor(
           page.backgroundImageUri,
           xPx,
@@ -300,13 +445,13 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
         ).catch(() => '#ffffff');
 
         const { x: textXPx, y: textYPx } = ptToImagePx(
-          geom.xPt,
+          ocrLine.xPt,
           ocrLine.yPt,
           page.imagePxWidth,
           page.widthPt,
         );
         const { wPx: textWPx, hPx: textHPx } = ptSizeToImagePx(
-          geom.widthPt,
+          ocrLine.wPt,
           ocrLine.hPt,
           page.imagePxWidth,
           page.widthPt,
@@ -319,17 +464,11 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
           textHPx,
         ).catch(() => '#15172c');
 
-        const maskEdit = addMaskEdit(currentPageIndex, {
-          xPt: geom.xPt,
-          yPt: maskYPt,
-          wPt: geom.widthPt,
-          hPt: maskHPt,
-          color: sampledColor,
-        });
+        const maskEdit = addMaskEdit(currentPageIndex, { ...mask, color: sampledColor });
 
         const textEdit = addTextEdit(currentPageIndex, {
           xPt: geom.xPt,
-          yPt: ocrLine.yPt,
+          yPt: textTopForOcrLine(ocrLine.yPt, fontSizeForOcrLine(ocrLine.hPt)),
           fontSizePt: fontSizeForOcrLine(ocrLine.hPt),
           text: ocrLine.text,
           color: sampledTextColor,
@@ -338,9 +477,8 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
           replacement: { maskId: maskEdit.id, ocrLine },
         });
 
-        editPairingsRef.current.set(textEdit.id, { maskId: maskEdit.id, ocrLine });
-        setFocusedEditId(textEdit.id);
-        setSelectAllEditId(textEdit.id);
+        setFirstEditMade(true);
+        openLine(textEdit.id, textEdit);
         return;
       }
     }
@@ -355,11 +493,16 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       color: '#15172c',
       fontFamily: 'NotoSansDevanagari',
     });
-    setFocusedEditId(textEdit.id);
+    setFirstEditMade(true);
+    openLine(textEdit.id, textEdit);
   };
 
   const handleMaskDrawn = async (drawn: DrawnMaskRect) => {
-    if (!page || editingBlocked) return;
+    if (!page) return;
+    if (editingBlocked) {
+      reopenLegacySheet();
+      return;
+    }
     checkpoint();
 
     const { x: xPx, y: yPx } = ptToImagePx(drawn.xPt, drawn.yPt, page.imagePxWidth, page.widthPt);
@@ -380,6 +523,7 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       hPt: drawn.hPt,
       color: sampledColor,
     });
+    setFirstEditMade(true);
 
     if (editMode === 'erase') {
       return;
@@ -396,12 +540,20 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
       replacement: { maskId: maskEdit.id },
     });
 
-    setFocusedEditId(textEdit.id);
+    openLine(textEdit.id, textEdit);
   };
 
-  const handleExport = async () => {
-    if (!document) return;
-    setSaving(true);
+  /**
+   * Exports through the print pipeline, copies the result to the app's Edited folder under the
+   * sanitised `typedName` (`persistOutput`, which re-checks the copy), and only then shows the
+   * Saved screen (and the share sheet when `share` is true). The source file is never written.
+   */
+  const saveAs = async (typedName: string, share: boolean) => {
+    if (!document || savingRef.current) return;
+    savingRef.current = true;
+    setSaveSheetVisible(false);
+    let exportedUri: string | null = null;
+    setExportProgress({ completedPages: 0, totalPages: document.pages.length });
     try {
       const usedFamilies = new Set<DevanagariFontFamily>(['NotoSansDevanagari']);
       for (const p of document.pages) {
@@ -422,53 +574,53 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
         };
       }
 
-      const outUri = await exportPdf(document, embeddedFonts);
-      setExportResultUri(outUri);
-      await showPopup({
-        title: 'PDF ready to export!',
-        message: `Successfully shaped and exported ${document.pages.length} page(s).`,
-        tone: 'success',
+      exportedUri = await exportPdf(document, embeddedFonts, setExportProgress);
+      const fileName = outputFileName(typedName, defaultEditedName(document.displayName));
+      const file: SavedFile = await persistOutput(
+        exportedUri,
+        'Edited',
+        fileName,
+        document.pages.length,
+      );
+      // Home cards show only a stored thumbnail, so give the new file its own.
+      const thumbnailUri = await renderPage(file.uri, 0, THUMBNAIL_SCALE)
+        .then((image) => image.uri)
+        .catch(() => undefined);
+      await addRecentFile({
+        name: file.name,
+        hindiName: file.name,
+        uri: file.uri,
+        thumbnailUri,
+        sizeBytes: file.sizeBytes,
+        pageCount: file.pageCount,
+        category: 'downloads',
+        starred: false,
       });
+      setSavedEdits(editsSnapshot(document));
+      setSaved(file);
+      if (share) void savedActions.share(file);
     } catch (error) {
-      await showPopup({
-        title: 'Export failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
+      console.warn('Editor save failed', error);
+      showError({
+        title: tx("Couldn't save the PDF", 'PDF सेव नहीं हो सकी'),
+        body: tx(
+          'Something went wrong while building the PDF. Your edits are still here. Try again.',
+          'PDF बनाते समय गड़बड़ी हुई। आपके बदलाव सुरक्षित हैं। फिर से करें।',
+        ),
+        onRetry: () => void saveAs(typedName, share),
       });
     } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleShare = async () => {
-    if (!exportResultUri) return;
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(exportResultUri, { mimeType: 'application/pdf' });
-    }
-  };
-
-  const handleSaveToDevice = async () => {
-    if (!exportResultUri) return;
-    try {
-      const saved = await savePdfToPickedDirectory(exportResultUri, 'edited-document.pdf');
-      if (saved) {
-        await showPopup({
-          title: 'Saved to Files',
-          message: 'Edited PDF successfully saved to your chosen folder.',
-          tone: 'success',
-        });
-      }
-    } catch (error) {
-      await showPopup({
-        title: 'Save failed',
-        message: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      });
+      // persistOutput removes the export and any unverified copy; this covers a failure before
+      // it ran. Only app-cache files are ever deleted, so the source PDF is never touched.
+      if (exportedUri) await discardTemporaryOutput(exportedUri);
+      savingRef.current = false;
+      setExportProgress(null);
     }
   };
 
   const handleInsertBlank = async () => {
     if (!document) return;
+    setFirstEditMade(true);
     checkpoint();
     const widthPt = page?.widthPt ?? 595;
     const heightPt = page?.heightPt ?? 842;
@@ -486,21 +638,47 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
     setCurrentPageIndex(currentPageIndex + 1);
   };
 
-  const handleDeleteEdit = () => {
-    if (!focusedEditId || !page) return;
-    checkpoint();
-    const pairing = editPairingsRef.current.get(focusedEditId);
-    if (pairing?.maskId) {
-      removeEdit(currentPageIndex, pairing.maskId);
+  /** Removes a line's text box and the cover it was paired with. */
+  const removeLine = (edit: TextEdit) => {
+    if (edit.replacement?.maskId) removeEdit(currentPageIndex, edit.replacement.maskId);
+    removeEdit(currentPageIndex, edit.id);
+  };
+
+  /**
+   * Closes the line sheet. A new text box left empty, or a detected line opened by this tap and
+   * left exactly as detected (same text, same style), is dropped with its cover, not kept.
+   */
+  const finishEditing = () => {
+    if (focusedEdit) {
+      const created = createdLineRef.current;
+      const emptyNewBox = !focusedEdit.replacement && focusedEdit.text.trim() === '';
+      const untouched =
+        created?.id === focusedEdit.id && isUntouchedReplacement(created, focusedEdit);
+      // A line this tap created took its own checkpoint and nothing since, so reverting to it
+      // leaves the page and history exactly as before the tap.
+      if (created?.id === focusedEdit.id && (emptyNewBox || untouched)) revertToCheckpoint();
+      else if (emptyNewBox) removeLine(focusedEdit);
     }
-    removeEdit(currentPageIndex, focusedEditId);
+    createdLineRef.current = null;
     setFocusedEditId(null);
+    Keyboard.dismiss();
+  };
+
+  /** Puts the open line back as it is in the source: drops its text box and cover (undoable). */
+  const restoreOriginal = () => {
+    if (focusedEdit) {
+      lineSession.beforeChange();
+      removeLine(focusedEdit);
+    }
+    createdLineRef.current = null;
+    setFocusedEditId(null);
+    Keyboard.dismiss();
   };
 
   const handleSelectFont = async (family: DevanagariFontFamily) => {
     if (!focusedEdit) return;
     if (isFontFamilyLoaded(family)) {
-      updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily: family });
+      changeLine(focusedEdit.id, { fontFamily: family });
       setFontPickerVisible(false);
       return;
     }
@@ -508,514 +686,483 @@ export function EditPdfTool({ initialFileUri, initialFileName }: Props = {}) {
     setDownloadingFont(family);
     try {
       await installFontFamily(family);
-      updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily: family });
+      changeLine(focusedEdit.id, { fontFamily: family });
       setFontPickerVisible(false);
     } catch (err) {
-      await showPopup({
-        title: 'Font download failed',
-        message: err instanceof Error ? err.message : String(err),
-        tone: 'error',
+      console.warn('Font download failed', err);
+      showError({
+        title: tx("Couldn't download the font", 'फ़ॉन्ट डाउनलोड नहीं हो सका'),
+        body: tx(
+          'Check your internet connection, then try again.',
+          'इंटरनेट कनेक्शन जाँचें, फिर से करें।',
+        ),
+        onRetry: () => void handleSelectFont(family),
       });
     } finally {
       setDownloadingFont(null);
     }
   };
 
+  const requestClose = () => {
+    if (unsaved) setDiscardVisible(true);
+    else onClose();
+  };
+
+  const selectMode = (mode: EditMode) => {
+    finishEditing();
+    setEditMode(mode);
+  };
+
+  // Registered after ToolShell's handler (the shell mounts first), so it runs first.
+  useHardwareBack(() => {
+    if (savingRef.current) return true;
+    if (focusedEditId) {
+      finishEditing();
+      return true;
+    }
+    requestClose();
+    return true;
+  });
+
+  if (saved) {
+    return (
+      <>
+        <ToolDoneScreen
+          title={tx('Edit PDF', 'PDF बदलें')}
+          fileName={saved.name}
+          fileUri={saved.uri}
+          pageCount={saved.pageCount}
+          sizeBytes={saved.sizeBytes}
+          onOpen={() => savedActions.open(saved)}
+          onShare={() => void savedActions.share(saved)}
+          onSaveCopy={() => void savedActions.saveCopy(saved)}
+          onClose={onClose}
+        />
+        {errorDialog}
+      </>
+    );
+  }
+
+  const title = document?.displayName ?? tx('Edit PDF', 'PDF बदलें');
+  const changes = document ? changeCounts(document) : { lines: 0, pages: 0 };
+  const saving = exportProgress !== null;
+  const showHint =
+    !firstEditMade && editMode === 'edit' && !editingBlocked && !focusedEdit && !showingOriginal;
+  const toolbarBottom = insets.bottom + TOOLBAR_BOTTOM_GAP;
+
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: ui.readingBackdrop }}>
+      <ReaderBar
+        title={title}
+        leadingIcon="close"
+        onLeading={requestClose}
+        actions={
+          document ? (
+            <>
+              <SaveButton
+                label={tx('Save', 'सेव करें')}
+                disabled={saving}
+                onPress={() => {
+                  finishEditing();
+                  setSaveSheetKey((k) => k + 1);
+                  setSaveSheetVisible(true);
+                }}
+              />
+              <BandIconButton
+                icon="more-vert"
+                label={tx('More options', 'और विकल्प')}
+                onPress={() => setMenuVisible(true)}
+              />
+            </>
+          ) : undefined
+        }
+      />
       {!document ? (
-        <ScrollView contentContainerStyle={styles.landingContent}>
-          <DropZone
-            title="Edit Hindi PDF"
-            subtitle="Tap to edit existing Devanagari text, place new text, or drag to mask."
-            buttonLabel="Select PDF file"
-            badgeAccent={colors.brand}
-            badgeTint={colors.brandWash}
-            onSelect={openPdfFile}
-            loading={opening}
-          />
-        </ScrollView>
-      ) : (
-        <View style={styles.editorWorkspace}>
-          {/* Document info bar */}
-          <View style={styles.docHeaderRow}>
-            <View style={styles.docTitleBadge}>
-              <Ionicons name="document-text-outline" size={16} color={colors.brand} />
-              <Text style={styles.docNameText} numberOfLines={1}>
-                {document.displayName}
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Change PDF file"
-              onPress={openPdfFile}
-              style={({ pressed }) => [styles.changePdfBtn, pressed && styles.changePdfBtnPressed]}
-            >
-              <Text style={styles.changePdfText}>Change PDF</Text>
-            </Pressable>
-          </View>
-
-          {/* Sub-toolbar card */}
-          <View style={styles.subToolbar}>
-            <View style={styles.toolbarRow}>
-              {/* Pager */}
-              <View style={styles.pagerPill}>
-                <Pressable
-                  accessibilityLabel="Previous page"
-                  disabled={currentPageIndex === 0}
-                  onPress={() => setCurrentPageIndex((i) => Math.max(0, i - 1))}
-                  style={[styles.pagerBtn, currentPageIndex === 0 && styles.pagerBtnDisabled]}
-                >
-                  <Ionicons name="chevron-back" size={16} color={colors.textPrimary} />
-                </Pressable>
-                <Text style={styles.pagerText}>
-                  {currentPageIndex + 1} / {document.pages.length}
-                </Text>
-                <Pressable
-                  accessibilityLabel="Next page"
-                  disabled={currentPageIndex >= document.pages.length - 1}
-                  onPress={() =>
-                    setCurrentPageIndex((i) => Math.min(document.pages.length - 1, i + 1))
-                  }
-                  style={[
-                    styles.pagerBtn,
-                    currentPageIndex >= document.pages.length - 1 && styles.pagerBtnDisabled,
-                  ]}
-                >
-                  <Ionicons name="chevron-forward" size={16} color={colors.textPrimary} />
-                </Pressable>
-              </View>
-
-              {/* Mode Switcher */}
-              <View style={styles.modeSegment}>
-                <ModeTab
-                  label="Edit"
-                  iconName="format-text"
-                  active={editMode === 'edit'}
-                  onPress={() => {
-                    setEditMode('edit');
-                    setFocusedEditId(null);
-                  }}
-                />
-                <ModeTab
-                  label="Add"
-                  iconName="plus-circle-outline"
-                  active={editMode === 'addText'}
-                  onPress={() => {
-                    setEditMode('addText');
-                    setFocusedEditId(null);
-                  }}
-                />
-                <ModeTab
-                  label="Erase"
-                  iconName="eraser"
-                  active={editMode === 'erase'}
-                  onPress={() => {
-                    setEditMode('erase');
-                    setFocusedEditId(null);
-                  }}
-                />
-              </View>
-
-              {/* Undo & Redo */}
-              <View style={styles.undoGroup}>
-                <Pressable
-                  accessibilityLabel="Undo"
-                  disabled={!canUndo}
-                  onPress={undo}
-                  style={[styles.undoBtn, !canUndo && styles.undoBtnDisabled]}
-                >
-                  <Ionicons name="arrow-undo-outline" size={15} color={colors.textPrimary} />
-                </Pressable>
-                <Pressable
-                  accessibilityLabel="Redo"
-                  disabled={!canRedo}
-                  onPress={redo}
-                  style={[styles.undoBtn, !canRedo && styles.undoBtnDisabled]}
-                >
-                  <Ionicons name="arrow-redo-outline" size={15} color={colors.textPrimary} />
-                </Pressable>
-              </View>
-            </View>
-          </View>
-
-          {/* Legacy font warning if applicable */}
-          {currentPageLegacyFontNames.length > 0 && (
-            <LegacyFontWarning
-              fontNames={currentPageLegacyFontNames}
-              inspectionFailed={policy.inspectionFailed}
-              safeReplacementEnabled={!policy.editingBlocked && !policy.inspectionFailed}
-              onEnableSafeReplacement={
-                !policy.inspectionFailed
-                  ? () => setLegacyBypassPages((prev) => new Set(prev).add(currentPageIndex))
-                  : undefined
-              }
-              onChooseUnicodeFont={() => setFontPickerVisible(true)}
+        opening ? (
+          <ActivityIndicator style={{ marginTop: 64 }} size="large" color={ui.brandOnSurface} />
+        ) : (
+          <View style={{ gap: 24 }}>
+            <ToolPickPrompt
+              icon="edit-note"
+              iconColor={ui.category.edit}
+              title={tx('Choose a PDF to edit', 'बदलने के लिए PDF चुनें')}
+              body={tx(
+                'Your changes are saved as a new PDF. The original file is not changed.',
+                'बदलाव नई PDF में सेव होते हैं। मूल फ़ाइल नहीं बदलती।',
+              )}
             />
-          )}
-
-          {/* PDF Page Canvas */}
-          <View style={styles.canvasCard}>
-            <View style={styles.topGradientBar} />
-
+            <View style={{ alignSelf: 'center' }}>
+              <PillButton
+                title={tx('Choose a PDF', 'PDF चुनें')}
+                onPress={() => void openPdfFile()}
+              />
+            </View>
+          </View>
+        )
+      ) : (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'android' ? 'height' : 'padding'}
+          style={{ flex: 1 }}
+        >
+          <View style={{ flex: 1 }}>
             {page && (
               <PdfPageViewer
                 page={page}
                 onTap={handleTap}
-                renderOverlays={(viewWidthDp) => (
-                  <>
-                    {/* Visual OCR highlight boxes in Edit mode */}
-                    <OcrHighlightLayer
-                      lines={page.ocrLines}
-                      viewWidthDp={viewWidthDp}
-                      pageWidthPt={page.widthPt}
-                      visible={editMode === 'edit'}
-                    />
-
-                    {/* Mask overlay for erase mode */}
-                    <MaskOverlay
-                      masks={page.edits.filter((e): e is MaskEdit => e.type === 'mask')}
-                      viewWidthDp={viewWidthDp}
-                      pageWidthPt={page.widthPt}
-                      active={editMode === 'erase'}
-                      onMaskDrawn={handleMaskDrawn}
-                    />
-
-                    {/* Editable text overlays for placed text */}
-                    {page.edits
-                      .filter((e): e is TextEdit => e.type === 'text')
-                      .map((textEdit) => (
-                        <EditableTextOverlay
-                          key={textEdit.id}
-                          edit={textEdit}
-                          viewWidthDp={viewWidthDp}
-                          pageWidthPt={page.widthPt}
-                          pageHeightPt={page.heightPt}
-                          zoom={1}
-                          focused={focusedEditId === textEdit.id}
-                          autoFocus={focusedEditId === textEdit.id}
-                          selectAllOnFocus={selectAllEditId === textEdit.id}
-                          onChangeText={(text) => {
-                            updateTextEdit(currentPageIndex, textEdit.id, { text });
-                          }}
-                          onFocus={() => {
-                            setFocusedEditId(textEdit.id);
-                          }}
-                          onBlur={() => {
-                            if (focusedEditId === textEdit.id) {
-                              setFocusedEditId(null);
-                            }
-                          }}
-                        />
-                      ))}
-                  </>
-                )}
+                focusedEditId={focusedEditId}
+                onEditPinchStart={() => {
+                  lineSession.beforeChange();
+                  pinchStartSizeRef.current = focusedEdit?.fontSizePt ?? DEFAULT_FONT_SIZE_PT;
+                }}
+                onEditPinchResize={(editId, scale) =>
+                  updateTextEdit(currentPageIndex, editId, {
+                    fontSizePt: Math.min(
+                      MAX_FONT_SIZE_PT,
+                      Math.max(MIN_FONT_SIZE_PT, pinchStartSizeRef.current * scale),
+                    ),
+                  })
+                }
+                renderOverlays={(viewWidthDp) =>
+                  showingOriginal ? null : (
+                    <>
+                      <OcrHighlightLayer
+                        lines={page.ocrLines}
+                        viewWidthDp={viewWidthDp}
+                        pageWidthPt={page.widthPt}
+                        visible={editMode === 'edit'}
+                      />
+                      <MaskOverlay
+                        masks={page.edits.filter((e): e is MaskEdit => e.type === 'mask')}
+                        viewWidthDp={viewWidthDp}
+                        pageWidthPt={page.widthPt}
+                        active={editMode === 'erase'}
+                        onMaskDrawn={handleMaskDrawn}
+                      />
+                      {page.edits
+                        .filter((e): e is TextEdit => e.type === 'text')
+                        .map((textEdit) => (
+                          <EditableTextOverlay
+                            key={textEdit.id}
+                            edit={textEdit}
+                            viewWidthDp={viewWidthDp}
+                            pageWidthPt={page.widthPt}
+                            focused={focusedEditId === textEdit.id}
+                          />
+                        ))}
+                    </>
+                  )
+                }
               />
             )}
-          </View>
 
-          {/* Contextual Edit Toolbar */}
-          {focusedEdit && (
             <View
-              style={[
-                styles.floatingToolbarContainer,
-                {
-                  bottom: Math.max(insets.bottom, Platform.OS === 'android' ? 18 : 10) + 52,
-                },
-              ]}
+              pointerEvents="box-none"
+              style={{
+                position: 'absolute',
+                top: 12,
+                left: 12,
+                right: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+              }}
             >
-              <EditToolbar
-                fontSizePt={focusedEdit.fontSizePt}
-                fontFamily={focusedEdit.fontFamily}
-                color={focusedEdit.color}
-                fontWeight={focusedEdit.fontWeight ?? 'normal'}
-                onFontSizeChange={(size) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt: size })
-                }
-                onFontFamilyChange={(family) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontFamily: family })
-                }
-                onOpenFontPicker={() => setFontPickerVisible(true)}
-                onColorChange={(color) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { color })
-                }
-                onFontWeightChange={(weight) =>
-                  updateTextEdit(currentPageIndex, focusedEdit.id, { fontWeight: weight })
-                }
-                onDelete={handleDeleteEdit}
-                onDone={() => setFocusedEditId(null)}
-              />
+              {replacementModeOn ? (
+                <OldFontChip onPress={() => setLegacySheetReopened(true)} />
+              ) : (
+                <View />
+              )}
+              {document.pages.length > 1 && (
+                <PagePill
+                  pageIndex={currentPageIndex}
+                  pageCount={document.pages.length}
+                  onPage={(index) => {
+                    finishEditing();
+                    setCurrentPageIndex(index);
+                  }}
+                />
+              )}
             </View>
-          )}
 
-          {/* Bottom Action Row */}
-          <View
-            style={[
-              styles.bottomActionRow,
-              {
-                paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 6),
-              },
-            ]}
-          >
-            <AppButton title="+ Blank Page" small variant="subtle" onPress={handleInsertBlank} />
-            <AppButton
-              title={saving ? 'Exporting...' : 'Export PDF'}
-              variant="primary"
-              loading={saving}
-              disabled={saving}
-              onPress={handleExport}
-              style={styles.exportBtn}
-            />
+            {showHint && (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  left: 12,
+                  right: 12,
+                  bottom: toolbarBottom + TOOLBAR_HEIGHT + 12,
+                  alignItems: 'center',
+                }}
+              >
+                <View
+                  accessibilityLiveRegion="polite"
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 9999,
+                    backgroundColor: ui.chrome,
+                  }}
+                >
+                  <UiText variant="label" color="#FFFFFF">
+                    {tx('Tap a line to change it', 'बदलने के लिए पंक्ति टैप करें')}
+                  </UiText>
+                </View>
+              </View>
+            )}
+
+            {!focusedEdit && (
+              <View style={{ position: 'absolute', left: 12, right: 12, bottom: toolbarBottom }}>
+                <EditToolbarBar
+                  mode={editMode}
+                  onMode={selectMode}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                  onUndo={undo}
+                  onRedo={redo}
+                  showingOriginal={showingOriginal}
+                  onToggleOriginal={() => setShowingOriginal((on) => !on)}
+                />
+              </View>
+            )}
+
+            {saving && <SavingOverlay progress={exportProgress} />}
           </View>
-
-          {/* Export Success Result Actions */}
-          {exportResultUri && (
-            <View style={styles.exportResultRow}>
-              <AppButton
-                title="Share Exported PDF"
-                variant="success"
-                onPress={handleShare}
-                style={styles.exportResultBtn}
-              />
-              <AppButton
-                title="Save to Folder"
-                variant="secondary"
-                onPress={handleSaveToDevice}
-                style={styles.exportResultBtn}
-              />
-            </View>
-          )}
-
-          {/* Font Picker Modal */}
           {focusedEdit && (
-            <FontPickerModal
-              visible={fontPickerVisible}
-              selectedFamily={focusedEdit.fontFamily}
-              loadedFamilies={
-                new Set<DevanagariFontFamily>([
-                  'NotoSansDevanagari',
-                  ...(isFontFamilyLoaded('Mukta') ? (['Mukta'] as DevanagariFontFamily[]) : []),
-                ])
+            <LineEditSheet
+              key={focusedEdit.id}
+              originalText={focusedEdit.replacement?.ocrLine?.text ?? ''}
+              value={focusedEdit.text}
+              onChange={(text) => changeLine(focusedEdit.id, { text })}
+              fontLabel={fontLabel(focusedEdit.fontFamily)}
+              sizePt={focusedEdit.fontSizePt}
+              color={focusedEdit.color}
+              bold={focusedEdit.fontWeight === 'bold'}
+              onFont={() => setFontPickerVisible(true)}
+              onSize={(fontSizePt) => changeLine(focusedEdit.id, { fontSizePt })}
+              onColor={(color) => changeLine(focusedEdit.id, { color })}
+              onBold={() =>
+                changeLine(focusedEdit.id, {
+                  fontWeight: focusedEdit.fontWeight === 'bold' ? 'normal' : 'bold',
+                })
               }
-              downloadingFamily={downloadingFont}
-              onChoose={handleSelectFont}
-              onClose={() => setFontPickerVisible(false)}
+              onDone={finishEditing}
+              onRestore={restoreOriginal}
             />
           )}
-        </View>
+        </KeyboardAvoidingView>
       )}
+
+      <LegacyFontWarning
+        visible={legacySheetVisible}
+        onClose={() => {
+          setLegacySheetReopened(false);
+          setLegacySheetDismissedPages((prev) => new Set(prev).add(currentPageIndex));
+        }}
+        fontNames={policy.knownLegacyFontNames}
+        inspectionFailed={policy.inspectionFailed}
+        onEnableSafeReplacement={
+          !policy.inspectionFailed
+            ? () => {
+                setLegacySheetReopened(false);
+                setLegacyBypassPages((prev) => new Set(prev).add(currentPageIndex));
+                snackbar.show(
+                  tx(
+                    'Old-font page: cover old text and type new text on top',
+                    'पुराने फ़ॉन्ट वाला पृष्ठ: पुराना टेक्स्ट ढककर ऊपर नया लिखें',
+                  ),
+                );
+              }
+            : undefined
+        }
+      />
+
+      {focusedEdit && (
+        <FontPickerModal
+          visible={fontPickerVisible}
+          selectedFamily={focusedEdit.fontFamily}
+          loadedFamilies={
+            new Set<DevanagariFontFamily>([
+              'NotoSansDevanagari',
+              ...(isFontFamilyLoaded('Mukta') ? (['Mukta'] as DevanagariFontFamily[]) : []),
+            ])
+          }
+          downloadingFamily={downloadingFont}
+          onChoose={handleSelectFont}
+          onClose={() => setFontPickerVisible(false)}
+        />
+      )}
+
+      <BottomSheet visible={menuVisible} onClose={() => setMenuVisible(false)}>
+        <ListRow
+          icon="note-add"
+          title={tx('Add a blank page after this one', 'इसके बाद खाली पृष्ठ जोड़ें')}
+          onPress={() => {
+            setMenuVisible(false);
+            void handleInsertBlank();
+          }}
+        />
+      </BottomSheet>
+
+      {document && (
+        <SaveSheet
+          key={saveSheetKey}
+          visible={saveSheetVisible}
+          defaultName={defaultEditedName(document.displayName)}
+          changedSummary={tx(
+            changes.lines + ' lines changed on ' + changes.pages + ' pages',
+            changes.pages + ' पृष्ठों पर ' + changes.lines + ' पंक्तियाँ बदलीं',
+          )}
+          onSave={(name) => void saveAs(name, false)}
+          onShare={(name) => void saveAs(name, true)}
+          onClose={() => setSaveSheetVisible(false)}
+        />
+      )}
+
+      <Dialog
+        visible={discardVisible}
+        title={tx('Discard changes?', 'बदलाव हटाएँ?')}
+        body={tx(
+          'Your changes to this PDF are not saved yet.',
+          'इस PDF में किए बदलाव अभी सेव नहीं हुए हैं।',
+        )}
+        cancelLabel={tx('Keep editing', 'बदलाव जारी रखें')}
+        confirmLabel={tx('Discard', 'हटाएँ')}
+        onCancel={() => setDiscardVisible(false)}
+        onConfirm={() => {
+          setDiscardVisible(false);
+          onClose();
+        }}
+      />
+      {errorDialog}
     </View>
   );
 }
 
-function ModeTab({
+/** 40dp-tall brand pill for the editor bar, with a 48dp touch target. */
+function SaveButton({
   label,
-  iconName,
-  active,
+  disabled,
   onPress,
 }: {
   label: string;
-  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
-  active: boolean;
+  disabled: boolean;
   onPress: () => void;
 }) {
+  const ui = useUi();
   return (
     <Pressable
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
-      style={[styles.modeTab, active && styles.modeTabActive]}
+      hitSlop={{ top: 4, bottom: 4 }}
+      android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: false }}
+      style={{
+        height: 40,
+        paddingHorizontal: 16,
+        borderRadius: 9999,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        backgroundColor: ui.brand,
+        opacity: disabled ? 0.4 : 1,
+      }}
     >
-      <MaterialCommunityIcons
-        name={iconName}
-        size={14}
-        color={active ? colors.brand : colors.textSecondary}
-      />
-      <Text style={[styles.modeLabel, active && styles.modeLabelActive]}>{label}</Text>
+      <UiText variant="label" color="#FFFFFF" style={{ fontSize: 14, fontWeight: '600' }}>
+        {label}
+      </UiText>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  landingContent: {
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-  },
-  editorWorkspace: {
-    flex: 1,
-    gap: spacing.xs + 2,
-  },
-  docHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.xs,
-    paddingHorizontal: 2,
-  },
-  docTitleBadge: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    gap: 5,
-  },
-  docNameText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  changePdfBtn: {
-    backgroundColor: colors.brandTint,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.brandTint,
-  },
-  changePdfBtnPressed: {
-    backgroundColor: colors.brandTint,
-    transform: [{ scale: 0.96 }],
-  },
-  changePdfText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: colors.brand,
-  },
-  subToolbar: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    padding: spacing.xs + 2,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    ...shadows.soft,
-  },
-  toolbarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.xs,
-  },
-  pagerPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.full,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    gap: 3,
-  },
-  pagerBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pagerBtnDisabled: {
-    opacity: 0.3,
-  },
-  pagerText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    minWidth: 44,
-    textAlign: 'center',
-  },
-  modeSegment: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.full,
-    padding: 2,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    gap: 2,
-  },
-  modeTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: radius.full,
-    gap: 3,
-  },
-  modeTabActive: {
-    backgroundColor: colors.surface,
-    ...shadows.soft,
-  },
-  modeLabel: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  modeLabelActive: {
-    color: colors.brand,
-    fontWeight: '800',
-  },
-  undoGroup: {
-    flexDirection: 'row',
-    gap: 3,
-  },
-  undoBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  undoBtnDisabled: {
-    opacity: 0.35,
-  },
-  canvasCard: {
-    flex: 1,
-    backgroundColor: '#EEF0F4',
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    overflow: 'hidden',
-    ...shadows.card,
-  },
-  topGradientBar: {
-    height: 4,
-    backgroundColor: colors.brand,
-    width: '100%',
-  },
-  floatingToolbarContainer: {
-    position: 'absolute',
-    bottom: 56,
-    left: 0,
-    right: 0,
-    zIndex: 50,
-  },
-  bottomActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    paddingTop: 2,
-  },
-  exportBtn: {
-    flex: 1,
-  },
-  exportResultRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingTop: spacing.xs,
-  },
-  exportResultBtn: {
-    flex: 1,
-  },
-});
+/** Dark pill with previous and next page buttons (48dp) around `n / total`. */
+function PagePill({
+  pageIndex,
+  pageCount,
+  onPage,
+}: {
+  pageIndex: number;
+  pageCount: number;
+  onPage: (index: number) => void;
+}) {
+  const ui = useUi();
+  const tx = useTx();
+  const atStart = pageIndex === 0;
+  const atEnd = pageIndex >= pageCount - 1;
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 9999,
+        backgroundColor: ui.chrome,
+        elevation: 4,
+      }}
+    >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={tx('Previous page', 'पिछला पृष्ठ')}
+        accessibilityState={{ disabled: atStart }}
+        disabled={atStart}
+        onPress={() => onPage(pageIndex - 1)}
+        style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Icon name="chevron-left" size={24} color={atStart ? 'rgba(255,255,255,0.4)' : '#FFFFFF'} />
+      </Pressable>
+      <UiText variant="label" color="#FFFFFF" style={{ minWidth: 40, textAlign: 'center' }}>
+        {`${pageIndex + 1} / ${pageCount}`}
+      </UiText>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={tx('Next page', 'अगला पृष्ठ')}
+        accessibilityState={{ disabled: atEnd }}
+        disabled={atEnd}
+        onPress={() => onPage(pageIndex + 1)}
+        style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Icon name="chevron-right" size={24} color={atEnd ? 'rgba(255,255,255,0.4)' : '#FFFFFF'} />
+      </Pressable>
+    </View>
+  );
+}
+
+/** Blocks the page while the export runs and shows `Saving page i of n`. */
+function SavingOverlay({ progress }: { progress: ExportProgress | null }) {
+  const ui = useUi();
+  const tx = useTx();
+  const done = Math.min((progress?.completedPages ?? 0) + 1, progress?.totalPages ?? 1);
+  const total = progress?.totalPages ?? 1;
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: ui.scrim,
+      }}
+    >
+      <View
+        style={{
+          alignItems: 'center',
+          gap: 16,
+          paddingVertical: 24,
+          paddingHorizontal: 32,
+          borderRadius: 28,
+          backgroundColor: ui.chrome,
+        }}
+      >
+        <ActivityIndicator size="large" color="#FFFFFF" />
+        <UiText color="#FFFFFF">
+          {tx(`Saving page ${done} of ${total}`, `पृष्ठ ${done} / ${total} सेव हो रहा है`)}
+        </UiText>
+      </View>
+    </View>
+  );
+}

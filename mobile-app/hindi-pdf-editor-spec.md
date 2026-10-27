@@ -152,12 +152,14 @@ Live editing and export both ultimately depend on the same underlying HarfBuzz-b
     PdfPageViewer.tsx        // shows current page: JPEG background + live overlays
     EditableTextOverlay.tsx  // the tap-to-edit TextInput
     MaskOverlay.tsx          // drag-to-select mask rectangle for "replace text" edits
-    LegacyFontWarning.tsx    // banner shown when a page uses a non-Unicode legacy font
+    LegacyFontWarning.tsx    // bottom sheet shown when a page uses a non-Unicode legacy font
   /lib
     pdfToImages.ts           // wraps the in-house pdf-page-image local Expo Module
     htmlCompositor.ts        // builds per-page HTML for export
     exportPdf.ts             // prints one exact-size page at a time, validates, then merges
     savePdf.ts               // Android SAF directory picker + validated persistent copy
+    persistOutput.ts         // copies a verified tool output from the cache into app storage
+    outputFileName.ts        // safe output names, capped at 200 UTF-8 bytes
     blankPage.ts             // immutable cached white background for inserted pages
     legacyFontDetector.ts    // flags Kruti Dev / Shivaji / Chanakya / DevLys etc. on load
     coordinateMath.ts        // dp <-> PDF points <-> background-image-px conversions
@@ -296,6 +298,10 @@ Calls `Print.printToFileAsync({ html, width, height })` once per page with that 
 
 Uses Android's Storage Access Framework directory picker to create a new PDF in a user-selected File Manager folder. It copies rather than moves the validated cache export, parses the persisted copy back, and deletes a failed destination. Sharing/opening remains a separate action.
 
+### `persistOutput.ts`
+
+Every saved output (Edit, Merge, Split, Compress, Translate) is built in the app cache, which Android may clear, then copied by `persistOutput` into the app's permanent storage, `documentDirectory/<Edited|Merged|Split|Compressed|Translated>/` (ADR 0015). The name passes through `outputFileName` (unsafe characters replaced, capped at 200 UTF-8 bytes without splitting a Devanagari cluster), and ` (2)`, ` (3)`… is added rather than overwriting an earlier file. The copy must pass `verifyPdfOutput` before the tool reports success; a failed copy is deleted and the error is shown. The cache temporary is deleted either way, and only files in the cache are ever deleted, so a source is never touched. These files are private to the app: other apps reach them through Share, Open with, or Save a copy to a folder, and uninstalling the app removes them.
+
 ### `legacyFontDetector.ts`
 
 On document load, use `@cantoo/pdf-lib`'s `PDFDocument.load()` to enumerate embedded font names across all pages. Match against known legacy Devanagari font name patterns: `KrutiDev*`, `Shivaji*`, `Chanakya*`, `DevLys*`, `Walkman-Chanakya*`, `Agra*`, `Amar*`. If inspection fails or is inconclusive, mark the page unknown and block editing without bypass. A positively identified legacy page may enter explicit raster-only Unicode replacement mode after warning and confirmation: the burned-in source stays untouched and every new edit uses a verified Unicode font. Never treat downloading the legacy font as decoding its non-Unicode text.
@@ -418,6 +424,22 @@ Added after Phase 4, driven by real use: on a scanned document (no text layer at
 - [x] Unit/static checks cover per-page export, mixed page sizes, redo branching, blank-page creation, legacy policy, persisted-file validation, font validation, HTML escaping, and horizontal text CSS.
 - [x] Desktop compositor fixture: real Devanagari pages with conjuncts/reph were printed and merged, then rendered independently with Poppler backends without blank/black pages or vertical text.
 - [ ] Re-run the canonical fixture on the production Android build: visually compare 3× raster quality, a multi-page export, a blank inserted page, legacy safe replacement, downloaded Mukta, and File Manager persistence. This cannot be marked passed from a desktop Chromium fixture alone.
+
+### UI — native redesign (Android, 1.1.0) — IMPLEMENTED, device verification pending
+
+Visual rules live in `../design-system.md` and ADR 0013; the language rule in ADR 0014. No export, coordinate or compositor logic changed.
+
+- **One language per screen.** Settings holds English or हिंदी (no "Both"; a saved `bilingual` value loads as Hindi). Every user-facing string goes through `tx(en, hi)`; screens never stack both languages.
+- **Tabs (edge to edge, flat bottom nav):**
+  - **Home:** brand band with a search pill (focuses the Files search field), a 3x2 grid of six tool tiles (icon in category colour, no tinted box) and a horizontal recent-files strip. The page itself does not scroll.
+  - **Files:** band with search and source tabs, rows grouped Today / This week / Earlier, star and ⋮ sheet per row, sort and more-options sheets, and an "Allow access" state with a single-file picker.
+  - **Tools:** four groups (Change text, Pages, File size, Reading) of two-column tiles with short descriptions.
+  - **Settings:** App language, Theme, Check for updates, Privacy policy, Rate, Share, About (bottom sheet).
+- **File tools (Merge, Split, Compress, Translate)** share `ToolScaffold`. Each copies its output into app storage with `persistOutput` and ends on `ToolDoneScreen` (first-page preview, name, `pages · size`, a line saying the file is saved in this app and listed in Files, Open, Share, Save a copy to a folder) only after the copy passes the `verifyPdfOutput` parse-back check. Errors open a dialog with Try again and Close; quick confirmations are snackbars.
+- **Reader:** reads like a book: one page per screen, fitted below the dark bar (back, name, Find, Share, ⋮), swipe left or right to turn the page. Pinch zooms about the fingers (1x–4x), a double tap zooms to 2.5x at the tap or back out, and a drag moves the zoomed page; pages turn only when unzoomed, and zoom resets when the page turns (`ZoomablePage`, `zoomMath` tested). A tap shows or hides the bar. Pages are rendered at 2.5 px per pt, one render at a time near the current page; right-edge fast scroller with a page-thumbnail bubble; ⋮ menu with Go to page (page grid), Translate, Reading theme (Day / Sepia / Night), Print, File info and Open with; Find in file (on-device OCR per page, highlights matches); an Edit button that opens the editor.
+- **Editor:** dark bar (Close, name, Save pill, ⋮ Add a blank page); floating dark toolbar (Change text, Add text, Cover old text, Undo, Redo, hold Show original); a line sheet above the keyboard (Was, input, Font, size in pt, colour, bold, Restore original, Done); font and old-font bottom sheets; a "Save as a new PDF" sheet (file name, changed-line count, Save in this app or Share) that exports through the unchanged print pipeline, copies into the app's `Edited` folder with `persistOutput` (no overwriting, the copy verified), and opens the Saved screen. Close and Android back ask "Discard changes?" only when edits are unsaved. The source PDF is never modified.
+- **Back button:** sheets and Find close first, then the screen; the editor prompts before discarding. Edit or Translate opened from the Reader returns to the Reader (same file, from page 1) on Close or back; only that one level is remembered, and any other way of opening a tool forgets it (`toolSessionReducer`, tested).
+- **Verification status:** unit tests cover the pure logic (grouping, reorder, page layout, find, save naming, edit sessions, settings migration). Layout, TalkBack, keyboard docking, the language and theme matrix and 130% font size are unverified until a device pass.
 
 ### Phase 5 — Optional, later, only if Phase 0–4 is in real use and you need it
 

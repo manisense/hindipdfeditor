@@ -1,101 +1,26 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
-import { BottomNavBar, type MainTab } from './BottomNavBar';
+import { BottomNav, type MainTab } from '../ui/BottomNav';
 import { FilesScreen } from '../screens/FilesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { ToolsScreen } from '../screens/ToolsScreen';
-import { useAppTheme, useThemedStyles } from '../hooks/useAppTheme';
+import { resolveBack } from '../navigation/backStack';
+import { useHardwareBack } from '../navigation/useHardwareBack';
+import { useThemedStyles } from '../hooks/useAppTheme';
 import type { RecentFile } from '../state/recentFilesStore';
-import { colors, radius, shadows, spacing, type Theme } from '../theme';
+import type { Theme } from '../theme';
 
 export type ToolId = 'edit' | 'translate' | 'merge' | 'split' | 'compress' | 'viewer';
-
-export type ToolDef = {
-  id: ToolId;
-  name: string;
-  hindiName: string;
-  desc: string;
-  badge: string;
-  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
-  accent: string;
-  tint: string;
-};
-
-export const TOOLS: ToolDef[] = [
-  {
-    id: 'edit',
-    name: 'Edit Hindi PDF',
-    hindiName: 'संपादित करें',
-    badge: 'Devanagari OCR',
-    desc: 'Tap detected text to edit, add Hindi overlays, or erase lines.',
-    iconName: 'file-document-edit-outline',
-    accent: colors.accentBlue,
-    tint: colors.accentBlueTint,
-  },
-  {
-    id: 'translate',
-    name: 'Translate PDF',
-    hindiName: 'अनुवाद',
-    badge: 'Bilingual AI',
-    desc: 'Full document Hindi ↔ English bilingual translation.',
-    iconName: 'translate',
-    accent: colors.accentGreen,
-    tint: colors.accentGreenTint,
-  },
-  {
-    id: 'merge',
-    name: 'Merge PDFs',
-    hindiName: 'मर्ज करें',
-    badge: 'Multi-Document',
-    desc: 'Combine multiple PDF documents into a single unified file.',
-    iconName: 'layers-triple-outline',
-    accent: colors.accentPurple,
-    tint: colors.accentPurpleTint,
-  },
-  {
-    id: 'split',
-    name: 'Split PDF',
-    hindiName: 'विभाजित करें',
-    badge: 'Page Range',
-    desc: 'Extract individual pages or custom page ranges visually.',
-    iconName: 'content-cut',
-    accent: colors.accentPurple,
-    tint: colors.accentPurpleTint,
-  },
-  {
-    id: 'compress',
-    name: 'Compress PDF',
-    hindiName: 'कंप्रेस करें',
-    badge: 'Size Reducer',
-    desc: 'Reduce PDF file size while maintaining high visual clarity.',
-    iconName: 'archive-arrow-down-outline',
-    accent: colors.accentOrange,
-    tint: colors.accentOrangeTint,
-  },
-  {
-    id: 'viewer',
-    name: 'PDF Reader',
-    hindiName: 'पढ़ें और देखें',
-    badge: 'Reading Mode',
-    desc: 'Read Hindi and English PDFs comfortably with night mode and zoom.',
-    iconName: 'book-open-page-variant-outline',
-    accent: colors.accentTeal,
-    tint: colors.accentTealTint,
-  },
-];
 
 const CORE_TABS: MainTab[] = ['home', 'files', 'tools', 'settings'];
 
@@ -111,15 +36,12 @@ type Props = {
  * and immersive full-screen tool workspaces.
  */
 export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Props) {
-  const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const pagerRef = useRef<ScrollView>(null);
-  const theme = useAppTheme();
   const styles = useThemedStyles(getStyles);
 
-  // The app draws edge to edge, so the safe-area inset already includes the status bar.
-  const topInset = insets.top;
   const [activeTab, setActiveTab] = useState<MainTab>('home');
+  const [focusSearchToken, setFocusSearchToken] = useState(0);
   const activeTabOffsetX = Math.max(CORE_TABS.indexOf(activeTab), 0) * windowWidth;
 
   // Keep the pager on the active tab when the width changes (rotation, foldable, split screen);
@@ -131,7 +53,6 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
     lastPagerWidthRef.current = windowWidth;
     pagerRef.current?.scrollTo({ x: activeTabOffsetX, animated: false });
   }, [windowWidth, activeTabOffsetX]);
-  const currentTool = TOOLS.find((t) => t.id === activeTool) ?? null;
 
   const handleOpenFile = (file: RecentFile, toolId?: ToolId) => {
     if (onOpenFile) {
@@ -149,6 +70,19 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
     }
   };
 
+  useHardwareBack(() => {
+    const action = resolveBack({ activeTool, tab: activeTab });
+    if (action.type === 'closeTool') {
+      onSelectTool(null);
+      return true;
+    }
+    if (action.type === 'goHome') {
+      handleSelectTab('home');
+      return true;
+    }
+    return false;
+  });
+
   const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = e.nativeEvent.contentOffset.x;
     const pageIndex = Math.round(offsetX / windowWidth);
@@ -159,59 +93,10 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
   };
 
   return (
-    <View style={[styles.container, { paddingTop: topInset }]}>
-      {/* Background ambient glowing orbs */}
-      <View style={styles.ambientAuraTopRight} pointerEvents="none" />
-      <View
-        style={[
-          styles.ambientAuraLeft,
-          { backgroundColor: currentTool ? currentTool.tint : theme.colors.brandTint },
-        ]}
-        pointerEvents="none"
-      />
-
-      {/* Main View Area */}
+    <View style={styles.container}>
+      {/* Every tool draws its own top bar and back button (`ToolScaffold` or `ReaderBar`). */}
       {activeTool ? (
-        /* Full Screen Tool Workspace */
-        <View style={styles.fullScreenToolContainer}>
-          {/* Active Tool Header with Back Navigation */}
-          <View style={styles.activeHeader}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back to home"
-              onPress={() => onSelectTool(null)}
-              style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-              hitSlop={8}
-            >
-              <Ionicons name="chevron-back" size={16} color={theme.colors.brand} />
-              <Text style={styles.backLabel}>Back</Text>
-            </Pressable>
-
-            {currentTool && (
-              <View
-                style={[
-                  styles.activeToolBadge,
-                  {
-                    backgroundColor: currentTool.tint,
-                    borderColor: currentTool.accent,
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name={currentTool.iconName}
-                  size={16}
-                  color={currentTool.accent}
-                />
-                <Text style={[styles.activeToolName, { color: currentTool.accent }]}>
-                  {currentTool.name}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Active Tool Body */}
-          <View style={styles.toolWorkspace}>{children}</View>
-        </View>
+        <View style={styles.fullScreenToolContainer}>{children}</View>
       ) : (
         /* Swipeable / Slideable 4-Tab Interface (Home, Files, Tools, Settings) */
         <View style={styles.mainTabContainer}>
@@ -228,28 +113,40 @@ export function ToolShell({ activeTool, onSelectTool, onOpenFile, children }: Pr
             style={styles.pagerScrollView}
           >
             {/* Tab 1: Home */}
-            <View style={[styles.tabPage, { width: windowWidth }]}>
-              <HomeScreen onOpenTool={onSelectTool} onOpenFile={handleOpenFile} />
+            <View style={{ width: windowWidth }}>
+              {activeTab === 'home' && <StatusBar style="light" />}
+              <HomeScreen
+                onOpenTool={onSelectTool}
+                onOpenFile={handleOpenFile}
+                onSeeAll={() => handleSelectTab('files')}
+                onOpenSearch={() => {
+                  setFocusSearchToken((token) => token + 1);
+                  handleSelectTab('files');
+                }}
+              />
             </View>
 
             {/* Tab 2: Files */}
-            <View style={[styles.tabPage, { width: windowWidth }]}>
-              <FilesScreen onOpenTool={onSelectTool} onOpenFile={handleOpenFile} />
+            <View style={{ width: windowWidth }}>
+              {activeTab === 'files' && <StatusBar style="light" />}
+              <FilesScreen onOpenFile={handleOpenFile} focusSearchToken={focusSearchToken} />
             </View>
 
             {/* Tab 3: Tools */}
-            <View style={[styles.tabPage, { width: windowWidth }]}>
+            <View style={{ width: windowWidth }}>
+              {activeTab === 'tools' && <StatusBar style="light" />}
               <ToolsScreen onOpenTool={onSelectTool} />
             </View>
 
             {/* Tab 4: Settings */}
-            <View style={[styles.tabPage, { width: windowWidth }]}>
+            <View style={{ width: windowWidth }}>
+              {activeTab === 'settings' && <StatusBar style="light" />}
               <SettingsScreen />
             </View>
           </ScrollView>
 
-          {/* 4-Tab Bottom Navigation Bar */}
-          <BottomNavBar activeTab={activeTab} onSelectTab={handleSelectTab} />
+          {/* Flat bottom navigation */}
+          <BottomNav activeTab={activeTab} onSelectTab={handleSelectTab} />
         </View>
       )}
     </View>
@@ -262,24 +159,6 @@ const getStyles = (theme: Theme) =>
       flex: 1,
       backgroundColor: theme.colors.background,
     },
-    ambientAuraTopRight: {
-      position: 'absolute',
-      top: -50,
-      right: -50,
-      width: 220,
-      height: 220,
-      borderRadius: 110,
-      backgroundColor: theme.colors.auraTopRight,
-    },
-    ambientAuraLeft: {
-      position: 'absolute',
-      top: 180,
-      left: -70,
-      width: 200,
-      height: 200,
-      borderRadius: 100,
-      opacity: 0.45,
-    },
     mainTabContainer: {
       flex: 1,
       justifyContent: 'space-between',
@@ -287,64 +166,7 @@ const getStyles = (theme: Theme) =>
     pagerScrollView: {
       flex: 1,
     },
-    tabPage: {
-      flex: 1,
-      paddingHorizontal: spacing.md,
-    },
     fullScreenToolContainer: {
       flex: 1,
-    },
-    activeHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: theme.colors.activeHeaderBg,
-      borderRadius: radius.xl,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      paddingVertical: 8,
-      paddingHorizontal: spacing.md,
-      marginHorizontal: spacing.md,
-      marginTop: spacing.sm + 2,
-      marginBottom: spacing.sm + 2,
-      ...shadows.soft,
-      zIndex: 10,
-    },
-    backButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.colors.surfaceSubtle,
-      paddingVertical: 5,
-      paddingHorizontal: 12,
-      borderRadius: radius.full,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      gap: 4,
-    },
-    backButtonPressed: {
-      backgroundColor: theme.colors.borderStrong,
-      transform: [{ scale: 0.97 }],
-    },
-    backLabel: {
-      fontSize: 12.5,
-      fontWeight: '700',
-      color: theme.colors.textPrimary,
-    },
-    activeToolBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 5,
-      paddingHorizontal: 11,
-      borderRadius: radius.full,
-      borderWidth: 1,
-      gap: 5,
-    },
-    activeToolName: {
-      fontSize: 12.5,
-      fontWeight: '700',
-    },
-    toolWorkspace: {
-      flex: 1,
-      paddingHorizontal: spacing.md,
     },
   });

@@ -1,4 +1,9 @@
-import { createEditStore, type DocumentState } from './editStore';
+import {
+  createEditStore,
+  deletableRenderUris,
+  pageImageUris,
+  type DocumentState,
+} from './editStore';
 
 function makeDocument(pageCount = 2): DocumentState {
   return {
@@ -424,10 +429,89 @@ describe('editStore', () => {
     expect(store.getState().document!.pages[0].edits.length).toBeGreaterThan(0);
   });
 
+  it('revertToCheckpoint abandons the newest change without a redo step and keeps new OCR lines', () => {
+    const store = makeStore();
+    store.getState().loadDocument(makeDocument());
+    const before = store.getState().document!;
+    store.getState().checkpoint();
+    store.getState().addTextEdit(0, {
+      xPt: 1,
+      yPt: 2,
+      fontSizePt: 12,
+      text: 'x',
+      color: '#000000',
+      fontFamily: 'NotoSansDevanagari',
+    });
+    const line = { id: 'l', text: 'नया', xPt: 0, yPt: 0, wPt: 5, hPt: 5 };
+    store.getState().setOcrLines(1, [line]);
+    store.getState().revertToCheckpoint();
+    const after = store.getState();
+    expect(after.document!.pages[0].edits).toBe(before.pages[0].edits);
+    expect(after.document!.pages[1].ocrLines).toEqual([line]);
+    expect(after.history).toHaveLength(0);
+    expect(after.future).toHaveLength(0);
+  });
+
   it('two store instances from createEditStore() are fully independent', () => {
     const storeA = makeStore();
     const storeB = makeStore();
     storeA.getState().loadDocument(makeDocument(1));
     expect(storeB.getState().document).toBeNull();
+  });
+});
+
+describe('pageImageUris', () => {
+  it('lists every page render in the document and its history once', () => {
+    const store = makeStore();
+    store.getState().loadDocument(makeDocument());
+    store.getState().checkpoint();
+    store.getState().insertPage(2, {
+      widthPt: 595,
+      heightPt: 842,
+      backgroundImageUri: 'file:///fake/blank.png',
+      imagePxWidth: 1785,
+      imagePxHeight: 2526,
+      edits: [],
+      ocrLines: [],
+      isBlank: true,
+    });
+    store.getState().checkpoint();
+    store.getState().undo();
+    expect(pageImageUris(store.getState()).sort()).toEqual([
+      'file:///fake/blank.png',
+      'file:///fake/page-0.jpg',
+      'file:///fake/page-1.jpg',
+    ]);
+  });
+
+  it('is empty once the document is closed', () => {
+    const store = makeStore();
+    store.getState().loadDocument(makeDocument());
+    store.getState().checkpoint();
+    store.getState().closeDocument();
+    expect(pageImageUris(store.getState())).toEqual([]);
+  });
+});
+
+describe('deletableRenderUris', () => {
+  it('keeps files outside the cache and the source PDF', () => {
+    const cache = 'file:///data/cache/';
+    const source = 'file:///data/cache/DocumentPicker/source.pdf';
+    expect(
+      deletableRenderUris(
+        [
+          'file:///data/cache/pdf-page-image-1.jpg',
+          source,
+          'file:///data/files/Edited/x.pdf',
+          'content://media/1',
+        ],
+        cache,
+        [source],
+      ),
+    ).toEqual(['file:///data/cache/pdf-page-image-1.jpg']);
+  });
+
+  it('deletes nothing when the cache directory is unknown', () => {
+    expect(deletableRenderUris(['file:///data/cache/a.jpg'], null, [])).toEqual([]);
   });
 });

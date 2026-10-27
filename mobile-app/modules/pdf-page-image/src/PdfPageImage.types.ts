@@ -21,6 +21,7 @@ export interface DevicePdfFile {
   name: string;
   uri: string;
   sizeBytes: number;
+  /** Last-modified time in epoch SECONDS (MediaStore DATE_MODIFIED). */
   dateModified?: number;
   folder?: string;
   path?: string;

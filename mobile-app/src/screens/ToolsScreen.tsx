@@ -1,220 +1,205 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useState, useRef, useCallback } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
 
-import { ScreenHeader } from '../components/ScreenHeader';
+import { AboutModal } from '../components/AboutModal';
 import type { ToolId } from '../components/ToolShell';
-import { useAppTheme, useThemedStyles } from '../hooks/useAppTheme';
-import { useSettingsStore } from '../state/settingsStore';
-import { type Theme, colors, radius, shadows, spacing } from '../theme';
+import { useAppTheme, useUi } from '../hooks/useAppTheme';
+import { useTx } from '../i18n';
+import { BandIconButton } from '../ui/BandIconButton';
+import { AppMark } from '../ui/AppMark';
+import { BrandBand, useBandCollapse } from '../ui/BrandBand';
+import { Icon, type IconName } from '../ui/Icon';
+import { NAV_CLEARANCE, uiRadius } from '../ui/tokens';
+import { UiText } from '../ui/UiText';
 
 type Props = {
   onOpenTool: (toolId: ToolId) => void;
 };
 
-type ToolCatalogItem = {
+type TileColor = 'edit' | 'translate' | 'pages' | 'size' | 'read';
+
+type ToolTile = {
   id: ToolId;
-  titleEn: string;
-  titleHi: string;
-  badge: string;
-  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
-  accent: string;
-  tint: string;
+  icon: IconName;
+  color: TileColor;
+  en: string;
+  hi: string;
+  descEn: string;
+  descHi: string;
 };
 
-/**
- * PDF Tools catalog strictly aligned with design-system.md Section 2 category accents.
- */
-const ALL_TOOLS: ToolCatalogItem[] = [
+const GROUPS: { en: string; hi: string; tiles: ToolTile[] }[] = [
   {
-    id: 'edit',
-    titleEn: 'Edit Hindi PDF',
-    titleHi: 'पीडीएफ संपादित करें',
-    badge: 'Devanagari OCR',
-    iconName: 'file-document-edit-outline',
-    accent: colors.accentBlue,
-    tint: colors.accentBlueTint,
+    en: 'Change text',
+    hi: 'टेक्स्ट बदलें',
+    tiles: [
+      {
+        id: 'edit',
+        icon: 'edit',
+        color: 'edit',
+        en: 'Edit Hindi text',
+        hi: 'हिंदी टेक्स्ट बदलें',
+        descEn: 'Tap a line and type new words',
+        descHi: 'पंक्ति टैप करें, नए शब्द लिखें',
+      },
+      {
+        id: 'translate',
+        icon: 'translate',
+        color: 'translate',
+        en: 'Translate',
+        hi: 'अनुवाद करें',
+        descEn: 'Hindi ⇄ English, needs internet',
+        descHi: 'हिंदी ⇄ अंग्रेज़ी, इंटरनेट चाहिए',
+      },
+    ],
   },
   {
-    id: 'translate',
-    titleEn: 'Translate PDF',
-    titleHi: 'पीडीएफ अनुवाद',
-    badge: 'Bilingual AI',
-    iconName: 'translate',
-    accent: colors.accentGreen,
-    tint: colors.accentGreenTint,
+    en: 'Pages',
+    hi: 'पृष्ठ',
+    tiles: [
+      {
+        id: 'merge',
+        icon: 'merge-type',
+        color: 'pages',
+        en: 'Merge PDFs',
+        hi: 'PDF जोड़ें',
+        descEn: 'Join files in your order',
+        descHi: 'अपने क्रम में फ़ाइलें जोड़ें',
+      },
+      {
+        id: 'split',
+        icon: 'call-split',
+        color: 'pages',
+        en: 'Split PDF',
+        hi: 'PDF अलग करें',
+        descEn: 'Keep only the pages you need',
+        descHi: 'सिर्फ़ ज़रूरी पृष्ठ रखें',
+      },
+    ],
   },
   {
-    id: 'merge',
-    titleEn: 'Merge PDFs',
-    titleHi: 'पीडीएफ मर्ज करें',
-    badge: 'Multi-Document',
-    iconName: 'layers-triple-outline',
-    accent: colors.accentPurple,
-    tint: colors.accentPurpleTint,
+    en: 'File size',
+    hi: 'फ़ाइल साइज़',
+    tiles: [
+      {
+        id: 'compress',
+        icon: 'compress',
+        color: 'size',
+        en: 'Compress',
+        hi: 'छोटा करें',
+        descEn: 'Smaller file for WhatsApp',
+        descHi: 'WhatsApp के लिए छोटी फ़ाइल',
+      },
+    ],
   },
   {
-    id: 'split',
-    titleEn: 'Split PDF',
-    titleHi: 'पीडीएफ विभाजित करें',
-    badge: 'Page Range',
-    iconName: 'content-cut',
-    accent: colors.accentPurple,
-    tint: colors.accentPurpleTint,
-  },
-  {
-    id: 'compress',
-    titleEn: 'Compress PDF',
-    titleHi: 'पीडीएफ कंप्रेस करें',
-    badge: 'Size Reducer',
-    iconName: 'archive-arrow-down-outline',
-    accent: colors.accentOrange,
-    tint: colors.accentOrangeTint,
-  },
-  {
-    id: 'viewer',
-    titleEn: 'PDF Reader & Viewer',
-    titleHi: 'पीडीएफ पढ़ें और देखें',
-    badge: 'Reading Mode',
-    iconName: 'book-open-page-variant-outline',
-    accent: colors.accentTeal,
-    tint: colors.accentTealTint,
+    en: 'Reading',
+    hi: 'पढ़ना',
+    tiles: [
+      {
+        id: 'viewer',
+        icon: 'menu-book',
+        color: 'read',
+        en: 'Read',
+        hi: 'पढ़ें',
+        descEn: 'Open a PDF to read',
+        descHi: 'पढ़ने के लिए PDF खोलें',
+      },
+    ],
   },
 ];
 
+/** Tools tab: brand band and four groups of two-column tiles, each with a short description. */
 export function ToolsScreen({ onOpenTool }: Props) {
-  const theme = useAppTheme();
-  const styles = useThemedStyles(getStyles);
-  const language = useSettingsStore((s) => s.language);
-  const showEn = language === 'bilingual' || language === 'english';
-  const showHi = language === 'bilingual' || language === 'hindi';
+  const tx = useTx();
+  const ui = useUi();
+  const surface = useAppTheme().colors.surface;
+  const [aboutVisible, setAboutVisible] = useState(false);
+  const bandListRef = useRef<ScrollView>(null);
+  const band = useBandCollapse(
+    useCallback((y) => bandListRef.current?.scrollTo({ y, animated: true }), []),
+  );
 
   return (
-    <View style={styles.container}>
-      {/* Fixed Header (Never Scrolls) */}
-      {language === 'hindi' ? (
-        <ScreenHeader title="पीडीएफ उपकरण" />
-      ) : language === 'english' ? (
-        <ScreenHeader title="PDF Tools" />
-      ) : (
-        <ScreenHeader title="PDF Tools /" titleAccent="उपकरण" />
-      )}
-
-      {/* Scrollable Tools List */}
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
+    <>
+      <BrandBand
+        title={tx('Tools', 'टूल')}
+        leading={<AppMark />}
+        scrollY={band.scrollY}
+        onCollapseDistance={band.setDistance}
+        actions={
+          <BandIconButton
+            icon="more-vert"
+            label={tx('More options', 'और विकल्प')}
+            onPress={() => setAboutVisible(true)}
+          />
+        }
       >
-        <View style={styles.toolsList}>
-          {ALL_TOOLS.map((tool) => (
-            <Pressable
-              key={tool.id}
-              accessibilityRole="button"
-              accessibilityLabel={`${tool.titleEn} - ${tool.titleHi}`}
-              onPress={() => onOpenTool(tool.id)}
-              style={({ pressed }) => [styles.toolCard, pressed && styles.toolCardPressed]}
-            >
-              {/* 12px Rounded Square Category Icon Chip */}
-              <View style={[styles.iconBox, { backgroundColor: tool.tint }]}>
-                <MaterialCommunityIcons name={tool.iconName} size={24} color={tool.accent} />
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: NAV_CLEARANCE }}
+          onScroll={band.onScroll}
+          scrollEventThrottle={band.scrollEventThrottle}
+          ref={bandListRef}
+          onScrollEndDrag={band.onScrollEndDrag}
+          onMomentumScrollEnd={band.onMomentumScrollEnd}
+        >
+          {GROUPS.map((group) => (
+            <View key={group.en}>
+              <UiText
+                color={ui.inkLabel}
+                accessibilityRole="header"
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  paddingTop: 12,
+                  paddingHorizontal: 16,
+                  paddingBottom: 8,
+                }}
+              >
+                {tx(group.en, group.hi)}
+              </UiText>
+              <View
+                style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 16 }}
+              >
+                {group.tiles.map((tile) => {
+                  const name = tx(tile.en, tile.hi);
+                  const description = tx(tile.descEn, tile.descHi);
+                  return (
+                    <Pressable
+                      key={tile.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${name}. ${description}`}
+                      onPress={() => onOpenTool(tile.id)}
+                      android_ripple={{ color: ui.fill }}
+                      style={{
+                        flexBasis: '47%',
+                        maxWidth: '47%',
+                        minHeight: 48,
+                        padding: 14,
+                        gap: 6,
+                        borderRadius: uiRadius.tile,
+                        backgroundColor: surface,
+                        borderWidth: 1,
+                        borderColor: ui.ring,
+                        elevation: 1,
+                      }}
+                    >
+                      <Icon name={tile.icon} size={28} color={ui.category[tile.color]} />
+                      <UiText color={ui.ink} style={{ fontSize: 15, fontWeight: '600' }}>
+                        {name}
+                      </UiText>
+                      <UiText color={ui.inkSecondary} style={{ fontSize: 13 }}>
+                        {description}
+                      </UiText>
+                    </Pressable>
+                  );
+                })}
               </View>
-
-              <View style={styles.cardContent}>
-                <View style={styles.titleRow}>
-                  {showEn && <Text style={styles.titleEn}>{tool.titleEn}</Text>}
-                  {tool.badge && (
-                    <View style={[styles.badge, { backgroundColor: tool.tint }]}>
-                      <Text style={[styles.badgeText, { color: tool.accent }]}>{tool.badge}</Text>
-                    </View>
-                  )}
-                </View>
-                {showHi && (
-                  <Text
-                    style={[
-                      styles.titleHi,
-                      { color: tool.accent },
-                      !showEn && { fontSize: 14, fontWeight: '800' },
-                    ]}
-                  >
-                    {tool.titleHi}
-                  </Text>
-                )}
-              </View>
-
-              <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
-            </Pressable>
+            </View>
           ))}
-        </View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </BrandBand>
+      <AboutModal visible={aboutVisible} onClose={() => setAboutVisible(false)} />
+    </>
   );
 }
-
-const getStyles = (theme: Theme) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      gap: spacing.xs,
-    },
-    scrollArea: {
-      flex: 1,
-    },
-    content: {
-      paddingBottom: 95,
-    },
-    toolsList: {
-      gap: spacing.sm + 2,
-    },
-    toolCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.colors.surface,
-      borderRadius: radius.card,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      padding: spacing.md,
-      gap: spacing.md,
-      ...shadows.soft,
-    },
-    toolCardPressed: {
-      backgroundColor: theme.colors.surfaceSubtle,
-      transform: [{ scale: 0.98 }],
-    },
-    iconBox: {
-      width: 46,
-      height: 46,
-      borderRadius: radius.chip,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    cardContent: {
-      flex: 1,
-      gap: 2,
-    },
-    titleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-    },
-    titleEn: {
-      fontSize: 15,
-      fontWeight: '800',
-      color: theme.colors.textPrimary,
-      letterSpacing: -0.2,
-    },
-    badge: {
-      paddingVertical: 2,
-      paddingHorizontal: 6,
-      borderRadius: radius.full,
-    },
-    badgeText: {
-      fontSize: 9.5,
-      fontWeight: '800',
-      letterSpacing: 0.2,
-      textTransform: 'uppercase',
-    },
-    titleHi: {
-      fontSize: 12,
-      fontWeight: '700',
-    },
-  });

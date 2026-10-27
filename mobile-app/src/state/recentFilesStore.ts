@@ -1,6 +1,8 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { create } from 'zustand';
 
+import { normalizeEpochMs } from '../lib/fileTimes';
+
 export type RecentFile = {
   id: string;
   name: string;
@@ -8,8 +10,12 @@ export type RecentFile = {
   uri: string;
   thumbnailUri?: string;
   sizeBytes: number;
+  /** Display date; kept for entries saved before `openedAt` existed. */
   date: string;
+  /** File last-modified time in epoch ms (older entries may hold seconds; normalised on load). */
   dateModified?: number;
+  /** When the app last saved this entry, epoch ms. */
+  openedAt?: number;
   folder?: string;
   path?: string;
   pageCount: number;
@@ -50,7 +56,11 @@ export const useRecentFilesStore = create<RecentFilesState>((set, get) => ({
         const raw = await FileSystem.readAsStringAsync(STORAGE_PATH);
         const parsed = JSON.parse(raw) as RecentFile[];
         if (Array.isArray(parsed)) {
-          set({ files: parsed, loaded: true });
+          const files = parsed.map((f) => ({
+            ...f,
+            dateModified: normalizeEpochMs(f.dateModified),
+          }));
+          set({ files, loaded: true });
           return;
         }
       }
@@ -70,6 +80,7 @@ export const useRecentFilesStore = create<RecentFilesState>((set, get) => ({
       ...newFile,
       id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       date: today,
+      openedAt: Date.now(),
     };
     const current = get().files;
     const filtered = current.filter((f) => f.uri !== newFile.uri && f.name !== newFile.name);

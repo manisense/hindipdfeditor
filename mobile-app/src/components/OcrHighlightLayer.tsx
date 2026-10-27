@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ptSizeToDp, ptToDp } from '../lib/coordinateMath';
 import type { OcrLine } from '../state/editStore';
+import { ui } from '../ui/tokens';
 
 type Props = {
   /** Detected-but-not-yet-edited text lines on this page, boxes in PDF points. */
@@ -11,10 +12,18 @@ type Props = {
   /** The source page's width, in PDF points. */
   pageWidthPt: number;
   /**
-   * When true, shows faint boxes so the user can see what's tappable (debug/onboarding).
-   * Default false for a clean Canva-like canvas - hit-testing still works in `App.tsx`.
+   * When true, shows brand-tint boxes so the user can see what's tappable (the editor's Change
+   * text mode). Default false - hit-testing still works in the caller.
    */
   visible?: boolean;
+  /**
+   * `'search'` fills each box with translucent brand colour (18%) so the text beneath stays
+   * readable on every Android version, and the box whose id is `currentId` with 35% plus a 2dp
+   * brand underline. Default `'outline'`.
+   */
+  tone?: 'outline' | 'search';
+  /** Id of the line to emphasise in the `'search'` tone. */
+  currentId?: string;
 };
 
 /**
@@ -23,7 +32,14 @@ type Props = {
  * `pointerEvents="none"` - taps go through to `PdfPageViewer`'s `onTap`, hit-tested in
  * `App.tsx` via `ocrHitTest.ts`.
  */
-export function OcrHighlightLayer({ lines, viewWidthDp, pageWidthPt, visible = false }: Props) {
+export function OcrHighlightLayer({
+  lines,
+  viewWidthDp,
+  pageWidthPt,
+  visible = false,
+  tone = 'outline',
+  currentId,
+}: Props) {
   if (!visible) return null;
 
   return (
@@ -34,7 +50,14 @@ export function OcrHighlightLayer({ lines, viewWidthDp, pageWidthPt, visible = f
         return (
           <View
             key={line.id}
-            style={[styles.highlight, { left: xDp, top: yDp, width: wDp, height: hDp }]}
+            style={[
+              tone === 'search'
+                ? line.id === currentId
+                  ? styles.current
+                  : styles.match
+                : styles.highlight,
+              { left: xDp, top: yDp, width: wDp, height: hDp },
+            ]}
           />
         );
       })}
@@ -43,11 +66,23 @@ export function OcrHighlightLayer({ lines, viewWidthDp, pageWidthPt, visible = f
 }
 
 const styles = StyleSheet.create({
+  // 8% ui.brand over a white page is ui.brandTint (#EEF2FF); translucent so the text shows.
   highlight: {
     position: 'absolute',
-    borderWidth: 1,
-    borderColor: 'rgba(36, 83, 178, 0.35)',
-    backgroundColor: 'rgba(36, 83, 178, 0.06)',
+    backgroundColor: 'rgba(24, 67, 221, 0.08)',
+    borderRadius: 2,
+  },
+  // rgba(24, 67, 221) is ui.brand. Pages are always white, so light tokens suit both app themes.
+  match: {
+    position: 'absolute',
+    backgroundColor: 'rgba(24, 67, 221, 0.18)',
+    borderRadius: 2,
+  },
+  current: {
+    position: 'absolute',
+    backgroundColor: 'rgba(24, 67, 221, 0.35)',
+    borderBottomWidth: 2,
+    borderBottomColor: ui.brand,
     borderRadius: 2,
   },
 });

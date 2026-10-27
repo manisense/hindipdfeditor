@@ -153,7 +153,6 @@ export const lightTheme = {
     colors: {
       ...rawColors,
       navBar: rawColors.surface,
-      auraTopRight: 'rgba(238,242,255,0.7)',
       activeHeaderBg: 'rgba(255,255,255,0.95)',
       cardBg: rawColors.surface,
       inputBg: rawColors.surfaceSubtle,
@@ -275,7 +274,6 @@ export const darkTheme: Theme = {
 
     // Component-level tokens
     navBar: '#181924',
-    auraTopRight: 'rgba(46,91,255,0.06)',
     activeHeaderBg: 'rgba(24,25,36,0.96)',
     cardBg: '#181924',
     inputBg: '#222433',

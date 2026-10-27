@@ -142,6 +142,12 @@ export type EditStoreState = {
   undo: () => void;
   /** Re-applies the most recently undone document snapshot. No-op when `future` is empty. */
   redo: () => void;
+  /**
+   * Abandons everything since the newest checkpoint: returns to it and drops it, without a redo
+   * step, so a change that never took effect leaves no trace in history. OCR lines found since
+   * are kept (they are not edits). No-op when history is empty.
+   */
+  revertToCheckpoint: () => void;
   /** Replaces the whole in-memory document, e.g. after opening a file and rasterizing its pages. */
   loadDocument: (document: DocumentState) => void;
   /** Clears the in-memory document, e.g. before opening a different file. */
@@ -184,6 +190,35 @@ function withUpdatedPage(document: DocumentState, page: number, edits: Edit[]): 
 }
 
 /**
+ * Every page background image (`backgroundImageUri`) the store still references, across the
+ * current document and the undo and redo history, each listed once. The editor deletes these
+ * render files when it closes, since nothing else uses them.
+ */
+export function pageImageUris(
+  state: Pick<EditStoreState, 'document' | 'history' | 'future'>,
+): string[] {
+  const docs = [state.document, ...state.history, ...state.future];
+  const uris = new Set<string>();
+  for (const doc of docs) {
+    for (const page of doc?.pages ?? []) uris.add(page.backgroundImageUri);
+  }
+  return [...uris];
+}
+
+/**
+ * The editor's render files that are safe to delete: the `uris` inside `cacheDirectory`, minus
+ * every URI in `keep` (the source PDF, which may itself be a picker copy in the cache).
+ */
+export function deletableRenderUris(
+  uris: readonly string[],
+  cacheDirectory: string | null,
+  keep: readonly (string | undefined)[],
+): string[] {
+  if (!cacheDirectory) return [];
+  return uris.filter((uri) => uri.startsWith(cacheDirectory) && !keep.includes(uri));
+}
+
+/**
  * Creates an independent edit store instance. The app uses the default singleton export
  * (`useEditStore`) below; this factory exists so tests can create a fresh, isolated store
  * per test instead of sharing module-level state across the whole suite.
@@ -220,6 +255,22 @@ export function createEditStore(generateId: () => string = Crypto.randomUUID) {
         document: future[future.length - 1],
         history: [...history, document].slice(-HISTORY_LIMIT),
         future: future.slice(0, -1),
+      });
+    },
+
+    revertToCheckpoint: () => {
+      const { document, history } = get();
+      if (!document || history.length === 0) return;
+      const target = history[history.length - 1];
+      const samePages = target.pages.length === document.pages.length;
+      set({
+        document: {
+          ...target,
+          pages: samePages
+            ? target.pages.map((p, i) => ({ ...p, ocrLines: document.pages[i].ocrLines }))
+            : target.pages,
+        },
+        history: history.slice(0, -1),
       });
     },
 

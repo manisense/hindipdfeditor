@@ -1,117 +1,84 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View } from 'react-native';
 
-import { AppButton } from './AppButton';
-import { colors, radius, spacing } from '../theme';
+import { useUi } from '../hooks/useAppTheme';
+import { useTx } from '../i18n';
+import { BottomSheet } from '../ui/BottomSheet';
+import { Icon } from '../ui/Icon';
+import { PillButton } from '../ui/PillButton';
+import { UiText } from '../ui/UiText';
+
+const LEGACY_FONT_ICON_COLOR = '#C2560A';
 
 type Props = {
-  /** Distinct legacy font names detected on the current page (spec Section 9). */
+  visible: boolean;
+  /** Closes the sheet; the page stays read-only. Also runs on Android back and scrim tap. */
+  onClose: () => void;
+  /** Distinct known legacy font names detected on the current page (spec Section 9). */
   fontNames: string[];
   inspectionFailed?: boolean;
-  safeReplacementEnabled?: boolean;
   onEnableSafeReplacement?: () => void;
-  onChooseUnicodeFont?: () => void;
 };
 
 /**
- * Banner shown instead of letting the user add or mask text on a page whose embedded font
- * matches a known pre-Unicode Devanagari pattern (KrutiDev, Shivaji, Chanakya, DevLys, etc.) -
- * spec Section 8/9. Inspection failures stay blocked. A known legacy match can enter the
- * explicit raster-only Unicode replacement path: the source remains immutable and the legacy
- * byte mapping is never interpreted as Unicode.
+ * Sheet shown before editing a page whose embedded font matches a known pre-Unicode Devanagari
+ * pattern (KrutiDev, Shivaji, Chanakya, DevLys, etc.) - spec Section 8/9. A known legacy match
+ * can enter the explicit raster-only Unicode replacement path: the source stays immutable and
+ * the legacy byte mapping is never interpreted as Unicode. Inspection failures fail closed: the
+ * sheet offers only OK, with no way to enable editing.
  */
 export function LegacyFontWarning({
+  visible,
+  onClose,
   fontNames,
   inspectionFailed,
-  safeReplacementEnabled,
   onEnableSafeReplacement,
-  onChooseUnicodeFont,
 }: Props) {
-  const isWarning = inspectionFailed || !safeReplacementEnabled;
+  const ui = useUi();
+  const tx = useTx();
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: isWarning ? colors.warningSoft : colors.accentGreenTint },
-      ]}
-    >
-      <View style={styles.headerRow}>
-        <Ionicons
-          name={isWarning ? 'warning-outline' : 'checkmark-circle-outline'}
-          size={18}
-          color={isWarning ? colors.warning : colors.accentGreen}
+    <BottomSheet visible={visible} onClose={onClose}>
+      <View style={{ paddingHorizontal: 24, gap: 16 }}>
+        <Icon
+          name={inspectionFailed ? 'block' : 'font-download-off'}
+          size={32}
+          color={inspectionFailed ? ui.danger : LEGACY_FONT_ICON_COLOR}
         />
-        <Text style={[styles.title, { color: isWarning ? colors.warning : colors.accentGreen }]}>
+        <UiText variant="title" accessibilityRole="header">
           {inspectionFailed
-            ? 'Font encoding could not be verified — editing disabled on this page'
-            : safeReplacementEnabled
-              ? `Unicode replacement mode enabled (${fontNames.join(', ')})`
-              : `Legacy font detected (${fontNames.join(', ')})`}
-        </Text>
-      </View>
-      <Text style={[styles.body, { color: isWarning ? colors.warning : colors.textPrimary }]}>
-        {inspectionFailed
-          ? "This page's font could not be inspected, so it can't be confirmed safe to edit. " +
-            "Per this app's safety rule, an unverifiable page is treated the same as a known " +
-            'legacy font rather than assumed safe.'
-          : safeReplacementEnabled
-            ? 'The source page stays immutable. Edits use mask + real Unicode overlays on the ' +
-              'rasterized page, so the legacy byte mapping is never treated as Unicode text.'
-            : 'This page uses pre-Unicode visual glyph mapping. Downloading that legacy font ' +
-              'would not convert its Latin-mapped bytes. You can explicitly switch to safe ' +
-              'Unicode replacement mode, which edits only the rasterized page with Unicode text.'}
-      </Text>
-      {!inspectionFailed && (
-        <View style={styles.actions}>
-          {!safeReplacementEnabled && onEnableSafeReplacement && (
-            <AppButton
-              title="Enable Unicode replacement"
-              small
-              variant="secondary"
-              onPress={onEnableSafeReplacement}
-            />
-          )}
-          {onChooseUnicodeFont && (
-            <AppButton
-              title="Choose Unicode font"
-              small
-              variant="ghost"
-              onPress={onChooseUnicodeFont}
-            />
+            ? tx("We couldn't check this page's font", 'इस पृष्ठ का फ़ॉन्ट जाँचा नहीं जा सका')
+            : tx('This page uses an old Hindi font', 'इस पृष्ठ में पुराना हिंदी फ़ॉन्ट है')}
+        </UiText>
+        {!inspectionFailed && fontNames.length > 0 && (
+          <UiText variant="meta" color={ui.inkSecondary}>
+            {`${tx('Found:', 'मिला:')} ${fontNames.join(', ')}`}
+          </UiText>
+        )}
+        <UiText color={ui.inkSecondary}>
+          {inspectionFailed
+            ? tx(
+                'To keep your text correct, editing is off for this page. You can still read it, or edit other pages.',
+                'टेक्स्ट सही रखने के लिए इस पृष्ठ पर एडिट बंद है। आप इसे पढ़ सकते हैं या दूसरे पृष्ठ एडिट कर सकते हैं।',
+              )
+            : tx(
+                "Its lines can't be changed one by one. You can cover old text and type new Hindi on top. The original page stays as it is.",
+                'इसकी पंक्तियाँ एक-एक करके नहीं बदल सकतीं। आप पुराना टेक्स्ट ढककर ऊपर नई हिंदी लिख सकते हैं। मूल पृष्ठ वैसा ही रहता है।',
+              )}
+        </UiText>
+        <View style={{ gap: 8, marginTop: 8 }}>
+          {inspectionFailed || !onEnableSafeReplacement ? (
+            <PillButton title={tx('OK', 'ठीक है')} onPress={onClose} />
+          ) : (
+            <>
+              <PillButton
+                title={tx('Cover and retype', 'ढककर लिखें')}
+                onPress={onEnableSafeReplacement}
+              />
+              <PillButton title={tx('Just read', 'सिर्फ़ पढ़ें')} kind="tonal" onPress={onClose} />
+            </>
           )}
         </View>
-      )}
-    </View>
+      </View>
+    </BottomSheet>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: radius.card,
-    padding: spacing.lg,
-    gap: spacing.xs + 2,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 108, 77, 0.2)',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs + 2,
-  },
-  title: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  body: {
-    fontSize: 12.5,
-    lineHeight: 18,
-  },
-  actions: {
-    marginTop: spacing.xs,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-});
