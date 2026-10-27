@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer } from 'react';
 import { ActivityIndicator, StyleSheet, View, useColorScheme } from 'react-native';
 import { useFonts } from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -8,6 +8,7 @@ import { ThemeProvider } from '@shopify/restyle';
 
 import { ToolShell, type ToolId } from './src/components/ToolShell';
 import { useOrientationPolicy } from './src/hooks/useOrientationPolicy';
+import { NO_TOOL, toolSessionReducer } from './src/navigation/backStack';
 import { useRecentFilesStore, type RecentFile } from './src/state/recentFilesStore';
 import { useSettingsStore } from './src/state/settingsStore';
 import { darkTheme, lightTheme } from './src/theme';
@@ -36,8 +37,8 @@ export default function App() {
   const theme = useSettingsStore((s) => s.theme);
 
   const initStore = useRecentFilesStore((s) => s.initStore);
-  const [activeTool, setActiveTool] = useState<ToolId | null>(null);
-  const [openedFile, setOpenedFile] = useState<RecentFile | null>(null);
+  const [session, dispatch] = useReducer(toolSessionReducer, NO_TOOL);
+  const { activeTool, file: openedFile } = session;
 
   useEffect(() => {
     void initStore();
@@ -57,15 +58,14 @@ export default function App() {
   const activeTheme = isDark ? darkTheme : lightTheme;
   const statusBarStyle = isDark ? 'light' : 'dark';
 
-  const handleOpenFile = (file: RecentFile, toolId: ToolId = 'viewer') => {
-    setOpenedFile(file);
-    setActiveTool(toolId);
-  };
+  const handleOpenFile = (file: RecentFile, toolId: ToolId = 'viewer') =>
+    dispatch({ type: 'open', tool: toolId, file });
 
-  const closeTool = () => {
-    setActiveTool(null);
-    setOpenedFile(null);
-  };
+  /** Opens Edit or Translate from the Reader; closing it comes back to the Reader. */
+  const openFromReader = (file: RecentFile, toolId: ToolId) =>
+    dispatch({ type: 'open', tool: toolId, file, fromReader: true });
+
+  const closeTool = () => dispatch({ type: 'close' });
 
   return (
     <GestureHandlerRootView style={styles.root}>
@@ -76,15 +76,17 @@ export default function App() {
             <View style={[styles.root, { backgroundColor: activeTheme.colors.background }]}>
               <ToolShell
                 activeTool={activeTool}
-                onSelectTool={(tool) => (tool ? setActiveTool(tool) : closeTool())}
+                onSelectTool={(tool) =>
+                  tool ? dispatch({ type: 'open', tool, file: null }) : closeTool()
+                }
                 onOpenFile={handleOpenFile}
               >
                 {activeTool === 'viewer' && (
                   <ViewPdfTool
                     initialFile={openedFile ?? undefined}
                     onClose={closeTool}
-                    onOpenEditor={(file) => handleOpenFile(file, 'edit')}
-                    onOpenTranslate={(file) => handleOpenFile(file, 'translate')}
+                    onOpenEditor={(file) => openFromReader(file, 'edit')}
+                    onOpenTranslate={(file) => openFromReader(file, 'translate')}
                   />
                 )}
                 {activeTool === 'edit' && (
