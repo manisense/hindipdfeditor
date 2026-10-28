@@ -15,6 +15,12 @@ import { containsDevanagari, containsLatin, translateOcrLines } from '../lib/gem
 import { detectTextLines } from '../lib/ocr';
 import { getPageCount, renderPage, sampleAverageColor } from '../lib/pdfToImages';
 import { geometryForTranslatedLine, successfulTranslations } from '../lib/translateEdits';
+import {
+  classifyTranslateFailure,
+  NoTextFoundError,
+  TextDetectionError,
+  type TranslateFailure,
+} from '../lib/translateFailure';
 import { discardTemporaryOutput, persistOutput } from '../lib/persistOutput';
 import { ToolDoneScreen } from '../screens/ToolDoneScreen';
 import { ToolFileRow } from '../screens/tools/ToolFileRow';
@@ -65,6 +71,51 @@ async function loadDocument(uri: string, name: string, size?: number): Promise<S
     if (info?.exists && typeof info.size === 'number') bytes = info.size;
   }
   return { name, uri, pageCount, size: bytes };
+}
+
+/** Cause plus next step for each way a run can stop, in the screen's language. */
+function failureMessage(
+  failure: TranslateFailure,
+  direction: TranslationDirection,
+  tx: (en: string, hi: string) => string,
+): string {
+  switch (failure) {
+    case 'quota':
+      return tx(
+        "You've used today's free translations. Try again tomorrow.",
+        'आज के मुफ़्त अनुवाद पूरे हो गए। कल फिर से करें।',
+      );
+    case 'busy':
+      return tx(
+        'The translation service is busy. Wait a minute, then try again.',
+        'अनुवाद सेवा अभी व्यस्त है। एक मिनट रुककर फिर से करें।',
+      );
+    case 'offline':
+      return tx(
+        "The translation service couldn't be reached. Check your internet connection, then try again.",
+        'अनुवाद सेवा से संपर्क नहीं हो सका। इंटरनेट कनेक्शन जाँचें, फिर से करें।',
+      );
+    case 'detection-failed':
+      return tx(
+        "The text on a page couldn't be read. Try again, or try another copy of the file.",
+        'एक पृष्ठ का टेक्स्ट पढ़ा नहीं जा सका। फिर से करें, या फ़ाइल की दूसरी कॉपी आज़माएँ।',
+      );
+    case 'no-text':
+      return direction === 'hi-en'
+        ? tx(
+            'No Hindi text was found on the pages. Check the direction, or try a clearer copy.',
+            'पृष्ठों पर हिंदी टेक्स्ट नहीं मिला। भाषा की दिशा जाँचें, या साफ़ कॉपी आज़माएँ।',
+          )
+        : tx(
+            'No English text was found on the pages. Check the direction, or try a clearer copy.',
+            'पृष्ठों पर अंग्रेज़ी टेक्स्ट नहीं मिला। भाषा की दिशा जाँचें, या साफ़ कॉपी आज़माएँ।',
+          );
+    case 'unavailable':
+      return tx(
+        'The translation service is not working right now. Try again in a few minutes.',
+        'अनुवाद सेवा अभी काम नहीं कर रही है। कुछ मिनट बाद फिर से करें।',
+      );
+  }
 }
 
 type Props = {
@@ -162,16 +213,18 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
       }
 
       // 2. Perform OCR and translation for each page
+      let translatedLineCount = 0;
       for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
         throwIfCancelled();
         const pageState = pages[pageIndex];
         setProgress({ step: 'detecting', page: pageIndex + 1, total });
 
-        let lines: PageState['ocrLines'] = [];
+        let lines: PageState['ocrLines'];
         try {
           lines = await detectTextLines(pageState);
-        } catch {
-          lines = [];
+        } catch (error) {
+          // Never export a page whose text could not be read as if it were translated.
+          throw new TextDetectionError(pageIndex, error);
         }
         throwIfCancelled();
 
@@ -196,6 +249,7 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
           );
 
           const successful = successfulTranslations(lines, translationMap);
+          translatedLineCount += successful.length;
 
           // Commit masks and translated text overlays
           for (const item of successful) {
@@ -256,6 +310,9 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
           }
         }
       }
+
+      // An unchanged copy is not a translation: stop instead of showing the Saved screen.
+      if (translatedLineCount === 0) throw new NoTextFoundError();
 
       // 3. Assemble and export the translated PDF
       throwIfCancelled();
@@ -320,13 +377,12 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
     } catch (error) {
       if (error instanceof TranslationCancelled || runIdRef.current !== runId) return;
       console.warn('Translation failed', error);
+      const failure = classifyTranslateFailure(error);
       showError({
         title: tx("Couldn't translate the PDF", 'PDF का अनुवाद नहीं हो सका'),
-        body: tx(
-          'The translation stopped partway. Check your internet connection, then try again.',
-          'अनुवाद बीच में रुक गया। इंटरनेट कनेक्शन जाँचें, फिर से करें।',
-        ),
-        onRetry: () => void runTranslation(),
+        body: failureMessage(failure, direction, tx),
+        onRetry:
+          failure === 'quota' || failure === 'no-text' ? undefined : () => void runTranslation(),
       });
     } finally {
       if (runIdRef.current === runId) setProgress(null);

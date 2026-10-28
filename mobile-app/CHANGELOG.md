@@ -7,6 +7,8 @@ All notable changes to this project are documented here, grouped by phase (see `
 ### Fixed — Translate
 
 - AI requests now fail with a typed `AiServiceError` that carries the API error code (`QUOTA_EXHAUSTED`, `RATE_LIMITED` and so on), or `NETWORK` / `TIMEOUT` when no response arrived. Errors the API marks retryable are sent again after 2 s and then 5 s before failing (tested). Before, every failure was a plain `Error`, so the tool could not tell a used-up daily limit from a lost connection.
+- Translate says why it stopped. A used-up daily limit, a busy service, no connection, a service that is down, a page whose text could not be read, and a document with no text in the chosen language each get their own message in English and Hindi (`classifyTranslateFailure`, tested). The limit and no-text messages offer no Try again. Before, every failure said "Check your internet connection", including the daily limit.
+- Translate no longer reports success for a PDF it did not translate. A text-detection error on any page used to count as "no text", and a run that translated nothing still exported an unchanged copy and opened the Saved screen. Both now stop with an error. **Not verified on a device.**
 
 ## [Unreleased] — Native UI redesign (1.1.0, versionCode 8)
 
