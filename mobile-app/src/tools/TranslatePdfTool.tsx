@@ -14,6 +14,7 @@ import { fontFaceWeight, getFontBase64, type DevanagariFontFamily } from '../lib
 import { containsDevanagari, containsLatin, translateOcrLines } from '../lib/geminiTranslate';
 import { detectTextLines } from '../lib/ocr';
 import { getPageCount, renderPage, sampleAverageColor } from '../lib/pdfToImages';
+import { translationJobId } from '../lib/translationJobId';
 import { geometryForTranslatedLine, successfulTranslations } from '../lib/translateEdits';
 import {
   classifyTranslateFailure,
@@ -140,7 +141,6 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
   const [direction, setDirection] = useState<TranslationDirection>('hi-en');
   const [progress, setProgress] = useState<Progress | null>(null);
   const [saved, setSaved] = useState<SavedFile | null>(null);
-  const aiJobIdRef = useRef(`translate-${Crypto.randomUUID()}`);
   /** Id of the run that may still update the screen; Cancel and unmount bump it. */
   const runIdRef = useRef(0);
 
@@ -151,7 +151,6 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
       .then((doc) => {
         if (!isMounted) return;
         setSelectedDoc(doc);
-        aiJobIdRef.current = `translate-${Crypto.randomUUID()}`;
       })
       .catch((err) => console.warn('Failed to load initial file in TranslatePdfTool', err));
     return () => {
@@ -176,7 +175,6 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
       if (result.canceled || !result.assets || result.assets.length === 0) return;
       const asset = result.assets[0];
       setSelectedDoc(await loadDocument(asset.uri, asset.name, asset.size));
-      aiJobIdRef.current = `translate-${Crypto.randomUUID()}`;
     } catch (error) {
       console.warn('Translate open failed', error);
       showError({ ...errors.open, onRetry: () => void pickPdf() });
@@ -213,6 +211,7 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
       }
 
       // 2. Perform OCR and translation for each page
+      const jobId = await translationJobId(selectedDoc);
       let translatedLineCount = 0;
       for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
         throwIfCancelled();
@@ -243,7 +242,7 @@ export function TranslatePdfTool({ initialFileUri, initialFileName, onClose, onO
           // Last check before page text goes online: no request starts after Cancel.
           throwIfCancelled();
           const translationMap = await translateOcrLines(
-            aiJobIdRef.current,
+            jobId,
             direction,
             translatable.map((l) => ({ id: l.id, page: pageIndex, text: l.text })),
           );
