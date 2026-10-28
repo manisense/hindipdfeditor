@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here, grouped by phase (see `hindi-pdf-editor-spec.md` Section 10 for the phase definitions). Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — Translate fixes (JS only, no native change)
+
+### Fixed — Translate
+
+- AI requests now fail with a typed `AiServiceError` that carries the API error code (`QUOTA_EXHAUSTED`, `RATE_LIMITED` and so on), or `NETWORK` / `TIMEOUT` when no response arrived. Errors the API marks retryable are sent again after 2 s and then 5 s before failing (tested). Before, every failure was a plain `Error`, so the tool could not tell a used-up daily limit from a lost connection.
+
 ## [Unreleased] — Native UI redesign (1.1.0, versionCode 8)
 
 **Device verification partly done.** A local release APK has run on a phone. Checked there: Files, Home, the logo on all four tabs, the launcher icon, Reader page turns, double-tap zoom and Find, dark-mode chrome, and the bottom navigation in light and dark, English and Hindi. Still to do: Reader pinch zoom, the rest of the Task 16 matrix (every screen in English and Hindi, light and dark, 130% font size), TalkBack, Android back behaviour, and a Home to Edit to Save smoke test on a preview build.

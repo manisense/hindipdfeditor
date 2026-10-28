@@ -2,6 +2,7 @@ import {
   AI_API_VERSION,
   AI_LIMITS,
   parseTranslationResponse,
+  type AiErrorCode,
   type AiErrorResponse,
   type OcrRequest,
   type OcrResponse,
@@ -17,6 +18,8 @@ import * as FileSystem from 'expo-file-system/legacy';
 const DEFAULT_AI_API_BASE_URL = 'https://api.hindipdfeditor.com';
 const CLIENT_ID_FILE = 'ai-client-id.txt';
 const REQUEST_TIMEOUT_MS = 35_000;
+/** Waits before each retry of a retryable API error, in milliseconds. */
+const DEFAULT_RETRY_DELAYS_MS = [2_000, 5_000];
 
 type FetchLike = typeof fetch;
 
@@ -24,7 +27,24 @@ export type AiApiClientOptions = {
   baseUrl?: string;
   fetchImpl?: FetchLike;
   clientIdProvider?: () => Promise<string>;
+  /** Waits before each retry of a retryable API error, in milliseconds. */
+  retryDelaysMs?: readonly number[];
 };
+
+/** Why an AI request failed: an API error code, or a failure before any response arrived. */
+export type AiFailureCode = AiErrorCode | 'NETWORK' | 'TIMEOUT';
+
+/** A failed AI request; `code` tells a quota stop apart from a network failure. */
+export class AiServiceError extends Error {
+  constructor(
+    message: string,
+    readonly code: AiFailureCode,
+    readonly retryable: boolean,
+  ) {
+    super(message);
+    this.name = 'AiServiceError';
+  }
+}
 
 export type OcrPageInput = {
   jobId: string;
@@ -53,11 +73,17 @@ async function getOrCreateClientId(): Promise<string> {
   return clientId;
 }
 
-function publicError(value: unknown, status: number): Error {
+function publicError(value: unknown, status: number): AiServiceError {
   const body = isRecord(value) ? (value as Partial<AiErrorResponse>) : null;
   const message = body?.error?.message;
-  if (typeof message === 'string' && message.trim() !== '') return new Error(message);
-  return new Error(`AI service request failed (HTTP ${status}).`);
+  const code = body?.error?.code;
+  return new AiServiceError(
+    typeof message === 'string' && message.trim() !== ''
+      ? message
+      : `AI service request failed (HTTP ${status}).`,
+    typeof code === 'string' ? code : 'INTERNAL_ERROR',
+    body?.error?.retryable === true,
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -128,7 +154,23 @@ export function createAiApiClient(options: AiApiClientOptions = {}) {
   const baseUrl = (options.baseUrl ?? DEFAULT_AI_API_BASE_URL).replace(/\/$/u, '');
   const fetchImpl = options.fetchImpl ?? fetch;
   const clientIdProvider = options.clientIdProvider ?? getOrCreateClientId;
+  const retryDelaysMs = options.retryDelaysMs ?? DEFAULT_RETRY_DELAYS_MS;
   let session: SessionResponse | null = null;
+
+  /** Sends `post` again after each retryable API error, waiting `retryDelaysMs` between tries. */
+  async function postWithRetry(path: string, body: unknown): Promise<unknown> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await post(path, body);
+      } catch (error) {
+        const delay = retryDelaysMs[attempt];
+        if (!(error instanceof AiServiceError) || !error.retryable || delay === undefined) {
+          throw error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
 
   async function post(path: string, body: unknown, retrySession = true): Promise<unknown> {
     if (path !== '/v1/session') {
@@ -166,7 +208,11 @@ export function createAiApiClient(options: AiApiClientOptions = {}) {
       throw publicError(json, response.status);
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('The AI service timed out. Please retry.');
+        throw new AiServiceError('The AI service timed out. Please retry.', 'TIMEOUT', false);
+      }
+      // fetch rejects with a TypeError when no response arrives (offline, DNS, TLS).
+      if (error instanceof TypeError) {
+        throw new AiServiceError('The AI service could not be reached.', 'NETWORK', false);
       }
       throw error;
     } finally {
@@ -187,7 +233,7 @@ export function createAiApiClient(options: AiApiClientOptions = {}) {
         direction,
         lines,
       };
-      return parseTranslationResponse(await post('/v1/translate', request), request);
+      return parseTranslationResponse(await postWithRetry('/v1/translate', request), request);
     },
 
     async ocr(input: OcrPageInput): Promise<OcrResponse> {
@@ -197,7 +243,7 @@ export function createAiApiClient(options: AiApiClientOptions = {}) {
         consent: true,
         ...input,
       };
-      return parseOcrResponse(await post('/v1/ocr', request), request.requestId);
+      return parseOcrResponse(await postWithRetry('/v1/ocr', request), request.requestId);
     },
   };
 }
