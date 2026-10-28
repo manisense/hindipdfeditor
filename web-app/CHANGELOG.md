@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — AI quota, 28 October 2026
+
+### Changed
+- The free AI allowance is 10 documents a day per device, up from 2; the 50 pages a day ceiling is unchanged and stays the cost cap. Changed in `AI_LIMITS.anonymousDocumentsPerDay` and the D1 trigger (migration `0003_raise_daily_document_limit.sql`). The web Translate tool shows the new number. Takes effect once the migration is applied and the Worker is deployed.
+
 ## Unreleased — SEO implementation, 1 October 2026
 
 ### Changed
