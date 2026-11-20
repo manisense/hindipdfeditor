@@ -31,7 +31,7 @@ export const AI_LIMITS = {
   maxLineCharacters: 2_000,
   maxRequestCharacters: 32_000,
   maxOcrImageBytes: 8 * 1024 * 1024,
-  anonymousDocumentsPerDay: 2,
+  anonymousDocumentsPerDay: 10,
   anonymousPagesPerDay: 50,
 } as const;
 

@@ -1,6 +1,6 @@
 import { AI_API_VERSION } from '@hindipdfeditor/translation-contract';
 
-import { createAiApiClient } from './aiApiClient';
+import { AiServiceError, createAiApiClient } from './aiApiClient';
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'request-id' }));
 
@@ -96,6 +96,105 @@ describe('AI API client', () => {
     await expect(
       client.translate('job', 'hi-en', [{ id: '1', page: 0, text: 'नमस्ते' }]),
     ).rejects.toThrow(/daily AI limit/u);
+  });
+
+  it('carries the API error code so callers can tell a quota stop from a network failure', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce(
+        response({ version: AI_API_VERSION, token: 'token', expiresAt: '2999-01-01T00:00:00Z' }),
+      )
+      .mockResolvedValueOnce(
+        response(
+          {
+            error: {
+              code: 'QUOTA_EXHAUSTED',
+              message: 'The free daily AI limit has been reached.',
+              retryable: false,
+            },
+          },
+          429,
+        ),
+      );
+    const client = createAiApiClient({
+      fetchImpl,
+      clientIdProvider: async () => 'client-1234567890123456',
+      retryDelaysMs: [0, 0],
+    });
+    const failure = await client
+      .translate('job', 'hi-en', [{ id: '1', page: 0, text: 'नमस्ते' }])
+      .catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(AiServiceError);
+    expect((failure as AiServiceError).code).toBe('QUOTA_EXHAUSTED');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries retryable API errors with backoff, then succeeds', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce(
+        response({ version: AI_API_VERSION, token: 'token', expiresAt: '2999-01-01T00:00:00Z' }),
+      )
+      .mockResolvedValueOnce(
+        response({ error: { code: 'RATE_LIMITED', message: 'slow', retryable: true } }, 429),
+      )
+      .mockResolvedValueOnce(
+        response(
+          { error: { code: 'TEMPORARILY_UNAVAILABLE', message: 'busy', retryable: true } },
+          503,
+        ),
+      )
+      .mockImplementationOnce(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const requestBody = JSON.parse(String(init?.body));
+        return response({
+          version: AI_API_VERSION,
+          requestId: requestBody.requestId,
+          model: 'm',
+          results: [{ id: '1', translatedText: 'Hello', status: 'translated' }],
+        });
+      });
+    const client = createAiApiClient({
+      fetchImpl,
+      clientIdProvider: async () => 'client-1234567890123456',
+      retryDelaysMs: [0, 0],
+    });
+    const result = await client.translate('job', 'hi-en', [{ id: '1', page: 0, text: 'नमस्ते' }]);
+    expect(result.results[0]?.translatedText).toBe('Hello');
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+
+  it('gives up after the last retry and reports the retryable code', async () => {
+    const busy = () =>
+      response({ error: { code: 'RATE_LIMITED', message: 'slow', retryable: true } }, 429);
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce(
+        response({ version: AI_API_VERSION, token: 'token', expiresAt: '2999-01-01T00:00:00Z' }),
+      )
+      .mockResolvedValueOnce(busy())
+      .mockResolvedValueOnce(busy())
+      .mockResolvedValueOnce(busy());
+    const client = createAiApiClient({
+      fetchImpl,
+      clientIdProvider: async () => 'client-1234567890123456',
+      retryDelaysMs: [0, 0],
+    });
+    await expect(
+      client.translate('job', 'hi-en', [{ id: '1', page: 0, text: 'नमस्ते' }]),
+    ).rejects.toMatchObject({ code: 'RATE_LIMITED' });
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+
+  it('reports a failed connection as a network error', async () => {
+    const fetchImpl = jest.fn().mockRejectedValueOnce(new TypeError('Network request failed'));
+    const client = createAiApiClient({
+      fetchImpl,
+      clientIdProvider: async () => 'client-1234567890123456',
+      retryDelaysMs: [0, 0],
+    });
+    await expect(
+      client.translate('job', 'hi-en', [{ id: '1', page: 0, text: 'नमस्ते' }]),
+    ).rejects.toMatchObject({ code: 'NETWORK' });
   });
 
   it('uses a stable public error when an upstream failure has no JSON body', async () => {

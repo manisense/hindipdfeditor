@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here, grouped by phase (see `hindi-pdf-editor-spec.md` Section 10 for the phase definitions). Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — Translate fixes (JS only, no native change)
+
+### Fixed — Translate
+
+- AI requests now fail with a typed `AiServiceError` that carries the API error code (`QUOTA_EXHAUSTED`, `RATE_LIMITED` and so on), or `NETWORK` / `TIMEOUT` when no response arrived. Errors the API marks retryable are sent again after 2 s and then 5 s before failing (tested). Before, every failure was a plain `Error`, so the tool could not tell a used-up daily limit from a lost connection.
+- Translate says why it stopped. A used-up daily limit, a busy service, no connection, a service that is down, a page whose text could not be read, and a document with no text in the chosen language each get their own message in English and Hindi (`classifyTranslateFailure`, tested). The limit and no-text messages offer no Try again. Before, every failure said "Check your internet connection", including the daily limit.
+- Translate no longer reports success for a PDF it did not translate. A text-detection error on any page used to count as "no text", and a run that translated nothing still exported an unchanged copy and opened the Saved screen. Both now stop with an error. **Not verified on a device.**
+- Picking the same PDF again no longer uses up another of the free daily documents. Each pick made a random AI job ID, so translating one file twice counted as two of the two allowed per day. The job ID now comes from a SHA-256 of the file name, size and page count (`translationJobId`, tested).
+- The free AI allowance is 10 documents a day per device, up from 2; the 50 pages a day ceiling is unchanged and stays the cost cap. Changed in `AI_LIMITS.anonymousDocumentsPerDay` and the D1 trigger (migration `0003_raise_daily_document_limit.sql`). The web Translate tool shows the new number. Takes effect once the migration is applied and the Worker is deployed.
+
 ## [Unreleased] — Native UI redesign (1.1.0, versionCode 8)
 
 **Device verification partly done.** A local release APK has run on a phone. Checked there: Files, Home, the logo on all four tabs, the launcher icon, Reader page turns, double-tap zoom and Find, dark-mode chrome, and the bottom navigation in light and dark, English and Hindi. Still to do: Reader pinch zoom, the rest of the Task 16 matrix (every screen in English and Hindi, light and dark, 130% font size), TalkBack, Android back behaviour, and a Home to Edit to Save smoke test on a preview build.

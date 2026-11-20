@@ -43,6 +43,19 @@ See **[docs/PLAY_STORE.md](docs/PLAY_STORE.md)** for the full checklist, **[docs
 - **Native modules:** `pdf-page-image` (rasterize), `text-recognition` (ML Kit OCR)
 - Spec: `hindi-pdf-editor-spec.md` · Decisions: `docs/decisions/`
 
+## PDF libraries
+
+Edits are never written into the original PDF. Each page is rasterized, edits are composed over it as HTML in Noto Sans Devanagari, and the result is printed to a new PDF.
+
+| Job                             | Library                                                                                    | License                      |
+| ------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------- |
+| Page → image                    | `pdf-page-image` (in-house, wraps Android `PdfRenderer`)                                   | Android platform             |
+| HTML → PDF export               | `expo-print`                                                                               | MIT                          |
+| Merge, split, output parse-back | `@cantoo/pdf-lib`                                                                          | MIT                          |
+| On-device OCR                   | `text-recognition` (in-house, wraps Google ML Kit Text Recognition v2, Latin + Devanagari) | ML Kit is proprietary (free) |
+
+Keep the MIT/Apache copyright notices of bundled open-source libraries in the app's licenses screen.
+
 ## License
 
 Private / unpublished — see repository owner.

@@ -5,7 +5,9 @@ Monorepo for Hindi PDF Editor.
 ## Structure
 
 - `mobile-app/` — Expo Android app for editing Hindi PDFs.
-- `web-app/` — Cloudflare Pages static website for `hindipdfeditor.com`, including Play Store approval pages and browser PDF tools at `/edit/` (edit Hindi text, merge, split, compress).
+- `web-app/` — website for `hindipdfeditor.com` on a Cloudflare Worker, including Play Store approval pages and browser PDF tools under `/tools/` (edit Hindi text, merge, split, compress).
+- `services/ai-api/` — Cloudflare Worker behind `api.hindipdfeditor.com` for consent-gated AI OCR and translation.
+- `packages/translation-contract/` — types shared by the apps and the AI API.
 
 ## Common Commands
 
@@ -20,7 +22,12 @@ npx eas-cli@latest build --profile production --platform android
 ```bash
 cd web-app
 npm run build
-npx wrangler pages deploy dist --project-name hindipdfeditor --branch main
+npm run deploy          # project-local Wrangler wrapper; see web-app/DEPLOYMENT.md
+```
+
+```bash
+cd services/ai-api
+npm run check           # tests, typecheck, dry-run deploy
 ```
 
 Local editor development:

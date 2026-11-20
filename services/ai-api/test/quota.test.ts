@@ -21,11 +21,13 @@ describe("anonymous daily quota", () => {
   });
 
   it("enforces document and page limits without recording rejected usage", async () => {
+    expect(AI_LIMITS.anonymousDocumentsPerDay).toBe(10);
     const store = new MemoryQuotaStore();
-    await store.reserve("actor", "2026-07-22", "job-1", [0]);
-    await store.reserve("actor", "2026-07-22", "job-2", [0]);
+    for (let job = 1; job <= AI_LIMITS.anonymousDocumentsPerDay; job++) {
+      await store.reserve("actor", "2026-07-22", `job-${job}`, [0]);
+    }
     await expect(
-      store.reserve("actor", "2026-07-22", "job-3", [0]),
+      store.reserve("actor", "2026-07-22", "job-overflow", [0]),
     ).rejects.toMatchObject({
       code: "QUOTA_EXHAUSTED",
     });
