@@ -1,9 +1,18 @@
 # Changelog
 
-## Unreleased — AI quota, 28 October 2026
+## Production readiness, 20 November 2026
+
+### Security
+- npm audit reports zero findings in `web-app`, `web-app/editor` and `services/ai-api`. Lockfile updates cover vite, wrangler/miniflare, undici, sharp, typescript-eslint and DOMPurify; tests use happy-dom 21 and vitest 4.1.12.
+
+### Verification
+- Editor lint, 85 tests and build; publish, routing, content, analytics and pinned-font checks; AI API 22 tests, typecheck and dry-run deploy passed.
+- Local Workers preview browser smoke passed with zero application errors: responsive home, edit export, merge, split, compress, translation consent and article pages. The exported fixture page was inspected and shows correct conjuncts, pre-base ि and reph.
+
+## Released — AI quota, 28 October 2026 (live 20 November 2026)
 
 ### Changed
-- The free AI allowance is 10 documents a day per device, up from 2; the 50 pages a day ceiling is unchanged and stays the cost cap. Changed in `AI_LIMITS.anonymousDocumentsPerDay` and the D1 trigger (migration `0003_raise_daily_document_limit.sql`). The web Translate tool shows the new number. Takes effect once the migration is applied and the Worker is deployed.
+- The free AI allowance is 10 documents a day per device, up from 2; the 50 pages a day ceiling is unchanged and stays the cost cap. Changed in `AI_LIMITS.anonymousDocumentsPerDay` and the D1 trigger (migration `0003_raise_daily_document_limit.sql`). The web Translate tool shows the new number. The live API reports 10, and the production trigger was replaced through the D1 console on 20 November 2026, so Wrangler's migration table does not record `0003`; re-applying it is safe because it drops the trigger first.
 
 ## Unreleased — SEO implementation, 1 October 2026
 
