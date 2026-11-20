@@ -38,19 +38,20 @@ Historical verification below: 2026-07-24. The 1 October 2026 release is deploye
 
 - Rotate `GEMINI_API_KEY` if it was ever pasted into chat or tickets
 - Do not commit `web-app/editor/.env` or `services/ai-api/.turnstile-created.json`
-- After secret rotation: `cd services/ai-api && npx wrangler secret put GEMINI_API_KEY`
+- After secret rotation: `node web-app/scripts/wrangler-project.mjs secret put GEMINI_API_KEY --name hindipdfeditor-ai-api`
 - Redeploy site only after `VITE_TURNSTILE_SITE_KEY` is present for the build
+- The project token has no D1 permission. Apply D1 migrations through the dashboard console, or add **Account · D1 · Edit** to the token first.
 
 ## Ship commands
 
 ```bash
 # AI API
-cd services/ai-api && npx wrangler deploy
+cd services/ai-api && node ../../web-app/scripts/wrangler-project.mjs deploy -c "$PWD/wrangler.jsonc"
 
-# Website (requires editor/.env)
+# Website: merging to main triggers Workers Builds; manual equivalent
 cd web-app
 npm run build
-npx wrangler pages deploy dist --project-name hindipdfeditor --branch main
+npm run deploy
 ```
 
 ## Pending production SEO migration checks
@@ -75,6 +76,14 @@ npx wrangler pages deploy dist --project-name hindipdfeditor --branch main
 - [x] Project-only API token confirmed the owning localcode.ai account; global OAuth is unchanged.
 - [x] Live www requests redirect to the apex with path/query preserved.
 - [x] Current live Chrome acceptance passed with actual downloads and zero application errors.
+
+## 20 November 2026 release evidence
+
+- [x] npm audit: zero findings in `web-app`, `web-app/editor`, `services/ai-api`.
+- [x] 85 editor tests, lint, build; publish, routing, content, analytics and font checks; AI API 22 tests, typecheck, dry-run deploy.
+- [x] Local Workers preview browser smoke: zero application errors; edit, merge, split and compress exports re-opened; exported Devanagari fixture inspected.
+- [x] Live `/v1/capabilities` reports 10 documents and 50 pages a day; production D1 trigger reads `>= 10`.
+- [ ] IndexNow GitHub workflow: blocked because the GitHub account is locked over billing. Submit manually with `node web-app/scripts/indexnow.mjs` until billing is resolved.
 
 ## Current deployment record
 
