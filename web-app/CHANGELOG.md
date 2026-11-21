@@ -1,5 +1,13 @@
 # Changelog
 
+## Edit quality gate, 21 November 2026
+
+### Added
+- `npm run test:edit-quality` drives the real editor: tapping lines without changing them must leave 0 % of pixels and the page text unchanged (English digital page and Hindi fixture), and a one-word edit must keep the line's other words as original PDF text.
+
+### Fixed
+- Page navigation buttons use chevron icons with "Previous page"/"Next page" (Hindi: "पिछला पेज"/"अगला पेज") accessible names instead of ◀/▶ glyphs.
+
 ## Word-level edits, 21 November 2026
 
 ### Changed

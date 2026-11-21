@@ -21,6 +21,7 @@ From `web-app/`:
 npm run check:publish   # verify the publish output
 npm run test:routing    # migration Worker redirects
 npm run test:content    # articles and content checks
+npm run test:edit-quality  # no-op and one-word edit gate (needs a running preview, Playwright, Chrome)
 ```
 
 ## Deployment

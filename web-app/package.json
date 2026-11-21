@@ -12,7 +12,8 @@
     "test:content": "node --test scripts/article-template.test.mjs && node scripts/check-content.mjs",
     "refresh:content": "node scripts/seo-worker.mjs --refresh-published",
     "test:analytics": "node --test scripts/analytics.test.mjs",
-    "check:fonts": "node scripts/check-fonts.mjs"
+    "check:fonts": "node scripts/check-fonts.mjs",
+    "test:edit-quality": "node scripts/edit-quality-gate.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.110.0"
