@@ -12,6 +12,7 @@ import {
   Sparkles,
   Type,
   Redo2,
+  Search,
   Undo2,
 } from "lucide-react";
 
@@ -22,6 +23,7 @@ import { useAppPopup } from "../components/appPopupContext";
 import { DropZone } from "../components/DropZone";
 import { EditableTextOverlay } from "../components/EditableTextOverlay";
 import { EditToolbar } from "../components/EditToolbar";
+import { FindReplacePanel } from "../components/FindReplacePanel";
 import { LegacyFontWarning } from "../components/LegacyFontWarning";
 import { MaskOverlay, type DrawnMaskRect } from "../components/MaskOverlay";
 import { OcrHighlightLayer } from "../components/OcrHighlightLayer";
@@ -36,15 +38,9 @@ import {
   useUnsavedChanges,
 } from "../lib/unsavedChanges";
 import { ptSizeToImagePx, ptToImagePx } from "../lib/coordinateMath";
-import {
-  fitFontSizeToLineWidth,
-  textGeometryForDetectedLine,
-} from "../lib/detectedLineTextGeometry";
 import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
 import {
-  baselineOffsetRatio,
   ensureFontsLoaded,
-  measureTextWidthPt,
   type EditFontFamily,
   isSerifFamily,
 } from "../lib/fontAsset";
@@ -53,7 +49,8 @@ import type { TranslationDirection } from "@hindipdfeditor/translation-contract"
 import { translateOcrLines } from "../lib/geminiTranslate";
 import { detectLegacyFonts } from "../lib/legacyFontDetector";
 import { shouldDismissFocusedEdit } from "../lib/editPointerIntent";
-import { replacementFontFor } from "../lib/fontMatch";
+import { findInDocument } from "../lib/findReplace";
+import { lineReplacementFor } from "../lib/lineReplacement";
 import { cleanedRegionPreview } from "../lib/maskPreview";
 import {
   type Bilingual,
@@ -98,13 +95,9 @@ const UNKNOWN_ENCODING_FONT_NAME = "unknown (font inspection failed)";
 const DEFAULT_FONT_SIZE_PT = 14;
 /** Browser storage key for the Hindi-typing preference (a per-viewer convenience). */
 const ROMAN_TYPING_KEY = "hpe-roman-typing";
-/** Largest share by which unchanged replacement text is shrunk to fit the original width. */
-const MAX_FIT_SHRINK = 0.12;
 const RASTER_SCALE = 2;
 const MASK_SAMPLE_MARGIN_PX = 16;
 const MASK_EXPAND_PT = 3;
-const OCR_MASK_PAD_TOP_RATIO = 0.35;
-const EDIT_TEXT_WIDTH_SLACK_RATIO = 1.25;
 
 type EditMode = "edit" | "addText" | "erase";
 type OcrStatusByPage = Record<number, "running" | "done" | "failed">;
@@ -180,6 +173,7 @@ export function EditPdfTool() {
     readEditModeFromLocation(),
   );
   const [pageZoom, setPageZoom] = useState(1);
+  const [findReplaceOpen, setFindReplaceOpen] = useState(false);
   const [romanTyping, setRomanTyping] = useState(() => {
     try {
       return window.localStorage.getItem(ROMAN_TYPING_KEY) === "on";
@@ -378,6 +372,37 @@ export function EditPdfTool() {
     setCurrentPageIndex(index);
     setFocusedEditId(null);
     void ensureOcrForPage(document, index);
+  };
+
+  const countMatches = (query: string): number => {
+    const doc = useEditStore.getState().document;
+    if (!doc) return 0;
+    const found = findInDocument(doc.pages, query, query);
+    return found.lines.length + found.edits.length;
+  };
+
+  /** Replaces every occurrence across the document as one undo step; returns places changed. */
+  const replaceAll = async (query: string, replacement: string): Promise<number> => {
+    const doc = useEditStore.getState().document;
+    if (!doc) return 0;
+    const found = findInDocument(doc.pages, query, replacement);
+    if (found.lines.length + found.edits.length === 0) return 0;
+    setFocusedEditId(null);
+    checkpoint();
+    const requestId = ++pendingEditRequestRef.current;
+    for (const match of found.edits) {
+      updateTextEdit(match.pageIndex, match.edit.id, { text: match.newText });
+    }
+    for (const match of found.lines) {
+      const pageState = useEditStore.getState().document?.pages[match.pageIndex];
+      if (!pageState) continue;
+      const { rect, text } = await lineReplacementFor(pageState, match.line);
+      await maskAndReplaceRegion(rect, { ...text, prefill: match.newText }, match.line, requestId, {
+        pageIndex: match.pageIndex,
+        batch: true,
+      });
+    }
+    return found.lines.length + found.edits.length;
   };
 
   const handleRedo = () => {
@@ -738,9 +763,11 @@ export function EditPdfTool() {
     },
     consumedOcrLine?: OcrLine,
     requestId = ++pendingEditRequestRef.current,
+    options: { pageIndex?: number; batch?: boolean } = {},
   ) => {
+    const targetPageIndex = options.pageIndex ?? currentPageIndex;
+    const page = useEditStore.getState().document?.pages[targetPageIndex];
     if (!page || !document) return;
-    const targetPageIndex = currentPageIndex;
     const targetDocumentId = document.id;
 
     const maskRect = {
@@ -792,7 +819,7 @@ export function EditPdfTool() {
       return;
     }
 
-    checkpoint();
+    if (!options.batch) checkpoint();
     if (consumedOcrLine) {
       setOcrLines(
         targetPageIndex,
@@ -837,6 +864,7 @@ export function EditPdfTool() {
       maskId: maskEdit.id,
       ocrLine: consumedOcrLine,
     });
+    if (options.batch) return;
     setFocusedEditId(textEdit.id);
     if (consumedOcrLine) setSelectAllEditId(textEdit.id);
   };
@@ -886,72 +914,8 @@ export function EditPdfTool() {
 
     const hitLine = findOcrTargetAt(page.ocrLines, xPt, yPt);
     if (hitLine) {
-      const font = replacementFontFor(hitLine.font);
-      const ratio = await baselineOffsetRatio(font.fontFamily, font.fontWeight, font.fontStyle, hitLine.text);
-      const detected = textGeometryForDetectedLine(hitLine, page.widthPt, EDIT_TEXT_WIDTH_SLACK_RATIO, ratio);
-      // The substitute font can be wider than the original (Noto Serif vs Times): shrink the
-      // unchanged text towards the original line width so it does not wrap over the next line,
-      // but by at most MAX_FIT_SHRINK so the text does not look visibly smaller than its
-      // neighbours. Metric-compatible bundled fonts will remove the need for this.
-      const fittedSizePt = fitFontSizeToLineWidth(
-        detected.fontSizePt,
-        measureTextWidthPt(hitLine.text, font.fontFamily, font.fontWeight, detected.fontSizePt),
-        hitLine.wPt,
-        MAX_FIT_SHRINK,
-      );
-      const textGeometry =
-        fittedSizePt < detected.fontSizePt
-          ? textGeometryForDetectedLine(
-              { ...hitLine, hPt: hitLine.hPt * (fittedSizePt / detected.fontSizePt) },
-              page.widthPt,
-              EDIT_TEXT_WIDTH_SLACK_RATIO,
-              ratio,
-            )
-          : detected;
-      const { x: sampleXPx, y: sampleYPx } = ptToImagePx(
-        hitLine.xPt,
-        hitLine.yPt,
-        page.imagePxWidth,
-        page.widthPt,
-      );
-      const { wPx: sampleWPx, hPx: sampleHPx } = ptSizeToImagePx(
-        hitLine.wPt,
-        hitLine.hPt,
-        page.imagePxWidth,
-        page.widthPt,
-      );
-      let textColor = "#111111";
-      try {
-        textColor = await sampleTextColor(
-          page.backgroundImageUri,
-          Math.round(sampleXPx),
-          Math.round(sampleYPx),
-          Math.round(sampleWPx),
-          Math.round(sampleHPx),
-        );
-      } catch (error) {
-        console.warn("sampleTextColor failed, falling back to black", error);
-      }
-      const padTop = hitLine.hPt * OCR_MASK_PAD_TOP_RATIO;
-      await maskAndReplaceRegion(
-        {
-          xPt: hitLine.xPt,
-          yPt: hitLine.yPt - padTop,
-          wPt: hitLine.wPt,
-          hPt: hitLine.hPt + padTop,
-        },
-        {
-          xPt: textGeometry.xPt,
-          yPt: textGeometry.yPt,
-          prefill: hitLine.text,
-          fontSizePt: textGeometry.fontSizePt,
-          widthPt: textGeometry.widthPt,
-          color: textColor,
-          ...font,
-        },
-        hitLine,
-        requestId,
-      );
+      const { rect, text } = await lineReplacementFor(page, hitLine);
+      await maskAndReplaceRegion(rect, { ...text, prefill: hitLine.text }, hitLine, requestId);
       return;
     }
 
@@ -1273,10 +1237,18 @@ export function EditPdfTool() {
                   ocrStatus === "running"
                 }
               />
+              <AppButton
+                title={tx("Find & replace", "खोजें और बदलें")}
+                icon={<Search size={15} aria-hidden="true" />}
+                small
+                variant={findReplaceOpen ? "primary" : "secondary"}
+                onClick={() => setFindReplaceOpen((open) => !open)}
+                disabled={translating || enhancingPage !== null}
+              />
             </div>
             <div
               className="app__toolbar-row app__toolbar-row--modes"
-              aria-label="Editing modes"
+              aria-label={tx("Editing modes", "एडिट करने के तरीके")}
             >
               <AppButton
                 title={tx("Edit text", "टेक्स्ट बदलें")}
@@ -1305,6 +1277,18 @@ export function EditPdfTool() {
             </div>
             <p className="app__hint">{hintText}</p>
           </section>
+
+          {findReplaceOpen && (
+            <FindReplacePanel
+              countMatches={countMatches}
+              onReplaceAll={replaceAll}
+              pagesPending={
+                document.pages.length -
+                Object.values(ocrStatusByPage).filter((s) => s === "done" || s === "failed").length
+              }
+              onClose={() => setFindReplaceOpen(false)}
+            />
+          )}
 
           {editingBlocked && (
             <LegacyFontWarning fontNames={currentPageLegacyFontNames} />

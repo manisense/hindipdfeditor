@@ -1,0 +1,52 @@
+.find-replace {
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.find-replace__heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.find-replace__close {
+  background: transparent;
+  border: 0;
+  border-radius: 9999px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  padding: 8px;
+}
+
+.find-replace__field {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.find-replace__field input {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  min-height: 44px;
+  padding: 8px 12px;
+}
+
+.find-replace__field input:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.find-replace__status {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
