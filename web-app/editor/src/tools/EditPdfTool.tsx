@@ -45,11 +45,13 @@ import type { TranslationDirection } from "@hindipdfeditor/translation-contract"
 import { translateOcrLines } from "../lib/geminiTranslate";
 import { detectLegacyFonts } from "../lib/legacyFontDetector";
 import { shouldDismissFocusedEdit } from "../lib/editPointerIntent";
+import { cleanedRegionPreview } from "../lib/maskPreview";
 import { detectTextLines, detectTextLinesWithGemini } from "../lib/ocr";
 import { findOcrTargetAt, findTextEditAt } from "../lib/ocrHitTest";
 import {
   getPageCount,
   getPdfBase64,
+  getPdfBytes,
   renderPage,
   sampleAverageColor,
   samplePagePaperColor,
@@ -94,6 +96,21 @@ type Status =
   | { state: "saving" }
   | { state: "saved"; filename: string }
   | { state: "error"; message: string };
+
+/** Cleaned-region preview for a replacement mask; undefined keeps the flat-colour fallback. */
+async function previewFor(
+  page: PageState,
+  rect: { xPt: number; yPt: number; wPt: number; hPt: number },
+): Promise<string | undefined> {
+  try {
+    const { x, y } = ptToImagePx(rect.xPt, rect.yPt, page.imagePxWidth, page.widthPt);
+    const { wPx, hPx } = ptSizeToImagePx(rect.wPt, rect.hPt, page.imagePxWidth, page.widthPt);
+    return await cleanedRegionPreview(page.backgroundImageUri, x, y, wPx, hPx);
+  } catch (error) {
+    console.warn("Edit preview failed; showing a flat patch", error);
+    return undefined;
+  }
+}
 
 async function detectLegacyFontWarnings(
   pageCount: number,
@@ -563,6 +580,8 @@ export function EditPdfTool() {
           const maskEdit = addMaskEdit(pageIndex, {
             ...geo.mask,
             color: maskColor,
+            kind: "replace",
+            previewUri: await previewFor(pageState, geo.mask),
           });
           const textEdit = addTextEdit(pageIndex, {
             xPt: geo.text.xPt,
@@ -696,6 +715,7 @@ export function EditPdfTool() {
     } catch (error) {
       console.warn("sampleAverageColor failed, falling back to white", error);
     }
+    const previewUri = await previewFor(page, maskRect);
 
     const currentDocument = useEditStore.getState().document;
     const currentPage = currentDocument?.pages[targetPageIndex];
@@ -721,6 +741,8 @@ export function EditPdfTool() {
       wPt: maskRect.wPt,
       hPt: maskRect.hPt,
       color,
+      kind: "replace",
+      previewUri,
     });
 
     const textEdit = addTextEdit(targetPageIndex, {
@@ -892,7 +914,9 @@ export function EditPdfTool() {
         NotoSansDevanagari: await getFontBase64("NotoSansDevanagari"),
         NotoSerifDevanagari: await getFontBase64("NotoSerifDevanagari"),
       };
-      const blob = await exportPdf(documentToExport, fontBase64ByFamily);
+      const sourceBytes = getPdfBytes();
+      if (!sourceBytes) throw new Error("No PDF loaded");
+      const blob = await exportPdf(documentToExport, sourceBytes, fontBase64ByFamily);
       const baseName =
         documentToExport.sourceName.replace(/\.pdf$/i, "") || "edited";
       const filename = `${baseName}-edited.pdf`;

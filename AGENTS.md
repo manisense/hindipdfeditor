@@ -80,7 +80,7 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 - **Preserve existing UI and UX during SEO work.** SEO authorization does not authorize a homepage redesign. Keep the existing layout, navigation, components and interactions unless the user explicitly requests that design change. The original homepage was restored on 1 October 2026 after an unwanted redesign.
 
 - **Public claims must match the code.** Before a feature appears in page copy, FAQs, JSON-LD or `llms*.txt`, check it in the source.
-  - The web export is page images, not vector or searchable text.
+  - The web export starts from the original file. Unedited pages are copied unchanged; on edited pages replaced text is removed (deleted from the content stream, or cleaned from scans) and new words are images, so new words are not searchable. Any edit invalidates a digital signature.
   - Legacy fonts are detected, never converted. The web editor blocks those pages; replacement mode is Android-only.
   - Compression has a quality slider, not size presets.
   - AI OCR and translation send data after consent, so the site is not "100% local".

@@ -1,14 +1,17 @@
-import { ptToImagePx } from './coordinateMath';
 import type { DevanagariFontFamily } from './fontAsset';
 import { TEXT_LINE_HEIGHT, TEXT_OVERFLOW_WRAP } from './textLayout';
-import type { DocumentState, MaskEdit, PageState, TextEdit } from '../state/editStore';
+import type { TextEdit } from '../state/editStore';
+
+/** CSS px per PDF point used when rasterising edited text: sharp, and far above any browser minimum font size. */
+export const TEXT_RENDER_PX_PER_PT = 4;
+
+/** Padding around each text fragment, as a fraction of its font size, so marks above and below the line are not clipped. */
+export const TEXT_FRAGMENT_PAD_RATIO = 0.6;
 
 /**
  * Escapes text before it is interpolated into the HTML string this module builds.
- * `htmlCompositor.ts` assembles raw HTML strings that get loaded into a WebView for
- * printing (AGENTS.md's security rule): every `TextEdit.text` value must go through this
- * before reaching the template, since unescaped `<script>`/`<img onerror=...>`-style input
- * would otherwise execute inside that WebView.
+ * The fragments are rendered by the browser; unescaped `<script>`/`<img onerror=...>`-style input
+ * would otherwise execute (AGENTS.md security rule). Every `TextEdit.text` value goes through this.
  */
 export function escapeHtml(text: string): string {
   return text
@@ -19,76 +22,44 @@ export function escapeHtml(text: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function maskLayerHtml(edit: MaskEdit, page: PageState): string {
-  const { x, y } = ptToImagePx(edit.xPt, edit.yPt, page.imagePxWidth, page.widthPt);
-  const scale = page.imagePxWidth / page.widthPt;
-  const wPx = edit.wPt * scale;
-  const hPx = edit.hPt * scale;
-  return `<div style="position:absolute;left:${x}px;top:${y}px;width:${wPx}px;height:${hPx}px;background:${edit.color}"></div>`;
-}
+const SAFE_COLOR = /^#[0-9a-fA-F]{3,8}$|^rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/;
+const SAFE_FAMILY = /^[A-Za-z0-9 _-]+$/;
 
-function textLayerHtml(edit: TextEdit, page: PageState): string {
-  const { x, y } = ptToImagePx(edit.xPt, edit.yPt, page.imagePxWidth, page.widthPt);
-  const scale = page.imagePxWidth / page.widthPt;
+/**
+ * Builds the HTML for one text edit, positioned at the top-left of a padded container. Layout
+ * matches the live editor: same font, size, weight, `line-height: normal` and wrapping width.
+ *
+ * @param edit The text edit; its `fontSizePt` and `widthPt` are in PDF points.
+ * @param id DOM id for the container, used to find it for rasterising.
+ */
+export function textEditFragmentHtml(edit: TextEdit, id: string): string {
+  const scale = TEXT_RENDER_PX_PER_PT;
   const fontPx = edit.fontSizePt * scale;
-  // A width-constrained edit (OCR-assisted replacement) wraps inside its fixed box, exactly
-  // like the live TextInput does at the same width - see TextEdit.widthPt's docstring. An
-  // unconstrained edit keeps white-space:pre: a single line unless the user typed newlines.
+  const padPx = fontPx * TEXT_FRAGMENT_PAD_RATIO;
+  const color = SAFE_COLOR.test(edit.color) ? edit.color : '#111111';
+  const family = SAFE_FAMILY.test(edit.fontFamily) ? edit.fontFamily : 'NotoSansDevanagari';
+  // A width-constrained edit (OCR-assisted replacement) wraps inside its fixed box, exactly like
+  // the live editor at the same width. An unconstrained edit stays on one line unless the user
+  // typed newlines.
   const widthStyle =
     edit.widthPt === undefined
       ? 'white-space:pre;'
       : `width:${edit.widthPt * scale}px;white-space:pre-wrap;overflow-wrap:${TEXT_OVERFLOW_WRAP};`;
   const weightStyle = edit.fontWeight === 'bold' ? 'font-weight:700;' : '';
-  return `<span style="position:absolute;display:block;left:${x}px;top:${y}px;font-size:${fontPx}px;font-family:'${edit.fontFamily}',system-ui,sans-serif;color:${edit.color};line-height:${TEXT_LINE_HEIGHT};word-break:normal;writing-mode:horizontal-tb;overflow:visible;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span>`;
+  return `<div id="${id}" style="display:inline-block;padding:${padPx}px;background:transparent"><span style="display:block;font-size:${fontPx}px;font-family:'${family}',system-ui,sans-serif;color:${color};line-height:${TEXT_LINE_HEIGHT};word-break:normal;writing-mode:horizontal-tb;overflow:visible;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span></div>`;
 }
 
 /**
- * Builds the HTML for a single page: its rasterized background image, with every edit
- * layered on top as an absolutely-positioned element in image-pixel coordinates.
+ * Builds the document that hosts text fragments for rasterising, with the bundled Devanagari
+ * fonts inlined as `data:` URIs (file paths do not resolve reliably in an export frame).
  *
- * Per spec Section 8, masks always render before text at export time - regardless of the
- * order edits were created in `editStore` - so a mask's fill color never paints over new
- * replacement text sitting at the same coordinate.
- *
- * @param backgroundImageDataUrl The page's rasterized background (`page.backgroundImageUri`) as
- *   a `data:` URI, already read and encoded by the caller (`exportPdf.ts`). Confirmed on a real
- *   device that Android's print WebView does not reliably resolve a local `file://` path used
- *   as a CSS `background-image` - the same class of failure as the font (spec Section 8's "do
- *   this, not a file path" note), just not caught until an actual exported PDF was inspected.
- *   See CHANGELOG for the on-device repro (background rendered blank; text alone was fine).
+ * @param fragments HTML from `textEditFragmentHtml`.
+ * @param fontBase64ByFamily Base64 font data keyed by family name.
  */
-export function pageHtml(page: PageState, backgroundImageDataUrl: string): string {
-  const masks = page.edits.filter((e): e is MaskEdit => e.type === 'mask');
-  const texts = page.edits.filter((e): e is TextEdit => e.type === 'text');
-  const layers = [
-    ...masks.map((e) => maskLayerHtml(e, page)),
-    ...texts.map((e) => textLayerHtml(e, page)),
-  ].join('');
-  return `<div style="position:relative;width:${page.imagePxWidth}px;height:${page.imagePxHeight}px;background-image:url('${backgroundImageDataUrl}');background-size:cover;overflow:hidden">${layers}</div>`;
-}
-
-/**
- * Builds the full multi-page HTML document for export. Every page in the document gets its
- * background image rendered (even pages with no edits), since export regenerates the whole
- * document in one `expo-print` call rather than only the page that was last edited.
- *
- * @param fontBase64ByFamily Base64-encoded font data keyed by family name, inlined into
- *   `@font-face` rules. Every family referenced by a `TextEdit` on the document must be present.
- * @param backgroundImageDataUrls One `data:` URI per entry in `doc.pages`, same index order -
- *   see `pageHtml`'s docstring for why this can't be a `file://` reference either.
- */
-export function documentHtml(
-  doc: DocumentState,
+export function textFragmentsDocumentHtml(
+  fragments: string[],
   fontBase64ByFamily: Record<DevanagariFontFamily, string>,
-  backgroundImageDataUrls: string[],
 ): string {
-  const pages = doc.pages
-    .map(
-      (page, i) =>
-        `<div style="${i > 0 ? 'page-break-before:always;' : ''}">${pageHtml(page, backgroundImageDataUrls[i])}</div>`,
-    )
-    .join('');
-
   const fontFaces = (Object.entries(fontBase64ByFamily) as [DevanagariFontFamily, string][])
     .map(
       ([family, base64]) => `@font-face {
@@ -104,11 +75,12 @@ export function documentHtml(
 <head>
 <meta charset="utf-8" />
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: content-box; }
   ${fontFaces}
-  body { font-family: 'NotoSansDevanagari', sans-serif; }
+  body { background: transparent; }
+  body > div { margin-bottom: 8px; }
 </style>
 </head>
-<body>${pages}</body>
+<body>${fragments.map((fragment) => `<div>${fragment}</div>`).join('')}</body>
 </html>`;
 }

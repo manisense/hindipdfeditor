@@ -101,6 +101,9 @@ export function MaskOverlay({
               width: wDp,
               height: hDp,
               backgroundColor: mask.color,
+              ...(mask.previewUri
+                ? { backgroundImage: `url(${mask.previewUri})`, backgroundSize: '100% 100%' }
+                : {}),
             }}
           />
         );

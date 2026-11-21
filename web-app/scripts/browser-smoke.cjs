@@ -12,11 +12,15 @@ const { chromium } = require("playwright");
   page.on("request", (request) => homepageRequests.push(request.url()));
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("response", (r) => {
-    if (r.status() >= 400 && !/googletagmanager|google-analytics|fonts\.g/.test(r.url()))
+    if (r.status() >= 400 && !/googletagmanager|google-analytics|fonts\.g|challenges\.cloudflare\.com/.test(r.url()))
       errors.push(`HTTP ${r.status()} ${r.url()}`);
   });
   page.on("console", (m) => {
-    if (m.type() === "error" && !m.text().includes("net::"))
+    if (
+      m.type() === "error" &&
+      !m.text().includes("net::") &&
+      !(m.location().url || "").includes("challenges.cloudflare.com")
+    )
       errors.push(m.text());
   });
   await page.route("**/googletagmanager.com/**", (r) => r.abort());

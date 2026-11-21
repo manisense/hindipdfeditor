@@ -1,5 +1,16 @@
 # Changelog
 
+## Export from the original file, 21 November 2026
+
+### Changed
+- The web export starts from the original PDF instead of photographing every page (ADR 0009). Unedited pages are copied unchanged, so their text stays selectable and their links, forms and bookmarks survive. On edited pages, replaced text is deleted from the page content at glyph level, scans are cleaned with an eraser that keeps table lines, whiteouts are vector rectangles, and new words are browser-shaped images. Bank of Baroda no-op test: every table border kept, pages 2–16 text identical, 985 KB instead of 6.4 MB.
+- The editor previews replaced lines with the same eraser, so table borders stay visible while editing.
+- Public copy, `llms*.txt`, 19 guides (reviewed date 21 November 2026) and AGENTS.md now describe the new export. New words are images and not searchable; any edit invalidates a digital signature.
+
+### Fixed
+- The scan eraser treats the Devanagari headline (शिरोरेखा) as text, not a ruled line: on a real scan headline runs had 43–59 % of their length attached to letters, borders 0–9 %.
+- The smoke test ignores Turnstile's expected refusal on `localhost`.
+
 ## Editor detection fixes, 21 November 2026
 
 ### Fixed

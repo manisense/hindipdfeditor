@@ -22,7 +22,16 @@ export type MaskEdit = {
   yPt: number;
   wPt: number;
   hPt: number;
+  /** Fill colour for a whiteout; fallback colour for a replacement preview. */
   color: string;
+  /**
+   * `replace`: the original text under the box is removed at export (glyphs deleted from the PDF,
+   * or ink cleaned from a scan) and borders survive. `whiteout` (default, the Erase box tool):
+   * the box is filled with `color`.
+   */
+  kind?: 'replace' | 'whiteout';
+  /** On-screen preview of the cleaned region (PNG data URL) for `replace` masks. */
+  previewUri?: string;
 };
 
 export type Edit = TextEdit | MaskEdit;
