@@ -29,6 +29,7 @@ import { extractEmbeddedTextLines } from "../lib/pdfTextExtract";
 import {
   getPageCount,
   getPdfBase64,
+  getPdfBytes,
   renderPage,
   sampleAverageColor,
   samplePagePaperColor,
@@ -304,6 +305,7 @@ async function buildTranslatedDocument(
         page: i,
         ...geo.mask,
         color: maskColor,
+        kind: "replace",
       });
       edits.push({
         type: "text",
@@ -426,7 +428,9 @@ export function TranslatePdfTool() {
         getFontBase64("NotoSansDevanagari"),
         getFontBase64("NotoSerifDevanagari"),
       ]);
-      const blob = await exportPdf(doc, {
+      const sourceBytes = getPdfBytes();
+      if (!sourceBytes) throw new Error("No PDF loaded");
+      const blob = await exportPdf(doc, sourceBytes, {
         NotoSansDevanagari: sans,
         NotoSerifDevanagari: serif,
       });
