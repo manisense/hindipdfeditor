@@ -11,6 +11,10 @@ const { chromium } = require("playwright");
   const homepageRequests = [];
   page.on("request", (request) => homepageRequests.push(request.url()));
   page.on("pageerror", (e) => errors.push(e.message));
+  page.on("response", (r) => {
+    if (r.status() >= 400 && !/googletagmanager|google-analytics|fonts\.g/.test(r.url()))
+      errors.push(`HTTP ${r.status()} ${r.url()}`);
+  });
   page.on("console", (m) => {
     if (m.type() === "error" && !m.text().includes("net::"))
       errors.push(m.text());
@@ -102,7 +106,10 @@ const { chromium } = require("playwright");
         "../../mobile-app/fixtures/devanagari-fixture.pdf",
       ),
     );
-  await page.waitForTimeout(3000);
+  // Hindi pages are checked against OCR before they are ready, and Add text waits for that.
+  await page
+    .getByText("Edit text — click a highlighted line")
+    .waitFor({ timeout: 90000 });
   await page.getByRole("button", { name: "Add text", exact: true }).click();
   await page
     .locator(".pdf-page-viewer__page")

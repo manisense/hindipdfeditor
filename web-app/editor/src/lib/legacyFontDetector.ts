@@ -5,6 +5,7 @@ import {
   PDFName,
   type PDFPage,
 } from "@cantoo/pdf-lib";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 
 /**
  * Detects pages set in a pre-Unicode legacy Devanagari font (spec Section 9): KrutiDev,
@@ -14,8 +15,8 @@ import {
  * of these fonts without warning first risks building on top of a text layer that's
  * already fundamentally mismatched with what's visually displayed.
  *
- * Read-only: uses `@cantoo/pdf-lib` only to inspect embedded font names, never to draw text
- * (see ADR 0003, ADR 0001).
+ * Read-only: uses `@cantoo/pdf-lib` to inspect embedded font names and PDF.js to read the
+ * page text, never to draw text (see ADR 0003, ADR 0001).
  */
 
 /** Case-insensitive prefix patterns matched against each font's true PostScript name. */
@@ -101,9 +102,63 @@ export function getPageFontNames(page: PDFPage, doc: PDFDocument): string[] {
 
 export type LegacyFontWarning = { page: number; fontName: string };
 
+/** Reported in place of a font name when only the page's text reveals the legacy encoding. */
+export const LEGACY_TEXT_ENCODING_LABEL = "Kruti Dev-style text encoding";
+
+/**
+ * Very common Hindi words as KrutiDev/DevLys keystrokes (के, का, की, में, है, हैं, को, से, और,
+ * कि, तथा, लिए, भी, यह, जो, एवं, एक, होगा, होंगे, पर, अथवा, करें, किया, गया, जाता, जाने, आदि,
+ * अन्य, प्रकार). None is an English word, so ordinary Latin text does not match.
+ */
+const KRUTI_DEV_SIGNATURE_WORDS = new Set([
+  "ds", "dk", "dh", "esa", "gS", "gSa", "dks", "ls", "vkSj", "fd", "rFkk", "fy,", "Hkh",
+  ";g", "tks", ",oa", ",d", "gksxk", "gksaxs", "ij", "vFkok", "djsa", "fd;k", "x;k",
+  "tkrk", "tkus", "vkfn", "vU;", "izdkj",
+]);
+const MIN_SIGNATURE_HITS = 3;
+const MIN_SIGNATURE_RATIO = 0.05;
+
+/**
+ * True when `text` reads as Devanagari typed in a KrutiDev-family encoding: Latin letters standing
+ * in for Devanagari shapes. Catches PDFs that hide the font's real name (e.g. `CIDFont+F1`), where
+ * {@link isLegacyDevanagariFontName} cannot see it.
+ */
+export function looksLikeLegacyDevanagariText(text: string): boolean {
+  const words = text.split(/\s+/u).filter((word) => /[A-Za-z]/u.test(word));
+  const hits = words.filter((word) =>
+    KRUTI_DEV_SIGNATURE_WORDS.has(word.replace(/[.\]|A]+$/u, "")),
+  ).length;
+  return hits >= MIN_SIGNATURE_HITS && hits / words.length >= MIN_SIGNATURE_RATIO;
+}
+
+function toBytes(pdfBytes: Uint8Array | string): Uint8Array {
+  if (typeof pdfBytes !== "string") return pdfBytes.slice();
+  const binary = atob(pdfBytes);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
+/** Zero-based indexes of pages whose embedded text is in a legacy Devanagari encoding. */
+async function detectLegacyTextPages(pdfBytes: Uint8Array): Promise<number[]> {
+  const doc = await pdfjs.getDocument({ data: pdfBytes }).promise;
+  try {
+    const pages: number[] = [];
+    for (let pageIndex = 0; pageIndex < doc.numPages; pageIndex++) {
+      const content = await (await doc.getPage(pageIndex + 1)).getTextContent();
+      const text = content.items
+        .map((item) => ("str" in item ? item.str : ""))
+        .join(" ");
+      if (looksLikeLegacyDevanagariText(text)) pages.push(pageIndex);
+    }
+    return pages;
+  } finally {
+    await doc.destroy();
+  }
+}
+
 /**
  * Loads `pdfBytes` and returns one warning per (page, font name) pair that matches a known
- * legacy Devanagari font pattern. An empty array means no legacy fonts were detected - it
+ * legacy Devanagari font pattern, plus one {@link LEGACY_TEXT_ENCODING_LABEL} warning for each
+ * other page whose text is KrutiDev-encoded. An empty array means no legacy fonts were detected - it
  * does not mean the document is guaranteed Unicode-safe if `PDFDocument.load` itself failed;
  * per AGENTS.md, callers must treat a thrown error here as "unknown encoding," not "safe to
  * proceed," and surface `LegacyFontWarning.tsx` accordingly rather than swallowing it.
@@ -128,5 +183,12 @@ export async function detectLegacyFonts(
     }
   });
 
-  return warnings;
+  const pagesWithNamedFont = new Set(warnings.map((warning) => warning.page));
+  for (const page of await detectLegacyTextPages(toBytes(pdfBytes))) {
+    if (!pagesWithNamedFont.has(page)) {
+      warnings.push({ page, fontName: LEGACY_TEXT_ENCODING_LABEL });
+    }
+  }
+
+  return warnings.sort((a, b) => a.page - b.page);
 }
