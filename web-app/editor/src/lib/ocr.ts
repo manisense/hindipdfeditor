@@ -20,7 +20,7 @@ import {
   trimOcrBorderNoise,
   type PtBox,
 } from "./embeddedTextVerification";
-import { mergeOcrLines } from "./mergeOcrLines";
+import { mergeOcrLines, mergeWordReadings, type RecognizedWord } from "./mergeOcrLines";
 import { textBandOfLine } from "./ocrLineGeometry";
 import { extractEmbeddedTextLines } from "./pdfTextExtract";
 import { getPdfBytes } from "./pdfToImages";
@@ -44,7 +44,39 @@ async function getEngWorker(): Promise<Worker> {
   return engWorker;
 }
 
-function tesseractPageToRecognized(page: TesseractPage): RecognizedLine[] {
+type TesseractWord = TesseractPage["blocks"] extends (infer B)[] | null
+  ? B extends { paragraphs: { lines: { words: (infer W)[] }[] }[] }
+    ? W
+    : never
+  : never;
+
+function toRecognizedWord(word: TesseractWord): RecognizedWord {
+  return {
+    text: word.text.trim(),
+    x: word.bbox.x0,
+    y: word.bbox.y0,
+    width: word.bbox.x1 - word.bbox.x0,
+    height: word.bbox.y1 - word.bbox.y0,
+    confidence: word.confidence,
+  };
+}
+
+function tesseractPageWords(page: TesseractPage): RecognizedWord[] {
+  return (page.blocks ?? []).flatMap((block) =>
+    block.paragraphs.flatMap((paragraph) =>
+      paragraph.lines.flatMap((line) => line.words.map(toRecognizedWord)),
+    ),
+  );
+}
+
+/**
+ * @param latinWords English-model words of the same page; when given, English words inside
+ *   Hindi lines take the English reading (see `mergeWordReadings`).
+ */
+function tesseractPageToRecognized(
+  page: TesseractPage,
+  latinWords?: readonly RecognizedWord[],
+): RecognizedLine[] {
   const lines: RecognizedLine[] = [];
 
   const pushLine = (
@@ -70,7 +102,9 @@ function tesseractPageToRecognized(page: TesseractPage): RecognizedLine[] {
     for (const paragraph of block.paragraphs) {
       for (const line of paragraph.lines) {
         pushLine(
-          line.text,
+          latinWords
+            ? mergeWordReadings(line.words.map(toRecognizedWord), latinWords)
+            : line.text,
           textBandOfLine(
             line.bbox,
             line.words.map((word) => word.bbox),
@@ -202,8 +236,15 @@ async function verifyEmbeddedDevanagari(
     if (!degraded && !isEmbeddedDevanagariCorrupted(embeddedText, hindiPage.text)) {
       return embedded;
     }
+    // English names, IDs and dates inside Hindi lines are read by the English model.
+    const hasMixedLines = embedded.some(
+      (line) => hasDevanagari(line.text) && /[A-Za-z]/.test(line.text),
+    );
+    const latinWords = hasMixedLines
+      ? tesseractPageWords(await recognizePage(page.backgroundImageUri, "eng"))
+      : undefined;
     const hindiLines = toOcrLines(
-      tesseractPageToRecognized(hindiPage).filter(
+      tesseractPageToRecognized(hindiPage, latinWords).filter(
         (line) => !isLikelyOcrNoise(line.text, line.confidence),
       ),
       page,

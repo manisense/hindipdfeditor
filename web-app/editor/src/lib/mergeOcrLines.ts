@@ -94,3 +94,42 @@ export function mergeOcrLines(
 
   return kept.sort((a, b) => a.y - b.y || a.x - b.x);
 }
+
+/** One OCR word, boxes in background-image px. */
+export type RecognizedWord = {
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  confidence: number;
+};
+
+/**
+ * Text of one Hindi-model line with its English words read by the English model. The Hindi model
+ * mangles English names, IDs and dates inside a Hindi line; where a confident English-model word
+ * (letters or digits, no Devanagari) covers a Hindi-model word that is less confident, the English
+ * reading replaces it. Devanagari words keep the Hindi reading.
+ *
+ * @param hindiWords Words of the line from the Hindi model, boxes in px.
+ * @param latinWords Words of the page from the English model, boxes in px.
+ */
+export function mergeWordReadings(
+  hindiWords: readonly RecognizedWord[],
+  latinWords: readonly RecognizedWord[],
+): string {
+  return hindiWords
+    .map((word) => {
+      const latin = latinWords
+        .filter(
+          (candidate) =>
+            /[A-Za-z0-9]/.test(candidate.text) &&
+            !containsDevanagari(candidate.text) &&
+            candidate.confidence > word.confidence &&
+            overlapOfSmaller(word, candidate) > OVERLAP_RATIO,
+        )
+        .sort((a, b) => b.confidence - a.confidence)[0];
+      return latin ? latin.text : word.text;
+    })
+    .join(' ');
+}

@@ -1,5 +1,10 @@
 # Changelog
 
+## Mixed Hindi and English lines, 21 November 2026
+
+### Fixed
+- English names, IDs and dates inside Hindi lines are read by the English OCR model on pages whose text comes from OCR: words are merged one by one, and a more confident English reading of a word replaces the Hindi model's. "कर्मचारी का नाम: Seema Sharma" now reads correctly, so find and replace matches it (2 of 2 instead of 1).
+
 ## Find and replace, 21 November 2026
 
 ### Added
@@ -9,9 +14,6 @@
 - Text in Type3 fonts (Chrome-printed PDFs) is now deleted from the page on replacement, using widths scaled by the font matrix. Before, it was only covered by a patch and stayed searchable and copyable.
 - Tap-to-edit and find-and-replace share `lineReplacement.ts` (font match, baseline, width fit, ink colour), moving that logic out of `EditPdfTool.tsx`.
 - The editing-modes group has a Hindi accessible name.
-
-### Known
-- Mixed Hindi/English lines on pages read by Hindi OCR can misread English words, so find may miss them there.
 
 ## Hindi typing on an English keyboard, 21 November 2026
 
