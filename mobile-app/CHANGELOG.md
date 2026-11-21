@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here, grouped by phase (see `hindi-pdf-editor-spec.md` Section 10 for the phase definitions). Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — Dependency patches, 21 November 2026
+
+### Security
+
+- `npm audit fix` and `npx expo install --fix` within Expo SDK 56: patch updates to `expo` 56.0.24, `expo-sharing`, `expo-splash-screen`, `expo-dev-client` 56.0.28, `jest-expo` 56.0.6, Babel, typescript-eslint, `node-forge` and `brace-expansion`. Audit findings drop from 23 to 16; the rest are in Expo CLI tooling and need SDK 57. `expo-sharing` and `expo-splash-screen` contain native code, so this ships with the next native build, not an OTA update.
+- `npm run check` passed (276 tests) and npm 10 accepts the lock file (`npm ci --dry-run`). **Not verified on a device.**
+
+### Known issue
+
+- `expo-doctor` flags the Hermes V1 memory regression in SDK 56. The fix is Expo SDK 57; not done here.
+
 ## [Unreleased] — Translate fixes (JS only, no native change)
 
 ### Fixed — Translate
