@@ -58,8 +58,11 @@ export function isEmbeddedDevanagariCorrupted(
  * letters or digits and no Devanagari are kept (that text uses other fonts and its map is intact,
  * while Hindi OCR misreads it); OCR supplies the Devanagari lines that do not overlap them.
  * Embedded Devanagari lines are dropped because their text is known to be wrong, and stray
- * punctuation runs are dropped so they cannot hide the Hindi line around them. Every line is
- * marked `embedded-degraded` so consented translation still prefers cloud OCR.
+ * punctuation runs are dropped so they cannot hide the Hindi line around them. Each OCR line takes
+ * its top and height from the embedded Devanagari run it covers best: OCR boxes are about 1.25×
+ * the font size and grow further when a row number or border joins them, while the PDF run height
+ * is the real font size. Every line is marked `embedded-degraded` so consented translation still
+ * prefers cloud OCR.
  *
  * @param embedded Lines from the PDF text layer, boxes in pt (top-left origin).
  * @param ocr Lines from Hindi OCR of the page image, boxes in pt (top-left origin).
@@ -71,10 +74,13 @@ export function combineEmbeddedLatinWithOcr(
   const latin = embedded.filter(
     (line) => !hasDevanagari(line.text) && /[A-Za-z0-9]/u.test(line.text),
   );
-  const hindi = ocr.filter(
-    (line) =>
-      hasDevanagari(line.text) && !latin.some((kept) => boxesOverlap(kept, line)),
-  );
+  const embeddedHindi = embedded.filter((line) => hasDevanagari(line.text));
+  const hindi = ocr
+    .filter(
+      (line) =>
+        hasDevanagari(line.text) && !latin.some((kept) => boxesOverlap(kept, line)),
+    )
+    .map((line) => alignToEmbeddedRun(line, embeddedHindi));
   return [...latin, ...hindi]
     .map((line) => ({ ...line, source: "embedded-degraded" as const }))
     .sort((a, b) => a.yPt - b.yPt || a.xPt - b.xPt);
@@ -107,8 +113,9 @@ export type PtBox = { xPt: number; yPt: number; wPt: number; hPt: number };
 /**
  * Rows of embedded Devanagari text that page OCR found nothing for (Tesseract often skips bold or
  * italic rows inside table cells). Fragments on one visual row are joined, because a corrupted
- * text layer also splits runs and under-reports their widths; each box is padded by a fraction of
- * its height so the crop covers the glyphs. The caller OCRs each box on its own.
+ * text layer also splits runs and under-reports their widths. `crop` is padded by a fraction of the
+ * row height so OCR sees whole glyphs; `line` keeps the row's real top and height (the PDF's font
+ * size is right even when its text map is not) and the padded width. The caller OCRs each crop.
  *
  * @param embedded Lines from the PDF text layer, boxes in pt (top-left origin).
  * @param ocr Lines from Hindi OCR of the page image, boxes in pt (top-left origin).
@@ -116,7 +123,7 @@ export type PtBox = { xPt: number; yPt: number; wPt: number; hPt: number };
 export function missedDevanagariRows(
   embedded: readonly OcrLine[],
   ocr: readonly OcrLine[],
-): PtBox[] {
+): { crop: PtBox; line: PtBox }[] {
   const missed = embedded
     .filter(
       (line) =>
@@ -146,13 +153,32 @@ export function missedDevanagariRows(
     const padY = box.hPt * 0.3;
     const xPt = Math.max(0, box.xPt - padX);
     const yPt = Math.max(0, box.yPt - padY);
+    const wPt = box.xPt + box.wPt + padX - xPt;
     return {
-      xPt,
-      yPt,
-      wPt: box.xPt + box.wPt + padX - xPt,
-      hPt: box.yPt + box.hPt + padY - yPt,
+      crop: { xPt, yPt, wPt, hPt: box.yPt + box.hPt + padY - yPt },
+      line: { xPt, yPt: box.yPt, wPt, hPt: box.hPt },
     };
   });
+}
+
+/**
+ * Returns `line` with the top and height of the embedded run whose vertical centre lies inside it
+ * and that overlaps it most horizontally; unchanged when no run qualifies.
+ */
+function alignToEmbeddedRun(line: OcrLine, runs: readonly OcrLine[]): OcrLine {
+  let best: OcrLine | undefined;
+  let bestOverlap = 0;
+  for (const run of runs) {
+    const cy = run.yPt + run.hPt / 2;
+    if (cy < line.yPt || cy > line.yPt + line.hPt) continue;
+    const overlap =
+      Math.min(line.xPt + line.wPt, run.xPt + run.wPt) - Math.max(line.xPt, run.xPt);
+    if (overlap > bestOverlap) {
+      best = run;
+      bestOverlap = overlap;
+    }
+  }
+  return best ? { ...line, yPt: best.yPt, hPt: best.hPt } : line;
 }
 
 /** True when the centre of either box lies inside the other. */

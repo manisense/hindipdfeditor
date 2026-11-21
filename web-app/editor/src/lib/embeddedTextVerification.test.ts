@@ -80,7 +80,10 @@ describe("missedDevanagariRows", () => {
     ];
     const ocr = [line("कर्मचारी संवर्ग", 101, "ocr")];
     expect(missedDevanagariRows(embedded, ocr)).toEqual([
-      { xPt: 264, yPt: 147, wPt: 94, hPt: 16 },
+      {
+        crop: { xPt: 264, yPt: 147, wPt: 94, hPt: 16 },
+        line: { xPt: 264, yPt: 150, wPt: 94, hPt: 10 },
+      },
     ]);
   });
 });
@@ -97,4 +100,13 @@ it("trims table-border marks from OCR line ends but keeps real punctuation", () 
   expect(trimOcrBorderNoise("'ध्यान देने योग्य महत्वपूर्ण बातें |")).toBe("ध्यान देने योग्य महत्वपूर्ण बातें");
   expect(trimOcrBorderNoise("(चपरासी) की भर्ती।")).toBe("(चपरासी) की भर्ती।");
   expect(trimOcrBorderNoise("1. अभ्यर्थी")).toBe("1. अभ्यर्थी");
+});
+
+it("sizes OCR lines from the PDF run they cover, not the taller OCR box", () => {
+  const embedded = [line("कममचारी संवर्म", 100, "embedded")]; // 12 pt run at y 100
+  const tallOcr: OcrLine = {
+    id: "o", text: "1. कर्मचारी संवर्ग", xPt: 90, yPt: 96, wPt: 320, hPt: 22, source: "ocr",
+  };
+  const [result] = combineEmbeddedLatinWithOcr(embedded, [tallOcr]);
+  expect(result).toMatchObject({ text: "1. कर्मचारी संवर्ग", xPt: 90, wPt: 320, yPt: 100, hPt: 12 });
 });

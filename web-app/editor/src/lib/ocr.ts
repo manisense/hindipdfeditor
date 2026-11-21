@@ -21,6 +21,7 @@ import {
   type PtBox,
 } from "./embeddedTextVerification";
 import { mergeOcrLines } from "./mergeOcrLines";
+import { textBandOfLine } from "./ocrLineGeometry";
 import { extractEmbeddedTextLines } from "./pdfTextExtract";
 import { getPdfBytes } from "./pdfToImages";
 import type { RecognizedLine } from "./recognizedLine";
@@ -66,7 +67,14 @@ function tesseractPageToRecognized(page: TesseractPage): RecognizedLine[] {
   for (const block of page.blocks ?? []) {
     for (const paragraph of block.paragraphs) {
       for (const line of paragraph.lines) {
-        pushLine(line.text, line.bbox, line.confidence);
+        pushLine(
+          line.text,
+          textBandOfLine(
+            line.bbox,
+            line.words.map((word) => word.bbox),
+          ),
+          line.confidence,
+        );
       }
     }
   }
@@ -144,9 +152,13 @@ async function recognizeWithLanguage(
 }
 
 /** Hindi OCR of one rectangle of the page, for rows full-page OCR skipped. */
-async function recognizeRow(page: PageState, box: PtBox): Promise<OcrLine | null> {
-  const { x, y } = ptToImagePx(box.xPt, box.yPt, page.imagePxWidth, page.widthPt);
-  const { wPx, hPx } = ptSizeToImagePx(box.wPt, box.hPt, page.imagePxWidth, page.widthPt);
+async function recognizeRow(
+  page: PageState,
+  crop: PtBox,
+  line: PtBox,
+): Promise<OcrLine | null> {
+  const { x, y } = ptToImagePx(crop.xPt, crop.yPt, page.imagePxWidth, page.widthPt);
+  const { wPx, hPx } = ptSizeToImagePx(crop.wPt, crop.hPt, page.imagePxWidth, page.widthPt);
   const worker = await getHinWorker();
   const { data } = await worker.recognize(page.backgroundImageUri, {
     rectangle: {
@@ -158,7 +170,7 @@ async function recognizeRow(page: PageState, box: PtBox): Promise<OcrLine | null
   });
   const text = trimOcrBorderNoise(data.text.replace(/\s+/gu, " ")).normalize("NFC");
   if (!hasDevanagari(text)) return null;
-  return { id: crypto.randomUUID(), text, ...box, source: "embedded-degraded" };
+  return { id: crypto.randomUUID(), text, ...line, source: "embedded-degraded" };
 }
 
 /**
@@ -190,8 +202,8 @@ async function verifyEmbeddedDevanagari(
     );
     if (!hindiLines.some((line) => hasDevanagari(line.text))) return embedded;
     const rescued: OcrLine[] = [];
-    for (const box of missedDevanagariRows(embedded, hindiLines)) {
-      const line = await recognizeRow(page, box);
+    for (const { crop, line: rowBox } of missedDevanagariRows(embedded, hindiLines)) {
+      const line = await recognizeRow(page, crop, rowBox);
       if (line) rescued.push(line);
     }
     return combineEmbeddedLatinWithOcr(embedded, [...hindiLines, ...rescued]);
