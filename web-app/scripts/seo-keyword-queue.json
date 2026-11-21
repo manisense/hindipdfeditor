@@ -32,7 +32,7 @@
       {
         "heading": "डाउनलोड और प्रिंट की जाँच",
         "paragraphs": [
-          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।",
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। जिन पेजों में बदलाव नहीं किया, वे जैसे थे वैसे रहते हैं और बदले गए पेज का बाकी मूल टेक्स्ट भी बना रहता है; नए शब्द इमेज के रूप में जुड़ते हैं, इसलिए उन्हें खोजा या चुना नहीं जा सकता, और कोई भी बदलाव डिजिटल हस्ताक्षर को अमान्य कर देता है।",
           "पहले नमूने पर एक्सपोर्ट करें, फिर अपनी PDF की एक कॉपी पर काम करें। मूल दस्तावेज अलग रखें। वास्तविक सरकारी प्रपत्र में बदलाव केवल जारीकर्ता की प्रक्रिया के अनुरूप करें।"
         ]
       },
@@ -68,7 +68,7 @@
         "a": "एक्सपोर्ट नई कॉपी बनाता है। मूल फाइल को अलग सुरक्षित रखें।"
       }
     ],
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sample": true,
     "alternateSlug": "how-to-edit-hindi-pdf",
     "relatedSlugs": [
@@ -107,7 +107,7 @@
       {
         "heading": "डाउनलोड का दृश्य मिलान",
         "paragraphs": [
-          "अक्षर, मात्रा और रेफ को स्रोत से मिलाएँ। वेब एक्सपोर्ट इमेज आधारित है; पुराने टेक्स्ट की सही खोज या चयन वापस मिलने का दावा नहीं है। मूल स्रोत अलग रखें।"
+          "अक्षर, मात्रा और रेफ को स्रोत से मिलाएँ। नए शब्द इमेज के रूप में जुड़ते हैं; एक्सपोर्ट पुराने फॉन्ट वाले टेक्स्ट की खोज या चयन ठीक नहीं करता। मूल स्रोत अलग रखें।"
         ]
       }
     ],
@@ -118,7 +118,7 @@
         "a": "नहीं। पुरानी PDF को अपने आप Unicode में डिकोड करने का दावा नहीं है।"
       }
     ],
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sample": true,
     "alternateSlug": "kruti-dev-to-unicode-hindi-pdf-editor",
     "relatedSlugs": [
@@ -168,7 +168,7 @@
       {
         "heading": "PDF की जाँच और प्राइवेसी",
         "paragraphs": [
-          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।",
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। जिन पेजों में बदलाव नहीं किया, वे जैसे थे वैसे रहते हैं और बदले गए पेज का बाकी मूल टेक्स्ट भी बना रहता है; नए शब्द इमेज के रूप में जुड़ते हैं, इसलिए उन्हें खोजा या चुना नहीं जा सकता, और कोई भी बदलाव डिजिटल हस्ताक्षर को अमान्य कर देता है।",
           "मुख्य PDF एडिटिंग आपके ब्राउज़र में होती है। AI OCR और अनुवाद अलग विकल्प हैं; उनके लिए सहमति देने पर चुना हुआ टेक्स्ट या पेज इमेज सेवा को भेजी जाती है।",
           "जारीकर्ता से स्वीकृत सुधार की नई कॉपी लें। अपने तैयार PDF की भाषा और संलग्नक उनके वर्तमान निर्देशों से मिलाएँ।"
         ]
@@ -185,7 +185,7 @@
         "a": "इसे सार्वभौमिक नियम न मानें। संबंधित संस्था से वर्तमान आवश्यकता और प्रारूप पूछें।"
       }
     ],
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sources": [
       {
         "label": "SSC official portal and regional help information",
@@ -221,7 +221,7 @@
       {
         "heading": "एक्सपोर्ट जाँचें",
         "paragraphs": [
-          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।"
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। जिन पेजों में बदलाव नहीं किया, वे जैसे थे वैसे रहते हैं और बदले गए पेज का बाकी मूल टेक्स्ट भी बना रहता है; नए शब्द इमेज के रूप में जुड़ते हैं, इसलिए उन्हें खोजा या चुना नहीं जा सकता, और कोई भी बदलाव डिजिटल हस्ताक्षर को अमान्य कर देता है।"
         ]
       },
       {
@@ -233,7 +233,7 @@
     ],
     "steps": [],
     "faqs": [],
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "relatedSlugs": [
       "bihar-bhumi-parimarjan-plus-shapath-patra-pdf"
     ]
@@ -245,7 +245,7 @@
     "language": "en",
     "status": "published",
     "publishedDate": "2026-08-18",
-    "metaDescription": "Understand Unicode, legacy fonts and scanned Hindi PDFs. Test conjuncts, add safe overlays and review image-based export limitations.",
+    "metaDescription": "Understand Unicode, legacy fonts and scanned Hindi PDFs. Test conjuncts, add safe overlays and review what the export keeps.",
     "directAnswer": "First identify whether the PDF has Unicode text, legacy encoding or scanned pages. New Unicode overlays can replace visible words; they do not recover missing text maps or universally decode old fonts.",
     "sections": [
       {
@@ -272,7 +272,7 @@
       {
         "heading": "Export limitations",
         "paragraphs": [
-          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised."
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Pages you did not edit are copied unchanged and edited pages keep their other original text; new words are added as images, so they cannot be searched or selected, and any edit invalidates a digital signature."
         ]
       },
       {
@@ -290,10 +290,10 @@
       },
       {
         "q": "Is the downloaded text selectable?",
-        "a": "Web edits are exported as image-based pages, so selectable text is not guaranteed."
+        "a": "Unedited text stays selectable. New or replaced words are added as images, so they are not selectable."
       }
     ],
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sample": true,
     "alternateSlug": "hindi-pdf-font-kaise-thik-kare",
     "relatedSlugs": [
@@ -338,7 +338,7 @@
       {
         "heading": "Review and privacy",
         "paragraphs": [
-          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Pages you did not edit are copied unchanged and edited pages keep their other original text; new words are added as images, so they cannot be searched or selected, and any edit invalidates a digital signature.",
           "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent.",
           "Obtain the corrected official copy from the issuer. Check the wording and attachments of your request against its current instructions."
         ]
@@ -351,7 +351,7 @@
         "a": "No. Ask the issuer for a corrected official certificate; visual changes do not update its systems."
       }
     ],
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sources": [
       {
         "label": "SSC official portal and regional help information",
@@ -373,7 +373,7 @@
     "language": "en",
     "status": "published",
     "publishedDate": "2026-08-18",
-    "metaDescription": "Translate supported Hindi or English text through the AI service after consent. Review text accuracy, skipped lines and image-based PDF output.",
+    "metaDescription": "Translate supported Hindi or English text through the AI service after consent. Review text accuracy, skipped lines and the translated PDF.",
     "directAnswer": "Select a PDF, review the detected direction, explicitly consent to text and possible page-image processing, complete the security check and translate. Review the result; AI translation and layout can be wrong.",
     "sections": [
       {
@@ -398,7 +398,7 @@
       {
         "heading": "Output and cancellation",
         "paragraphs": [
-          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Pages you did not edit are copied unchanged and edited pages keep their other original text; new words are added as images, so they cannot be searched or selected, and any edit invalidates a digital signature.",
           "Cancel stops the current workflow. A security or service error must be visible; it must not be treated as a successful translation."
         ]
       }
@@ -414,7 +414,7 @@
         "a": "No. Review accuracy and obtain any certification required by the receiving authority."
       }
     ],
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "toolPath": "/tools/translate-hindi-pdf/",
     "relatedSlugs": [
       "how-to-edit-hindi-pdf"
@@ -451,7 +451,7 @@
       {
         "heading": "Visual review of the download",
         "paragraphs": [
-          "Compare letters, vowel marks and reph against the source. Web export is image-based; it does not promise to restore correct search or selection of the old text. Retain the source separately."
+          "Compare letters, vowel marks and reph against the source. New words are added as images; the export does not repair search or selection of the old legacy-font text. Retain the source separately."
         ]
       }
     ],
@@ -462,7 +462,7 @@
         "a": "No. Automatic decoding of arbitrary legacy PDFs to Unicode is not provided."
       }
     ],
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sample": true,
     "alternateSlug": "kruti-dev-pdf-unicode-converter-hindi",
     "relatedSlugs": [
@@ -500,7 +500,7 @@
       {
         "heading": "एक्सपोर्ट और प्राइवेसी",
         "paragraphs": [
-          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।",
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। जिन पेजों में बदलाव नहीं किया, वे जैसे थे वैसे रहते हैं और बदले गए पेज का बाकी मूल टेक्स्ट भी बना रहता है; नए शब्द इमेज के रूप में जुड़ते हैं, इसलिए उन्हें खोजा या चुना नहीं जा सकता, और कोई भी बदलाव डिजिटल हस्ताक्षर को अमान्य कर देता है।",
           "मुख्य PDF एडिटिंग आपके ब्राउज़र में होती है। AI OCR और अनुवाद अलग विकल्प हैं; उनके लिए सहमति देने पर चुना हुआ टेक्स्ट या पेज इमेज सेवा को भेजी जाती है।"
         ]
       }
@@ -509,7 +509,7 @@
     "faqs": [],
     "status": "published",
     "publishedDate": "2026-08-19",
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "relatedSlugs": [
       "hindi-pdf-kaise-edit-kare"
     ]
@@ -554,7 +554,7 @@
       {
         "heading": "फाइल की अंतिम जाँच",
         "paragraphs": [
-          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।",
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। जिन पेजों में बदलाव नहीं किया, वे जैसे थे वैसे रहते हैं और बदले गए पेज का बाकी मूल टेक्स्ट भी बना रहता है; नए शब्द इमेज के रूप में जुड़ते हैं, इसलिए उन्हें खोजा या चुना नहीं जा सकता, और कोई भी बदलाव डिजिटल हस्ताक्षर को अमान्य कर देता है।",
           "मुख्य PDF एडिटिंग आपके ब्राउज़र में होती है। AI OCR और अनुवाद अलग विकल्प हैं; उनके लिए सहमति देने पर चुना हुआ टेक्स्ट या पेज इमेज सेवा को भेजी जाती है।",
           "अपलोड से पहले हर पेज पढ़ें। फाइल की सीमा और प्रकार आधिकारिक पोर्टल से देखें; इस गाइड में अनुमानित KB सीमा या स्वीकृति की गारंटी नहीं दी जाती।"
         ]
@@ -586,7 +586,7 @@
     ],
     "status": "published",
     "publishedDate": "2026-08-20",
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sources": [
       {
         "label": "बिहारभूमि: जमाबंदी और परिमार्जन FAQ",
@@ -629,7 +629,7 @@
         "heading": "डाउनलोड की तुलना",
         "paragraphs": [
           "फाइल छोटी होने के बजाय बड़ी भी हो सकती है। यदि आकार या स्पष्टता बेहतर नहीं है, मूल कॉपी रखें और दूसरी गुणवत्ता आजमाएँ।",
-          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।"
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। जिन पेजों में बदलाव नहीं किया, वे जैसे थे वैसे रहते हैं और बदले गए पेज का बाकी मूल टेक्स्ट भी बना रहता है; नए शब्द इमेज के रूप में जुड़ते हैं, इसलिए उन्हें खोजा या चुना नहीं जा सकता, और कोई भी बदलाव डिजिटल हस्ताक्षर को अमान्य कर देता है।"
         ]
       }
     ],
@@ -650,7 +650,7 @@
     "faqs": [],
     "status": "published",
     "publishedDate": "2026-08-21",
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "toolPath": "/tools/compress-pdf/",
     "relatedSlugs": [
       "hindi-pdf-kaise-edit-kare"
@@ -681,7 +681,7 @@
       {
         "heading": "नई कॉपी की जाँच",
         "paragraphs": [
-          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।",
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। जिन पेजों में बदलाव नहीं किया, वे जैसे थे वैसे रहते हैं और बदले गए पेज का बाकी मूल टेक्स्ट भी बना रहता है; नए शब्द इमेज के रूप में जुड़ते हैं, इसलिए उन्हें खोजा या चुना नहीं जा सकता, और कोई भी बदलाव डिजिटल हस्ताक्षर को अमान्य कर देता है।",
           "मुख्य PDF एडिटिंग आपके ब्राउज़र में होती है। AI OCR और अनुवाद अलग विकल्प हैं; उनके लिए सहमति देने पर चुना हुआ टेक्स्ट या पेज इमेज सेवा को भेजी जाती है।"
         ]
       }
@@ -690,7 +690,7 @@
     "faqs": [],
     "status": "published",
     "publishedDate": "2026-08-22",
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "relatedSlugs": [
       "hindi-pdf-kaise-edit-kare"
     ]
@@ -714,7 +714,7 @@
       {
         "heading": "Review the export",
         "paragraphs": [
-          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised."
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Pages you did not edit are copied unchanged and edited pages keep their other original text; new words are added as images, so they cannot be searched or selected, and any edit invalidates a digital signature."
         ]
       },
       {
@@ -728,7 +728,7 @@
     "faqs": [],
     "status": "published",
     "publishedDate": "2026-08-18",
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "relatedSlugs": [
       "parimarjan-plus-affidavit-pdf-guide"
     ]
@@ -770,7 +770,7 @@
       {
         "heading": "Review and privacy",
         "paragraphs": [
-          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Pages you did not edit are copied unchanged and edited pages keep their other original text; new words are added as images, so they cannot be searched or selected, and any edit invalidates a digital signature.",
           "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent.",
           "Obtain the corrected official copy from the issuer. Check the wording and attachments of your request against its current instructions."
         ]
@@ -785,7 +785,7 @@
     ],
     "status": "published",
     "publishedDate": "2026-08-23",
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sources": [
       {
         "label": "SSC official portal and regional help information",
@@ -883,7 +883,7 @@
         "heading": "Compare the download",
         "paragraphs": [
           "The result can be larger than the source. Retain the original and try another quality if size or clarity is not useful.",
-          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised."
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Pages you did not edit are copied unchanged and edited pages keep their other original text; new words are added as images, so they cannot be searched or selected, and any edit invalidates a digital signature."
         ]
       }
     ],
@@ -904,7 +904,7 @@
     "faqs": [],
     "status": "published",
     "publishedDate": "2026-08-25",
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "toolPath": "/tools/compress-pdf/",
     "relatedSlugs": [
       "how-to-edit-hindi-pdf"
@@ -943,7 +943,7 @@
       {
         "heading": "Review the downloaded copy",
         "paragraphs": [
-          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Pages you did not edit are copied unchanged and edited pages keep their other original text; new words are added as images, so they cannot be searched or selected, and any edit invalidates a digital signature.",
           "Practice on the sample first, then edit a copy of your own PDF. Retain the original separately. Follow the issuer’s correction process for official documents."
         ]
       },
@@ -979,7 +979,7 @@
         "a": "Export produces a separate file. Keep the original safely."
       }
     ],
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sample": true,
     "alternateSlug": "hindi-pdf-kaise-edit-kare",
     "relatedSlugs": [
@@ -994,7 +994,7 @@
     "language": "hi",
     "status": "published",
     "publishedDate": "2026-10-01",
-    "metaDescription": "Unicode, पुराने फॉन्ट और स्कैन PDF में अंतर समझें। संयुक्त अक्षर का नमूना, सुरक्षित ओवरले और इमेज आधारित एक्सपोर्ट की जाँच करें।",
+    "metaDescription": "Unicode, पुराने फॉन्ट और स्कैन PDF में अंतर समझें। संयुक्त अक्षर का नमूना, सुरक्षित ओवरले और एक्सपोर्ट में क्या बचा रहता है, उसकी जाँच करें।",
     "directAnswer": "पहले देखें PDF में Unicode टेक्स्ट, पुरानी एन्कोडिंग या स्कैन पेज हैं। नया Unicode ओवरले दिखने वाले शब्द बदल सकता है; वह खोया टेक्स्ट मैप या सभी पुराने फॉन्ट वापस नहीं लाता।",
     "sections": [
       {
@@ -1021,7 +1021,7 @@
       {
         "heading": "एक्सपोर्ट की सीमाएँ",
         "paragraphs": [
-          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। वेब एक्सपोर्ट इमेज आधारित है; उसमें टेक्स्ट की खोज, चयन और मूल डिजिटल हस्ताक्षर सुरक्षित रहने का दावा नहीं किया जाता।"
+          "डाउनलोड की गई नई कॉपी खोलकर नाम, तारीख, मात्रा, संयुक्त अक्षर और हर पेज की जाँच करें। जिन पेजों में बदलाव नहीं किया, वे जैसे थे वैसे रहते हैं और बदले गए पेज का बाकी मूल टेक्स्ट भी बना रहता है; नए शब्द इमेज के रूप में जुड़ते हैं, इसलिए उन्हें खोजा या चुना नहीं जा सकता, और कोई भी बदलाव डिजिटल हस्ताक्षर को अमान्य कर देता है।"
         ]
       },
       {
@@ -1039,10 +1039,10 @@
       },
       {
         "q": "क्या डाउनलोड किया टेक्स्ट चुन सकते हैं?",
-        "a": "वेब एक्सपोर्ट इमेज आधारित पेज बनाता है; टेक्स्ट चयन की गारंटी नहीं है।"
+        "a": "बिना बदला टेक्स्ट चुना जा सकता है। नए या बदले गए शब्द इमेज के रूप में जुड़ते हैं, इसलिए उन्हें चुना नहीं जा सकता।"
       }
     ],
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sample": true,
     "alternateSlug": "fix-broken-hindi-fonts-in-pdf",
     "relatedSlugs": [
@@ -1090,7 +1090,7 @@
       {
         "heading": "Final file review",
         "paragraphs": [
-          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Pages you did not edit are copied unchanged and edited pages keep their other original text; new words are added as images, so they cannot be searched or selected, and any edit invalidates a digital signature.",
           "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent.",
           "Read every page before uploading. Check the portal for actual file-size and file-type limits. No guessed KB limit or acceptance guarantee is provided here."
         ]
@@ -1122,7 +1122,7 @@
     ],
     "status": "published",
     "publishedDate": "2026-10-01",
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sources": [
       {
         "label": "बिहारभूमि: जमाबंदी और परिमार्जन FAQ",
@@ -1176,7 +1176,7 @@
       {
         "heading": "Review and privacy",
         "paragraphs": [
-          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Web editing exports image-based pages; searchable text, selectability and preservation of digital signatures are not promised.",
+          "Reopen the downloaded copy and check names, dates, vowel marks, conjuncts and every page. Pages you did not edit are copied unchanged and edited pages keep their other original text; new words are added as images, so they cannot be searched or selected, and any edit invalidates a digital signature.",
           "Core editing runs in your browser. AI OCR and translation are separate options that send approved text or page images to the service after consent.",
           "Obtain the corrected official copy from the issuer. Check the wording and attachments of your request against its current instructions."
         ]
@@ -1193,7 +1193,7 @@
         "a": "No universal requirement is assumed. Ask the relevant authority for the current requirements and format."
       }
     ],
-    "reviewedDate": "2026-10-01",
+    "reviewedDate": "2026-11-21",
     "sources": [
       {
         "label": "SSC official portal and regional help information",
