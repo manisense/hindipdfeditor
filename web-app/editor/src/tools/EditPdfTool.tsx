@@ -1,6 +1,8 @@
 import { useTx } from "../lib/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ChevronLeft,
+  ChevronRight,
   Download,
   Eraser,
   FileText,
@@ -1135,23 +1137,27 @@ export function EditPdfTool() {
             <div className="app__toolbar-row app__toolbar-row--document">
               {document.pages.length > 1 ? (
                 <div className="app__pager">
-                  <AppButton
-                    title="◀"
-                    small
-                    variant="secondary"
+                  <button
+                    type="button"
+                    className="app-button app-button--secondary app-button--small"
+                    aria-label={tx("Previous page", "पिछला पेज")}
                     onClick={() => goToPage(currentPageIndex - 1)}
                     disabled={currentPageIndex === 0}
-                  />
+                  >
+                    <ChevronLeft size={16} aria-hidden="true" />
+                  </button>
                   <span>
                     {currentPageIndex + 1} / {document.pages.length}
                   </span>
-                  <AppButton
-                    title="▶"
-                    small
-                    variant="secondary"
+                  <button
+                    type="button"
+                    className="app-button app-button--secondary app-button--small"
+                    aria-label={tx("Next page", "अगला पेज")}
                     onClick={() => goToPage(currentPageIndex + 1)}
                     disabled={currentPageIndex === document.pages.length - 1}
-                  />
+                  >
+                    <ChevronRight size={16} aria-hidden="true" />
+                  </button>
                 </div>
               ) : (
                 <span className="app__page-count">{tx("1 page", "1 पेज")}</span>
