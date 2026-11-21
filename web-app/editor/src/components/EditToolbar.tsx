@@ -22,6 +22,9 @@ type Props = {
   onFontWeightChange: (fontWeight: 'normal' | 'bold') => void;
   onDelete: () => void;
   onDone: () => void;
+  /** Whether English letters typed in the text are converted to Hindi. */
+  romanTyping: boolean;
+  onRomanTypingChange: (on: boolean) => void;
 };
 
 const MIN_FONT_SIZE_PT = 6;
@@ -38,10 +41,19 @@ export function EditToolbar({
   onFontWeightChange,
   onDelete,
   onDone,
+  romanTyping,
+  onRomanTypingChange,
 }: Props) {
   const tx = useTx();
   return (
-    <div className="edit-toolbar">
+    <div
+      className="edit-toolbar"
+      onMouseDown={(event) => {
+        // Keep focus in the text being edited: a button taking focus blurs the text, which closes
+        // this toolbar before the click lands. Inputs (colour, size) still take focus.
+        if ((event.target as HTMLElement).closest('button')) event.preventDefault();
+      }}
+    >
       <div className="edit-toolbar__heading">
         <strong>{tx('Text style', 'टेक्स्ट स्टाइल')}</strong>
         <span>{tx('Changes apply to the selected text', 'बदलाव चुने हुए टेक्स्ट पर लागू होंगे')}</span>
@@ -69,6 +81,15 @@ export function EditToolbar({
             onClick={() => onFontWeightChange(fontWeight === 'bold' ? 'normal' : 'bold')}
           >
             B
+          </button>
+          <button
+            type="button"
+            aria-pressed={romanTyping}
+            title={tx('Type Hindi with English letters: mera naam → मेरा नाम', 'अंग्रेज़ी अक्षरों से हिंदी लिखें: mera naam → मेरा नाम')}
+            className={`edit-toolbar__chip ${romanTyping ? 'active' : ''}`}
+            onClick={() => onRomanTypingChange(!romanTyping)}
+          >
+            {tx('Hindi typing', 'हिंदी टाइपिंग')}
           </button>
         </div>
         <div className="edit-toolbar__group edit-toolbar__group--size" aria-label={tx('Font size', 'फॉन्ट साइज')}>

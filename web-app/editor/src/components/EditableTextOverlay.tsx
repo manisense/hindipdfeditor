@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 
 import { ptSizeToDp, ptToDp } from '../lib/coordinateMath';
 import { cssFontStack } from '../lib/fontAsset';
+import { transliterateBeforeCaret } from '../lib/romanToHindi';
 import {
   resizeTextAreaToContent,
   TEXT_LINE_HEIGHT,
@@ -15,6 +16,8 @@ type Props = {
   viewWidthPx: number;
   pageWidthPt: number;
   onChangeText: (text: string) => void;
+  /** Convert each English-letter word to Hindi when a space or punctuation follows it. */
+  romanTyping?: boolean;
   autoFocus?: boolean;
   selectAllOnFocus?: boolean;
   focused?: boolean;
@@ -27,6 +30,7 @@ export function EditableTextOverlay({
   viewWidthPx,
   pageWidthPt,
   onChangeText,
+  romanTyping,
   autoFocus,
   selectAllOnFocus,
   focused,
@@ -91,7 +95,18 @@ export function EditableTextOverlay({
       ref={inputRef}
       data-edit-id={edit.id}
       value={edit.text}
-      onChange={(e) => onChangeText(e.target.value)}
+      onChange={(e) => {
+        const field = e.target;
+        const converted = romanTyping
+          ? transliterateBeforeCaret(field.value, field.selectionStart ?? field.value.length)
+          : null;
+        if (!converted) {
+          onChangeText(field.value);
+          return;
+        }
+        onChangeText(converted.value);
+        requestAnimationFrame(() => field.setSelectionRange(converted.caret, converted.caret));
+      }}
       onMouseDown={(event) => {
         // Native focus happens before click. Activating an old edit also reveals
         // the formatting toolbar above the page, so focusing here would move the

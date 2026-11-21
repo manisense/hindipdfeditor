@@ -1,5 +1,13 @@
 # Changelog
 
+## Hindi typing on an English keyboard, 21 November 2026
+
+### Added
+- "Hindi typing" (हिंदी टाइपिंग) in the text toolbar converts each word typed in English letters to Devanagari when a space or punctuation follows: `mera naam kya hai` → मेरा नाम क्या है. Own phonetic engine (no new dependency): conjuncts for clusters, casual Hinglish habits for final `a`/`i`/`n`, `r`-clusters and र्य. Works with on-screen keyboards (input events, not key codes). The choice is remembered in this browser.
+
+### Fixed
+- Toolbar buttons no longer take focus from the text being edited, which closed the toolbar before the click landed.
+
 ## Robust editing, 21 November 2026
 
 ### Fixed

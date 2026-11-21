@@ -96,6 +96,8 @@ const tool = getTool("edit")!;
 
 const UNKNOWN_ENCODING_FONT_NAME = "unknown (font inspection failed)";
 const DEFAULT_FONT_SIZE_PT = 14;
+/** Browser storage key for the Hindi-typing preference (a per-viewer convenience). */
+const ROMAN_TYPING_KEY = "hpe-roman-typing";
 /** Largest share by which unchanged replacement text is shrunk to fit the original width. */
 const MAX_FIT_SHRINK = 0.12;
 const RASTER_SCALE = 2;
@@ -178,6 +180,21 @@ export function EditPdfTool() {
     readEditModeFromLocation(),
   );
   const [pageZoom, setPageZoom] = useState(1);
+  const [romanTyping, setRomanTyping] = useState(() => {
+    try {
+      return window.localStorage.getItem(ROMAN_TYPING_KEY) === "on";
+    } catch {
+      return false;
+    }
+  });
+  const changeRomanTyping = (on: boolean) => {
+    setRomanTyping(on);
+    try {
+      window.localStorage.setItem(ROMAN_TYPING_KEY, on ? "on" : "off");
+    } catch {
+      /* private mode: the choice lasts for this visit only */
+    }
+  };
   const editPinchStartRef = useRef<{
     fontSizePt: number;
     widthPt?: number;
@@ -1317,6 +1334,8 @@ export function EditPdfTool() {
               }
               onDelete={() => removeEditGroup(focusedEdit.id)}
               onDone={handleEditDone}
+              romanTyping={romanTyping}
+              onRomanTypingChange={changeRomanTyping}
             />
           )}
 
@@ -1372,6 +1391,7 @@ export function EditPdfTool() {
                       <EditableTextOverlay
                         key={edit.id}
                         edit={edit}
+                        romanTyping={romanTyping}
                         viewWidthPx={viewWidthPx}
                         pageWidthPt={page.widthPt}
                         autoFocus={edit.id === focusedEditId}
