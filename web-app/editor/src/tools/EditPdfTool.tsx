@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Sparkles,
   Type,
+  Redo2,
   Undo2,
 } from "lucide-react";
 
@@ -54,6 +55,13 @@ import { detectLegacyFonts } from "../lib/legacyFontDetector";
 import { shouldDismissFocusedEdit } from "../lib/editPointerIntent";
 import { replacementFontFor } from "../lib/fontMatch";
 import { cleanedRegionPreview } from "../lib/maskPreview";
+import {
+  type Bilingual,
+  exportFailureMessage,
+  MAX_EDIT_PAGES,
+  openFailureMessage,
+  tooManyPagesMessage,
+} from "../lib/userMessages";
 import { detectTextLines, detectTextLinesWithGemini } from "../lib/ocr";
 import { findOcrTargetAt, findTextEditAt } from "../lib/ocrHitTest";
 import {
@@ -105,7 +113,7 @@ type Status =
   | { state: "opening" }
   | { state: "saving" }
   | { state: "saved"; filename: string }
-  | { state: "error"; message: string };
+  | { state: "error"; message: Bilingual };
 
 /** Cleaned-region preview for a replacement mask; undefined keeps the flat-colour fallback. */
 async function previewFor(
@@ -191,7 +199,9 @@ export function EditPdfTool() {
   const setOcrLines = useEditStore((s) => s.setOcrLines);
   const checkpoint = useEditStore((s) => s.checkpoint);
   const undo = useEditStore((s) => s.undo);
+  const redo = useEditStore((s) => s.redo);
   const canUndo = useEditStore((s) => s.history.length > 0);
+  const canRedo = useEditStore((s) => s.future.length > 0);
 
   useEffect(() => {
     ensureFontsLoaded();
@@ -199,6 +209,20 @@ export function EditPdfTool() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      const command = event.metaKey || event.ctrlKey;
+      const inTextField =
+        event.target instanceof HTMLElement &&
+        (event.target.isContentEditable || /^(TEXTAREA|INPUT)$/.test(event.target.tagName));
+      if (command && !inTextField && /^[zy]$/i.test(event.key)) {
+        // Outside text fields: Cmd/Ctrl+Z undoes edits, Shift+Cmd/Ctrl+Z or Ctrl+Y redoes.
+        // Inside a field the browser's own text undo applies.
+        event.preventDefault();
+        pendingEditRequestRef.current += 1;
+        setFocusedEditId(null);
+        if (event.key.toLowerCase() === "y" || event.shiftKey) useEditStore.getState().redo();
+        else useEditStore.getState().undo();
+        return;
+      }
       if (event.key !== "Escape") return;
       pendingEditRequestRef.current += 1;
       dismissOnlyGestureRef.current = false;
@@ -225,6 +249,10 @@ export function EditPdfTool() {
       setPdfBytes(bytes);
 
       const pageCount = await getPageCount();
+      if (pageCount > MAX_EDIT_PAGES) {
+        setStatus({ state: "error", message: tooManyPagesMessage(pageCount) });
+        return;
+      }
       const pages: PageState[] = [];
       for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
         const image = await renderPage(pageIndex, RASTER_SCALE);
@@ -242,6 +270,7 @@ export function EditPdfTool() {
 
       const legacyFontWarnings = await detectLegacyFontWarnings(pageCount);
       const newDocument: DocumentState = {
+        id: crypto.randomUUID(),
         sourceName: file.name,
         pageCount,
         pages,
@@ -260,9 +289,10 @@ export function EditPdfTool() {
       setStatus({ state: "idle" });
       trackToolEvent("pdf_open_success", "edit");
     } catch (error) {
+      console.error("Opening the PDF failed", error);
       setStatus({
         state: "error",
-        message: error instanceof Error ? error.message : String(error),
+        message: openFailureMessage(error),
       });
     }
   };
@@ -302,14 +332,14 @@ export function EditPdfTool() {
     setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "running" }));
     return detectTextLines(pageState)
       .then((lines) => {
-        if (useEditStore.getState().document?.sourceName !== doc.sourceName)
+        if (useEditStore.getState().document?.id !== doc.id)
           return;
         setOcrLines(pageIndex, lines);
         setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "done" }));
       })
       .catch((error) => {
         console.warn(`OCR failed on page ${pageIndex}`, error);
-        if (useEditStore.getState().document?.sourceName !== doc.sourceName)
+        if (useEditStore.getState().document?.id !== doc.id)
           return;
         setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "failed" }));
       });
@@ -319,7 +349,7 @@ export function EditPdfTool() {
   // once made the page on screen wait behind all the others. Opening a page starts it at once.
   const ensureOcrForAllPages = async (doc: DocumentState) => {
     for (let pageIndex = 0; pageIndex < doc.pages.length; pageIndex++) {
-      if (useEditStore.getState().document?.sourceName !== doc.sourceName) return;
+      if (useEditStore.getState().document?.id !== doc.id) return;
       await ensureOcrForPage(doc, pageIndex);
     }
   };
@@ -331,6 +361,13 @@ export function EditPdfTool() {
     setCurrentPageIndex(index);
     setFocusedEditId(null);
     void ensureOcrForPage(document, index);
+  };
+
+  const handleRedo = () => {
+    pendingEditRequestRef.current += 1;
+    dismissOnlyGestureRef.current = false;
+    setFocusedEditId(null);
+    redo();
   };
 
   const handleUndo = () => {
@@ -380,7 +417,7 @@ export function EditPdfTool() {
   const runEnhanceWithAi = async () => {
     if (!document || !page || editingBlocked || enhancingPage !== null) return;
     const pageIndex = currentPageIndex;
-    const sourceName = document.sourceName;
+    const documentId = document.id;
     setEnhancingPage(pageIndex);
     try {
       const lines = await detectTextLinesWithGemini(
@@ -388,7 +425,7 @@ export function EditPdfTool() {
         aiJobIdRef.current,
         pageIndex,
       );
-      if (useEditStore.getState().document?.sourceName !== sourceName) return;
+      if (useEditStore.getState().document?.id !== documentId) return;
       setOcrLines(pageIndex, lines);
       setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "done" }));
     } catch (error) {
@@ -468,7 +505,7 @@ export function EditPdfTool() {
           try {
             lines = await detectTextLines(pageState, { forceOcr });
             if (
-              useEditStore.getState().document?.sourceName !== doc.sourceName
+              useEditStore.getState().document?.id !== doc.id
             ) {
               return;
             }
@@ -496,7 +533,7 @@ export function EditPdfTool() {
               pageIndex,
             );
             if (
-              useEditStore.getState().document?.sourceName !== doc.sourceName
+              useEditStore.getState().document?.id !== doc.id
             ) {
               return;
             }
@@ -524,7 +561,7 @@ export function EditPdfTool() {
           direction,
           buildTranslationLinesWithContext(pageIndex, lines, sourceLines),
         );
-        if (useEditStore.getState().document?.sourceName !== doc.sourceName) {
+        if (useEditStore.getState().document?.id !== doc.id) {
           return;
         }
 
@@ -687,7 +724,7 @@ export function EditPdfTool() {
   ) => {
     if (!page || !document) return;
     const targetPageIndex = currentPageIndex;
-    const targetSourceName = document.sourceName;
+    const targetDocumentId = document.id;
 
     const maskRect = {
       xPt: Math.max(0, rect.xPt - MASK_EXPAND_PT),
@@ -732,7 +769,7 @@ export function EditPdfTool() {
     const currentPage = currentDocument?.pages[targetPageIndex];
     if (
       requestId !== pendingEditRequestRef.current ||
-      currentDocument?.sourceName !== targetSourceName ||
+      currentDocument?.id !== targetDocumentId ||
       !currentPage
     ) {
       return;
@@ -963,9 +1000,10 @@ export function EditPdfTool() {
       trackToolEvent("export_success", "edit");
     } catch (error) {
       trackToolEvent("export_failed", "edit");
+      console.error("Export failed", error);
       setStatus({
         state: "error",
-        message: error instanceof Error ? error.message : String(error),
+        message: exportFailureMessage(),
       });
     }
   };
@@ -1108,8 +1146,8 @@ export function EditPdfTool() {
             disabled={status.state === "saving"}
           />
           {status.state === "error" && (
-            <AppStatus tone="error" title="Couldn’t open this PDF">
-              {status.message}
+            <AppStatus tone="error" title={tx("Couldn’t open this PDF", "यह PDF नहीं खुल पाई")}>
+              {tx(status.message.en, status.message.hi)}
             </AppStatus>
           )}
         </div>
@@ -1173,6 +1211,14 @@ export function EditPdfTool() {
                 variant="ghost"
                 onClick={handleUndo}
                 disabled={!canUndo}
+              />
+              <AppButton
+                title={tx("Redo", "फिर से करें")}
+                icon={<Redo2 size={15} aria-hidden="true" />}
+                small
+                variant="ghost"
+                onClick={handleRedo}
+                disabled={!canRedo}
               />
             </div>
             <div className="app__toolbar-row app__toolbar-row--ai">
@@ -1369,8 +1415,8 @@ export function EditPdfTool() {
             </AppStatus>
           )}
           {status.state === "error" && (
-            <AppStatus tone="error" title="Export failed">
-              {status.message}
+            <AppStatus tone="error" title={tx("Export failed", "डाउनलोड नहीं हो पाया")}>
+              {tx(status.message.en, status.message.hi)}
             </AppStatus>
           )}
         </main>

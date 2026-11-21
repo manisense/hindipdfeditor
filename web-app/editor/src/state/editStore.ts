@@ -80,6 +80,8 @@ export type PageState = {
 };
 
 export type DocumentState = {
+  /** Unique per opened file, so late async results never land on a different file. */
+  id: string;
   sourceName: string;
   pageCount: number;
   pages: PageState[];
@@ -94,8 +96,10 @@ type MaskEditFields = Omit<MaskEdit, 'id' | 'type' | 'page'>;
 export type EditStoreState = {
   document: DocumentState | null;
   history: DocumentState[];
+  future: DocumentState[];
   checkpoint: () => void;
   undo: () => void;
+  redo: () => void;
   loadDocument: (document: DocumentState) => void;
   closeDocument: () => void;
   addTextEdit: (page: number, edit: NewTextEditInput) => TextEdit;
@@ -117,6 +121,23 @@ function requirePage(document: DocumentState | null, page: number): PageState {
   return pageState;
 }
 
+/**
+ * Restores a snapshot's edits, and its detected lines only where that page had already been
+ * detected. Detection that finished after the snapshot was taken is kept: restoring the empty
+ * list would leave a page marked as detected with nothing to tap.
+ */
+function restoreSnapshot(current: DocumentState, snapshot: DocumentState): DocumentState {
+  return {
+    ...snapshot,
+    pages: snapshot.pages.map((page, i) => {
+      const live = current.pages[i];
+      return page.ocrLines.length === 0 && live && live.ocrLines.length > 0
+        ? { ...page, ocrLines: live.ocrLines }
+        : page;
+    }),
+  };
+}
+
 function withUpdatedPage(document: DocumentState, page: number, edits: Edit[]): DocumentState {
   return {
     ...document,
@@ -128,22 +149,39 @@ export function createEditStore(generateId: () => string = () => crypto.randomUU
   return create<EditStoreState>((set, get) => ({
     document: null,
     history: [],
+    future: [],
 
     checkpoint: () => {
       const { document, history } = get();
       if (!document) return;
-      set({ history: [...history, document].slice(-HISTORY_LIMIT) });
+      set({ history: [...history, document].slice(-HISTORY_LIMIT), future: [] });
     },
 
     undo: () => {
-      const { history } = get();
-      if (history.length === 0) return;
-      set({ document: history[history.length - 1], history: history.slice(0, -1) });
+      const { document, history, future } = get();
+      const snapshot = history[history.length - 1];
+      if (!document || !snapshot) return;
+      set({
+        document: restoreSnapshot(document, snapshot),
+        history: history.slice(0, -1),
+        future: [document, ...future].slice(0, HISTORY_LIMIT),
+      });
     },
 
-    loadDocument: (document) => set({ document, history: [] }),
+    redo: () => {
+      const { document, history, future } = get();
+      const next = future[0];
+      if (!document || !next) return;
+      set({
+        document: restoreSnapshot(document, next),
+        history: [...history, document].slice(-HISTORY_LIMIT),
+        future: future.slice(1),
+      });
+    },
 
-    closeDocument: () => set({ document: null, history: [] }),
+    loadDocument: (document) => set({ document, history: [], future: [] }),
+
+    closeDocument: () => set({ document: null, history: [], future: [] }),
 
     addTextEdit: (page, edit) => {
       const document = get().document;

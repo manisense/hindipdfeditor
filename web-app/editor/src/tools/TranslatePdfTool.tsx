@@ -333,6 +333,7 @@ async function buildTranslatedDocument(
 
   return {
     doc: {
+      id: crypto.randomUUID(),
       sourceName: file.name,
       pageCount,
       pages,

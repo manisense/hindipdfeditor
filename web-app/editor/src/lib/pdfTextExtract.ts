@@ -1,6 +1,8 @@
-import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+
+import { Util } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import { fontHintFromPdfFont } from './fontMatch';
+import { sharedPdfDocument } from './sharedPdfDocument';
 import type { FontHint, OcrLine } from '../state/editStore';
 
 export type EmbeddedTextRun = {
@@ -72,11 +74,12 @@ export function isSafeEmbeddedText(text: string): boolean {
 }
 
 /**
- * Whether a PDF.js text transform `[a, b, c, d, e, f]` is horizontal. Only `b` signals rotation:
+ * Whether a text transform `[a, b, c, d, e, f]` is horizontal on screen. Only `b` signals rotation:
  * synthetic italics set `c` alone (a horizontal shear), and their geometry is the same as upright
- * text, so they must not discard the page's text.
+ * text, so they must not discard the page's text. Pass the transform combined with the page
+ * viewport, so a page's `/Rotate` is taken into account.
  *
- * @param transform PDF.js `TextItem.transform`, in PDF user-space units (pt).
+ * @param transform Text transform in viewport space (pt at scale 1).
  */
 export function isHorizontalTextTransform(transform: readonly number[]): boolean {
   return Math.abs(transform[1] ?? 0) <= 0.001;
@@ -121,9 +124,9 @@ export async function extractEmbeddedTextLines(
   pdfBytes: Uint8Array,
   pageIndex: number,
 ): Promise<OcrLine[]> {
-  const doc = await pdfjs.getDocument({ data: pdfBytes.slice() }).promise;
+  const doc = await sharedPdfDocument(pdfBytes);
+  const page = await doc.getPage(pageIndex + 1);
   try {
-    const page = await doc.getPage(pageIndex + 1);
     const viewport = page.getViewport({ scale: 1 });
     const textContent = await page.getTextContent();
     // Font names (Times-Bold, Cambria,BoldItalic, Hind…) are only available once the page's
@@ -152,7 +155,9 @@ export async function extractEmbeddedTextLines(
       const [, , , , pdfX, pdfY] = item.transform;
       // Rotated or vertical runs (diagonal watermarks, sideways labels) are skipped on their own;
       // they must not discard the rest of the page's text layer.
-      if (style?.vertical || !isHorizontalTextTransform(item.transform)) continue;
+      if (style?.vertical || !isHorizontalTextTransform(Util.transform(viewport.transform, item.transform))) {
+        continue;
+      }
 
       // PDF.js documents TextItem.width/height as device-space values. At a scale-1
       // viewport they are already PDF-point sizes; multiplying by the font transform again
@@ -194,7 +199,7 @@ export async function extractEmbeddedTextLines(
       ...(line.font ? { font: line.font } : {}),
     }));
   } finally {
-    await doc.destroy();
+    page.cleanup();
   }
 }
 
