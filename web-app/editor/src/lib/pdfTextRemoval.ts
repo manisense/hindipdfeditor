@@ -54,7 +54,8 @@ function compositeWidths(descendant: PDFDict): (code: number) => number | undefi
 
 /**
  * Glyph metrics for one font dictionary, or undefined when the remover cannot walk it safely
- * (Type3 fonts, non-Identity CMaps, simple fonts without `/Widths`).
+ * (non-Identity CMaps, simple fonts without `/Widths`). Type3 widths are in glyph space and are
+ * scaled by the font's `/FontMatrix` (Chrome prints its fonts as Type3).
  */
 export function fontMetricsOf(font: PDFDict): FontMetrics | undefined {
   const subtype = font.lookupMaybe(PDFName.of("Subtype"), PDFName)?.decodeText();
@@ -65,7 +66,14 @@ export function fontMetricsOf(font: PDFDict): FontMetrics | undefined {
     if (!(descendant instanceof PDFDict)) return undefined;
     return { codeBytes: 2, width: compositeWidths(descendant) };
   }
-  if (subtype === "Type3") return undefined;
+  // Widths are 1/1000 text space for simple fonts; Type3 widths use the font matrix instead.
+  let widthScale = 1;
+  if (subtype === "Type3") {
+    const matrix = font.lookupMaybe(PDFName.of("FontMatrix"), PDFArray);
+    const matrixA = matrix ? numberAt(matrix, 0) : undefined;
+    if (matrixA === undefined) return undefined;
+    widthScale = matrixA * 1000;
+  }
   const widths = font.lookupMaybe(PDFName.of("Widths"), PDFArray);
   const firstChar = font.lookupMaybe(PDFName.of("FirstChar"), PDFNumber)?.asNumber();
   if (!widths || firstChar === undefined) return undefined;
@@ -76,7 +84,7 @@ export function fontMetricsOf(font: PDFDict): FontMetrics | undefined {
       ?.asNumber() ?? 0;
   return {
     codeBytes: 1,
-    width: (code) => numberAt(widths, code - firstChar) ?? missing,
+    width: (code) => (numberAt(widths, code - firstChar) ?? missing) * widthScale,
   };
 }
 
