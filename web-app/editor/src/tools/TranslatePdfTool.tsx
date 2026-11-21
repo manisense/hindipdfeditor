@@ -15,7 +15,7 @@ import { TurnstileWidget } from "../components/TurnstileWidget";
 import { aiApiClient } from "../lib/aiApiClient";
 import { ptSizeToImagePx, ptToImagePx } from "../lib/coordinateMath";
 import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
-import { ensureFontsLoaded, getFontBase64 } from "../lib/fontAsset";
+import { ensureFontsLoaded } from "../lib/fontAsset";
 import {
   containsDevanagari,
   detectTranslationDirection,
@@ -424,16 +424,9 @@ export function TranslatePdfTool() {
         phase: "exporting",
         detail: `Building ${targetLabel} PDF…`,
       });
-      const [sans, serif] = await Promise.all([
-        getFontBase64("NotoSansDevanagari"),
-        getFontBase64("NotoSerifDevanagari"),
-      ]);
       const sourceBytes = getPdfBytes();
       if (!sourceBytes) throw new Error("No PDF loaded");
-      const blob = await exportPdf(doc, sourceBytes, {
-        NotoSansDevanagari: sans,
-        NotoSerifDevanagari: serif,
-      });
+      const blob = await exportPdf(doc, sourceBytes);
       throwIfAborted(controller.signal);
       const base = file.name.replace(/\.pdf$/i, "") || "translated";
       const filename = `${base}-${targetCode}.pdf`;
