@@ -119,6 +119,7 @@ function pageState(edits: TextEdit[] = [], ocrLines: OcrLine[] = [lineB]): PageS
 function loadPage(edits?: TextEdit[], ocrLines?: OcrLine[]) {
   useEditStore.setState({
     document: {
+      id: 'doc-test',
       sourceName: 'selection-fixture.pdf',
       pageCount: 1,
       pages: [pageState(edits, ocrLines)],

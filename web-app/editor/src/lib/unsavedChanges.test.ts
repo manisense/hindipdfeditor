@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import type { DocumentState } from "../state/editStore";
 import { editSnapshot, hasUnexportedChanges } from "./unsavedChanges";
 const doc: DocumentState = {
+  id: 'doc-test',
   sourceName: "private.pdf",
   pageCount: 1,
   legacyFontWarnings: [],
