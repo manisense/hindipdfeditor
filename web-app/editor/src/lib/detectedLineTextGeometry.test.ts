@@ -1,5 +1,5 @@
 import type { OcrLine } from '../state/editStore';
-import { textGeometryForDetectedLine } from './detectedLineTextGeometry';
+import { fitFontSizeToLineWidth, textGeometryForDetectedLine } from './detectedLineTextGeometry';
 
 function detectedLine(overrides: Partial<OcrLine> = {}): OcrLine {
   return {
@@ -82,4 +82,10 @@ it('places the replacement box so its baseline lands on the detected baseline', 
   // Font size 10 pt, baseline 1.3 em below the box top: top = 110 - 13.
   expect(textGeometryForDetectedLine(line, 600, 1, 1.3).yPt).toBeCloseTo(97);
   expect(textGeometryForDetectedLine(line, 600, 1).yPt).toBe(100);
+});
+
+it('keeps an exact-metric font at full size and shrinks a wider substitute within limits', () => {
+  expect(fitFontSizeToLineWidth(9, 101, 100, 0.12)).toBe(9);
+  expect(fitFontSizeToLineWidth(10, 115.556, 100, 0.12)).toBeCloseTo(9, 2);
+  expect(fitFontSizeToLineWidth(10, 200, 100, 0.12)).toBeCloseTo(8.8);
 });

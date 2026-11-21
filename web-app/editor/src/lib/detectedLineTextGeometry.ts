@@ -73,3 +73,27 @@ export function textGeometryForDetectedLine(
 
   return { xPt, yPt, fontSizePt, widthPt };
 }
+
+/** Measured text may exceed the detected width by this much before it is shrunk: OCR widths
+ * cover ink only and omit side bearings, so an exact-metric font measures a few percent wider. */
+const FIT_WIDTH_TOLERANCE = 1.04;
+
+/**
+ * Font size at which unchanged replacement text fits the original line width, never larger than
+ * `fontSizePt` and never smaller than `(1 - maxShrink)` of it.
+ *
+ * @param fontSizePt Detected font size, in pt.
+ * @param measuredWidthPt Width of the text set at `fontSizePt` in the replacement font, in pt.
+ * @param availableWidthPt Width of the original line, in pt.
+ * @param maxShrink Largest allowed reduction, as a fraction (unitless).
+ */
+export function fitFontSizeToLineWidth(
+  fontSizePt: number,
+  measuredWidthPt: number,
+  availableWidthPt: number,
+  maxShrink: number,
+): number {
+  if (!(measuredWidthPt > 0) || !(availableWidthPt > 0)) return fontSizePt;
+  const scale = Math.min(1, (availableWidthPt * FIT_WIDTH_TOLERANCE) / measuredWidthPt);
+  return fontSizePt * Math.max(1 - maxShrink, scale);
+}

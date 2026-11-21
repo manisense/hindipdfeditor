@@ -37,6 +37,6 @@ describe('textEditFragmentHtml', () => {
     );
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(html).toContain('color:#111111');
-    expect(html).toContain("font-family:'NotoSansDevanagari'");
+    expect(html).toContain("font-family:'NotoSansDevanagari', system-ui");
   });
 });
