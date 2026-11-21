@@ -51,6 +51,7 @@ function tesseractPageToRecognized(page: TesseractPage): RecognizedLine[] {
     text: string,
     bbox: { x0: number; y0: number; x1: number; y1: number },
     confidence?: number,
+    baseline?: number,
   ) => {
     const trimmed = trimOcrBorderNoise(text.trim());
     if (trimmed.length === 0) return;
@@ -61,6 +62,7 @@ function tesseractPageToRecognized(page: TesseractPage): RecognizedLine[] {
       width: bbox.x1 - bbox.x0,
       height: bbox.y1 - bbox.y0,
       confidence,
+      ...(baseline !== undefined ? { baseline } : {}),
     });
   };
 
@@ -74,6 +76,9 @@ function tesseractPageToRecognized(page: TesseractPage): RecognizedLine[] {
             line.words.map((word) => word.bbox),
           ),
           line.confidence,
+          line.baseline?.has_baseline
+            ? (line.baseline.y0 + line.baseline.y1) / 2
+            : undefined,
         );
       }
     }
@@ -129,6 +134,9 @@ function toOcrLines(lines: RecognizedLine[], page: PageState): OcrLine[] {
         wPt,
         hPt,
         source: "ocr" as const,
+        ...(line.baseline !== undefined
+          ? { baselineYPt: imagePxToPt(0, line.baseline, page.imagePxWidth, page.widthPt).yPt }
+          : {}),
       };
     });
 }
@@ -155,7 +163,7 @@ async function recognizeWithLanguage(
 async function recognizeRow(
   page: PageState,
   crop: PtBox,
-  line: PtBox,
+  line: PtBox & Pick<OcrLine, "baselineYPt" | "font">,
 ): Promise<OcrLine | null> {
   const { x, y } = ptToImagePx(crop.xPt, crop.yPt, page.imagePxWidth, page.widthPt);
   const { wPx, hPx } = ptSizeToImagePx(crop.wPt, crop.hPt, page.imagePxWidth, page.widthPt);

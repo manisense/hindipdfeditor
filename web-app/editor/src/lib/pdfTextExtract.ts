@@ -1,6 +1,7 @@
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 
-import type { OcrLine } from '../state/editStore';
+import { fontHintFromPdfFont } from './fontMatch';
+import type { FontHint, OcrLine } from '../state/editStore';
 
 export type EmbeddedTextRun = {
   text: string;
@@ -11,6 +12,9 @@ export type EmbeddedTextRun = {
   hasEol: boolean;
   leadingSpace: boolean;
   trailingSpace: boolean;
+  /** Baseline, in PDF points from the page top. */
+  baselineYPt?: number;
+  font?: FontHint;
 };
 
 const LINE_Y_TOLERANCE_RATIO = 0.55;
@@ -122,6 +126,16 @@ export async function extractEmbeddedTextLines(
     const page = await doc.getPage(pageIndex + 1);
     const viewport = page.getViewport({ scale: 1 });
     const textContent = await page.getTextContent();
+    // Font names (Times-Bold, Cambria,BoldItalic, Hind…) are only available once the page's
+    // operators have been parsed.
+    await page.getOperatorList();
+    const fontNameOf = (fontName: string): string | undefined => {
+      try {
+        return (page.commonObjs.get(fontName) as { name?: string } | undefined)?.name;
+      } catch {
+        return undefined;
+      }
+    };
     const runs: EmbeddedTextRun[] = [];
     let degraded = false;
 
@@ -159,6 +173,12 @@ export async function extractEmbeddedTextLines(
         hasEol: item.hasEOL,
         leadingSpace: /^\s/u.test(normalized),
         trailingSpace: /\s$/u.test(normalized),
+        baselineYPt: baselineY,
+        font: fontHintFromPdfFont(
+          fontNameOf(item.fontName),
+          style?.fontFamily,
+          Math.abs(item.transform[2]) > 0.001,
+        ),
       });
     }
 
@@ -170,6 +190,8 @@ export async function extractEmbeddedTextLines(
       wPt: line.wPt,
       hPt: line.hPt,
       source: degraded ? 'embedded-degraded' : 'embedded',
+      ...(line.baselineYPt !== undefined ? { baselineYPt: line.baselineYPt } : {}),
+      ...(line.font ? { font: line.font } : {}),
     }));
   } finally {
     await doc.destroy();
@@ -220,6 +242,7 @@ export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): Embedded
     const yPt = Math.min(...ordered.map((run) => run.yPt));
     const right = Math.max(...ordered.map((run) => run.xPt + run.wPt));
     const bottom = Math.max(...ordered.map((run) => run.yPt + run.hPt));
+    const widest = ordered.reduce((a, b) => (b.wPt > a.wPt ? b : a));
     let text = ordered[0]?.text ?? '';
     for (let index = 1; index < ordered.length; index += 1) {
       text += `${shouldInsertSpace(ordered[index - 1], ordered[index]) ? ' ' : ''}${ordered[index].text}`;
@@ -233,6 +256,8 @@ export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): Embedded
       hasEol: ordered[ordered.length - 1]?.hasEol ?? false,
       leadingSpace: false,
       trailingSpace: false,
+      baselineYPt: widest.baselineYPt,
+      font: widest.font,
     };
   }).sort((a, b) => {
     const centerDelta = a.yPt + a.hPt / 2 - (b.yPt + b.hPt / 2);

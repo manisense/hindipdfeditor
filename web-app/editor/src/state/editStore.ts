@@ -11,6 +11,7 @@ export type TextEdit = {
   color: string;
   fontFamily: 'NotoSansDevanagari' | 'NotoSerifDevanagari' | string;
   fontWeight?: 'normal' | 'bold';
+  fontStyle?: 'italic';
   widthPt?: number;
 };
 
@@ -45,7 +46,13 @@ export type OcrLine = {
   hPt: number;
   /** Whether geometry came from the PDF text layer or a raster OCR engine. */
   source?: 'embedded' | 'embedded-degraded' | 'ocr';
+  /** Baseline of the line, in PDF points from the page top, when the source reports one. */
+  baselineYPt?: number;
+  /** Look of the original font, when known, so replacement text can match it. */
+  font?: FontHint;
 };
+
+export type FontHint = { serif: boolean; bold: boolean; italic: boolean };
 
 export type PageState = {
   pageIndex: number;
