@@ -1,5 +1,14 @@
 # Changelog
 
+## Robust editing, 21 November 2026
+
+### Fixed
+- Undo no longer wipes text detection that finished after the last edit, and restores the lines an edit consumed. Redo added (toolbar, Shift+Cmd/Ctrl+Z, Ctrl+Y); Cmd/Ctrl+Z undoes outside text fields.
+- Async results are tied to a per-open document ID instead of the file name, so a different file with the same name never receives stale lines.
+- One pdf.js document is shared per opened file for rendering and text extraction instead of re-parsing (and leaking) the PDF on every call; the English answer sheet's first page is ready in 3.2 s instead of 5.8 s.
+- Password-protected, damaged and over-long (>150 pages) PDFs get clear messages in the screen's language; error titles are translated; technical causes go to the console.
+- Text on pages with `/Rotate` is judged horizontal after the page rotation.
+
 ## Edit quality gate, 21 November 2026
 
 ### Added
