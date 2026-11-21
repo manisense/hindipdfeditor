@@ -13,6 +13,13 @@ export type TextEdit = {
   fontWeight?: 'normal' | 'bold';
   fontStyle?: 'italic';
   widthPt?: number;
+  /** The mask that clears the original text under this edit, for replacements. */
+  maskId?: string;
+  /**
+   * The detected line this edit replaced, as created: lets export redraw only the words that
+   * changed. Ignored once the edit is moved or resized.
+   */
+  original?: { text: string; xPt: number; wPt: number; editXPt: number; fontSizePt: number };
 };
 
 export type MaskEdit = {

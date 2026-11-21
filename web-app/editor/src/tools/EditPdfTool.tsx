@@ -764,6 +764,18 @@ export function EditPdfTool() {
       ...(text.fontWeight ? { fontWeight: text.fontWeight } : {}),
       ...(text.fontStyle ? { fontStyle: text.fontStyle } : {}),
       ...(text.widthPt !== undefined ? { widthPt: text.widthPt } : {}),
+      maskId: maskEdit.id,
+      ...(consumedOcrLine
+        ? {
+            original: {
+              text: consumedOcrLine.text,
+              xPt: consumedOcrLine.xPt,
+              wPt: consumedOcrLine.wPt,
+              editXPt: text.xPt,
+              fontSizePt: text.fontSizePt,
+            },
+          }
+        : {}),
     });
     editPairingsRef.current.set(textEdit.id, {
       maskId: maskEdit.id,

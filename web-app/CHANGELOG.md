@@ -1,5 +1,10 @@
 # Changelog
 
+## Word-level edits, 21 November 2026
+
+### Changed
+- Export redraws only the words that changed. Untouched words keep the original glyphs or scan pixels, so OCR slips in detected text no longer reach the document, and a tapped but unchanged line exports untouched. Span edges snap to real word gaps on the page image. Bank of Baroda date row: changing only the date keeps the original "शुल्क" (OCR read थल्क).
+
 ## Matched fonts, 21 November 2026
 
 ### Changed
