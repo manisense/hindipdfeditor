@@ -14,15 +14,19 @@ Edit Hindi and English text in scanned or digital PDFs on Android — tap to cha
 
 ## Development
 
-**Requirements:** Node 20+, Android SDK, USB device or emulator.
+**Stack:** Expo SDK 56, React Native 0.85, TypeScript strict.
+
+**Requirements:** Node 22, Android SDK, USB device or emulator.
 
 ```bash
 npm install
 npx expo run:android          # dev client (custom native modules)
 npm start                     # Metro for dev client
-npm test
-npm run lint
+npm run check                 # lint, typecheck, tests, Prettier
+npx expo install --check      # dependency versions match the SDK
 ```
+
+EAS runs `npm ci` with npm 10. After changing dependencies, confirm the lock file with `npx npm@10 ci --dry-run --ignore-scripts`.
 
 ## Play Store release
 
@@ -55,6 +59,11 @@ Edits are never written into the original PDF. Each page is rasterized, edits ar
 | On-device OCR                   | `text-recognition` (in-house, wraps Google ML Kit Text Recognition v2, Latin + Devanagari) | ML Kit is proprietary (free) |
 
 Keep the MIT/Apache copyright notices of bundled open-source libraries in the app's licenses screen.
+
+## Known issues
+
+- Expo SDK 56 ships Hermes V1 250829098.0.10, which has a known memory regression (`npx expo-doctor`). The fix needs Expo SDK 57 (React Native 0.86.2+). Upgrading the SDK is a separate, device-tested task.
+- Remaining `npm audit` findings sit in Expo CLI build tooling (`@expo/cli`, `zod`, `image-size`) and clear only with a newer SDK; none ship in the app bundle.
 
 ## License
 
