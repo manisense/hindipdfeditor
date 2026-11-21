@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   clusterRunsIntoLines,
+  isHorizontalTextTransform,
   isSafeEmbeddedText,
   sanitizeEmbeddedText,
   textItemWidthPt,
@@ -70,6 +71,13 @@ describe('clusterRunsIntoLines', () => {
 });
 
 describe('embedded text safety and geometry', () => {
+  it('keeps italic (sheared) text and rejects only rotated text', () => {
+    expect(isHorizontalTextTransform([8.04, 0, 0, 8.04, 92, 649])).toBe(true);
+    expect(isHorizontalTextTransform([8.04, 0, 2.68, 8.04, 92, 649])).toBe(true);
+    expect(isHorizontalTextTransform([0, 8.04, -8.04, 0, 92, 649])).toBe(false);
+    expect(isHorizontalTextTransform([5.69, 5.69, -5.69, 5.69, 92, 649])).toBe(false);
+  });
+
   it('keeps PDF.js device-space width instead of multiplying by font size', () => {
     expect(textItemWidthPt(91.346, 10.995)).toBeCloseTo(91.346, 3);
     expect(textItemWidthPt(0, 10)).toBe(2);

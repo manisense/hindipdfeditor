@@ -68,6 +68,17 @@ export function isSafeEmbeddedText(text: string): boolean {
 }
 
 /**
+ * Whether a PDF.js text transform `[a, b, c, d, e, f]` is horizontal. Only `b` signals rotation:
+ * synthetic italics set `c` alone (a horizontal shear), and their geometry is the same as upright
+ * text, so they must not discard the page's text.
+ *
+ * @param transform PDF.js `TextItem.transform`, in PDF user-space units (pt).
+ */
+export function isHorizontalTextTransform(transform: readonly number[]): boolean {
+  return Math.abs(transform[1] ?? 0) <= 0.001;
+}
+
+/**
  * Converts PDF.js `TextItem.width` to a line-box width at the scale-1 viewport used here.
  * PDF.js already reports this width in device space, so font-transform scale is intentionally
  * not applied a second time.
@@ -96,7 +107,8 @@ function ascentRatio(style: { ascent?: number; descent?: number }): number {
  * Font-specific private-use glyphs are omitted without degrading the page so icons remain in the
  * immutable raster background instead of turning into missing-glyph boxes when adjacent text is
  * edited.
- * Vertical or rotated text still returns no lines because its geometry is unsupported.
+ * Vertical or rotated text still returns no lines because its geometry is unsupported; italic
+ * (sheared) text is horizontal and is kept.
  *
  * @param pdfBytes Full PDF file bytes.
  * @param pageIndex Zero-based page index.
@@ -123,8 +135,8 @@ export async function extractEmbeddedTextLines(
       if (text.length === 0) continue;
 
       const style = textContent.styles[item.fontName];
-      const [, rotateY, rotateX, , pdfX, pdfY] = item.transform;
-      if (style?.vertical || Math.abs(rotateX) > 0.001 || Math.abs(rotateY) > 0.001) {
+      const [, , , , pdfX, pdfY] = item.transform;
+      if (style?.vertical || !isHorizontalTextTransform(item.transform)) {
         return [];
       }
 
