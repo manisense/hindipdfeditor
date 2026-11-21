@@ -4,8 +4,22 @@ import {
   type Page as TesseractPage,
 } from "tesseract.js";
 
-import { imagePxSizeToPt, imagePxToPt } from "./coordinateMath";
+import {
+  imagePxSizeToPt,
+  imagePxToPt,
+  ptSizeToImagePx,
+  ptToImagePx,
+} from "./coordinateMath";
 import { aiApiClient } from "./aiApiClient";
+import {
+  combineEmbeddedLatinWithOcr,
+  hasDevanagari,
+  isEmbeddedDevanagariCorrupted,
+  isLikelyOcrNoise,
+  missedDevanagariRows,
+  trimOcrBorderNoise,
+  type PtBox,
+} from "./embeddedTextVerification";
 import { mergeOcrLines } from "./mergeOcrLines";
 import { extractEmbeddedTextLines } from "./pdfTextExtract";
 import { getPdfBytes } from "./pdfToImages";
@@ -35,8 +49,9 @@ function tesseractPageToRecognized(page: TesseractPage): RecognizedLine[] {
   const pushLine = (
     text: string,
     bbox: { x0: number; y0: number; x1: number; y1: number },
+    confidence?: number,
   ) => {
-    const trimmed = text.trim();
+    const trimmed = trimOcrBorderNoise(text.trim());
     if (trimmed.length === 0) return;
     lines.push({
       text: trimmed,
@@ -44,13 +59,14 @@ function tesseractPageToRecognized(page: TesseractPage): RecognizedLine[] {
       y: bbox.y0,
       width: bbox.x1 - bbox.x0,
       height: bbox.y1 - bbox.y0,
+      confidence,
     });
   };
 
   for (const block of page.blocks ?? []) {
     for (const paragraph of block.paragraphs) {
       for (const line of paragraph.lines) {
-        pushLine(line.text, line.bbox);
+        pushLine(line.text, line.bbox, line.confidence);
       }
     }
   }
@@ -109,19 +125,86 @@ function toOcrLines(lines: RecognizedLine[], page: PageState): OcrLine[] {
     });
 }
 
+async function recognizePage(
+  imageUri: string,
+  language: "hin" | "eng",
+): Promise<TesseractPage> {
+  const worker =
+    language === "hin" ? await getHinWorker() : await getEngWorker();
+  // tesseract.js v6 returns no blocks (so no lines or words) unless asked for them.
+  const { data } = await worker.recognize(imageUri, {}, { blocks: true });
+  return data;
+}
+
 async function recognizeWithLanguage(
   imageUri: string,
   language: "hin" | "eng",
 ): Promise<RecognizedLine[]> {
-  const worker =
-    language === "hin" ? await getHinWorker() : await getEngWorker();
-  const { data } = await worker.recognize(imageUri);
-  return tesseractPageToRecognized(data);
+  return tesseractPageToRecognized(await recognizePage(imageUri, language));
+}
+
+/** Hindi OCR of one rectangle of the page, for rows full-page OCR skipped. */
+async function recognizeRow(page: PageState, box: PtBox): Promise<OcrLine | null> {
+  const { x, y } = ptToImagePx(box.xPt, box.yPt, page.imagePxWidth, page.widthPt);
+  const { wPx, hPx } = ptSizeToImagePx(box.wPt, box.hPt, page.imagePxWidth, page.widthPt);
+  const worker = await getHinWorker();
+  const { data } = await worker.recognize(page.backgroundImageUri, {
+    rectangle: {
+      left: Math.round(x),
+      top: Math.round(y),
+      width: Math.round(Math.min(wPx, page.imagePxWidth - x)),
+      height: Math.round(Math.min(hPx, page.imagePxHeight - y)),
+    },
+  });
+  const text = trimOcrBorderNoise(data.text.replace(/\s+/gu, " ")).normalize("NFC");
+  if (!hasDevanagari(text)) return null;
+  return { id: crypto.randomUUID(), text, ...box, source: "embedded-degraded" };
+}
+
+/**
+ * Checks embedded lines that contain Devanagari against Hindi OCR of the page. When the text layer
+ * lost characters (`embedded-degraded`) or its ToUnicode map is corrupted, the positions of its
+ * Devanagari runs are not trustworthy either, so Hindi lines come from image OCR and Latin lines
+ * from the PDF (see `combineEmbeddedLatinWithOcr`); Hindi rows page OCR skipped are read one
+ * rectangle at a time. If OCR fails or finds no Hindi, the embedded lines are returned unchanged.
+ */
+async function verifyEmbeddedDevanagari(
+  embedded: OcrLine[],
+  page: PageState,
+): Promise<OcrLine[]> {
+  const degraded = embedded.some((line) => line.source === "embedded-degraded");
+  if (!degraded && !embedded.some((line) => hasDevanagari(line.text))) {
+    return embedded;
+  }
+  try {
+    const hindiPage = await recognizePage(page.backgroundImageUri, "hin");
+    const embeddedText = embedded.map((line) => line.text).join(" ");
+    if (!degraded && !isEmbeddedDevanagariCorrupted(embeddedText, hindiPage.text)) {
+      return embedded;
+    }
+    const hindiLines = toOcrLines(
+      tesseractPageToRecognized(hindiPage).filter(
+        (line) => !isLikelyOcrNoise(line.text, line.confidence),
+      ),
+      page,
+    );
+    if (!hindiLines.some((line) => hasDevanagari(line.text))) return embedded;
+    const rescued: OcrLine[] = [];
+    for (const box of missedDevanagariRows(embedded, hindiLines)) {
+      const line = await recognizeRow(page, box);
+      if (line) rescued.push(line);
+    }
+    return combineEmbeddedLatinWithOcr(embedded, [...hindiLines, ...rescued]);
+  } catch (error) {
+    console.warn("Hindi OCR check failed; keeping embedded PDF text", error);
+    return embedded;
+  }
 }
 
 /**
  * Detects tappable text on one page. Prefers embedded PDF text (digital docs like Word
- * exports); falls back to browser Tesseract for scanned/image-only pages.
+ * exports), checking any Devanagari in it against Hindi OCR because some PDFs carry a broken
+ * text map; falls back to browser Tesseract for scanned/image-only pages.
  *
  * @param page The page whose `backgroundImageUri` / page index to scan.
  * @param options.forceOcr When true, skip embedded text (use for legacy-font PDFs whose
@@ -135,7 +218,7 @@ export async function detectTextLines(
   if (!options?.forceOcr && pdfBytes) {
     try {
       const embedded = await extractEmbeddedTextLines(pdfBytes, page.pageIndex);
-      if (embedded.length > 0) return embedded;
+      if (embedded.length > 0) return await verifyEmbeddedDevanagari(embedded, page);
     } catch (error) {
       console.warn(
         "Embedded PDF text extraction failed; falling back to Tesseract",

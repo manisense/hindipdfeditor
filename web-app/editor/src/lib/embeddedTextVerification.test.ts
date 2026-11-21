@@ -1,0 +1,100 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  combineEmbeddedLatinWithOcr,
+  hasDevanagari,
+  isEmbeddedDevanagariCorrupted,
+  isLikelyOcrNoise,
+  missedDevanagariRows,
+  trimOcrBorderNoise,
+} from "./embeddedTextVerification";
+import type { OcrLine } from "../state/editStore";
+
+function line(text: string, yPt: number, source: OcrLine["source"]): OcrLine {
+  return { id: `${source}-${yPt}`, text, xPt: 100, yPt, wPt: 300, hPt: 12, source };
+}
+
+const CORRECT =
+  "अभ्यर्थियों को सूचित किया जाता है कि वे अधिक जानकारी और अपडेट के लिए नियमित रूप से बैंक की वेबसाइट देखें। " +
+  "सभी पत्राचार केवल अभ्यर्थी द्वारा अपने ऑनलाइन आवेदन पत्र में उल्लिखित ईमेल आईडी पर ही किए जाएंगे। " +
+  "आवेदन के पंजीकरण की प्रक्रिया तभी पूरी होगी जब शुल्क भुगतान की अंतिम तारीख से पहले बैंक में शुल्क जमा कर दिया जाएगा। " +
+  "बैंक ऑफ़ बड़ौदा में अधीनस्थ कर्मचारी संवर्ग में नियमित आधार पर कार्यालय सहायक की भर्ती होगी और सूचना दी जाएगी।";
+
+// The Bank of Baroda notice's broken map: the ि and reph glyphs map to their base consonant,
+// so नियमित is stored as ननयममत and कर्मचारी as कममचारी.
+const CORRUPTED = CORRECT.replace(/([क-ह]़?)ि/gu, "$1$1").replace(/र्([क-ह])/gu, "$1$1");
+
+describe("isEmbeddedDevanagariCorrupted", () => {
+  it("accepts embedded text that OCR reads the same way", () => {
+    expect(isEmbeddedDevanagariCorrupted(CORRECT, CORRECT)).toBe(false);
+  });
+
+  it("flags a broken text map whose complex words OCR never sees", () => {
+    expect(isEmbeddedDevanagariCorrupted(CORRUPTED, CORRECT)).toBe(true);
+  });
+
+  it("does not judge pages with too little Devanagari", () => {
+    expect(isEmbeddedDevanagariCorrupted("कममचारी की भती", "कर्मचारी की भर्ती")).toBe(false);
+    expect(isEmbeddedDevanagariCorrupted("Plain English text only", "")).toBe(false);
+  });
+});
+
+it("hasDevanagari", () => {
+  expect(hasDevanagari("abc क")).toBe(true);
+  expect(hasDevanagari("abc")).toBe(false);
+});
+
+describe("combineEmbeddedLatinWithOcr", () => {
+  it("keeps embedded Latin lines, takes Hindi from OCR and drops corrupted embedded Hindi", () => {
+    const embedded = [
+      line("कममचारी संवर्म में ननयममत", 100, "embedded"),
+      line("BOB/HRM/REC/ADVT/2025/05", 140, "embedded"),
+      line(",", 180, "embedded"),
+    ];
+    const ocr = [
+      line("कर्मचारी संवर्ग में नियमित", 101, "ocr"),
+      line("808/मार/र60/407/7/2025/05", 141, "ocr"),
+      line("नई पंक्ति", 180, "ocr"),
+    ];
+    const result = combineEmbeddedLatinWithOcr(embedded, ocr);
+    expect(result.map((l) => l.text)).toEqual([
+      "कर्मचारी संवर्ग में नियमित",
+      "BOB/HRM/REC/ADVT/2025/05",
+      "नई पंक्ति",
+    ]);
+    expect(result.every((l) => l.source === "embedded-degraded")).toBe(true);
+  });
+});
+
+describe("missedDevanagariRows", () => {
+  it("joins split fragments of a row OCR skipped and pads the box", () => {
+    const fragment = (text: string, xPt: number, wPt: number): OcrLine => ({
+      id: text, text, xPt, yPt: 150, wPt, hPt: 10, source: "embedded",
+    });
+    const embedded = [
+      fragment(" ध्य", 270, 2),
+      fragment("ान देने योग्य महत्वपूणम बा", 270, 54),
+      fragment("तें", 347, 5),
+      line("कममचारी संवर्म", 100, "embedded"),
+      line("BOB/HRM", 300, "embedded"),
+    ];
+    const ocr = [line("कर्मचारी संवर्ग", 101, "ocr")];
+    expect(missedDevanagariRows(embedded, ocr)).toEqual([
+      { xPt: 264, yPt: 147, wPt: 94, hPt: 16 },
+    ]);
+  });
+});
+
+it("treats logo and border fragments as OCR noise but keeps real low-confidence headings", () => {
+  expect(isLikelyOcrNoise("पड) छिक्षा 0 82008 रे", 33)).toBe(true);
+  expect(isLikelyOcrNoise("६. बन ऊ ही हैं ४4 5- भा", 17)).toBe(true);
+  expect(isLikelyOcrNoise(". . राज्यवार रिक्तियों और पदों में आरक्षण का विवरण", 40)).toBe(false);
+  expect(isLikelyOcrNoise("ध्यान देने योग्य महत्वपूर्ण बातें", 86)).toBe(false);
+});
+
+it("trims table-border marks from OCR line ends but keeps real punctuation", () => {
+  expect(trimOcrBorderNoise("* | पत्र/ सूचना आदि")).toBe("पत्र/ सूचना आदि");
+  expect(trimOcrBorderNoise("'ध्यान देने योग्य महत्वपूर्ण बातें |")).toBe("ध्यान देने योग्य महत्वपूर्ण बातें");
+  expect(trimOcrBorderNoise("(चपरासी) की भर्ती।")).toBe("(चपरासी) की भर्ती।");
+  expect(trimOcrBorderNoise("1. अभ्यर्थी")).toBe("1. अभ्यर्थी");
+});
