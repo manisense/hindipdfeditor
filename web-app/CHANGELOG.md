@@ -1,5 +1,15 @@
 # Changelog
 
+## Matched fonts, 21 November 2026
+
+### Changed
+- Replacement text uses the original typeface or a metric-compatible match: Hind (exact), Tinos for Times, Arimo for Arial/Helvetica, Carlito for Calibri, Caladea for Cambria. Other fonts keep Noto Sans/Serif Devanagari; Latin-only matches fall back per character to Noto for Hindi. Bank of Baroda title (Hind): same size, width and baseline as the original; English answer sheet (Times-Bold → Tinos Bold): fits at full size.
+- 18 woff2 files (306 KB, loaded per unicode range only when used) pinned to versioned `fonts.gstatic.com` URLs with sizes and SHA-256 in `editor/public/fonts/replacement/manifest.json`, checked by `npm run check:fonts`. Hind rendered in an exported PDF through pdf.js and macOS Quartz.
+- Width fitting no longer applies an 8 % safety margin, which shrank exact-metric fonts; OCR widths get a 4 % tolerance and shrinking stays capped at 12 %.
+
+### Known
+- Word's faux bold (text render mode 2 with a stroke) is not reproduced; replaced text uses the regular weight.
+
 ## Native-looking replacement text, 21 November 2026
 
 ### Changed
