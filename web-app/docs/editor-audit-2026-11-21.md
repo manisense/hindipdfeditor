@@ -11,11 +11,13 @@ Status column: open unless noted.
 | # | Issue | Evidence | Status |
 |---|---|---|---|
 | C1 | Replacement text too large on OCR-derived lines | Tesseract line boxes are ~10 pt for 8 pt text, 14–18 pt when a row number or border joins; `detectedLineTextGeometry.ts` sized font at 1.0–1.08× box height | Fixed in PR #7: verified pages take height from the PDF run; OCR lines use the median word band. No-op test on the Word and scanned copies now matches size |
-| C2 | Edits are covered with flat-colour rectangles | `maskAndReplaceRegion` paints one averaged colour; erases table lines, underlines, stamps, watermarks; patches on scanned paper | Open |
-| C3 | Export rasterises every page, even unedited ones | `exportPdf.ts`: html2canvas → JPEG 0.92 on top of a JPEG background; output not searchable/selectable/accessible, loses links/forms/bookmarks, ~7× larger | Open |
-| C4 | Editing one word redraws the whole line from OCR text | OCR mistakes in untouched words reach the document silently | Open |
+| C2 | Edits are covered with flat-colour rectangles | `maskAndReplaceRegion` paints one averaged colour; erases table lines, underlines, stamps, watermarks; patches on scanned paper | Fixed (PR #8, #15): glyphs deleted from the content stream (incl. Type3); line-preserving eraser for scans |
+| C3 | Export rasterises every page, even unedited ones | `exportPdf.ts`: html2canvas → JPEG 0.92 on top of a JPEG background; output not searchable/selectable/accessible, loses links/forms/bookmarks, ~7× larger | Fixed (PR #8): export from the original file; BoB 985 KB vs 6.4 MB |
+| C4 | Editing one word redraws the whole line from OCR text | OCR mistakes in untouched words reach the document silently | Fixed (PR #11): only changed words are redrawn, spans snap to word gaps |
 
 ## Major
+
+Status as of 21 November 2026: M1 fixed (PR #9, #10: Hind/Tinos/Arimo/Carlito/Caladea, bold/italic; faux bold via stroke still open); M2 fixed (PR #9: baseline alignment); M3 partly fixed (PR #13: shared pdf.js document, 150-page limit; lazy rendering and a cancellable OCR queue open); M4 partly (Tesseract measured best; self-hosted models and a visible "OCR unavailable" notice open); M5 fixed (PR #13); M6 open (needs decision); M7 open (paragraph reflow; word-level done); M8 fixed (PR #16).
 
 | # | Issue |
 |---|---|
@@ -30,6 +32,8 @@ Status column: open unless noted.
 
 ## Moderate
 
+Status: rotation-aware text (PR #13), password/damaged/long-file messages and translated error titles (PR #13), document IDs (PR #13), html2canvas removed (PR #9) and `EditPdfTool.tsx` partly split (`lineReplacement.ts`, `FindReplacePanel.tsx`) are done; pdf.js CMap/standard-font data open.
+
 - Rotated pages (`/Rotate`): the horizontal-text check uses the pre-rotation transform, so text drops to OCR.
 - Password-protected PDFs show a raw technical error.
 - Errors are raw English strings (one-language-per-screen rule).
@@ -40,6 +44,8 @@ Status column: open unless noted.
 - `EditPdfTool.tsx` is 1,449 lines (single-responsibility rule).
 
 ## Minor / missing
+
+Status: find and replace (PR #15), Roman→Hindi typing (PR #14), labelled pager buttons and toolbar focus fix (PR #12, #14) done; images/signatures, whiteout/highlight tools, Hindi spell check, in-editor page operations and autosave open.
 
 - No images, signatures, stamps, whiteout, highlight, alignment, underline, find-and-replace, Hindi spell check, Roman→Hindi typing, in-editor page operations, autosave.
 - No check for characters the selected font lacks.
