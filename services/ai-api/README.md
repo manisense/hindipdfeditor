@@ -46,11 +46,27 @@ environment variables.
 - Configure production Turnstile hostnames (`hindipdfeditor.com`, `www.hindipdfeditor.com`),
   billing alerts, and the emergency feature flags before relying on live traffic.
 
+## Limits
+
+Each device gets 10 AI documents and 50 pages a day (`AI_LIMITS` in `packages/translation-contract`), enforced by D1 triggers. `GET /v1/capabilities` reports the live values.
+
+## Deploy and migrations
+
+Always use the project-token wrapper; the global Wrangler login belongs to another account.
+
+```bash
+cd services/ai-api
+npm run check
+node ../../web-app/scripts/wrangler-project.mjs deploy -c "$PWD/wrangler.jsonc"
+```
+
+The project token has no D1 permission. Apply a migration in the dashboard (**D1 → hindipdfeditor-ai → Console**, one statement at a time), or add **Account · D1 · Edit** to the token and run `d1 migrations apply hindipdfeditor-ai --remote -c "$PWD/wrangler.jsonc"` through the wrapper. Migration `0003` was applied through the console on 20 November 2026, so Wrangler's table does not record it; re-applying is safe.
+
 ### Put / rotate the Gemini key
 
 ```bash
 cd services/ai-api
-npx wrangler secret put GEMINI_API_KEY
+node ../../web-app/scripts/wrangler-project.mjs secret put GEMINI_API_KEY --name hindipdfeditor-ai-api
 ```
 
 Paste the key when prompted (stdin). Then confirm:
