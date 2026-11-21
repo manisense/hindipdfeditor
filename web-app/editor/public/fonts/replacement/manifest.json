@@ -1,0 +1,182 @@
+[
+  {
+    "file": "arimo-italic-400-700-latin.woff2",
+    "family": "Arimo",
+    "style": "italic",
+    "weight": "400 700",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/arimo/v36/P5sCzZCDf9_T_10c9CNkiL2t2dk.woff2",
+    "bytes": 22416,
+    "sha256": "d1bf9f75851f3ec662d263eed39a8ce905a19ceec7025ffd66ff54e0b6d78be4"
+  },
+  {
+    "file": "arimo-normal-400-700-latin.woff2",
+    "family": "Arimo",
+    "style": "normal",
+    "weight": "400 700",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/arimo/v36/P5sMzZCDf9_T_10ZxCFuj5-v.woff2",
+    "bytes": 20204,
+    "sha256": "f2dd3a54402a0ab9a8e5d28d80a520996ac5951fef0f610c54116a4947f3b3b4"
+  },
+  {
+    "file": "caladea-italic-400-latin.woff2",
+    "family": "Caladea",
+    "style": "italic",
+    "weight": "400",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/caladea/v10/kJExBugZ7AAjhybUvR1N-Po3huR_DQ.woff2",
+    "bytes": 15008,
+    "sha256": "190e6a69c5cc85d17c30e01402453af378b24fa8384ec1c86805977f362c4ee9"
+  },
+  {
+    "file": "caladea-italic-700-latin.woff2",
+    "family": "Caladea",
+    "style": "italic",
+    "weight": "700",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/caladea/v10/kJE0BugZ7AAjhybUvR1FQ98iq8ZyJ561DQ.woff2",
+    "bytes": 14692,
+    "sha256": "06b466440368d198360e0ae9e82ba5965c8e9c0a7a3f501628664345e8e015f6"
+  },
+  {
+    "file": "caladea-normal-400-latin.woff2",
+    "family": "Caladea",
+    "style": "normal",
+    "weight": "400",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/caladea/v10/kJEzBugZ7AAjhybUvRh9-vAwpOY.woff2",
+    "bytes": 13648,
+    "sha256": "f888be2ef5578de28d56093313ab9cd256a9b2f352e54bd6f23dfbff48c8d13c"
+  },
+  {
+    "file": "caladea-normal-700-latin.woff2",
+    "family": "Caladea",
+    "style": "normal",
+    "weight": "700",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/caladea/v10/kJE2BugZ7AAjhybUtaNY790Sqcx1BZw.woff2",
+    "bytes": 13452,
+    "sha256": "d194dd15b80f8bf375961774ae918fc5ac4b5f79423ab4f8452025db12f2cd6d"
+  },
+  {
+    "file": "carlito-italic-400-latin.woff2",
+    "family": "Carlito",
+    "style": "italic",
+    "weight": "400",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/carlito/v4/3Jn_SDPw3m-pk039DDKxTl0AfOJL0A.woff2",
+    "bytes": 19648,
+    "sha256": "75d9ba43c7d0db564d83302949b7cf5227da59e3747587b181aecfc48a433e02"
+  },
+  {
+    "file": "carlito-italic-700-latin.woff2",
+    "family": "Carlito",
+    "style": "italic",
+    "weight": "700",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/carlito/v4/3Jn6SDPw3m-pk039DDK59XgVUcBG-ul7MA.woff2",
+    "bytes": 19520,
+    "sha256": "ba98689c6aef50b79f0460db7b5356d3513e5cb7c20b99e7ff65c2ec3e0889a3"
+  },
+  {
+    "file": "carlito-normal-400-latin.woff2",
+    "family": "Carlito",
+    "style": "normal",
+    "weight": "400",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/carlito/v4/3Jn9SDPw3m-pk039DDeBTFcHXuA.woff2",
+    "bytes": 18748,
+    "sha256": "e1bd1446e398916b97b3bb073491d4ff13fe334a0bef7c40aafc01beac2bd5f7"
+  },
+  {
+    "file": "carlito-normal-700-latin.woff2",
+    "family": "Carlito",
+    "style": "normal",
+    "weight": "700",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/carlito/v4/3Jn4SDPw3m-pk039BIykWXolU8pB2Os.woff2",
+    "bytes": 19224,
+    "sha256": "3943703a3d692300418f3958be8eff99dd1aa5e5334eac6a9ea9285b07931012"
+  },
+  {
+    "file": "hind-normal-400-devanagari.woff2",
+    "family": "Hind",
+    "style": "normal",
+    "weight": "400",
+    "unicodeRange": "U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A",
+    "source": "https://fonts.gstatic.com/s/hind/v18/5aU69_a8oxmIdGh4BDGwgDJm_A.woff2",
+    "bytes": 38072,
+    "sha256": "b9e15d0250ece31a4f72f12ab46952ff61404f3389403909c492b76105fc15e9"
+  },
+  {
+    "file": "hind-normal-400-latin.woff2",
+    "family": "Hind",
+    "style": "normal",
+    "weight": "400",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/hind/v18/5aU69_a8oxmIdGl4BDGwgDI.woff2",
+    "bytes": 8632,
+    "sha256": "fefb6f5586faf95189a26bb14ef1afa6195114f91709bd960deefac8887adf94"
+  },
+  {
+    "file": "hind-normal-700-devanagari.woff2",
+    "family": "Hind",
+    "style": "normal",
+    "weight": "700",
+    "unicodeRange": "U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A",
+    "source": "https://fonts.gstatic.com/s/hind/v18/5aU19_a8oxmIfNJdER2SjRhc9V11uQ.woff2",
+    "bytes": 35660,
+    "sha256": "acbb435fa03dbbc4386dad07601011540f9ef7c0e4335e8fdafd23d8aca2a8d7"
+  },
+  {
+    "file": "hind-normal-700-latin.woff2",
+    "family": "Hind",
+    "style": "normal",
+    "weight": "700",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/hind/v18/5aU19_a8oxmIfNJdERySjRhc9V0.woff2",
+    "bytes": 8368,
+    "sha256": "d9a06a15e256b89035ada98b675b187e909e64760e2b3736860367bf6c5caa6f"
+  },
+  {
+    "file": "tinos-italic-400-latin.woff2",
+    "family": "Tinos",
+    "style": "italic",
+    "weight": "400",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/tinos/v26/buE2poGnedXvwjX-TmZJ9QA98NQ.woff2",
+    "bytes": 11952,
+    "sha256": "23130597280b73d63d0d956307b961efe7c5ba45792a22296f2aeff3bac3b74d"
+  },
+  {
+    "file": "tinos-italic-700-latin.woff2",
+    "family": "Tinos",
+    "style": "italic",
+    "weight": "700",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/tinos/v26/buEzpoGnedXvwjX-Rt1s4C0f_f5Iai0.woff2",
+    "bytes": 11924,
+    "sha256": "9e3e6c6e5d89d3cf447ec032a14a87b49149e5116908754c1a99a6e19bb91094"
+  },
+  {
+    "file": "tinos-normal-400-latin.woff2",
+    "family": "Tinos",
+    "style": "normal",
+    "weight": "400",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/tinos/v26/buE4poGnedXvwjX7fmRD8iI_.woff2",
+    "bytes": 10904,
+    "sha256": "3b426cf3e7ad6f3f933727403a118e3563923cdde910c27cdaf9950454b275c6"
+  },
+  {
+    "file": "tinos-normal-700-latin.woff2",
+    "family": "Tinos",
+    "style": "normal",
+    "weight": "700",
+    "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "source": "https://fonts.gstatic.com/s/tinos/v26/buE1poGnedXvwj1AW3Fu0C8V-txK.woff2",
+    "bytes": 11616,
+    "sha256": "fb6cd8e90c8d964fdbb70335a5e1b7ddd3f375cca4637b91b9d1f47910581bb8"
+  }
+]
