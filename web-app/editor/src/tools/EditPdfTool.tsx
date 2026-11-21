@@ -229,7 +229,7 @@ export function EditPdfTool() {
       editPairingsRef.current.clear();
       setOcrStatusByPage({});
       setEditMode(readEditModeFromLocation());
-      ensureOcrForAllPages(newDocument);
+      void ensureOcrForAllPages(newDocument);
       setStatus({ state: "idle" });
       trackToolEvent("pdf_open_success", "edit");
     } catch (error) {
@@ -258,15 +258,22 @@ export function EditPdfTool() {
   );
   const editingBlocked = currentPageLegacyFontNames.length > 0;
 
-  const ensureOcrForPage = (doc: DocumentState, pageIndex: number) => {
+  const ensureOcrForPage = (
+    doc: DocumentState,
+    pageIndex: number,
+  ): Promise<void> => {
     const pageState = doc.pages[pageIndex];
-    if (!pageState) return;
-    if (doc.legacyFontWarnings.some((w) => w.page === pageIndex)) return;
-    if (ocrAttemptedPagesRef.current.has(pageIndex)) return;
+    if (
+      !pageState ||
+      doc.legacyFontWarnings.some((w) => w.page === pageIndex) ||
+      ocrAttemptedPagesRef.current.has(pageIndex)
+    ) {
+      return Promise.resolve();
+    }
     ocrAttemptedPagesRef.current.add(pageIndex);
 
     setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "running" }));
-    detectTextLines(pageState)
+    return detectTextLines(pageState)
       .then((lines) => {
         if (useEditStore.getState().document?.sourceName !== doc.sourceName)
           return;
@@ -281,9 +288,12 @@ export function EditPdfTool() {
       });
   };
 
-  const ensureOcrForAllPages = (doc: DocumentState) => {
+  // One page at a time, in order: Hindi pages are checked with OCR, and queuing every page at
+  // once made the page on screen wait behind all the others. Opening a page starts it at once.
+  const ensureOcrForAllPages = async (doc: DocumentState) => {
     for (let pageIndex = 0; pageIndex < doc.pages.length; pageIndex++) {
-      ensureOcrForPage(doc, pageIndex);
+      if (useEditStore.getState().document?.sourceName !== doc.sourceName) return;
+      await ensureOcrForPage(doc, pageIndex);
     }
   };
 
@@ -293,7 +303,7 @@ export function EditPdfTool() {
     dismissOnlyGestureRef.current = false;
     setCurrentPageIndex(index);
     setFocusedEditId(null);
-    ensureOcrForPage(document, index);
+    void ensureOcrForPage(document, index);
   };
 
   const handleUndo = () => {
