@@ -10,6 +10,9 @@ import type { RecognizedLine } from './recognizedLine';
  * 1. Every Devanagari-pass line that actually contains Devanagari characters is kept - that
  *    model is the only one that can read Hindi, and it also reads embedded Latin well enough
  *    for a mixed line to stay one coherent unit (matching the line-granularity editing model).
+ *    Exception: when both engines report confidence and an overlapping Latin-pass line is more
+ *    confident, the Latin line wins. Tesseract's Hindi model invents Devanagari when it reads an
+ *    English line, with low confidence, while the English model reads it with high confidence.
  * 2. A Devanagari-pass line with NO Devanagari characters is a pure-Latin region the weaker
  *    model happened to read; it's kept only if the Latin pass found nothing overlapping it,
  *    otherwise the dedicated Latin model's version wins.
@@ -61,8 +64,19 @@ export function mergeOcrLines(
 ): RecognizedLine[] {
   const kept: RecognizedLine[] = [];
 
-  // Rule 1: Hindi-bearing lines from the Devanagari pass always win their region.
-  const hindiLines = devanagariLines.filter((l) => containsDevanagari(l.text));
+  // Rule 1: Hindi-bearing lines from the Devanagari pass win their region, unless a more
+  // confident Latin reading of the same region exists.
+  const hindiLines = devanagariLines.filter(
+    (l) =>
+      containsDevanagari(l.text) &&
+      !latinLines.some(
+        (latin) =>
+          l.confidence !== undefined &&
+          latin.confidence !== undefined &&
+          latin.confidence > l.confidence &&
+          overlapOfSmaller(l, latin) > OVERLAP_RATIO,
+      ),
+  );
   kept.push(...hindiLines);
 
   // Rule 3 first for pure-Latin regions: dedicated Latin model beats the Devanagari model's

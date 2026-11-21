@@ -107,8 +107,8 @@ function ascentRatio(style: { ascent?: number; descent?: number }): number {
  * Font-specific private-use glyphs are omitted without degrading the page so icons remain in the
  * immutable raster background instead of turning into missing-glyph boxes when adjacent text is
  * edited.
- * Vertical or rotated text still returns no lines because its geometry is unsupported; italic
- * (sheared) text is horizontal and is kept.
+ * Vertical or rotated runs are skipped because their geometry is unsupported; the rest of the
+ * page is still returned. Italic (sheared) text is horizontal and is kept.
  *
  * @param pdfBytes Full PDF file bytes.
  * @param pageIndex Zero-based page index.
@@ -136,9 +136,9 @@ export async function extractEmbeddedTextLines(
 
       const style = textContent.styles[item.fontName];
       const [, , , , pdfX, pdfY] = item.transform;
-      if (style?.vertical || !isHorizontalTextTransform(item.transform)) {
-        return [];
-      }
+      // Rotated or vertical runs (diagonal watermarks, sideways labels) are skipped on their own;
+      // they must not discard the rest of the page's text layer.
+      if (style?.vertical || !isHorizontalTextTransform(item.transform)) continue;
 
       // PDF.js documents TextItem.width/height as device-space values. At a scale-1
       // viewport they are already PDF-point sizes; multiplying by the font transform again
