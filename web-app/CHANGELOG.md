@@ -1,5 +1,18 @@
 # Changelog
 
+## Find and replace, 21 November 2026
+
+### Added
+- Find and replace (खोजें और बदलें) across every page: detected lines and text already edited, as one undo step. Combined with word-level export, only the replaced words are redrawn. Matching is exact after Unicode normalisation.
+
+### Fixed
+- Text in Type3 fonts (Chrome-printed PDFs) is now deleted from the page on replacement, using widths scaled by the font matrix. Before, it was only covered by a patch and stayed searchable and copyable.
+- Tap-to-edit and find-and-replace share `lineReplacement.ts` (font match, baseline, width fit, ink colour), moving that logic out of `EditPdfTool.tsx`.
+- The editing-modes group has a Hindi accessible name.
+
+### Known
+- Mixed Hindi/English lines on pages read by Hindi OCR can misread English words, so find may miss them there.
+
 ## Hindi typing on an English keyboard, 21 November 2026
 
 ### Added
