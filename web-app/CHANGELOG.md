@@ -4,10 +4,14 @@
 
 ### Fixed
 - Pages set in a KrutiDev-family font are now blocked even when the PDF hides the font name (for example `CIDFont+F1`). The detector also checks the page text for common Hindi words typed as Latin keystrokes, so the editor no longer offers garbled text such as `rFkk dsUnz ljdkj` as editable lines. Tested on a 31-page CISF notice (every page flagged), Unicode Hindi and English PDFs (none flagged).
-- Italic text no longer stops a page from being detected. Synthetic italics use a horizontal shear, which the extractor treated as rotation, so every page with an italic run fell back to slow browser OCR. A 16-page Bank of Baroda notice now has all 16 pages ready in about 5 seconds instead of 8.
+- Italic text no longer stops a page from being detected. Synthetic italics use a horizontal shear, which the extractor treated as rotation, so every page with an italic run fell back to browser OCR; on the 16-page Bank of Baroda notice that was 8 pages stuck in "Finding text".
+- Embedded Hindi text is checked against Tesseract OCR before a page is ready (ADR 0008). Word exports with a broken Unicode map (the Bank of Baroda notice stored कर्मचारी as कममचारी, a Vidhayak letter विधायक as ववधायक) and Chrome-printed PDFs with missing characters now take their Hindi lines from OCR, keep the PDF's English text, rescue rows OCR skipped, and drop logo noise. Tapping the Bank of Baroda title now prefills "कर्मचारी संवर्ग में नियमित आधार पर कार्यालय सहायक (चपरासी) की भर्ती".
+- Browser OCR returned no lines at all: tesseract.js v6 only reports lines and words when asked for blocks. Scanned pages now detect text.
+- Pages are detected one at a time in page order, so the page on screen no longer waits behind every other page.
 
-### Known issue
-- Some Word-exported PDFs carry a broken Unicode map for Devanagari (the Bank of Baroda notice stores कर्मचारी as कममचारी). Tapping such a line prefills the wrong text. Enhance with AI replaces it with image OCR; automatic detection is not implemented yet.
+### Verification
+- Editor lint, 95 tests and production build; browser runs on the CISF notice (blocked as legacy), the Bank of Baroda notice, the Vidhayak letter, a Chrome-printed table, an image-only copy and an English PDF, with zero page errors; standard smoke test passed three times in a row.
+- OCR slips remain possible on italic rows (for example 0305.2025 for 03.05.2025); users can correct them while editing, or use Enhance with AI.
 
 ## Production readiness, 20 November 2026
 
