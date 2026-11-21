@@ -14,9 +14,12 @@ import {
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import type { Matrix, UserRect } from './contentStreamText';
+import { applyChangedSpans } from './changedSpan';
+import { loadFontFor, measureTextWidthPt } from './fontAsset';
 import { eraseInkKeepingLines } from './inkEraser';
 import { removePageText } from './pdfTextRemoval';
 import { rasteriseTextEdits } from './textRaster';
+import { inkColumns, nearestGap } from './wordGaps';
 import type { DocumentState, MaskEdit, PageState, TextEdit } from '../state/editStore';
 
 /** Raster scale (px per pt) for cleaned patches over scans or text the remover could not reach. */
@@ -192,7 +195,7 @@ async function rasterOutputDocument(doc: DocumentState): Promise<PDFDocument> {
   return out;
 }
 
-async function backgroundPatches(page: PageState, rects: EditorRect[]): Promise<Uint8Array[]> {
+async function backgroundCanvas(page: PageState): Promise<HTMLCanvasElement> {
   const image = new Image();
   image.src = page.backgroundImageUri;
   await image.decode();
@@ -200,6 +203,29 @@ async function backgroundPatches(page: PageState, rects: EditorRect[]): Promise<
   canvas.width = page.imagePxWidth;
   canvas.height = page.imagePxHeight;
   canvas.getContext('2d')?.drawImage(image, 0, 0);
+  return canvas;
+}
+
+/** Finds blank word gaps on a page's background near a point, within a mask's text band. */
+function gapFinder(page: PageState, canvas: HTMLCanvasElement) {
+  const context = canvas.getContext('2d');
+  const pxPerPt = page.imagePxWidth / page.widthPt;
+  return (mask: MaskEdit, xPt: number): { startPt: number; endPt: number } | null => {
+    if (!context) return null;
+    const radiusPx = mask.hPt * pxPerPt;
+    const x0 = Math.max(0, Math.round(xPt * pxPerPt - radiusPx));
+    const width = Math.min(canvas.width - x0, Math.round(2 * radiusPx));
+    const y0 = Math.max(0, Math.round(mask.yPt * pxPerPt));
+    const height = Math.min(canvas.height - y0, Math.round(mask.hPt * pxPerPt));
+    if (width < 2 || height < 2) return null;
+    const columns = inkColumns(context.getImageData(x0, y0, width, height).data, width, height);
+    const gap = nearestGap(columns, xPt * pxPerPt - x0, radiusPx, Math.max(2, 0.1 * mask.hPt * pxPerPt));
+    return gap ? { startPt: (x0 + gap.start) / pxPerPt, endPt: (x0 + gap.end) / pxPerPt } : null;
+  };
+}
+
+async function backgroundPatches(page: PageState, rects: EditorRect[]): Promise<Uint8Array[]> {
+  const canvas = await backgroundCanvas(page);
   const pxPerPt = page.imagePxWidth / page.widthPt;
   return Promise.all(rects.map((rect) => cleanRegion(canvas, rect, pxPerPt)));
 }
@@ -212,12 +238,37 @@ async function backgroundPatches(page: PageState, rects: EditorRect[]): Promise<
  * whiteouts are vector rectangles; new text is rendered by the browser, which shapes Devanagari
  * (Plan A), painted at the measured baseline and placed as a transparent image. Never overwrites the source file.
  *
- * @param doc Full in-memory document state; positions are in PDF points.
+ * @param source Full in-memory document state; positions are in PDF points.
  * @param sourcePdfBytes Bytes of the opened PDF (read, never modified).
  * @returns A `Blob` of the exported PDF.
  */
-export async function exportPdf(doc: DocumentState, sourcePdfBytes: Uint8Array): Promise<Blob> {
-  if (doc.pages.length === 0) throw new Error('exportPdf: document has no pages');
+export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Array): Promise<Blob> {
+  if (source.pages.length === 0) throw new Error('exportPdf: document has no pages');
+
+  // Redraw only the words that changed; an unchanged replacement leaves its line untouched.
+  const allTextEdits = source.pages.flatMap((page) =>
+    page.edits.filter((e): e is TextEdit => e.type === 'text'),
+  );
+  await Promise.all(
+    allTextEdits.map((e) =>
+      loadFontFor(`${e.text}${e.original?.text ?? ''}`, e.fontFamily, e.fontWeight === 'bold' ? 'bold' : 'normal', e.fontStyle),
+    ),
+  );
+  const narrowedPages: PageState[] = [];
+  for (const page of source.pages) {
+    const narrows = page.edits.some((e) => e.type === 'text' && e.original);
+    const gapNear = narrows ? gapFinder(page, await backgroundCanvas(page)) : undefined;
+    narrowedPages.push({
+      ...page,
+      edits: applyChangedSpans(
+        page.edits,
+        (edit, text) =>
+          measureTextWidthPt(text, edit.fontFamily, edit.fontWeight === 'bold' ? 'bold' : 'normal', edit.fontSizePt),
+        gapNear,
+      ),
+    });
+  }
+  const doc: DocumentState = { ...source, pages: narrowedPages };
 
   const loaded = await loadOutputDocument(sourcePdfBytes);
   const out = loaded ?? (await rasterOutputDocument(doc));

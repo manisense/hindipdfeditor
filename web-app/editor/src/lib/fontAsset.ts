@@ -124,3 +124,21 @@ export function measureTextWidthPt(
   context.font = `${fontWeight === 'bold' ? 700 : 400} ${fontSizePt}px ${cssFontStack(family)}`;
   return context.measureText(text).width;
 }
+
+/**
+ * Loads the faces needed to set `text` in a font, so later measuring and drawing use the real font.
+ *
+ * @param fontSizePx Any positive size, in px; only the faces matter.
+ */
+export async function loadFontFor(
+  text: string,
+  family: string,
+  fontWeight: 'normal' | 'bold',
+  fontStyle?: 'italic',
+  fontSizePx = 16,
+): Promise<void> {
+  if (typeof document === 'undefined') return;
+  ensureFontsLoaded();
+  const weight = fontWeight === 'bold' ? 700 : 400;
+  await document.fonts.load(`${fontStyle ?? 'normal'} ${weight} ${fontSizePx}px ${cssFontStack(family)}`, text);
+}
