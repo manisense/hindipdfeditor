@@ -1,5 +1,15 @@
 # Changelog
 
+## Native-looking replacement text, 21 November 2026
+
+### Changed
+- Replacement text matches the original's look: serif or sans, bold and italic are read from the PDF font name (`Times-Bold`, `Cambria,BoldItalic`, `Arial-BoldMT`) or an italic shear and mapped to Noto Serif/Sans Devanagari. Unchanged text is shrunk by up to 12 % towards the original line width when the substitute font is wider.
+- Replacement text sits on the original baseline: lines carry the PDF run's or Tesseract's baseline, and the box is placed using the browser's measured baseline position of the chosen font. Bank of Baroda title: editor baseline 93.26 pt vs PDF 93.3 pt; the kept underline sits under the new text again.
+- Export paints edited text with Canvas 2D `fillText` at the measured baseline, using the browser's own line breaks read back from the editor layout. html2canvas drew Devanagari about 5 pt low in the export frame; html2canvas and jspdf are removed.
+
+### Known
+- Exact widths need metric-compatible fonts (Hind, Liberation, Carlito, Caladea) with the font-provenance checks in AGENTS.md; until then text can look up to 12 % smaller or wrap.
+
 ## Export from the original file, 21 November 2026
 
 ### Changed

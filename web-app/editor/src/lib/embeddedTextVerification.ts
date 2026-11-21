@@ -123,14 +123,14 @@ export type PtBox = { xPt: number; yPt: number; wPt: number; hPt: number };
 export function missedDevanagariRows(
   embedded: readonly OcrLine[],
   ocr: readonly OcrLine[],
-): { crop: PtBox; line: PtBox }[] {
+): { crop: PtBox; line: PtBox & Pick<OcrLine, 'baselineYPt' | 'font'> }[] {
   const missed = embedded
     .filter(
       (line) =>
         hasDevanagari(line.text) && !ocr.some((found) => boxesOverlap(found, line)),
     )
     .sort((a, b) => a.yPt - b.yPt || a.xPt - b.xPt);
-  const rows: PtBox[] = [];
+  const rows: (PtBox & { widest: OcrLine })[] = [];
   for (const line of missed) {
     const row = rows.find(
       (box) =>
@@ -138,9 +138,10 @@ export function missedDevanagariRows(
         line.xPt - (box.xPt + box.wPt) <= line.hPt * 3,
     );
     if (!row) {
-      rows.push({ xPt: line.xPt, yPt: line.yPt, wPt: line.wPt, hPt: line.hPt });
+      rows.push({ xPt: line.xPt, yPt: line.yPt, wPt: line.wPt, hPt: line.hPt, widest: line });
       continue;
     }
+    if (line.wPt > row.widest.wPt) row.widest = line;
     const right = Math.max(row.xPt + row.wPt, line.xPt + line.wPt);
     const bottom = Math.max(row.yPt + row.hPt, line.yPt + line.hPt);
     row.xPt = Math.min(row.xPt, line.xPt);
@@ -154,9 +155,17 @@ export function missedDevanagariRows(
     const xPt = Math.max(0, box.xPt - padX);
     const yPt = Math.max(0, box.yPt - padY);
     const wPt = box.xPt + box.wPt + padX - xPt;
+    const { baselineYPt, font } = box.widest;
     return {
       crop: { xPt, yPt, wPt, hPt: box.yPt + box.hPt + padY - yPt },
-      line: { xPt, yPt: box.yPt, wPt, hPt: box.hPt },
+      line: {
+        xPt,
+        yPt: box.yPt,
+        wPt,
+        hPt: box.hPt,
+        ...(baselineYPt !== undefined ? { baselineYPt } : {}),
+        ...(font ? { font } : {}),
+      },
     };
   });
 }
@@ -178,7 +187,14 @@ function alignToEmbeddedRun(line: OcrLine, runs: readonly OcrLine[]): OcrLine {
       bestOverlap = overlap;
     }
   }
-  return best ? { ...line, yPt: best.yPt, hPt: best.hPt } : line;
+  if (!best) return line;
+  return {
+    ...line,
+    yPt: best.yPt,
+    hPt: best.hPt,
+    ...(best.baselineYPt !== undefined ? { baselineYPt: best.baselineYPt } : {}),
+    ...(best.font ? { font: best.font } : {}),
+  };
 }
 
 /** True when the centre of either box lies inside the other. */

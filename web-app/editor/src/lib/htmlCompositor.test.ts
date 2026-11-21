@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { textEditFragmentHtml, textFragmentsDocumentHtml } from './htmlCompositor';
+import { textEditFragmentHtml } from './htmlCompositor';
 import type { TextEdit } from '../state/editStore';
 
 const edit: TextEdit = {
@@ -25,6 +25,9 @@ describe('textEditFragmentHtml', () => {
     expect(html).toContain('overflow:visible');
     expect(html).toContain('font-size:48px'); // 12 pt × 4 px/pt
     expect(html).toContain('width:160px');
+    expect(textEditFragmentHtml({ ...edit, fontStyle: 'italic', fontWeight: 'bold' }, 'f2')).toContain(
+      'font-weight:700;font-style:italic;',
+    );
   });
 
   it('escapes typed text and rejects unsafe style values', () => {
@@ -36,13 +39,4 @@ describe('textEditFragmentHtml', () => {
     expect(html).toContain('color:#111111');
     expect(html).toContain("font-family:'NotoSansDevanagari'");
   });
-});
-
-it('inlines fonts as data URIs in the fragment document', () => {
-  const html = textFragmentsDocumentHtml([textEditFragmentHtml(edit, 'f0')], {
-    NotoSansDevanagari: 'AAAA',
-    NotoSerifDevanagari: 'BBBB',
-  });
-  expect(html).toContain("url('data:font/ttf;base64,AAAA')");
-  expect(html).toContain('id="f0"');
 });

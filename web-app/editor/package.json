@@ -16,8 +16,6 @@
     "@cantoo/pdf-lib": "^2.7.1",
     "@hindipdfeditor/translation-contract": "file:../../packages/translation-contract",
     "clsx": "^2.1.1",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^4.2.1",
     "lucide-react": "^1.24.0",
     "motion": "^12.42.2",
     "pdfjs-dist": "^5.3.93",

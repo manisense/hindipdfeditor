@@ -23,14 +23,21 @@ export type DetectedLineTextGeometry = {
  * slightly larger font size to avoid the consistently undersized result from a sub-1 ratio.
  * Lines without source metadata are treated as OCR for backward compatibility and safer sizing.
  *
+ * When the line reports its baseline and the caller knows where the replacement font's baseline
+ * sits inside its text box, the box is placed so both baselines coincide; otherwise the box top
+ * is the detected top.
+ *
  * @param line Detected line whose position and size are in PDF points.
  * @param pageWidthPt Source page width, in PDF points.
  * @param widthSlackRatio Unitless multiplier applied to the detected line width before clamping.
+ * @param baselineOffsetRatio Distance from the replacement text box top to its baseline, as a
+ *   fraction of the font size (unitless), measured in the browser for the chosen font.
  */
 export function textGeometryForDetectedLine(
   line: OcrLine,
   pageWidthPt: number,
   widthSlackRatio: number,
+  baselineOffsetRatio?: number,
 ): DetectedLineTextGeometry {
   if (!Number.isFinite(pageWidthPt) || pageWidthPt <= 0) {
     throw new RangeError('pageWidthPt must be a positive finite number');
@@ -54,7 +61,15 @@ export function textGeometryForDetectedLine(
   const xPt = Math.min(pageWidthPt, Math.max(0, requestedXPt));
   const detectedWidthPt = Number.isFinite(line.wPt) ? Math.max(0, line.wPt) : 0;
   const widthPt = Math.min(pageWidthPt - xPt, detectedWidthPt * widthSlackRatio);
-  const yPt = Number.isFinite(line.yPt) ? line.yPt : 0;
+  const yPt =
+    line.baselineYPt !== undefined &&
+    Number.isFinite(line.baselineYPt) &&
+    baselineOffsetRatio !== undefined &&
+    Number.isFinite(baselineOffsetRatio)
+      ? line.baselineYPt - baselineOffsetRatio * fontSizePt
+      : Number.isFinite(line.yPt)
+        ? line.yPt
+        : 0;
 
   return { xPt, yPt, fontSizePt, widthPt };
 }

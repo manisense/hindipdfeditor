@@ -76,3 +76,10 @@ describe('textGeometryForDetectedLine', () => {
     expect(() => textGeometryForDetectedLine(detectedLine(), 600, 0)).toThrow(RangeError);
   });
 });
+
+it('places the replacement box so its baseline lands on the detected baseline', () => {
+  const line = { id: 'l', text: 'नमस्ते', xPt: 50, yPt: 100, wPt: 200, hPt: 10, source: 'embedded' as const, baselineYPt: 110 };
+  // Font size 10 pt, baseline 1.3 em below the box top: top = 110 - 13.
+  expect(textGeometryForDetectedLine(line, 600, 1, 1.3).yPt).toBeCloseTo(97);
+  expect(textGeometryForDetectedLine(line, 600, 1).yPt).toBe(100);
+});

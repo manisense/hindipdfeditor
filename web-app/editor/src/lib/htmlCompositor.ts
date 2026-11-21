@@ -1,4 +1,3 @@
-import type { DevanagariFontFamily } from './fontAsset';
 import { TEXT_LINE_HEIGHT, TEXT_OVERFLOW_WRAP } from './textLayout';
 import type { TextEdit } from '../state/editStore';
 
@@ -45,42 +44,6 @@ export function textEditFragmentHtml(edit: TextEdit, id: string): string {
     edit.widthPt === undefined
       ? 'white-space:pre;'
       : `width:${edit.widthPt * scale}px;white-space:pre-wrap;overflow-wrap:${TEXT_OVERFLOW_WRAP};`;
-  const weightStyle = edit.fontWeight === 'bold' ? 'font-weight:700;' : '';
+  const weightStyle = `${edit.fontWeight === 'bold' ? 'font-weight:700;' : ''}${edit.fontStyle === 'italic' ? 'font-style:italic;' : ''}`;
   return `<div id="${id}" style="display:inline-block;padding:${padPx}px;background:transparent"><span style="display:block;font-size:${fontPx}px;font-family:'${family}',system-ui,sans-serif;color:${color};line-height:${TEXT_LINE_HEIGHT};word-break:normal;writing-mode:horizontal-tb;overflow:visible;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span></div>`;
-}
-
-/**
- * Builds the document that hosts text fragments for rasterising, with the bundled Devanagari
- * fonts inlined as `data:` URIs (file paths do not resolve reliably in an export frame).
- *
- * @param fragments HTML from `textEditFragmentHtml`.
- * @param fontBase64ByFamily Base64 font data keyed by family name.
- */
-export function textFragmentsDocumentHtml(
-  fragments: string[],
-  fontBase64ByFamily: Record<DevanagariFontFamily, string>,
-): string {
-  const fontFaces = (Object.entries(fontBase64ByFamily) as [DevanagariFontFamily, string][])
-    .map(
-      ([family, base64]) => `@font-face {
-    font-family: '${family}';
-    src: url('data:font/ttf;base64,${base64}') format('truetype');
-    font-weight: 100 900;
-  }`,
-    )
-    .join('\n  ');
-
-  return `<!DOCTYPE html>
-<html lang="hi">
-<head>
-<meta charset="utf-8" />
-<style>
-  * { margin: 0; padding: 0; box-sizing: content-box; }
-  ${fontFaces}
-  body { background: transparent; }
-  body > div { margin-bottom: 8px; }
-</style>
-</head>
-<body>${fragments.map((fragment) => `<div>${fragment}</div>`).join('')}</body>
-</html>`;
 }

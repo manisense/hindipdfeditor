@@ -11,19 +11,12 @@ import {
   type PDFImage,
   type PDFPage,
 } from '@cantoo/pdf-lib';
-import html2canvas from 'html2canvas';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import type { Matrix, UserRect } from './contentStreamText';
-import type { DevanagariFontFamily } from './fontAsset';
-import {
-  TEXT_FRAGMENT_PAD_RATIO,
-  TEXT_RENDER_PX_PER_PT,
-  textEditFragmentHtml,
-  textFragmentsDocumentHtml,
-} from './htmlCompositor';
 import { eraseInkKeepingLines } from './inkEraser';
 import { removePageText } from './pdfTextRemoval';
+import { rasteriseTextEdits } from './textRaster';
 import type { DocumentState, MaskEdit, PageState, TextEdit } from '../state/editStore';
 
 /** Raster scale (px per pt) for cleaned patches over scans or text the remover could not reach. */
@@ -31,8 +24,6 @@ const PATCH_PX_PER_PT = 3;
 
 /** A rectangle in editor space: PDF points, top-left origin, page rotation applied. */
 type EditorRect = { xPt: number; yPt: number; wPt: number; hPt: number };
-
-type RenderedText = { png: Uint8Array; xPt: number; yPt: number; wPt: number; hPt: number };
 
 function invert(m: Matrix): Matrix {
   const det = m[0] * m[3] - m[1] * m[2];
@@ -107,53 +98,6 @@ function fillInEditorSpace(page: PDFPage, editorToUser: Matrix, rect: EditorRect
     fill(),
     popGraphicsState(),
   );
-}
-
-/** Renders every text edit with the browser (HarfBuzz shaping) into transparent PNGs. */
-async function renderTextEdits(
-  edits: TextEdit[],
-  fontBase64ByFamily: Record<DevanagariFontFamily, string>,
-): Promise<Map<string, RenderedText>> {
-  const rendered = new Map<string, RenderedText>();
-  if (edits.length === 0) return rendered;
-  const host = document.createElement('div');
-  host.style.cssText = 'position:fixed;left:-100000px;top:0;pointer-events:none';
-  document.body.appendChild(host);
-  const frame = document.createElement('iframe');
-  frame.style.cssText = 'width:4000px;height:2000px;border:0;background:transparent';
-  host.appendChild(frame);
-  try {
-    const frameDoc = frame.contentDocument;
-    if (!frameDoc) throw new Error('exportPdf: text frame unavailable');
-    frameDoc.open();
-    frameDoc.write(
-      textFragmentsDocumentHtml(
-        edits.map((edit, i) => textEditFragmentHtml(edit, `t${i}`)),
-        fontBase64ByFamily,
-      ),
-    );
-    frameDoc.close();
-    await Promise.all(
-      Object.keys(fontBase64ByFamily).map((family) => frameDoc.fonts.load(`48px '${family}'`)),
-    );
-    await frameDoc.fonts.ready;
-    for (const [i, edit] of edits.entries()) {
-      const element = frameDoc.getElementById(`t${i}`);
-      if (!element || edit.text.trim().length === 0) continue;
-      const canvas = await html2canvas(element, { backgroundColor: null, scale: 1, logging: false });
-      const padPt = edit.fontSizePt * TEXT_FRAGMENT_PAD_RATIO;
-      rendered.set(edit.id, {
-        png: await canvasPng(canvas),
-        xPt: edit.xPt - padPt,
-        yPt: edit.yPt - padPt,
-        wPt: canvas.width / TEXT_RENDER_PX_PER_PT,
-        hPt: canvas.height / TEXT_RENDER_PX_PER_PT,
-      });
-    }
-  } finally {
-    document.body.removeChild(host);
-  }
-  return rendered;
 }
 
 /** Renders one page at `PATCH_PX_PER_PT` and returns cleaned PNG patches for `rects`. */
@@ -266,18 +210,13 @@ async function backgroundPatches(page: PageState, rects: EditorRect[]): Promise<
  * bookmarks survive. On edited pages: replaced text is deleted from the page content (or, on
  * scans and wherever deletion cannot reach, cleaned from a raster patch that keeps ruled lines);
  * whiteouts are vector rectangles; new text is rendered by the browser, which shapes Devanagari
- * (Plan A), and placed as a transparent image. Never overwrites the source file.
+ * (Plan A), painted at the measured baseline and placed as a transparent image. Never overwrites the source file.
  *
  * @param doc Full in-memory document state; positions are in PDF points.
  * @param sourcePdfBytes Bytes of the opened PDF (read, never modified).
- * @param fontBase64ByFamily Base64 font data keyed by family name.
  * @returns A `Blob` of the exported PDF.
  */
-export async function exportPdf(
-  doc: DocumentState,
-  sourcePdfBytes: Uint8Array,
-  fontBase64ByFamily: Record<DevanagariFontFamily, string>,
-): Promise<Blob> {
+export async function exportPdf(doc: DocumentState, sourcePdfBytes: Uint8Array): Promise<Blob> {
   if (doc.pages.length === 0) throw new Error('exportPdf: document has no pages');
 
   const loaded = await loadOutputDocument(sourcePdfBytes);
@@ -332,7 +271,7 @@ export async function exportPdf(
   const textEdits = editedPages.flatMap((page) =>
     page.edits.filter((e): e is TextEdit => e.type === 'text'),
   );
-  const renderedText = await renderTextEdits(textEdits, fontBase64ByFamily);
+  const renderedText = await rasteriseTextEdits(textEdits);
 
   for (const page of editedPages) {
     const pdfPage = out.getPage(page.pageIndex);

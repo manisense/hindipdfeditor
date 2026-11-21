@@ -11,4 +11,6 @@ export type RecognizedLine = {
   height: number;
   /** Engine confidence, 0–100, when the engine reports one (Tesseract does). */
   confidence?: number;
+  /** Baseline, in background-image px from the top, when the engine reports one. */
+  baseline?: number;
 };
