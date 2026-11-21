@@ -36,8 +36,9 @@ import { ptSizeToImagePx, ptToImagePx } from "../lib/coordinateMath";
 import { textGeometryForDetectedLine } from "../lib/detectedLineTextGeometry";
 import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
 import {
+  baselineOffsetRatio,
   ensureFontsLoaded,
-  getFontBase64,
+  measureTextWidthPt,
   type DevanagariFontFamily,
 } from "../lib/fontAsset";
 import type { TranslationDirection } from "@hindipdfeditor/translation-contract";
@@ -45,6 +46,7 @@ import type { TranslationDirection } from "@hindipdfeditor/translation-contract"
 import { translateOcrLines } from "../lib/geminiTranslate";
 import { detectLegacyFonts } from "../lib/legacyFontDetector";
 import { shouldDismissFocusedEdit } from "../lib/editPointerIntent";
+import { replacementFontFor } from "../lib/fontMatch";
 import { cleanedRegionPreview } from "../lib/maskPreview";
 import { detectTextLines, detectTextLinesWithGemini } from "../lib/ocr";
 import { findOcrTargetAt, findTextEditAt } from "../lib/ocrHitTest";
@@ -65,7 +67,7 @@ import {
   isTranslatableHindiLine,
 } from "../lib/translationSource";
 import { buildTranslationLinesWithContext } from "../lib/translationContext";
-import { geometryForTranslatedLine } from "../lib/translateEdits";
+import { fitFontSizeToMeasuredWidth, geometryForTranslatedLine } from "../lib/translateEdits";
 import {
   useEditStore,
   type DocumentState,
@@ -80,6 +82,8 @@ const tool = getTool("edit")!;
 
 const UNKNOWN_ENCODING_FONT_NAME = "unknown (font inspection failed)";
 const DEFAULT_FONT_SIZE_PT = 14;
+/** Largest share by which unchanged replacement text is shrunk to fit the original width. */
+const MAX_FIT_SHRINK = 0.12;
 const RASTER_SCALE = 2;
 const MASK_SAMPLE_MARGIN_PX = 16;
 const MASK_EXPAND_PT = 3;
@@ -670,6 +674,7 @@ export function EditPdfTool() {
       color?: string;
       fontFamily?: DevanagariFontFamily;
       fontWeight?: "normal" | "bold";
+      fontStyle?: "italic";
     },
     consumedOcrLine?: OcrLine,
     requestId = ++pendingEditRequestRef.current,
@@ -753,6 +758,7 @@ export function EditPdfTool() {
       color: text.color ?? "#111111",
       fontFamily: text.fontFamily ?? "NotoSansDevanagari",
       ...(text.fontWeight ? { fontWeight: text.fontWeight } : {}),
+      ...(text.fontStyle ? { fontStyle: text.fontStyle } : {}),
       ...(text.widthPt !== undefined ? { widthPt: text.widthPt } : {}),
     });
     editPairingsRef.current.set(textEdit.id, {
@@ -808,11 +814,30 @@ export function EditPdfTool() {
 
     const hitLine = findOcrTargetAt(page.ocrLines, xPt, yPt);
     if (hitLine) {
-      const textGeometry = textGeometryForDetectedLine(
-        hitLine,
-        page.widthPt,
-        EDIT_TEXT_WIDTH_SLACK_RATIO,
+      const font = replacementFontFor(hitLine.font);
+      const ratio = await baselineOffsetRatio(font.fontFamily, font.fontWeight, font.fontStyle);
+      const detected = textGeometryForDetectedLine(hitLine, page.widthPt, EDIT_TEXT_WIDTH_SLACK_RATIO, ratio);
+      // The substitute font can be wider than the original (Noto Serif vs Times): shrink the
+      // unchanged text towards the original line width so it does not wrap over the next line,
+      // but by at most MAX_FIT_SHRINK so the text does not look visibly smaller than its
+      // neighbours. Metric-compatible bundled fonts will remove the need for this.
+      const fittedSizePt = Math.max(
+        detected.fontSizePt * (1 - MAX_FIT_SHRINK),
+        fitFontSizeToMeasuredWidth(
+          detected.fontSizePt,
+          hitLine.wPt,
+          measureTextWidthPt(hitLine.text, font.fontFamily, font.fontWeight, detected.fontSizePt),
+        ),
       );
+      const textGeometry =
+        fittedSizePt < detected.fontSizePt
+          ? textGeometryForDetectedLine(
+              { ...hitLine, hPt: hitLine.hPt * (fittedSizePt / detected.fontSizePt) },
+              page.widthPt,
+              EDIT_TEXT_WIDTH_SLACK_RATIO,
+              ratio,
+            )
+          : detected;
       const { x: sampleXPx, y: sampleYPx } = ptToImagePx(
         hitLine.xPt,
         hitLine.yPt,
@@ -852,7 +877,7 @@ export function EditPdfTool() {
           fontSizePt: textGeometry.fontSizePt,
           widthPt: textGeometry.widthPt,
           color: textColor,
-          fontWeight: "normal",
+          ...font,
         },
         hitLine,
         requestId,
@@ -910,13 +935,9 @@ export function EditPdfTool() {
     const snapshotToExport = editSnapshot(documentToExport);
     setStatus({ state: "saving" });
     try {
-      const fontBase64ByFamily = {
-        NotoSansDevanagari: await getFontBase64("NotoSansDevanagari"),
-        NotoSerifDevanagari: await getFontBase64("NotoSerifDevanagari"),
-      };
       const sourceBytes = getPdfBytes();
       if (!sourceBytes) throw new Error("No PDF loaded");
-      const blob = await exportPdf(documentToExport, sourceBytes, fontBase64ByFamily);
+      const blob = await exportPdf(documentToExport, sourceBytes);
       const baseName =
         documentToExport.sourceName.replace(/\.pdf$/i, "") || "edited";
       const filename = `${baseName}-edited.pdf`;

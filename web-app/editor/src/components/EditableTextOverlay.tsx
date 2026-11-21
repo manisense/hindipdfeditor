@@ -44,7 +44,7 @@ export function EditableTextOverlay({
     const input = inputRef.current;
     if (!input) return;
     resizeTextAreaToContent(input);
-  }, [edit.fontFamily, edit.fontWeight, edit.text, fontSizePx, widthPx]);
+  }, [edit.fontFamily, edit.fontWeight, edit.fontStyle, edit.text, fontSizePx, widthPx]);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,7 +56,7 @@ export function EditableTextOverlay({
     return () => {
       cancelled = true;
     };
-  }, [edit.fontFamily, edit.fontWeight, edit.text, fontSizePx, widthPx]);
+  }, [edit.fontFamily, edit.fontWeight, edit.fontStyle, edit.text, fontSizePx, widthPx]);
 
   useEffect(() => {
     if (focused) {
@@ -113,6 +113,7 @@ export function EditableTextOverlay({
         color: edit.color,
         fontFamily: edit.fontFamily,
         fontWeight: edit.fontWeight === 'bold' ? 700 : 400,
+        fontStyle: edit.fontStyle ?? 'normal',
         width: widthPx,
       }}
       rows={1}

@@ -14,13 +14,19 @@ const imageMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../lib/fontAsset', () => ({
+  baselineOffsetRatio: vi.fn(async () => undefined),
+  measureTextWidthPt: vi.fn(() => 0),
   ensureFontsLoaded: vi.fn(),
-  getFontBase64: vi.fn(async () => ''),
+}));
+
+vi.mock('../lib/maskPreview', () => ({
+  cleanedRegionPreview: vi.fn(async () => 'data:image/png;base64,'),
 }));
 
 vi.mock('../lib/pdfToImages', () => ({
   getPageCount: vi.fn(async () => 1),
   getPdfBase64: vi.fn(async () => ''),
+  getPdfBytes: vi.fn(() => new Uint8Array()),
   renderPage: vi.fn(),
   sampleAverageColor: imageMocks.sampleAverageColor,
   samplePagePaperColor: vi.fn(async () => '#ffffff'),
