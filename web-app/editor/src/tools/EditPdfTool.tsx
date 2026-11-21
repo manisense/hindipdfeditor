@@ -33,13 +33,17 @@ import {
   useUnsavedChanges,
 } from "../lib/unsavedChanges";
 import { ptSizeToImagePx, ptToImagePx } from "../lib/coordinateMath";
-import { textGeometryForDetectedLine } from "../lib/detectedLineTextGeometry";
+import {
+  fitFontSizeToLineWidth,
+  textGeometryForDetectedLine,
+} from "../lib/detectedLineTextGeometry";
 import { downloadPdfBlob, exportPdf } from "../lib/exportPdf";
 import {
   baselineOffsetRatio,
   ensureFontsLoaded,
   measureTextWidthPt,
-  type DevanagariFontFamily,
+  type EditFontFamily,
+  isSerifFamily,
 } from "../lib/fontAsset";
 import type { TranslationDirection } from "@hindipdfeditor/translation-contract";
 
@@ -67,7 +71,7 @@ import {
   isTranslatableHindiLine,
 } from "../lib/translationSource";
 import { buildTranslationLinesWithContext } from "../lib/translationContext";
-import { fitFontSizeToMeasuredWidth, geometryForTranslatedLine } from "../lib/translateEdits";
+import { geometryForTranslatedLine } from "../lib/translateEdits";
 import {
   useEditStore,
   type DocumentState,
@@ -672,7 +676,7 @@ export function EditPdfTool() {
       fontSizePt: number;
       widthPt?: number;
       color?: string;
-      fontFamily?: DevanagariFontFamily;
+      fontFamily?: EditFontFamily;
       fontWeight?: "normal" | "bold";
       fontStyle?: "italic";
     },
@@ -815,19 +819,17 @@ export function EditPdfTool() {
     const hitLine = findOcrTargetAt(page.ocrLines, xPt, yPt);
     if (hitLine) {
       const font = replacementFontFor(hitLine.font);
-      const ratio = await baselineOffsetRatio(font.fontFamily, font.fontWeight, font.fontStyle);
+      const ratio = await baselineOffsetRatio(font.fontFamily, font.fontWeight, font.fontStyle, hitLine.text);
       const detected = textGeometryForDetectedLine(hitLine, page.widthPt, EDIT_TEXT_WIDTH_SLACK_RATIO, ratio);
       // The substitute font can be wider than the original (Noto Serif vs Times): shrink the
       // unchanged text towards the original line width so it does not wrap over the next line,
       // but by at most MAX_FIT_SHRINK so the text does not look visibly smaller than its
       // neighbours. Metric-compatible bundled fonts will remove the need for this.
-      const fittedSizePt = Math.max(
-        detected.fontSizePt * (1 - MAX_FIT_SHRINK),
-        fitFontSizeToMeasuredWidth(
-          detected.fontSizePt,
-          hitLine.wPt,
-          measureTextWidthPt(hitLine.text, font.fontFamily, font.fontWeight, detected.fontSizePt),
-        ),
+      const fittedSizePt = fitFontSizeToLineWidth(
+        detected.fontSizePt,
+        measureTextWidthPt(hitLine.text, font.fontFamily, font.fontWeight, detected.fontSizePt),
+        hitLine.wPt,
+        MAX_FIT_SHRINK,
       );
       const textGeometry =
         fittedSizePt < detected.fontSizePt
@@ -1231,7 +1233,7 @@ export function EditPdfTool() {
             <EditToolbar
               fontSizePt={focusedEdit.fontSizePt}
               fontFamily={
-                focusedEdit.fontFamily === "NotoSerifDevanagari"
+                isSerifFamily(focusedEdit.fontFamily)
                   ? "NotoSerifDevanagari"
                   : "NotoSansDevanagari"
               }

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 
 import { ptSizeToDp, ptToDp } from '../lib/coordinateMath';
+import { cssFontStack } from '../lib/fontAsset';
 import {
   resizeTextAreaToContent,
   TEXT_LINE_HEIGHT,
@@ -111,7 +112,7 @@ export function EditableTextOverlay({
         lineHeight: TEXT_LINE_HEIGHT,
         overflowWrap: TEXT_OVERFLOW_WRAP,
         color: edit.color,
-        fontFamily: edit.fontFamily,
+        fontFamily: cssFontStack(edit.fontFamily),
         fontWeight: edit.fontWeight === 'bold' ? 700 : 400,
         fontStyle: edit.fontStyle ?? 'normal',
         width: widthPx,

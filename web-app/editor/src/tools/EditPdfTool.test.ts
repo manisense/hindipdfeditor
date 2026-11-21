@@ -15,6 +15,8 @@ const imageMocks = vi.hoisted(() => ({
 
 vi.mock('../lib/fontAsset', () => ({
   baselineOffsetRatio: vi.fn(async () => undefined),
+  cssFontStack: (family: string) => `'${family}', sans-serif`,
+  isSerifFamily: () => false,
   measureTextWidthPt: vi.fn(() => 0),
   ensureFontsLoaded: vi.fn(),
 }));

@@ -1,3 +1,4 @@
+import { cssFontStack } from './fontAsset';
 import { TEXT_LINE_HEIGHT, TEXT_OVERFLOW_WRAP } from './textLayout';
 import type { TextEdit } from '../state/editStore';
 
@@ -45,5 +46,5 @@ export function textEditFragmentHtml(edit: TextEdit, id: string): string {
       ? 'white-space:pre;'
       : `width:${edit.widthPt * scale}px;white-space:pre-wrap;overflow-wrap:${TEXT_OVERFLOW_WRAP};`;
   const weightStyle = `${edit.fontWeight === 'bold' ? 'font-weight:700;' : ''}${edit.fontStyle === 'italic' ? 'font-style:italic;' : ''}`;
-  return `<div id="${id}" style="display:inline-block;padding:${padPx}px;background:transparent"><span style="display:block;font-size:${fontPx}px;font-family:'${family}',system-ui,sans-serif;color:${color};line-height:${TEXT_LINE_HEIGHT};word-break:normal;writing-mode:horizontal-tb;overflow:visible;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span></div>`;
+  return `<div id="${id}" style="display:inline-block;padding:${padPx}px;background:transparent"><span style="display:block;font-size:${fontPx}px;font-family:${cssFontStack(family)};color:${color};line-height:${TEXT_LINE_HEIGHT};word-break:normal;writing-mode:horizontal-tb;overflow:visible;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span></div>`;
 }

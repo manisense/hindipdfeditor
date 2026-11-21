@@ -41,6 +41,8 @@ Edits are never written into the original file; export builds a new PDF from it 
 | Merge, split, output parse-back                    | `@cantoo/pdf-lib` | MIT        |
 | In-browser OCR                                     | `tesseract.js`    | Apache-2.0 |
 
+Replacement fonts: Noto Sans/Serif Devanagari (OFL), Hind (OFL), Tinos and Arimo (Apache-2.0), Carlito and Caladea (OFL), pinned in `editor/public/fonts/replacement/manifest.json`.
+
 AI OCR and translation are optional and send page data to the AI service only after the user consents.
 
 ## Docs

@@ -1,4 +1,4 @@
-import { baselineOffsetRatio, ensureFontsLoaded, type DevanagariFontFamily } from './fontAsset';
+import { baselineOffsetRatio, cssFontStack, ensureFontsLoaded } from './fontAsset';
 import {
   TEXT_FRAGMENT_PAD_RATIO,
   TEXT_RENDER_PX_PER_PT,
@@ -74,13 +74,13 @@ export async function rasteriseTextEdits(edits: readonly TextEdit[]): Promise<Ma
         ? Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text), (s) => s.segment)
         : Array.from(text);
     for (const [i, edit] of visible.entries()) {
-      const family = edit.fontFamily as DevanagariFontFamily;
+      const family = edit.fontFamily;
       const weight = edit.fontWeight === 'bold' ? 'bold' : 'normal';
       const fontPx = edit.fontSizePt * TEXT_RENDER_PX_PER_PT;
       const cssWeight = weight === 'bold' ? 700 : 400;
-      const fontShorthand = `${edit.fontStyle ?? 'normal'} ${cssWeight} ${fontPx}px '${family}'`;
+      const fontShorthand = `${edit.fontStyle ?? 'normal'} ${cssWeight} ${fontPx}px ${cssFontStack(family)}`;
       await document.fonts.load(fontShorthand, edit.text);
-      const ratio = (await baselineOffsetRatio(family, weight, edit.fontStyle)) ?? 1;
+      const ratio = (await baselineOffsetRatio(family, weight, edit.fontStyle, edit.text)) ?? 1;
 
       const container = document.getElementById(`hpe-text-${i}`);
       const span = container?.firstElementChild as HTMLElement | null;
@@ -109,7 +109,7 @@ export async function rasteriseTextEdits(edits: readonly TextEdit[]): Promise<Ma
       canvas.height = Math.ceil(containerBox.height);
       const context = canvas.getContext('2d');
       if (!context) throw new Error('Canvas 2D context unavailable');
-      context.font = `normal ${cssWeight} ${fontPx}px '${family}'`;
+      context.font = `normal ${cssWeight} ${fontPx}px ${cssFontStack(family)}`;
       context.fillStyle = getComputedStyle(span).color;
       context.textBaseline = 'alphabetic';
       lines.forEach((line, index) => {

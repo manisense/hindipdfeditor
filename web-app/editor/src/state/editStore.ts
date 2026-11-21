@@ -52,7 +52,13 @@ export type OcrLine = {
   font?: FontHint;
 };
 
-export type FontHint = { serif: boolean; bold: boolean; italic: boolean };
+export type FontHint = {
+  serif: boolean;
+  bold: boolean;
+  italic: boolean;
+  /** Bundled family that matches the original exactly or by metrics, when there is one. */
+  match?: 'Hind' | 'Tinos' | 'Arimo' | 'Carlito' | 'Caladea';
+};
 
 export type PageState = {
   pageIndex: number;
