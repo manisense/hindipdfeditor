@@ -1,0 +1,156 @@
+.sign-tool__layout {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  align-items: start;
+  width: 100%;
+}
+
+.sign-tool__side {
+  display: grid;
+  gap: 16px;
+}
+
+.sign-tool__signature {
+  align-items: center;
+  background:
+    repeating-conic-gradient(var(--surface-subtle) 0% 25%, var(--surface) 0% 50%) 50% / 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  min-height: 96px;
+  padding: 12px;
+}
+
+.sign-tool__signature img {
+  max-height: 120px;
+  max-width: 100%;
+}
+
+.sign-tool__typed {
+  display: grid;
+  gap: 12px;
+}
+
+.sign-tool__row,
+.sign-tool__chips,
+.sign-tool__modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sign-tool__positions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sign-tool__chip {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 13px;
+  gap: 8px;
+  justify-content: center;
+  min-height: 36px;
+  padding: 4px 12px;
+}
+
+.sign-tool__chip[aria-checked="true"] {
+  background: var(--brand-tint);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.sign-tool__chip:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.sign-tool__swatch {
+  border-radius: 9999px;
+  height: 12px;
+  width: 12px;
+}
+
+.sign-tool__check {
+  align-items: center;
+  color: var(--ink);
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.sign-tool__error {
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.sign-tool__preview {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sign-tool__pager {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sign-tool__pager > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 96px;
+  text-align: center;
+}
+
+.sign-tool__page {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: var(--shadow-card);
+  /* A whole portrait page fits on a laptop screen. */
+  max-width: min(100%, 600px);
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.sign-tool__page-image {
+  display: block;
+  height: 100%;
+  user-select: none;
+  width: 100%;
+}
+
+.sign-tool__page-loading {
+  background: var(--surface-subtle);
+  height: 100%;
+  min-height: 320px;
+}
+
+.sign-tool__placed {
+  pointer-events: none;
+  position: absolute;
+}
+
+.sign-tool__count {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+@media (max-width: 860px) {
+  .sign-tool__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

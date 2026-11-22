@@ -1,6 +1,6 @@
 import routeManifest from "../../../tool-routes.json";
 
-export type ToolId = "edit" | "merge" | "split" | "compress" | "translate";
+export type ToolId = "edit" | "sign" | "merge" | "split" | "compress" | "translate";
 
 export type ToolMeta = {
   id: ToolId;
@@ -32,6 +32,7 @@ export function readToolIdFromLocation(): ToolId | null {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get("tool");
   if (
+    raw === "sign" ||
     raw === "edit" ||
     raw === "merge" ||
     raw === "split" ||

@@ -6,6 +6,7 @@ import {
   Languages,
   Pencil,
   Scissors,
+  Signature,
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -26,6 +27,7 @@ type Props = {
 
 const toolIcons: Record<ToolId, LucideIcon> = {
   edit: Pencil,
+  sign: Signature,
   translate: Languages,
   merge: Combine,
   split: Scissors,
@@ -34,6 +36,7 @@ const toolIcons: Record<ToolId, LucideIcon> = {
 
 const toolHindiNames: Record<ToolId, string> = {
   edit: "हिंदी एडिट",
+  sign: "हस्ताक्षर करें",
   translate: "अनुवाद",
   merge: "मर्ज (जोड़ें)",
   split: "स्प्लिट (अलग करें)",

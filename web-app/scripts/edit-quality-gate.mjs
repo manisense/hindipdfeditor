@@ -707,6 +707,45 @@ async function spellCheckCase(browser) {
   await page.close();
 }
 
+async function signCase(browser) {
+  const file = path.join(fixtures, "multipage-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await page.goto(baseUrl + "/tools/sign-pdf/", { waitUntil: "networkidle" });
+  await page.locator("input[type=file]").first().setInputFiles(file);
+  await page.getByRole("button", { name: "Type", exact: true }).click();
+  await page.getByLabel("Your name (Hindi or English)").fill("मनीष शर्मा");
+  await page.getByRole("button", { name: "Use this signature" }).click();
+  await page.getByRole("radio", { name: "Every page" }).click();
+  await page.getByRole("radio", { name: "Bottom right" }).click();
+  const download = page.waitForEvent("download", { timeout: 120000 });
+  await page.getByRole("button", { name: /Download signed PDF/ }).click();
+  const signed = new Uint8Array((await import("node:fs")).readFileSync(await (await download).path()));
+  const original = new Uint8Array((await import("node:fs")).readFileSync(file));
+  const doc = await pdfjs.getDocument({ data: signed.slice(), verbosity: 0 }).promise;
+  assert.equal(doc.numPages, 3, "every page is kept");
+  const viewport = (await doc.getPage(1)).getViewport({ scale: 1.5 });
+  await doc.destroy();
+  const [w, h] = [Math.round(viewport.width), Math.round(viewport.height)];
+  for (let i = 0; i < 3; i++) {
+    assert.equal(await pageText(signed, i), await pageText(original, i), "page text is unchanged");
+    const a = await pagePixels(original, i);
+    const b = await pagePixels(signed, i);
+    let inCorner = 0;
+    let elsewhere = 0;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const k = (y * w + x) * 4;
+        if (Math.abs(a[k] - b[k]) + Math.abs(a[k + 1] - b[k + 1]) + Math.abs(a[k + 2] - b[k + 2]) <= 96) continue;
+        if (x > w / 2 && y > h * 0.75) inCorner++;
+        else elsewhere++;
+      }
+    }
+    assert.ok(inCorner > 200 && elsewhere === 0, "page " + (i + 1) + ": signature only at the bottom right (" + inCorner + " / " + elsewhere + " px)");
+  }
+  console.log("SIGN_OK typed Hindi signature on all 3 pages at the bottom right; page text unchanged");
+  await page.close();
+}
+
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
@@ -721,6 +760,7 @@ try {
   await glyphRepairCase(browser);
   await findReplaceFlowCase(browser);
   await spellCheckCase(browser);
+  await signCase(browser);
 } finally {
   await browser.close();
 }

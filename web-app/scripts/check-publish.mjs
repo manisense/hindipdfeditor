@@ -10,7 +10,7 @@ const root = path.resolve(
 );
 const canonicalFor = (html) =>
   html.match(/<link rel="canonical" href="([^"]+)"/)?.[1];
-assert.equal(new Set(routes.map((tool) => tool.path)).size, 5);
+assert.equal(new Set(routes.map((tool) => tool.path)).size, routes.length, "tool paths are unique");
 for (const route of routes) {
   const html = readFileSync(path.join(root, route.path, "index.html"), "utf8");
   assert.equal(canonicalFor(html), `https://hindipdfeditor.com${route.path}`);
@@ -70,5 +70,5 @@ for (const stylesheet of [
   }
 }
 console.log(
-  "Publish artifact checks passed: root/locales, 5 tools, assets, worker, sitemap, 404.",
+  `Publish artifact checks passed: root/locales, ${routes.length} tools, assets, worker, sitemap, 404.`,
 );

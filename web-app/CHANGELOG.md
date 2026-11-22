@@ -1,5 +1,17 @@
 # Changelog
 
+## Sign PDF, 23 November 2026
+
+### Added
+- New tool, **Sign PDF** (`/tools/sign-pdf/`): make a signature by drawing it, typing your name (Hindi or English, shaped by the browser, black or blue, sans or serif) or uploading a photo of it (its white paper made transparent by default), then place it by hand (sign this page, drag, resize from the corner, remove), on every page, or on chosen pages ("1, 3-5", Hindi digits too) at one of six positions with an adjustable width. The download is built on the editor's export (unsigned pages copied unchanged, rotation handled, output re-opened). Runs in the browser. The tool says it adds an electronic signature image, not a certificate-based digital signature (web ADR 0011).
+- Listed in the tool bar, the homepage menu and footer, `llms.txt` and `llms-full.txt`; its page, sitemap entry and redirects come from `tool-routes.json`.
+- Gate case `SIGN_OK`: a typed Hindi signature on every page of the multipage fixture lands only in the bottom-right corner and the page text is unchanged. Smoke test covers the tool's route.
+
+### Fixed
+- The "Selected PDF" label stayed English on Hindi screens (a default value hid the Hindi text).
+- Footer links to the editor's Replace and Add text modes were broken on the Hindi homepage (two `?` in the URL).
+- The publish check no longer hard-codes five tools.
+
 ## Hindi spell check, 23 November 2026
 
 ### Added
