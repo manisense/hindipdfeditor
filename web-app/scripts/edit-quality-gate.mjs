@@ -1,8 +1,8 @@
 // Edit quality gate: replacing text with itself must leave the page as it was, a one-word edit
 // must change only that word, a whiteout must delete the text it covers and a highlight must keep
 // the text it marks readable, inserted images and signatures must land where they were put, and
-// unexported edits must survive a reload, and new words in faux-bold (stroked) lines must be as
-// heavy as the original. Runs the real editor in Chrome against a preview or production.
+// unexported edits must survive a reload, new words in faux-bold (stroked) lines must be as
+// heavy as the original, and a line that grows must flow into the next line of its paragraph. Runs the real editor in Chrome against a preview or production.
 //   SMOKE_BASE_URL=http://127.0.0.1:8788 node web-app/scripts/edit-quality-gate.mjs
 // Requires Playwright (resolvable through NODE_PATH) and system Chrome.
 import assert from "node:assert/strict";
@@ -155,7 +155,10 @@ async function oneWordCase(browser) {
     field.setSelectionRange(field.value.length, field.value.length);
   });
   for (let i = 0; i < before.length - before.trimEnd().length + last.length; i++) await page.keyboard.press("Backspace");
-  await page.keyboard.type("Updated");
+  // The same letters reversed: a word of the same length, so the line does not grow into the
+  // next line of its paragraph (paragraphFlowCase covers that).
+  const replacement = [...last].reverse().join("");
+  await page.keyboard.type(replacement);
   await page.keyboard.press("Escape");
   await page.waitForTimeout(300);
   const exported = await exportPdf(page);
@@ -166,7 +169,7 @@ async function oneWordCase(browser) {
   }
   const inkShare = await inkHeightAfterWord(exported, 1, words[words.length - 2]);
   assert.ok(inkShare >= 0.5, "edited word drawn at the original size (ink " + inkShare.toFixed(2) + " of the font size)");
-  console.log("ONE_WORD_OK", JSON.stringify(last), "→ Updated; kept", words.length - 1, "words as original text; new word ink", inkShare.toFixed(2), "of font size");
+  console.log("ONE_WORD_OK", JSON.stringify(last), "→", JSON.stringify(replacement) + "; kept", words.length - 1, "words as original text; new word ink", inkShare.toFixed(2), "of font size");
   await page.close();
 }
 
@@ -502,6 +505,75 @@ async function fauxBoldCase(browser) {
   await page.close();
 }
 
+/** Top and bottom of each row of ink in a box given as page-size shares, in px. */
+function inkRows(rgba, width, height, share) {
+  const x0 = Math.round(share.x * width);
+  const x1 = Math.round((share.x + share.w) * width);
+  const y0 = Math.round(share.y * height);
+  const y1 = Math.round((share.y + share.h) * height);
+  const rows = [];
+  let start = null;
+  for (let y = y0; y <= y1; y++) {
+    let ink = false;
+    for (let x = x0; x < x1 && !ink && y < y1; x++) {
+      const i = (y * width + x) * 4;
+      ink = rgba[i] + rgba[i + 1] + rgba[i + 2] < 450;
+    }
+    if (ink && start === null) start = y;
+    if (!ink && start !== null) {
+      rows.push([start, y - 1]);
+      start = null;
+    }
+  }
+  return rows;
+}
+
+async function paragraphFlowCase(browser) {
+  const file = path.join(fixtures, "translation-bilingual-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await openPdf(page, file, 1);
+  // "Please approve the application after verifying all supporting" / "documents."
+  const first = await lineBox(page, 3);
+  const second = await lineBox(page, 4);
+  const region = {
+    x: first.share.x - 0.01,
+    y: first.share.y - first.share.h * 0.5,
+    w: 0.85 - first.share.x,
+    h: second.share.y + second.share.h * 1.5 - (first.share.y - first.share.h * 0.5),
+  };
+  await page.mouse.click(first.screen.x + first.screen.w / 2, first.screen.y + first.screen.h / 2);
+  await page.waitForTimeout(800);
+  await page.evaluate(() => {
+    const field = document.activeElement;
+    const at = field.value.indexOf("application") + "application".length;
+    field.setSelectionRange(at, at);
+  });
+  await page.keyboard.type(" and the attached forms", { delay: 10 });
+  await page.waitForTimeout(300);
+  const typed = await page.evaluate(() => document.activeElement.value);
+  assert.ok(typed.endsWith("supporting documents."), "the next line of the paragraph is taken into the edit: " + typed);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+
+  const exported = await exportPdf(page);
+  const original = new Uint8Array((await import("node:fs")).readFileSync(file));
+  const text = await pageText(exported, 1);
+  assert.ok(!text.replace(/\s+/g, "").includes("documents."), "the taken line is redrawn with the paragraph, not left as text");
+  assert.ok(text.replace(/\s+/g, "").includes("EmployeeName:SeemaSharma"), "lines outside the paragraph keep their text");
+  const doc = await pdfjs.getDocument({ data: exported.slice(), verbosity: 0 }).promise;
+  const viewport = (await doc.getPage(2)).getViewport({ scale: 1.5 });
+  await doc.destroy();
+  const [w, h] = [Math.round(viewport.width), Math.round(viewport.height)];
+  const before = inkRows(await pagePixels(original, 1), w, h, region);
+  const after = inkRows(await pagePixels(exported, 1), w, h, region);
+  assert.equal(after.length, before.length, "the paragraph keeps its number of lines: " + JSON.stringify(after));
+  for (const [k, [top]] of before.entries()) {
+    assert.ok(Math.abs(after[k][0] - top) <= 3, "line " + (k + 1) + " stays on its row (" + after[k][0] + " vs " + top + " px)");
+  }
+  console.log("PARAGRAPH_FLOW_OK grown line took in the next line; rows", JSON.stringify(after), "vs original", JSON.stringify(before));
+  await page.close();
+}
+
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
@@ -511,6 +583,7 @@ try {
   await imagesCase(browser);
   await autosaveCase(browser);
   await fauxBoldCase(browser);
+  await paragraphFlowCase(browser);
 } finally {
   await browser.close();
 }

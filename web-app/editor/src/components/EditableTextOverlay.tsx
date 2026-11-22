@@ -39,6 +39,8 @@ export function EditableTextOverlay({
   onFocus,
 }: Props) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  /** Caret after the user's last change, restored if the text then grows elsewhere (paragraph flow). */
+  const caretRef = useRef<number | null>(null);
   const { xDp, yDp } = ptToDp(edit.xPt, edit.yPt, viewWidthPx, pageWidthPt);
   const fontSizePx = edit.fontSizePt * (viewWidthPx / pageWidthPt);
   const widthPx =
@@ -48,9 +50,17 @@ export function EditableTextOverlay({
 
   useLayoutEffect(() => {
     const input = inputRef.current;
+    const caret = caretRef.current;
+    caretRef.current = null;
+    if (!input || caret === null || document.activeElement !== input) return;
+    if (input.selectionStart !== caret) input.setSelectionRange(caret, caret);
+  }, [edit.text]);
+
+  useLayoutEffect(() => {
+    const input = inputRef.current;
     if (!input) return;
     resizeTextAreaToContent(input);
-  }, [edit.fontFamily, edit.fontWeight, edit.fontStyle, edit.text, fontSizePx, widthPx]);
+  }, [edit.fontFamily, edit.fontWeight, edit.fontStyle, edit.lineHeightPt, edit.text, fontSizePx, widthPx]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,6 +108,7 @@ export function EditableTextOverlay({
       value={edit.text}
       onChange={(e) => {
         const field = e.target;
+        caretRef.current = field.selectionStart;
         const converted = romanTyping
           ? transliterateBeforeCaret(field.value, field.selectionStart ?? field.value.length)
           : null;
@@ -125,7 +136,7 @@ export function EditableTextOverlay({
         left: xDp,
         top: yDp,
         fontSize: fontSizePx,
-        lineHeight: TEXT_LINE_HEIGHT,
+        lineHeight: edit.lineHeightPt === undefined ? TEXT_LINE_HEIGHT : `${edit.lineHeightPt * (viewWidthPx / pageWidthPt)}px`,
         overflowWrap: TEXT_OVERFLOW_WRAP,
         color: edit.color,
         fontFamily: cssFontStack(edit.fontFamily),

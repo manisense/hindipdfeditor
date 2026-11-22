@@ -49,6 +49,8 @@ import {
   ensureFontsLoaded,
   type EditFontFamily,
   isSerifFamily,
+  measureTextWidthPt,
+  normalLineHeightRatio,
 } from "../lib/fontAsset";
 import type { TranslationDirection } from "@hindipdfeditor/translation-contract";
 
@@ -56,6 +58,7 @@ import { translateOcrLines } from "../lib/geminiTranslate";
 import { detectLegacyFonts, isConvertibleLegacyFont } from "../lib/legacyFontDetector";
 import { shouldDismissFocusedEdit } from "../lib/editPointerIntent";
 import { findInDocument } from "../lib/findReplace";
+import { flowIntoParagraph } from "../lib/paragraphFlow";
 import { lineReplacementFor } from "../lib/lineReplacement";
 import { cleanedRegionPreview } from "../lib/maskPreview";
 import {
@@ -124,7 +127,8 @@ function savedAtLabel(savedAt: number, lang: string): string {
 }
 
 type OcrStatusByPage = Record<number, "running" | "done" | "failed">;
-type EditPairing = { maskId?: string; ocrLine?: OcrLine };
+/** What a replacement took over: its mask, the line it replaced and lines its paragraph flowed into. */
+type EditPairing = { maskId?: string; ocrLine?: OcrLine; absorbed?: OcrLine[] };
 
 type Status =
   | { state: "idle" }
@@ -288,6 +292,7 @@ export function EditPdfTool() {
   const addImageEdit = useEditStore((s) => s.addImageEdit);
   const updateImageEdit = useEditStore((s) => s.updateImageEdit);
   const updateTextEdit = useEditStore((s) => s.updateTextEdit);
+  const updateMaskEdit = useEditStore((s) => s.updateMaskEdit);
   const removeEdit = useEditStore((s) => s.removeEdit);
   const setOcrLines = useEditStore((s) => s.setOcrLines);
   const setPageImage = useEditStore((s) => s.setPageImage);
@@ -1024,13 +1029,54 @@ export function EditPdfTool() {
     if (consumedOcrLine) setSelectAllEditId(textEdit.id);
   };
 
+  /**
+   * Updates an edit's text and, for a replaced line, lets it flow into the rest of its paragraph
+   * when it no longer fits (see flowIntoParagraph).
+   */
+  const handleEditTextChange = (editId: string, text: string) => {
+    const pageIndex = currentPageIndex;
+    updateTextEdit(pageIndex, editId, { text });
+    const pageState = useEditStore.getState().document?.pages[pageIndex];
+    const edit = pageState?.edits.find((e): e is TextEdit => e.type === "text" && e.id === editId);
+    const pairing = editPairingsRef.current.get(editId);
+    if (!pageState || !edit || !pairing?.ocrLine || !pairing.maskId) return;
+    const measure = (run: string) =>
+      measureTextWidthPt(run, edit.fontFamily, edit.fontWeight ?? "normal", edit.fontSizePt);
+    const covered = [pairing.ocrLine, ...(pairing.absorbed ?? [])];
+    const flow = flowIntoParagraph(edit.text, edit.xPt, covered, pageState.ocrLines, measure);
+    if (!flow) return;
+    const takenIds = new Set(flow.absorbed.map((line) => line.id));
+    setOcrLines(pageIndex, pageState.ocrLines.filter((line) => !takenIds.has(line.id)));
+    updateMaskEdit(pageIndex, pairing.maskId, flow.rect);
+    const previousLineHeight = edit.lineHeightPt;
+    // Word-level redrawing no longer applies once the text spans several lines.
+    updateTextEdit(pageIndex, editId, {
+      text: flow.text,
+      widthPt: flow.widthPt,
+      lineHeightPt: flow.lineHeightPt,
+      original: undefined,
+    });
+    editPairingsRef.current.set(editId, { ...pairing, absorbed: [...(pairing.absorbed ?? []), ...flow.absorbed] });
+    // An explicit line height adds half its extra leading above the first line: move the box up
+    // by the change in that, so the first line stays on its original baseline.
+    void normalLineHeightRatio(edit.fontFamily, edit.fontWeight ?? "normal", edit.fontStyle, edit.text).then((ratio) => {
+      if (ratio === undefined) return;
+      const live = useEditStore.getState().document?.pages[pageIndex]?.edits.find((e) => e.id === editId);
+      if (!live || live.type !== "text" || live.lineHeightPt !== flow.lineHeightPt) return;
+      const halfLeading = (lineHeightPt: number | undefined) =>
+        lineHeightPt === undefined ? 0 : (lineHeightPt - ratio * edit.fontSizePt) / 2;
+      const shift = halfLeading(flow.lineHeightPt) - halfLeading(previousLineHeight);
+      if (shift !== 0) updateTextEdit(pageIndex, editId, { yPt: live.yPt - shift });
+    });
+  };
+
   const removeEditGroup = (id: string) => {
     const pairing = editPairingsRef.current.get(id);
     checkpoint();
     removeEdit(currentPageIndex, id);
     if (pairing?.maskId) removeEdit(currentPageIndex, pairing.maskId);
     if (pairing?.ocrLine && page) {
-      setOcrLines(currentPageIndex, [...page.ocrLines, pairing.ocrLine]);
+      setOcrLines(currentPageIndex, [...page.ocrLines, pairing.ocrLine, ...(pairing.absorbed ?? [])]);
     }
     editPairingsRef.current.delete(id);
     if (focusedEditId === id) setFocusedEditId(null);
@@ -1808,9 +1854,7 @@ export function EditPdfTool() {
                             setSelectAllEditId(null);
                           return true;
                         }}
-                        onChangeText={(text) =>
-                          updateTextEdit(currentPageIndex, edit.id, { text })
-                        }
+                        onChangeText={(text) => handleEditTextChange(edit.id, text)}
                         onBlur={() => handleBlur(edit.id, edit.text)}
                       />
                     ))}

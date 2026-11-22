@@ -16,6 +16,12 @@ export type TextEdit = {
   fontStyle?: 'italic';
   /** Stroke painted around the glyphs, as a share of the font size (matches a faux-bold original). */
   strokeEm?: number;
+  /**
+   * Baseline-to-baseline distance when the text wraps, in PDF points: set when an edit flows into
+   * the rest of its paragraph, so wrapped lines keep the paragraph's spacing. Absent: the font's
+   * normal line height.
+   */
+  lineHeightPt?: number;
   widthPt?: number;
   /** The mask that clears the original text under this edit, for replacements. */
   maskId?: string;

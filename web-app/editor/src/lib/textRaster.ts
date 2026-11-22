@@ -1,4 +1,4 @@
-import { baselineOffsetRatio, cssFontStack, ensureFontsLoaded } from './fontAsset';
+import { baselineOffsetRatio, cssFontStack, ensureFontsLoaded, normalLineHeightRatio } from './fontAsset';
 import {
   TEXT_FRAGMENT_PAD_RATIO,
   TEXT_RENDER_PX_PER_PT,
@@ -102,7 +102,14 @@ export async function rasteriseTextEdits(edits: readonly TextEdit[]): Promise<Ma
       const lines = groupIntoLines(graphemes, fontPx);
       if (lines.length === 0) continue;
       const lineHeightPx = spanBox.height / lines.length;
-      const firstBaseline = spanBox.top - containerBox.top + ratio * fontPx;
+      // An explicit line height adds half its extra leading above the first line, as CSS does.
+      const normalRatio =
+        edit.lineHeightPt === undefined ? undefined : await normalLineHeightRatio(family, weight, edit.fontStyle, edit.text);
+      const halfLeading =
+        edit.lineHeightPt === undefined || normalRatio === undefined
+          ? 0
+          : (edit.lineHeightPt * TEXT_RENDER_PX_PER_PT - normalRatio * fontPx) / 2;
+      const firstBaseline = spanBox.top - containerBox.top + halfLeading + ratio * fontPx;
 
       const canvas = document.createElement('canvas');
       canvas.width = Math.ceil(containerBox.width);
