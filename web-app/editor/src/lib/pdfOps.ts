@@ -1,5 +1,6 @@
 import { PDFDocument } from "@cantoo/pdf-lib";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+import { pdfjsDocumentParams } from './pdfjsParams';
 
 import { validatePdfBytes } from "./pdfValidation";
 import { downloadPdfBlob } from "./exportPdf";
@@ -94,7 +95,7 @@ export async function compressPdfFile(
 ): Promise<{ bytes: Uint8Array; pageCount: number; originalBytes: number }> {
   const originalBytes = file.size;
   const data = await fileToBytes(file);
-  const pdf = await pdfjs.getDocument({ data: data.slice() }).promise;
+  const pdf = await pdfjs.getDocument(pdfjsDocumentParams(data.slice())).promise;
   const out = await PDFDocument.create();
 
   for (let i = 1; i <= pdf.numPages; i++) {

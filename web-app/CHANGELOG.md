@@ -1,5 +1,10 @@
 # Changelog
 
+## Scans with JPEG 2000 images open, 22 November 2026
+
+### Fixed
+- Pages whose images are JPEG 2000 (common in scanned government PDFs) were blank in the editor and in Translate, Split and Compress: pdf.js had no URL for its image decoders ("OpenJPEG failed to initialize"). pdf.js now gets its decoders (JPEG 2000, JBIG2), character maps, standard font data and ICC profiles from `/edit/pdfjs/`, copied at build time from the installed `pdfjs-dist` by `scripts/copy-pdfjs-assets.mjs`. Text in predefined-CMap (CJK) and non-embedded standard fonts now reads correctly as well.
+
 ## Longer words push the line along, 22 November 2026
 
 ### Changed

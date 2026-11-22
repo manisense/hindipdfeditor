@@ -12,6 +12,7 @@ import {
   type PDFPage,
 } from '@cantoo/pdf-lib';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { pdfjsDocumentParams } from './pdfjsParams';
 
 import type { Matrix, UserRect } from './contentStreamText';
 import { applyChangedSpans } from './changedSpan';
@@ -109,7 +110,7 @@ async function cleanedPatches(
   pageIndex: number,
   rects: EditorRect[],
 ): Promise<Uint8Array[]> {
-  const doc = await pdfjs.getDocument({ data: pdfBytes.slice() }).promise;
+  const doc = await pdfjs.getDocument(pdfjsDocumentParams(pdfBytes.slice())).promise;
   try {
     const page = await doc.getPage(pageIndex + 1);
     const viewport = page.getViewport({ scale: PATCH_PX_PER_PT });
@@ -150,7 +151,7 @@ async function rectsWithRemainingText(
   pageIndex: number,
   rects: EditorRect[],
 ): Promise<Set<number>> {
-  const doc = await pdfjs.getDocument({ data: pdfBytes.slice() }).promise;
+  const doc = await pdfjs.getDocument(pdfjsDocumentParams(pdfBytes.slice())).promise;
   try {
     const page = await doc.getPage(pageIndex + 1);
     const viewport = page.getViewport({ scale: 1 });
@@ -310,7 +311,7 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
 
   const transforms = new Map<number, Matrix>();
   if (loaded) {
-    const source = await pdfjs.getDocument({ data: sourcePdfBytes.slice() }).promise;
+    const source = await pdfjs.getDocument(pdfjsDocumentParams(sourcePdfBytes.slice())).promise;
     try {
       for (const page of editedPages) {
         const viewport = (await source.getPage(page.pageIndex + 1)).getViewport({ scale: 1 });

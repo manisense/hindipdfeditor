@@ -4,14 +4,14 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run copy:ocr && vite",
-    "build": "npm run copy:ocr && tsc --noEmit && vite build && vite build --ssr src/prerender.tsx --outDir .prerender && node ../scripts/prepare-publish.mjs",
+    "dev": "npm run copy:assets && vite",
+    "build": "npm run copy:assets && tsc --noEmit && vite build && vite build --ssr src/prerender.tsx --outDir .prerender && node ../scripts/prepare-publish.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src --max-warnings 0",
     "deploy": "node ../scripts/wrangler-project.mjs deploy",
-    "copy:ocr": "node scripts/copy-ocr-assets.mjs"
+    "copy:assets": "node scripts/copy-ocr-assets.mjs && node scripts/copy-pdfjs-assets.mjs"
   },
   "dependencies": {
     "@anthro-ai/krutidev-unicode": "0.1.0",
