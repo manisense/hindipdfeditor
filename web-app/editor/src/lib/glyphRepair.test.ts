@@ -102,3 +102,21 @@ describe('borrowReadings', () => {
     expect(borrowReadings(readings, signatures).has(c)).toBe(false);
   });
 });
+
+describe('glyph learning across symbols and ambiguous widths', () => {
+  it('learns from Devanagari neighbours only, so a misread arrow does not block it', () => {
+    const map = learnGlyphs([{ embedded: `धम${REPH} → reph`, ocr: 'धर्म > reph' }], isUnknown);
+    expect(map.get(REPH)).toEqual({ text: 'र्', shift: -1 });
+  });
+
+  it('borrows the reading whose place fits: a glyph drawn before a consonant is a pre-base sign', () => {
+    const iLong = '\u{F0020}';
+    const iShort = '\u{F0021}';
+    const iiLong = '\u{F0022}';
+    const signatures = new Map([[iLong, 'Noto|259'], [iShort, 'Noto|259'], [iiLong, 'Noto|259']]);
+    const readings = new Map([[iLong, { text: 'ि', shift: 1 }], [iiLong, { text: 'ी', shift: 0 }]]);
+    const placeOf = new Map([[iShort, 'pre' as const]]);
+    expect(borrowReadings(readings, signatures, placeOf).get(iShort)).toEqual({ text: 'ि', shift: 1 });
+    expect(borrowReadings(readings, signatures, new Map([[iShort, 'post' as const]])).get(iShort)).toEqual({ text: 'ी', shift: 0 });
+  });
+});

@@ -32,7 +32,7 @@ import {
   repairText,
   spacedLike,
 } from "./glyphRepair";
-import { getPdfBytes } from "./pdfToImages";
+import { getPdfBytes, renderRegion } from "./pdfToImages";
 import type { RecognizedLine } from "./recognizedLine";
 import type { OcrLine, PageState } from "../state/editStore";
 
@@ -303,12 +303,19 @@ async function repairedEmbeddedLines(
     keepGlyphPlaceholders: true,
   });
   if (!withGlyphs.some((line) => hasGlyphPlaceholder(line.text))) return null;
-  const readings = learnDocumentGlyphs(pdfBytes, pairLinesWithOcr(withGlyphs, ocrLines));
+  // Lines with unmapped glyphs are read again from a sharp render of their own area; their OCR
+  // then teaches and confirms the glyphs. Other lines use the page's OCR.
+  const sharp = await sharpLineOcr(page, withGlyphs.filter((line) => hasGlyphPlaceholder(line.text)));
+  const ocrFor = (line: OcrLine) => ocrLineFor(line, sharp) ?? ocrLineFor(line, ocrLines);
+  const readings = learnDocumentGlyphs(pdfBytes, [
+    ...pairLinesWithOcr(withGlyphs, sharp),
+    ...pairLinesWithOcr(withGlyphs.filter((line) => !ocrLineFor(line, sharp)), ocrLines),
+  ]);
   const lines = withGlyphs.map((line) => ({ ...line, text: repairText(line.text, readings, isGlyphPlaceholder) }));
   // A repaired word must also be in OCR of its line: a reading learned from one misread word
   // must not put a wrong letter into the text.
   const confirmed = (line: OcrLine, drawn: string) => {
-    const ocr = ocrLineFor(line, ocrLines)?.text.normalize("NFC").replace(/\s+/gu, "") ?? "";
+    const ocr = ocrFor(line)?.text.normalize("NFC").replace(/\s+/gu, "") ?? "";
     return drawn
       .split(/\s+/u)
       .filter((word) => hasGlyphPlaceholder(word))
@@ -322,13 +329,45 @@ async function repairedEmbeddedLines(
   const repaired = lines
     .filter((line) => !unresolved.some((open) => sameBand(open, line)))
     .map((line) => {
-      const ocr = hasDevanagari(line.text) ? ocrLineFor(line, ocrLines) : null;
+      const ocr = hasDevanagari(line.text) ? ocrFor(line) : null;
       return ocr ? { ...line, text: spacedLike(line.text, ocr.text) } : line;
     });
   const hindi = repaired.filter((line) => hasDevanagari(line.text));
   if (hindi.length === 0) return null;
   if (isEmbeddedDevanagariCorrupted(hindi.map((line) => line.text).join(" "), ocrText)) return null;
   return repaired;
+}
+
+/** Render scale for re-reading lines, in px per pt: small print needs it, page images are 2. */
+const SHARP_OCR_PX_PER_PT = 4;
+/** Most lines re-read per page, so a page full of unmapped glyphs stays quick. */
+const MAX_SHARP_LINES = 20;
+
+/**
+ * Hindi OCR of each line's own area rendered sharply from the PDF, with the line's box. Lines
+ * that fail to read are left out.
+ */
+async function sharpLineOcr(page: PageState, lines: OcrLine[]): Promise<OcrLine[]> {
+  const worker = await getWorker("hin");
+  const read: OcrLine[] = [];
+  for (const line of lines.slice(0, MAX_SHARP_LINES)) {
+    const padX = line.hPt * 0.5;
+    const padY = line.hPt * 0.35;
+    const rect = {
+      xPt: Math.max(0, line.xPt - padX),
+      yPt: Math.max(0, line.yPt - padY),
+      wPt: Math.min(page.widthPt, line.xPt + line.wPt + padX) - Math.max(0, line.xPt - padX),
+      hPt: Math.min(page.heightPt, line.yPt + line.hPt + padY) - Math.max(0, line.yPt - padY),
+    };
+    try {
+      const { data } = await worker.recognize(await renderRegion(page.pageIndex, rect, SHARP_OCR_PX_PER_PT));
+      const text = trimOcrBorderNoise(data.text.replace(/\s+/gu, " ")).normalize("NFC");
+      if (text) read.push({ ...line, text });
+    } catch (error) {
+      console.warn("Sharp line OCR failed", error);
+    }
+  }
+  return read;
 }
 
 /** Whether two line boxes share at least half the smaller one's height (pt): one visual row. */

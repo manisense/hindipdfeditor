@@ -21,6 +21,7 @@ const VIRAMA = '्';
 const MIN_VOTES = 1;
 const MIN_SHARE = 0.75;
 
+const isDevanagari = (char: string) => /[\u0900-\u097f]/u.test(char);
 const isDevanagariSign = (char: string) => /[ऀ-ःऺ-ॏ॑-ॗॢॣ]/u.test(char);
 
 /**
@@ -98,7 +99,8 @@ function repairWord(
 /** Known syllables taken on each side of a glyph to find it in the OCR line. */
 const CONTEXT_SYLLABLES = 2;
 /** Fewest known characters around a glyph for its context to be trusted. */
-const MIN_CONTEXT_CHARS = 3;
+const MIN_CONTEXT_CHARS = 2;
+
 /** Longest text one glyph can stand for (a conjunct with signs). */
 const MAX_GLYPH_CHARS = 6;
 
@@ -150,6 +152,7 @@ function contextAround(
 ): { known: string; at: number; blocked: boolean } {
   const chars = [...text];
   let blocked = false;
+  // Only Devanagari letters: OCR misreads symbols (→ as >) and Latin in Hindi lines.
   let before = '';
   for (let i = index - 1; i >= 0; i--) {
     const next = chars[i] + before;
@@ -158,6 +161,7 @@ function contextAround(
       blocked = true;
       break;
     }
+    if (!isDevanagari(chars[i])) break;
     before = next;
   }
   let after = '';
@@ -168,6 +172,7 @@ function contextAround(
       blocked = true;
       break;
     }
+    if (!isDevanagari(chars[i])) break;
     after = next;
   }
   return { known: before + after, at: before.length, blocked };
@@ -319,16 +324,39 @@ export function glyphPlaceholder(pdfBytes: Uint8Array, glyphKey: string, signatu
   return char;
 }
 
+/** Where a glyph is drawn in its words: always before a consonant, always after a letter, or both. */
+export type GlyphPlace = 'pre' | 'post' | 'mixed';
+
+/** Where each placeholder is drawn across lines of PDF text (see {@link GlyphPlace}). */
+export function glyphPlaces(texts: readonly string[], isPlaceholder: (char: string) => boolean): Map<string, GlyphPlace> {
+  const places = new Map<string, GlyphPlace>();
+  for (const text of texts) {
+    const chars = [...text];
+    chars.forEach((char, i) => {
+      if (!isPlaceholder(char)) return;
+      const previous = chars[i - 1] ?? ' ';
+      const next = chars[i + 1] ?? ' ';
+      const place: GlyphPlace = !isDevanagari(previous) && CONSONANT.test(next) ? 'pre' : isDevanagari(previous) ? 'post' : 'mixed';
+      const seen = places.get(char);
+      places.set(char, seen && seen !== place ? 'mixed' : place);
+    });
+  }
+  return places;
+}
+
 /**
  * Readings for unlearned glyphs taken from learned glyphs with the same signature (font name and
  * a non-zero advance width), when every learned glyph with that signature reads the same.
- * Zero-width glyphs (marks) are never shared: too many different marks have no width.
+ * Zero-width glyphs (marks) are never shared: too many different marks have no width. Where
+ * the glyph is drawn picks between readings that share a width (ि and ी can).
  *
  * @param signatureOf Signature by placeholder character.
+ * @param placeOf Where each placeholder is drawn (see {@link glyphPlaces}).
  */
 export function borrowReadings(
   readings: ReadonlyMap<string, GlyphReading>,
   signatureOf: ReadonlyMap<string, string>,
+  placeOf: ReadonlyMap<string, GlyphPlace> = new Map(),
 ): Map<string, GlyphReading> {
   const bySignature = new Map<string, Set<string>>();
   for (const [char, reading] of readings) {
@@ -341,8 +369,14 @@ export function borrowReadings(
   const borrowed = new Map(readings);
   for (const [char, signature] of signatureOf) {
     if (borrowed.has(char)) continue;
-    const agreed = bySignature.get(signature);
-    if (agreed?.size === 1) borrowed.set(char, JSON.parse([...agreed][0]) as GlyphReading);
+    const place = placeOf.get(char);
+    // Where the glyph is drawn narrows the candidates: before a consonant it is a pre-base sign
+    // (moves forward); after a letter it is not.
+    const fitting = [...(bySignature.get(signature) ?? [])].filter((candidate) => {
+      const { shift } = JSON.parse(candidate) as GlyphReading;
+      return place === 'pre' ? shift > 0 : place === 'post' ? shift <= 0 : true;
+    });
+    if (fitting.length === 1) borrowed.set(char, JSON.parse(fitting[0]) as GlyphReading);
   }
   return borrowed;
 }
@@ -401,9 +435,10 @@ export function learnDocumentGlyphs(pdfBytes: Uint8Array, pagePairs: readonly Li
   pairsByDocument.set(pdfBytes, pairs);
   const signatureOf = placeholdersByDocument.get(pdfBytes)?.signatureOf ?? new Map<string, string>();
   // Learning and borrowing feed each other: a borrowed ि lets the conjunct after it be learned.
+  const placeOf = glyphPlaces(pairs.map((pair) => pair.embedded), isGlyphPlaceholder);
   let readings = learnGlyphs(pairs, isGlyphPlaceholder);
   for (let round = 0; round < 3; round++) {
-    const borrowed = borrowReadings(readings, signatureOf);
+    const borrowed = borrowReadings(readings, signatureOf, placeOf);
     if (borrowed.size === readings.size) break;
     readings = learnGlyphs(pairs, isGlyphPlaceholder, borrowed);
   }
