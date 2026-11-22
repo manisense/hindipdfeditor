@@ -61,12 +61,9 @@
   padding-bottom: 10px;
 }
 
-.app__toolbar-row--ai {
-  align-self: center;
-}
-
+.app__toolbar-row--ai,
 .app__toolbar-row--modes {
-  justify-content: flex-end;
+  grid-column: 1 / -1;
 }
 
 .app__pager {

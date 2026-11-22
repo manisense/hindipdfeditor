@@ -2,7 +2,8 @@
 // must change only that word, a whiteout must delete the text it covers and a highlight must keep
 // the text it marks readable, inserted images and signatures must land where they were put, and
 // unexported edits must survive a reload, new words in faux-bold (stroked) lines must be as
-// heavy as the original, and a line that grows must flow into the next line of its paragraph. Runs the real editor in Chrome against a preview or production.
+// heavy as the original, a line that grows must flow into the next line of its paragraph, and
+// page changes must keep each page's edits with it. Runs the real editor in Chrome against a preview or production.
 //   SMOKE_BASE_URL=http://127.0.0.1:8788 node web-app/scripts/edit-quality-gate.mjs
 // Requires Playwright (resolvable through NODE_PATH) and system Chrome.
 import assert from "node:assert/strict";
@@ -574,6 +575,45 @@ async function paragraphFlowCase(browser) {
   await page.close();
 }
 
+async function pageOpsCase(browser) {
+  const file = path.join(fixtures, "multipage-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await openPdf(page, file, 0);
+  // Whiteout the first line (the print date) of page 1, then move page 1 after page 2.
+  const date = await lineBox(page, 0);
+  await page.getByRole("button", { name: "Whiteout" }).click();
+  await dragBox(page, date.screen);
+  await page.locator(".mask-overlay__mask--whiteout").waitFor();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Pages", exact: true }).click();
+  await page.getByRole("button", { name: "Move page 1 later" }).click();
+  await page.getByText("Page 1 is now page 2.").waitFor();
+  await page.getByRole("button", { name: "Delete page 3" }).click();
+  await page.getByText("Page 3 deleted.").waitFor();
+  assert.equal(await page.locator(".pages-panel__card").count(), 2, "a deleted page leaves the list");
+  await page.getByRole("button", { name: "Undo" }).first().click();
+  await page.waitForTimeout(500);
+  assert.equal(await page.locator(".pages-panel__card").count(), 3, "Undo brings a deleted page back");
+  await page.getByRole("button", { name: "Add a blank page after page 3" }).click();
+  await page.getByText("Blank page added as page 4.").waitFor();
+
+  const exported = await exportPdf(page);
+  const doc = await pdfjs.getDocument({ data: exported.slice(), verbosity: 0 }).promise;
+  const texts = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    const content = await (await doc.getPage(i)).getTextContent();
+    texts.push(content.items.map((item) => item.str).join("").replace(/\s+/g, ""));
+  }
+  await doc.destroy();
+  assert.equal(texts.length, 4, "four pages after a move, a deleted-and-restored page and a blank page");
+  assert.ok(texts[0].startsWith("Page2of3") && texts[1].startsWith("Page1of3") && texts[2].startsWith("Page3of3"), "pages in their new order: " + texts.map((t) => t.slice(0, 8)).join(", "));
+  assert.equal(texts[3], "", "the added page is blank");
+  const dateText = (t) => /\d{2}\/\d{2}\/\d{4}/.test(t);
+  assert.ok(!dateText(texts[1]) && dateText(texts[0]) && dateText(texts[2]), "the whiteout moved with its page");
+  console.log("PAGE_OPS_OK moved, deleted and restored, added a blank page; order", texts.map((t) => t.slice(0, 8)).join(", "), "; whiteout stayed on its page");
+  await page.close();
+}
+
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
@@ -584,6 +624,7 @@ try {
   await autosaveCase(browser);
   await fauxBoldCase(browser);
   await paragraphFlowCase(browser);
+  await pageOpsCase(browser);
 } finally {
   await browser.close();
 }

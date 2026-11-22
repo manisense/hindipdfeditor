@@ -6,6 +6,7 @@ import {
   Download,
   Eraser,
   FileText,
+  Files,
   Highlighter,
   ImagePlus,
   Languages,
@@ -59,6 +60,8 @@ import { detectLegacyFonts, isConvertibleLegacyFont } from "../lib/legacyFontDet
 import { shouldDismissFocusedEdit } from "../lib/editPointerIntent";
 import { findInDocument } from "../lib/findReplace";
 import { flowIntoParagraph } from "../lib/paragraphFlow";
+import { applyPagePlan, newIndexOf, pagePlan, remapDocument, type PageOp } from "../lib/pageOps";
+import { PagesPanel } from "../components/PagesPanel";
 import { lineReplacementFor } from "../lib/lineReplacement";
 import { cleanedRegionPreview } from "../lib/maskPreview";
 import {
@@ -77,6 +80,7 @@ import {
   getPdfBytes,
   getPageSize,
   renderPage,
+  renderThumbnail,
   sampleAverageColor,
   samplePagePaperColor,
   sampleTextColor,
@@ -125,6 +129,16 @@ function savedAtLabel(savedAt: number, lang: string): string {
     savedAt,
   );
 }
+
+/** Everything a page change replaces, kept so Undo can put it back. */
+type PageOpRestore = {
+  bytes: Uint8Array;
+  document: DocumentState;
+  history: DocumentState[];
+  ocrStatus: Record<number, "running" | "done" | "failed">;
+  currentPageIndex: number;
+  pagesChanged: boolean;
+};
 
 type OcrStatusByPage = Record<number, "running" | "done" | "failed">;
 /** What a replacement took over: its mask, the line it replaced and lines its paragraph flowed into. */
@@ -242,7 +256,18 @@ export function EditPdfTool() {
   /** Document whose draft this visit wrote or restored, so only that draft is ever deleted. */
   const draftDocumentIdRef = useRef<string | null>(null);
   const [discardVisible, setDiscardVisible] = useState(false);
-  const dirty = hasUnexportedChanges(document, exportedSnapshot);
+  /** Pages were moved, turned, deleted or added since the last export. */
+  const [pagesChanged, setPagesChanged] = useState(false);
+  const dirty = hasUnexportedChanges(document, exportedSnapshot) || pagesChanged;
+  const [pagesOpen, setPagesOpen] = useState(false);
+  const [pageOpBusy, setPageOpBusy] = useState(false);
+  const [pageOpStatus, setPageOpStatus] = useState<string | null>(null);
+  /**
+   * State before each page change, newest last. A page change starts a new edit history; Undo
+   * steps back over it once the edits made after it have been undone.
+   */
+  const pageOpRestoreRef = useRef<PageOpRestore[]>([]);
+  const [pageOpUndoCount, setPageOpUndoCount] = useState(0);
 
   // Offer the draft kept from an earlier visit while no file is open.
   useEffect(() => {
@@ -299,7 +324,7 @@ export function EditPdfTool() {
   const checkpoint = useEditStore((s) => s.checkpoint);
   const undo = useEditStore((s) => s.undo);
   const redo = useEditStore((s) => s.redo);
-  const canUndo = useEditStore((s) => s.history.length > 0);
+  const canUndoEdit = useEditStore((s) => s.history.length > 0);
   const canRedo = useEditStore((s) => s.future.length > 0);
 
   useEffect(() => {
@@ -319,7 +344,7 @@ export function EditPdfTool() {
         pendingEditRequestRef.current += 1;
         setFocusedEditId(null);
         if (event.key.toLowerCase() === "y" || event.shiftKey) useEditStore.getState().redo();
-        else useEditStore.getState().undo();
+        else handleUndoRef.current();
         return;
       }
       if (event.key !== "Escape") return;
@@ -397,6 +422,10 @@ export function EditPdfTool() {
         Object.fromEntries((restored?.detectedPages ?? []).map((pageIndex) => [pageIndex, "done" as const])),
       );
       draftDocumentIdRef.current = restore ? newDocument.id : null;
+      pageOpRestoreRef.current = [];
+      setPageOpUndoCount(0);
+      setPagesChanged(false);
+      setPageOpStatus(null);
       setKeptDraft(null);
       setDraftKept(Boolean(restore));
       setEditMode(readEditModeFromLocation());
@@ -570,11 +599,102 @@ export function EditPdfTool() {
     redo();
   };
 
+  /** Puts back the state before the latest page change; false when there is none. */
+  const undoPageOp = (): boolean => {
+    const restore = pageOpRestoreRef.current.pop();
+    if (!restore) return false;
+    setPageOpUndoCount(pageOpRestoreRef.current.length);
+    setPdfBytes(restore.bytes);
+    pageImageRequestsRef.current.clear();
+    // Pages being read when the change was made are read again.
+    const ocrStatus = Object.fromEntries(
+      Object.entries(restore.ocrStatus).filter(([, status]) => status !== "running"),
+    ) as OcrStatusByPage;
+    ocrAttemptedPagesRef.current = new Set(Object.keys(ocrStatus).map(Number));
+    setOcrStatusByPage(ocrStatus);
+    useEditStore.setState({ document: restore.document, history: restore.history, future: [] });
+    setPagesChanged(restore.pagesChanged);
+    setCurrentPageIndex(restore.currentPageIndex);
+    ocrPriorityPageRef.current = restore.currentPageIndex;
+    void ensurePageImage(restore.document, restore.currentPageIndex);
+    void runOcrQueue(restore.document);
+    setPageOpStatus(null);
+    return true;
+  };
+
   const handleUndo = () => {
     pendingEditRequestRef.current += 1;
     dismissOnlyGestureRef.current = false;
     setFocusedEditId(null);
+    if (useEditStore.getState().history.length === 0 && undoPageOp()) return;
     undo();
+  };
+  const handleUndoRef = useRef(handleUndo);
+  handleUndoRef.current = handleUndo;
+
+  const applyPageOp = async (op: PageOp) => {
+    const state = useEditStore.getState();
+    const doc = state.document;
+    const bytes = getPdfBytes();
+    if (!doc || !bytes || pageOpBusy) return;
+    setPageOpBusy(true);
+    pendingEditRequestRef.current += 1;
+    setFocusedEditId(null);
+    setSelectedImageId(null);
+    try {
+      const plan = pagePlan(op, doc.pages.length);
+      const newBytes = await applyPagePlan(bytes, plan);
+      if (useEditStore.getState().document?.id !== doc.id) return;
+      pageOpRestoreRef.current.push({
+        bytes,
+        document: doc,
+        history: state.history,
+        ocrStatus: ocrStatusByPage,
+        currentPageIndex,
+        pagesChanged,
+      });
+      setPageOpUndoCount(pageOpRestoreRef.current.length);
+      const next = remapDocument(doc, plan, crypto.randomUUID(), RASTER_SCALE);
+      setPdfBytes(newBytes);
+      pageImageRequestsRef.current.clear();
+      // Pages read before keep their result; turned, new and half-read pages are read again.
+      const ocrStatus: OcrStatusByPage = {};
+      plan.forEach((entry, index) => {
+        const status = entry.from === null || entry.rotate !== 0 ? undefined : ocrStatusByPage[entry.from];
+        if (status === "done" || status === "failed") ocrStatus[index] = status;
+      });
+      ocrAttemptedPagesRef.current = new Set(Object.keys(ocrStatus).map(Number));
+      setOcrStatusByPage(ocrStatus);
+      useEditStore.setState({ document: next, history: [], future: [] });
+      setPagesChanged(true);
+      const shown =
+        op.kind === "insertBlank"
+          ? op.after + 1
+          : (newIndexOf(plan, currentPageIndex) ?? Math.min(currentPageIndex, next.pages.length - 1));
+      setCurrentPageIndex(shown);
+      ocrPriorityPageRef.current = shown;
+      void ensurePageImage(next, shown);
+      void runOcrQueue(next);
+      const n = (index: number) => index + 1;
+      setPageOpStatus(
+        op.kind === "delete"
+          ? tx(`Page ${n(op.index)} deleted. Undo brings it back.`, `पेज ${n(op.index)} हटाया गया। पहले जैसा करें से वापस आएगा।`)
+          : op.kind === "move"
+            ? tx(`Page ${n(op.from)} is now page ${n(op.to)}.`, `पेज ${n(op.from)} अब पेज ${n(op.to)} है।`)
+            : op.kind === "rotate"
+              ? tx(`Page ${n(op.index)} turned.`, `पेज ${n(op.index)} घुमाया गया।`)
+              : tx(`Blank page added as page ${n(op.after + 1)}.`, `खाली पेज ${n(op.after + 1)} के रूप में जोड़ा गया।`),
+      );
+    } catch (error) {
+      console.error("Page change failed", error);
+      await showPopup({
+        title: tx("Couldn't change the pages", "पेज नहीं बदले जा सके"),
+        message: tx("This PDF's pages could not be changed. Your edits are unchanged.", "इस पीडीएफ के पेज नहीं बदले जा सके। आपके बदलाव जैसे थे वैसे हैं।"),
+        tone: "error",
+      });
+    } finally {
+      setPageOpBusy(false);
+    }
   };
 
   const handleEditDone = () => setFocusedEditId(null);
@@ -1291,6 +1411,7 @@ export function EditPdfTool() {
       const filename = `${baseName}-edited.pdf`;
       downloadPdfBlob(blob, filename);
       setExportedSnapshot(snapshotToExport);
+      setPagesChanged(false);
       setStatus({ state: "saved", filename });
       trackToolEvent("export_success", "edit");
     } catch (error) {
@@ -1373,6 +1494,10 @@ export function EditPdfTool() {
       void clearDraft();
     }
     setDraftKept(false);
+    pageOpRestoreRef.current = [];
+    setPageOpUndoCount(0);
+    setPagesChanged(false);
+    setPagesOpen(false);
     setDiscardVisible(false);
     setExportedSnapshot(null);
     pendingEditRequestRef.current += 1;
@@ -1558,7 +1683,7 @@ export function EditPdfTool() {
                 small
                 variant="ghost"
                 onClick={handleUndo}
-                disabled={!canUndo}
+                disabled={!canUndoEdit && pageOpUndoCount === 0}
               />
               <AppButton
                 title={tx("Redo", "फिर से करें")}
@@ -1603,6 +1728,14 @@ export function EditPdfTool() {
                   translating ||
                   ocrStatus === "running"
                 }
+              />
+              <AppButton
+                title={tx("Pages", "पेज")}
+                icon={<Files size={15} aria-hidden="true" />}
+                small
+                variant={pagesOpen ? "primary" : "secondary"}
+                onClick={() => setPagesOpen((open) => !open)}
+                disabled={translating || enhancingPage !== null}
               />
               <AppButton
                 title={tx("Find & replace", "खोजें और बदलें")}
@@ -1695,6 +1828,20 @@ export function EditPdfTool() {
                 "कुछ पेज पर हिंदी टेक्स्ट की दोबारा जाँच नहीं हो सकी। सेव करने से पहले हर बॉक्स का टेक्स्ट देख लें, या पेज दोबारा लोड करके फिर कोशिश करें।",
               )}
             </AppStatus>
+          )}
+
+          {pagesOpen && (
+            <PagesPanel
+              documentId={document.id}
+              pages={document.pages.map((p) => ({ widthPt: p.widthPt, heightPt: p.heightPt, hasEdits: p.edits.length > 0 }))}
+              currentPageIndex={currentPageIndex}
+              busy={pageOpBusy || status.state === "saving"}
+              status={pageOpStatus}
+              renderThumbnail={renderThumbnail}
+              onSelect={goToPage}
+              onOp={(op) => void applyPageOp(op)}
+              onClose={() => setPagesOpen(false)}
+            />
           )}
 
           {findReplaceOpen && (

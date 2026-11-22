@@ -1,5 +1,15 @@
 # Changelog
 
+## Page operations in the editor, 23 November 2026
+
+### Added
+- A **Pages** panel in the editor lists every page with a preview (drawn when it scrolls into view). Each page can be moved earlier or later, turned clockwise, deleted, or followed by a new blank page (the size of the page before it); clicking a preview opens that page.
+- Pages keep their edits, detected text and rendered image when they move. A turned page is drawn and read again; pages with edits cannot be turned (the edits cannot turn with them), which the button explains. A sideways scan turned upright is read and edited normally.
+- The change is made to the open PDF in memory (never the user's file): pages are reordered inside the same document, so its bookmarks, form fields and links stay with it, and page content is not touched. The page tree is rebuilt as one flat list after copying inherited resources, sizes and rotation onto each page. Objects only a deleted page used are dropped, so a deleted page's content does not stay hidden in the saved file.
+- Undo steps back over a page change once the edits made after it are undone (Ctrl+Z too). Page changes count as unsaved work for the leave-page warning, autosave and the download step.
+- The toolbar's action and tool rows now each take the full width, so the tool buttons no longer wrap into a block beside the actions.
+- The edit-quality gate moves, deletes (and undoes), and adds pages on the multipage fixture and checks the exported order, the blank page and that a whiteout stayed on its page.
+
 ## Edited lines flow into their paragraph, 23 November 2026
 
 ### Added
