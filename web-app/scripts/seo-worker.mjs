@@ -67,7 +67,7 @@ function refreshKnowledgeFiles(articles) {
           "/",
       )
       .join("\n") +
-    "\n\n## Capabilities and limits\n\nNew Hindi text uses Unicode fonts and HTML shaping. The web export starts from the original file: unedited pages are copied unchanged, replaced text is removed from edited pages (or cleaned from scans) while table lines stay, and new words are added as images, so they are not searchable. Any edit invalidates a digital signature, and legacy fonts are not converted automatically. Unknown encoding blocks editing. Merge/split copy pages; compression rasterizes pages to JPEG and cannot guarantee a target file size. AI features require consent and enforce quotas. Editing an issued record does not authorize an official correction.\n\nPrivacy: https://hindipdfeditor.com/privacy/\nSupport: https://hindipdfeditor.com/support/\n";
+    "\n\n## Capabilities and limits\n\nNew Hindi text uses Unicode fonts and HTML shaping. The web export starts from the original file: unedited pages are copied unchanged, replaced text is removed from edited pages (or cleaned from scans) while table lines stay, and new words are added as images, so they are not searchable. Any edit invalidates a digital signature. Kruti Dev and DevLys pages are converted to Unicode and checked against the page image; other legacy fonts and unknown encodings block editing. Merge/split copy pages; compression rasterizes pages to JPEG and cannot guarantee a target file size. AI features require consent and enforce quotas. Editing an issued record does not authorize an official correction.\n\nPrivacy: https://hindipdfeditor.com/privacy/\nSupport: https://hindipdfeditor.com/support/\n";
   writeFileSync(llmsPath, text);
   writeFileSync(
     llmsFullPath,

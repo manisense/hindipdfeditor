@@ -5,11 +5,34 @@ import { useTx } from '../lib/i18n';
 
 type Props = {
   fontNames: string[];
+  /** The page was converted from a KrutiDev-family font and can be edited after a check. */
+  converted?: boolean;
 };
 
-export function LegacyFontWarning({ fontNames }: Props) {
+export function LegacyFontWarning({ fontNames, converted }: Props) {
   const tx = useTx();
   const isUnknown = fontNames.length === 0;
+
+  if (converted) {
+    return (
+      <div className="legacy-font-warning legacy-font-warning--converted" role="status">
+        <span className="legacy-font-warning__icon" aria-hidden="true">
+          <TriangleAlert size={22} strokeWidth={2.1} />
+        </span>
+        <div>
+          <p className="legacy-font-warning__title">
+            {tx('Old Hindi font converted to Unicode', 'पुराना हिंदी फॉन्ट यूनिकोड में बदला गया')}
+          </p>
+          <p className="legacy-font-warning__body">
+            {tx(
+              'This page was typed in an old font (Kruti Dev). Its text was converted and checked against the page image, but read each line before saving: a few words can still come out wrong.',
+              'यह पेज पुराने फॉन्ट (कृति देव) में टाइप हुआ था। इसका टेक्स्ट बदलकर पेज की इमेज से मिलाया गया है, फिर भी सेव करने से पहले हर लाइन पढ़ लें: कुछ शब्द अब भी गलत हो सकते हैं।',
+            )}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="legacy-font-warning">

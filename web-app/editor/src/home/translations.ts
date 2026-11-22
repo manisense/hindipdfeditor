@@ -77,7 +77,7 @@ export const translations: Record<Language, Record<string, string>> = {
       "Type using any Unicode Hindi keyboard (Gboard, Google Input Tools, InScript). The browser shapes the text as you type.",
     "how.step4Title": "Export a New PDF",
     "how.step4Desc":
-      "Download a new PDF with your edits. Pages are saved as high-resolution images, so the Hindi looks the same on every phone and PC. Your original file is not changed.",
+      "Download a new PDF with your edits. Pages you didn't change stay exactly as they were, and your new Hindi words look the same on every phone and PC. Your original file is not changed.",
 
     // Comparison
     "comp.eyebrow": "Comparison",
@@ -236,7 +236,7 @@ export const translations: Record<Language, Record<string, string>> = {
       "किसी भी यूनिकोड हिंदी कीबोर्ड (Gboard, Google Input Tools, InScript) से टाइप करें। ब्राउज़र टाइप करते समय ही अक्षरों को सही आकार देता है।",
     "how.step4Title": "नई पीडीएफ डाउनलोड करें",
     "how.step4Desc":
-      "अपने बदलावों के साथ नई पीडीएफ डाउनलोड करें। पेज हाई-रेजोल्यूशन इमेज के रूप में सेव होते हैं, इसलिए हिंदी हर फोन और पीसी पर एक जैसी दिखती है। मूल फाइल नहीं बदलती।",
+      "अपने बदलावों के साथ नई पीडीएफ डाउनलोड करें। जिन पेज को आपने नहीं बदला वे बिल्कुल वैसे ही रहते हैं, और आपके नए हिंदी शब्द हर फोन और पीसी पर एक जैसे दिखते हैं। मूल फाइल नहीं बदलती।",
 
     // Comparison
     "comp.eyebrow": "तुलना",

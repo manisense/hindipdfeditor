@@ -47,7 +47,7 @@ import {
 import type { TranslationDirection } from "@hindipdfeditor/translation-contract";
 
 import { translateOcrLines } from "../lib/geminiTranslate";
-import { detectLegacyFonts } from "../lib/legacyFontDetector";
+import { detectLegacyFonts, isConvertibleLegacyFont } from "../lib/legacyFontDetector";
 import { shouldDismissFocusedEdit } from "../lib/editPointerIntent";
 import { findInDocument } from "../lib/findReplace";
 import { lineReplacementFor } from "../lib/lineReplacement";
@@ -326,16 +326,22 @@ export function EditPdfTool() {
     ],
     [document?.legacyFontWarnings, currentPageIndex],
   );
-  const editingBlocked = currentPageLegacyFontNames.length > 0;
+  const blockingLegacyFontNames = currentPageLegacyFontNames.filter(
+    (name) => !isConvertibleLegacyFont(name),
+  );
+  const editingBlocked = blockingLegacyFontNames.length > 0;
+  const convertedLegacyPage =
+    !editingBlocked && currentPageLegacyFontNames.length > 0;
 
   const ensureOcrForPage = (
     doc: DocumentState,
     pageIndex: number,
   ): Promise<void> => {
     const pageState = doc.pages[pageIndex];
+    const pageWarnings = doc.legacyFontWarnings.filter((w) => w.page === pageIndex);
     if (
       !pageState ||
-      doc.legacyFontWarnings.some((w) => w.page === pageIndex) ||
+      pageWarnings.some((w) => !isConvertibleLegacyFont(w.fontName)) ||
       ocrAttemptedPagesRef.current.has(pageIndex)
     ) {
       return Promise.resolve();
@@ -343,7 +349,8 @@ export function EditPdfTool() {
     ocrAttemptedPagesRef.current.add(pageIndex);
 
     setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "running" }));
-    return detectTextLines(pageState)
+    // KrutiDev-family pages are converted to Unicode, then checked against OCR like any page.
+    return detectTextLines(pageState, { convertLegacy: pageWarnings.length > 0 })
       .then((lines) => {
         if (useEditStore.getState().document?.id !== doc.id)
           return;
@@ -1301,8 +1308,11 @@ export function EditPdfTool() {
             />
           )}
 
+          {convertedLegacyPage && (
+            <LegacyFontWarning fontNames={currentPageLegacyFontNames} converted />
+          )}
           {editingBlocked && (
-            <LegacyFontWarning fontNames={currentPageLegacyFontNames} />
+            <LegacyFontWarning fontNames={blockingLegacyFontNames} />
           )}
 
           {focusedEdit && (

@@ -84,7 +84,7 @@
     "status": "published",
     "publishedDate": "2026-08-18",
     "metaDescription": "पुरानी हिंदी एन्कोडिंग पहचानें; Unicode स्रोत लें और नया ओवरले जाँचें। यह सार्वभौमिक PDF फॉन्ट कन्वर्टर नहीं है।",
-    "directAnswer": "Kruti Dev एन्कोडिंग और Unicode अलग हैं। पुराने टेक्स्ट को केवल Noto फॉन्ट में दिखाने से सही अक्षर नहीं मिलते। स्रोत से प्रमाणित Unicode टेक्स्ट लें।",
+    "directAnswer": "Kruti Dev एन्कोडिंग और Unicode अलग हैं, और पुराने टेक्स्ट को केवल Noto फॉन्ट में दिखाने से सही अक्षर नहीं मिलते। वेब एडिटर Kruti Dev और DevLys पेज को एडिट के लिए Unicode में बदलता है; आधिकारिक रिकॉर्ड के लिए फिर भी स्रोत से प्रमाणित Unicode टेक्स्ट लें।",
     "sections": [
       {
         "heading": "दिखने वाले अक्षर और असली टेक्स्ट",
@@ -95,7 +95,7 @@
       {
         "heading": "यह टूल क्या नहीं करता?",
         "paragraphs": [
-          "Hindi PDF Editor में सार्वभौमिक Kruti Dev decoder या पुरानी PDF की टेक्स्ट लेयर फिर से बनाने का विकल्प नहीं है। ज्ञात पुराने फॉन्ट और अस्पष्ट जाँच पर चेतावनी का पालन करें।"
+          "वेब एडिटर Kruti Dev या DevLys में टाइप हुए पेज को Unicode में बदलता है और हर पेज को उसकी इमेज से मिलाता है; फिर भी कुछ शब्द गलत हो सकते हैं, इसलिए हर लाइन पढ़ें। दूसरे पुराने फॉन्ट (Chanakya, Shivaji, Walkman-Chanakya) और जिन पेज का फॉन्ट जाँचा न जा सके, वे बंद रहते हैं; जिन लाइनों को आप नहीं बदलते, उनकी पुरानी टेक्स्ट लेयर वैसी ही रहती है।"
         ]
       },
       {
@@ -115,10 +115,10 @@
     "faqs": [
       {
         "q": "क्या यह ऑटोमैटिक कन्वर्टर है?",
-        "a": "नहीं। पुरानी PDF को अपने आप Unicode में डिकोड करने का दावा नहीं है।"
+        "a": "Kruti Dev और DevLys पेज के लिए हाँ: वेब एडिटर उनका टेक्स्ट Unicode में बदलकर पेज की इमेज से मिलाता है। सेव करने से पहले हर लाइन पढ़ें। दूसरे पुराने फॉन्ट नहीं बदले जाते।"
       }
     ],
-    "reviewedDate": "2026-11-21",
+    "reviewedDate": "2026-11-22",
     "sample": true,
     "alternateSlug": "kruti-dev-to-unicode-hindi-pdf-editor",
     "relatedSlugs": [
@@ -259,7 +259,7 @@
         "heading": "What the editor actually does",
         "paragraphs": [
           "New Hindi overlays use Unicode fonts. They are rendered through HTML shaping. The original page is preserved visually; adding a correct overlay does not repair the underlying text layer.",
-          "Inconclusive font inspection and detected legacy encodings trigger warnings or blocked editing. The web editor has no universal Kruti Dev decoding feature."
+          "Inconclusive font inspection and detected legacy encodings trigger warnings or blocked editing. The web editor converts Kruti Dev and DevLys pages to Unicode and checks them against the page image; other legacy encodings stay blocked."
         ]
       },
       {
@@ -293,7 +293,7 @@
         "a": "Unedited text stays selectable. New or replaced words are added as images, so they are not selectable."
       }
     ],
-    "reviewedDate": "2026-11-21",
+    "reviewedDate": "2026-11-22",
     "sample": true,
     "alternateSlug": "hindi-pdf-font-kaise-thik-kare",
     "relatedSlugs": [
@@ -428,7 +428,7 @@
     "status": "published",
     "publishedDate": "2026-08-18",
     "metaDescription": "Identify legacy Hindi encoding, obtain a Unicode source and review new overlays. This editor is not a universal legacy PDF font converter.",
-    "directAnswer": "Kruti Dev encoding differs from Unicode. Displaying old encoded text in Noto does not decode it. Obtain verified Unicode text from the source.",
+    "directAnswer": "Kruti Dev encoding differs from Unicode, and displaying old encoded text in Noto does not decode it. The web editor converts Kruti Dev and DevLys pages to Unicode for editing; for an official record, still obtain verified Unicode text from the source.",
     "sections": [
       {
         "heading": "Visible letters versus encoded text",
@@ -439,7 +439,7 @@
       {
         "heading": "What this tool does not do",
         "paragraphs": [
-          "Hindi PDF Editor has no universal Kruti Dev decoder or feature to reconstruct every legacy PDF text layer. Follow warnings for detected old fonts and inconclusive inspection."
+          "The web editor converts pages typed in Kruti Dev or DevLys to Unicode and checks each page against its image; a few words can still come out wrong, so read every line. Other legacy fonts (Chanakya, Shivaji, Walkman-Chanakya) and pages whose font cannot be inspected stay blocked, and lines you do not change keep their old text layer."
         ]
       },
       {
@@ -459,10 +459,10 @@
     "faqs": [
       {
         "q": "Is this an automatic converter?",
-        "a": "No. Automatic decoding of arbitrary legacy PDFs to Unicode is not provided."
+        "a": "For Kruti Dev and DevLys pages, yes: the web editor converts their text to Unicode and checks it against the page image. Read each line before saving. Other legacy fonts are not converted."
       }
     ],
-    "reviewedDate": "2026-11-21",
+    "reviewedDate": "2026-11-22",
     "sample": true,
     "alternateSlug": "kruti-dev-pdf-unicode-converter-hindi",
     "relatedSlugs": [

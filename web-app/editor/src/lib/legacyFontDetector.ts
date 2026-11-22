@@ -106,6 +106,18 @@ export type LegacyFontWarning = { page: number; fontName: string };
 export const LEGACY_TEXT_ENCODING_LABEL = "Kruti Dev-style text encoding";
 
 /**
+ * Whether a legacy-font warning names an encoding the editor can convert to Unicode: the
+ * KrutiDev family (KrutiDev, DevLys, or text that reads as KrutiDev keystrokes). Other legacy
+ * encodings (Chanakya, Shivaji, Walkman-Chanakya, Agra, Amar) and unknown fonts stay blocked.
+ */
+export function isConvertibleLegacyFont(fontName: string): boolean {
+  return (
+    fontName === LEGACY_TEXT_ENCODING_LABEL ||
+    /^(krutidev|devlys)/i.test(fontName.replace(SUBSET_TAG_PATTERN, ""))
+  );
+}
+
+/**
  * Very common Hindi words as KrutiDev/DevLys keystrokes (के, का, की, में, है, हैं, को, से, और,
  * कि, तथा, लिए, भी, यह, जो, एवं, एक, होगा, होंगे, पर, अथवा, करें, किया, गया, जाता, जाने, आदि,
  * अन्य, प्रकार). None is an English word, so ordinary Latin text does not match.

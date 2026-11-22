@@ -15,7 +15,7 @@ import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import type { Matrix, UserRect } from './contentStreamText';
 import { applyChangedSpans } from './changedSpan';
-import { loadFontFor, measureTextWidthPt } from './fontAsset';
+import { baselineOffsetRatio, loadFontFor, measureTextWidthPt } from './fontAsset';
 import { eraseInkKeepingLines } from './inkEraser';
 import { removePageText } from './pdfTextRemoval';
 import { rasteriseTextEdits } from './textRaster';
@@ -254,6 +254,13 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
       loadFontFor(`${e.text}${e.original?.text ?? ''}`, e.fontFamily, e.fontWeight === 'bold' ? 'bold' : 'normal', e.fontStyle),
     ),
   );
+  const baselineRatios = new Map<string, number | undefined>();
+  for (const edit of allTextEdits.filter((e) => e.original)) {
+    baselineRatios.set(
+      edit.id,
+      await baselineOffsetRatio(edit.fontFamily, edit.fontWeight === 'bold' ? 'bold' : 'normal', edit.fontStyle, edit.text),
+    );
+  }
   const narrowedPages: PageState[] = [];
   for (const page of source.pages) {
     const narrows = page.edits.some((e) => e.type === 'text' && e.original);
@@ -265,6 +272,7 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
         (edit, text) =>
           measureTextWidthPt(text, edit.fontFamily, edit.fontWeight === 'bold' ? 'bold' : 'normal', edit.fontSizePt),
         gapNear,
+        (edit) => baselineRatios.get(edit.id),
       ),
     });
   }

@@ -1,5 +1,14 @@
 # Changelog
 
+## Kruti Dev pages can be edited, 22 November 2026
+
+### Added
+- Pages typed in Kruti Dev or DevLys are converted to Unicode and can be edited (ADR 0010), instead of being blocked. Conversion runs per font, so English URLs and numbers stay as they are, and each page is checked against OCR. A notice asks the user to read every line. On whole CISF pages the converted words matched the page image 95–97 % before the fixes for curly quotes (श/ष) and vowel-sign fragments. Other legacy fonts and unknown fonts stay blocked.
+
+### Fixed
+- A trailing word replaced by a longer one no longer clears part of the next run on the same visual line; the new word is shrunk to fit (at most 25 %) on its original baseline.
+- The homepage no longer says pages are saved as images (stale since the export change).
+
 ## OCR served from this site, 22 November 2026
 
 ### Changed

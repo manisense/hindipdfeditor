@@ -22,7 +22,7 @@ describe('changedSpan', () => {
   it('extends to the end of the line when the new word needs more room', () => {
     const original = 'name: Ram Kumar';
     const span = changedSpan(original, 'name: Ramchandra Kumar', 100, 15, measure);
-    expect(span).toEqual({ xPt: 106, wPt: 16, text: 'Ramchandra Kumar' });
+    expect(span).toEqual({ xPt: 106, wPt: 9, text: 'Ramchandra Kumar' });
   });
 
   it('takes the rest of the line for a change at the end', () => {
@@ -61,6 +61,14 @@ describe('applyChangedSpans', () => {
     const [snapMask, snapText] = applyChangedSpans([mask, text('ab XY')], m, gap);
     expect(snapMask).toMatchObject({ xPt: 102, wPt: 3.5 });
     expect(snapText).toMatchObject({ xPt: 102.4, text: 'XY' });
+  });
+
+  it('shrinks longer new words to the cleared span, keeping their baseline', () => {
+    // Original "ab cd" (5 pt) followed by other text; "cd" → "XYZW" needs 4 pt but only 2 pt is clear.
+    const [, fitted] = applyChangedSpans([mask, text('ab XYZW')], m, undefined, () => 1);
+    expect(fitted).toMatchObject({ xPt: 103, text: 'XYZW' });
+    expect((fitted as { fontSizePt: number }).fontSizePt).toBeCloseTo(7.5); // capped at 25 % smaller
+    expect((fitted as { yPt: number }).yPt).toBeCloseTo(52.5); // baseline stays at yPt + 10
   });
 
   it('leaves a moved edit whole', () => {
