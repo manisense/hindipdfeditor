@@ -54,4 +54,20 @@ describe('editStore history', () => {
     store.getState().undo();
     expect(store.getState().document!.pages[1].backgroundImageUri).toBe('data:image/jpeg;base64,AAA');
   });
+
+  it('adds, moves and undoes an image', () => {
+    const store = createEditStore(() => 'img-1');
+    store.getState().loadDocument(doc());
+    store.getState().checkpoint();
+    const image = store.getState().addImageEdit(0, {
+      xPt: 10, yPt: 10, wPt: 40, hPt: 20, uri: 'data:image/png;base64,AAA', signature: true,
+    });
+    expect(image).toMatchObject({ type: 'image', id: 'img-1', page: 0 });
+    store.getState().checkpoint();
+    store.getState().updateImageEdit(0, 'img-1', { xPt: 30 });
+    expect(store.getState().document!.pages[0].edits[0]).toMatchObject({ xPt: 30, wPt: 40 });
+    store.getState().undo();
+    expect(store.getState().document!.pages[0].edits[0]).toMatchObject({ xPt: 10 });
+    expect(() => store.getState().updateImageEdit(0, 'nope', { xPt: 1 })).toThrow();
+  });
 });

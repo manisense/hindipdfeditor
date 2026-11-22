@@ -1,5 +1,14 @@
 # Changelog
 
+## Images and signatures, 22 November 2026
+
+### Added
+- **Image**: insert a PNG, JPEG or WebP (up to 20 MB) on the page. It is stored at most 1600 px on its longest side; JPEG stays JPEG, PNG and WebP become PNG so transparency survives. It appears in the middle of the part of the page on screen, at most 40 % of the page width and height.
+- **Signature**: draw a signature with a mouse, finger or stylus in black or ballpoint blue (changing the colour repaints what is drawn). It is cropped to the ink and placed with a transparent background, about 160 pt wide.
+- Images and signatures can be dragged, resized from the corner (keeping their shape, within the page), nudged with the arrow keys (Shift: 10 pt) and removed with the bin button or Delete. Undo works as for other edits.
+- Export embeds them unchanged, drawn with new text in the order they were added. Page text is left as it was.
+- The edit-quality gate inserts an image, drags it, draws a signature and checks both land in the export where they were on screen, with the page text unchanged.
+
 ## Highlight and Whiteout tools, 22 November 2026
 
 ### Added
