@@ -1,5 +1,20 @@
 # Changelog
 
+## Fixes and gaps closed, 23 November 2026
+
+### Fixed
+- Text painted twice at the same place (Chrome prints stroked text as a fill pass and a stroke pass; some producers fake bold that way) was detected twice; it is now read once.
+- Hindi lines with unmapped glyphs are re-read from a 4× render of their own area before repair (page images are 2 px per pt, too small for 9 pt labels). Glyph contexts use Devanagari letters only, so OCR misreading an arrow or a Latin word no longer blocks learning, and readings shared between font subsets are chosen by where the glyph is drawn (before a consonant it is a pre-base sign), which also unlocks the conjunct next to it. Every line of the Devanagari fixture, including the grey labels OCR misreads, now comes from the PDF exactly as written.
+- New words keep the original's size and are scaled horizontally (85–110 %) to the width of the PDF's own line when the replacement font is wider or narrower; before, the size was shrunk. OCR lines keep the old size fit.
+- Find & replace with longer text now flows into the rest of the paragraph, as typing does.
+- Pages can be turned anticlockwise again (one click instead of three clockwise turns).
+- The editor audit's status was out of date (self-hosted OCR, the OCR notice, KrutiDev conversion and pdf.js data were done); updated, with the remaining open items listed.
+
+### Changed
+- Draft autosave moved out of `EditPdfTool.tsx` into `useDraftAutosave` and `KeptDraftPrompt`.
+- The gate's glyph check reads the fixture's label row (only the repaired PDF text has its "→"), and a new case checks find-and-replace flow.
+- IndexNow was submitted by hand (38 URLs, HTTP 200): the workflow cannot start while the GitHub account is locked for billing.
+
 ## Hindi text with unmapped glyphs is repaired, 23 November 2026
 
 ### Added
