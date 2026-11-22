@@ -36,6 +36,21 @@ export async function getPageCount(): Promise<number> {
 }
 
 /**
+ * Size one page would have when rendered at `scale`, without rendering it. Lets the editor lay out
+ * every page at once and render each page's image only when it is needed.
+ *
+ * @param page Zero-based page index.
+ * @param scale Output px per PDF point.
+ * @returns Bitmap width and height, in px (rounded exactly as {@link renderPage} rounds them).
+ */
+export async function getPageSize(page: number, scale: number): Promise<{ pxWidth: number; pxHeight: number }> {
+  if (!pdfBytesCache) throw new Error('No PDF loaded');
+  const pdfPage = await (await sharedPdfDocument(pdfBytesCache)).getPage(page + 1);
+  const viewport = pdfPage.getViewport({ scale });
+  return { pxWidth: Math.round(viewport.width), pxHeight: Math.round(viewport.height) };
+}
+
+/**
  * Rasterizes one page of the loaded PDF to a JPEG data URL at `scale` px per PDF point.
  *
  * @param page Zero-based page index.

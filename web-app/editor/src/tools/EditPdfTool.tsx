@@ -60,11 +60,13 @@ import {
   tooManyPagesMessage,
 } from "../lib/userMessages";
 import { detectTextLines, detectTextLinesWithGemini, onOcrUnavailable } from "../lib/ocr";
+import { nextOcrPage } from "../lib/ocrQueue";
 import { findOcrTargetAt, findTextEditAt } from "../lib/ocrHitTest";
 import {
   getPageCount,
   getPdfBase64,
   getPdfBytes,
+  getPageSize,
   renderPage,
   sampleAverageColor,
   samplePagePaperColor,
@@ -152,6 +154,9 @@ export function EditPdfTool() {
   const [selectAllEditId, setSelectAllEditId] = useState<string | null>(null);
   const [ocrStatusByPage, setOcrStatusByPage] = useState<OcrStatusByPage>({});
   const ocrAttemptedPagesRef = useRef(new Set<number>());
+  const pageImageRequestsRef = useRef(new Map<string, Promise<PageState | undefined>>());
+  const ocrPriorityPageRef = useRef(0);
+  const ocrRunnerDocRef = useRef<string | null>(null);
   const editPairingsRef = useRef(new Map<string, EditPairing>());
   const dismissOnlyGestureRef = useRef(false);
   const pendingEditRequestRef = useRef(0);
@@ -210,6 +215,7 @@ export function EditPdfTool() {
   const updateTextEdit = useEditStore((s) => s.updateTextEdit);
   const removeEdit = useEditStore((s) => s.removeEdit);
   const setOcrLines = useEditStore((s) => s.setOcrLines);
+  const setPageImage = useEditStore((s) => s.setPageImage);
   const checkpoint = useEditStore((s) => s.checkpoint);
   const undo = useEditStore((s) => s.undo);
   const redo = useEditStore((s) => s.redo);
@@ -266,20 +272,23 @@ export function EditPdfTool() {
         setStatus({ state: "error", message: tooManyPagesMessage(pageCount) });
         return;
       }
+      // Pages are laid out from their sizes; each page's image is rendered when it is first
+      // needed (see ensurePageImage). Only the first page is rendered before the editor opens.
       const pages: PageState[] = [];
       for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
-        const image = await renderPage(pageIndex, RASTER_SCALE);
+        const size = await getPageSize(pageIndex, RASTER_SCALE);
         pages.push({
           pageIndex,
-          widthPt: image.pxWidth / RASTER_SCALE,
-          heightPt: image.pxHeight / RASTER_SCALE,
-          backgroundImageUri: image.uri,
-          imagePxWidth: image.pxWidth,
-          imagePxHeight: image.pxHeight,
+          widthPt: size.pxWidth / RASTER_SCALE,
+          heightPt: size.pxHeight / RASTER_SCALE,
+          backgroundImageUri: "",
+          imagePxWidth: size.pxWidth,
+          imagePxHeight: size.pxHeight,
           edits: [],
           ocrLines: [],
         });
       }
+      pages[0] = { ...pages[0], backgroundImageUri: (await renderPage(0, RASTER_SCALE)).uri };
 
       const legacyFontWarnings = await detectLegacyFontWarnings(pageCount);
       const newDocument: DocumentState = {
@@ -294,11 +303,13 @@ export function EditPdfTool() {
       setFocusedEditId(null);
       setSelectAllEditId(null);
       ocrAttemptedPagesRef.current.clear();
+      pageImageRequestsRef.current.clear();
       aiJobIdRef.current = `document-${crypto.randomUUID()}`;
       editPairingsRef.current.clear();
       setOcrStatusByPage({});
       setEditMode(readEditModeFromLocation());
-      void ensureOcrForAllPages(newDocument);
+      ocrPriorityPageRef.current = 0;
+      void runOcrQueue(newDocument);
       setStatus({ state: "idle" });
       trackToolEvent("pdf_open_success", "edit");
     } catch (error) {
@@ -333,6 +344,32 @@ export function EditPdfTool() {
   const convertedLegacyPage =
     !editingBlocked && currentPageLegacyFontNames.length > 0;
 
+  /**
+   * The page with its background image, rendering it on first use. Resolves undefined when a
+   * different document was opened meanwhile.
+   */
+  const ensurePageImage = (
+    doc: DocumentState,
+    pageIndex: number,
+  ): Promise<PageState | undefined> => {
+    const live = useEditStore.getState().document;
+    const livePage = live?.id === doc.id ? live.pages[pageIndex] : undefined;
+    if (!livePage) return Promise.resolve(undefined);
+    if (livePage.backgroundImageUri) return Promise.resolve(livePage);
+    const key = `${doc.id}:${pageIndex}`;
+    const pending = pageImageRequestsRef.current.get(key);
+    if (pending) return pending;
+    const request = renderPage(pageIndex, RASTER_SCALE)
+      .then((image) => {
+        if (useEditStore.getState().document?.id !== doc.id) return undefined;
+        setPageImage(pageIndex, image.uri);
+        return useEditStore.getState().document?.pages[pageIndex];
+      })
+      .finally(() => pageImageRequestsRef.current.delete(key));
+    pageImageRequestsRef.current.set(key, request);
+    return request;
+  };
+
   const ensureOcrForPage = (
     doc: DocumentState,
     pageIndex: number,
@@ -350,7 +387,11 @@ export function EditPdfTool() {
 
     setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "running" }));
     // KrutiDev-family pages are converted to Unicode, then checked against OCR like any page.
-    return detectTextLines(pageState, { convertLegacy: pageWarnings.length > 0 })
+    return ensurePageImage(doc, pageIndex)
+      .then((rendered) => {
+        if (!rendered) throw new Error("document closed");
+        return detectTextLines(rendered, { convertLegacy: pageWarnings.length > 0 });
+      })
       .then((lines) => {
         if (useEditStore.getState().document?.id !== doc.id)
           return;
@@ -365,12 +406,25 @@ export function EditPdfTool() {
       });
   };
 
-  // One page at a time, in order: Hindi pages are checked with OCR, and queuing every page at
-  // once made the page on screen wait behind all the others. Opening a page starts it at once.
-  const ensureOcrForAllPages = async (doc: DocumentState) => {
-    for (let pageIndex = 0; pageIndex < doc.pages.length; pageIndex++) {
-      if (useEditStore.getState().document?.id !== doc.id) return;
-      await ensureOcrForPage(doc, pageIndex);
+  // One page at a time, the page on screen first (see nextOcrPage): Hindi pages are checked with
+  // OCR, and queuing pages as they were passed made the page on screen wait behind all of them.
+  const runOcrQueue = async (doc: DocumentState) => {
+    if (ocrRunnerDocRef.current === doc.id) return;
+    ocrRunnerDocRef.current = doc.id;
+    const blocked = (pageIndex: number) =>
+      doc.legacyFontWarnings.some((w) => w.page === pageIndex && !isConvertibleLegacyFont(w.fontName));
+    try {
+      while (useEditStore.getState().document?.id === doc.id) {
+        const next = nextOcrPage(
+          doc.pages.length,
+          ocrPriorityPageRef.current,
+          (pageIndex) => !ocrAttemptedPagesRef.current.has(pageIndex) && !blocked(pageIndex),
+        );
+        if (next === null) return;
+        await ensureOcrForPage(doc, next);
+      }
+    } finally {
+      if (ocrRunnerDocRef.current === doc.id) ocrRunnerDocRef.current = null;
     }
   };
 
@@ -380,7 +434,10 @@ export function EditPdfTool() {
     dismissOnlyGestureRef.current = false;
     setCurrentPageIndex(index);
     setFocusedEditId(null);
-    void ensureOcrForPage(document, index);
+    ocrPriorityPageRef.current = index;
+    void runOcrQueue(document);
+    // Ready the next page before it is opened.
+    if (index + 1 < document.pages.length) void ensurePageImage(document, index + 1).catch(() => undefined);
   };
 
   const countMatches = (query: string): number => {
@@ -547,7 +604,7 @@ export function EditPdfTool() {
           : Array.from({ length: doc.pages.length }, (_, index) => index);
 
       for (const pageIndex of pageIndexes) {
-        const pageState = useEditStore.getState().document?.pages[pageIndex];
+        const pageState = await ensurePageImage(doc, pageIndex);
         if (!pageState) continue;
         const forceOcr = legacyPages.has(pageIndex);
 

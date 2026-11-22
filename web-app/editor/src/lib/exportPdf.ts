@@ -185,13 +185,36 @@ async function loadOutputDocument(sourcePdfBytes: Uint8Array): Promise<PDFDocume
   }
 }
 
+/** Renders a page that was never shown (pages are rendered lazily) as a JPEG data URL. */
+async function renderMissingBackground(source: pdfjs.PDFDocumentProxy, page: PageState): Promise<string> {
+  const pdfPage = await source.getPage(page.pageIndex + 1);
+  const viewport = pdfPage.getViewport({ scale: page.imagePxWidth / page.widthPt });
+  const canvas = document.createElement('canvas');
+  canvas.width = page.imagePxWidth;
+  canvas.height = page.imagePxHeight;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas 2D context unavailable');
+  await pdfPage.render({ canvasContext: context, viewport, canvas }).promise;
+  pdfPage.cleanup();
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
+
 /** Builds a new document from the page backgrounds when the source cannot be modified. */
-async function rasterOutputDocument(doc: DocumentState): Promise<PDFDocument> {
+async function rasterOutputDocument(doc: DocumentState, sourcePdfBytes: Uint8Array): Promise<PDFDocument> {
   const out = await PDFDocument.create();
-  for (const page of doc.pages) {
-    const pdfPage = out.addPage([page.widthPt, page.heightPt]);
-    const image = await out.embedJpg(dataUrlBytes(page.backgroundImageUri));
-    pdfPage.drawImage(image, { x: 0, y: 0, width: page.widthPt, height: page.heightPt });
+  let source: pdfjs.PDFDocumentProxy | undefined;
+  try {
+    for (const page of doc.pages) {
+      const pdfPage = out.addPage([page.widthPt, page.heightPt]);
+      source ??= page.backgroundImageUri
+        ? undefined
+        : await pdfjs.getDocument(pdfjsDocumentParams(sourcePdfBytes.slice())).promise;
+      const uri = page.backgroundImageUri || (await renderMissingBackground(source!, page));
+      const image = await out.embedJpg(dataUrlBytes(uri));
+      pdfPage.drawImage(image, { x: 0, y: 0, width: page.widthPt, height: page.heightPt });
+    }
+  } finally {
+    await source?.destroy();
   }
   return out;
 }
@@ -306,7 +329,7 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
   const doc: DocumentState = { ...source, pages: narrowedPages };
 
   const loaded = await loadOutputDocument(sourcePdfBytes);
-  const out = loaded ?? (await rasterOutputDocument(doc));
+  const out = loaded ?? (await rasterOutputDocument(doc, sourcePdfBytes));
   const editedPages = doc.pages.filter((page) => page.edits.length > 0);
 
   const transforms = new Map<number, Matrix>();

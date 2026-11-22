@@ -21,6 +21,23 @@
   transform-origin: top left;
 }
 
+/* Shown while a page's image is rendered on first view. */
+.pdf-page-viewer__placeholder {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  animation: pdf-page-viewer-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes pdf-page-viewer-pulse {
+  from { background: #ffffff; }
+  to { background: #fbfbfe; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pdf-page-viewer__placeholder { animation: none; }
+}
+
 .pdf-page-viewer__image {
   position: absolute;
   inset: 0;

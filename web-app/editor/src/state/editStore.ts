@@ -71,7 +71,11 @@ export type PageState = {
   pageIndex: number;
   widthPt: number;
   heightPt: number;
-  /** Data URL of the rasterized background JPEG for this page. */
+  /**
+   * Data URL of the rasterized background JPEG for this page; empty until the page is first
+   * needed (shown, read for text, or exported), since rendering every page up front made long
+   * documents slow to open.
+   */
   backgroundImageUri: string;
   imagePxWidth: number;
   imagePxHeight: number;
@@ -109,6 +113,7 @@ export type EditStoreState = {
   removeEdit: (page: number, id: string) => void;
   setLegacyFontWarnings: (warnings: DocumentState['legacyFontWarnings']) => void;
   setOcrLines: (page: number, lines: OcrLine[]) => void;
+  setPageImage: (page: number, uri: string) => void;
 };
 
 const HISTORY_LIMIT = 25;
@@ -124,16 +129,20 @@ function requirePage(document: DocumentState | null, page: number): PageState {
 /**
  * Restores a snapshot's edits, and its detected lines only where that page had already been
  * detected. Detection that finished after the snapshot was taken is kept: restoring the empty
- * list would leave a page marked as detected with nothing to tap.
+ * list would leave a page marked as detected with nothing to tap. Page images are not part of
+ * the history: one rendered after the snapshot is kept.
  */
 function restoreSnapshot(current: DocumentState, snapshot: DocumentState): DocumentState {
   return {
     ...snapshot,
     pages: snapshot.pages.map((page, i) => {
       const live = current.pages[i];
-      return page.ocrLines.length === 0 && live && live.ocrLines.length > 0
-        ? { ...page, ocrLines: live.ocrLines }
-        : page;
+      if (!live) return page;
+      const ocrLines = page.ocrLines.length === 0 && live.ocrLines.length > 0 ? live.ocrLines : page.ocrLines;
+      const backgroundImageUri = page.backgroundImageUri || live.backgroundImageUri;
+      return ocrLines === page.ocrLines && backgroundImageUri === page.backgroundImageUri
+        ? page
+        : { ...page, ocrLines, backgroundImageUri };
     }),
   };
 }
@@ -243,6 +252,17 @@ export function createEditStore(generateId: () => string = () => crypto.randomUU
         document: {
           ...document!,
           pages: document!.pages.map((p, i) => (i === page ? { ...p, ocrLines: lines } : p)),
+        },
+      });
+    },
+
+    setPageImage: (page, uri) => {
+      const document = get().document;
+      requirePage(document, page);
+      set({
+        document: {
+          ...document!,
+          pages: document!.pages.map((p, i) => (i === page ? { ...p, backgroundImageUri: uri } : p)),
         },
       });
     },

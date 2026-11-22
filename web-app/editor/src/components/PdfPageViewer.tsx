@@ -237,12 +237,16 @@ export function PdfPageViewer({
               }}
               onPointerDown={handlePointerDown}
             >
-              <img
-                src={page.backgroundImageUri}
-                alt={`Page ${page.pageIndex + 1}`}
-                className="pdf-page-viewer__image"
-                draggable={false}
-              />
+              {page.backgroundImageUri ? (
+                <img
+                  src={page.backgroundImageUri}
+                  alt={`Page ${page.pageIndex + 1}`}
+                  className="pdf-page-viewer__image"
+                  draggable={false}
+                />
+              ) : (
+                <div className="pdf-page-viewer__placeholder" role="img" aria-busy="true" aria-label={`Page ${page.pageIndex + 1}`} />
+              )}
               <div className="pdf-page-viewer__overlays" style={{ width: viewWidthPx, height: heightPx }}>
                 {renderOverlays?.(viewWidthPx)}
               </div>
