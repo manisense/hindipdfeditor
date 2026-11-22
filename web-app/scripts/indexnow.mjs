@@ -1,4 +1,4 @@
-// Submits every URL in sitemap.xml to IndexNow (Bing, Yandex, Seznam, Naver share submissions).
+// Submits every URL in the deployed sitemap.xml to IndexNow (Bing, Yandex, Seznam, Naver share submissions).
 // Run after a deploy that adds or changes pages: `node web-app/scripts/indexnow.mjs`.
 // The key is public by design: it must also be served at https://hindipdfeditor.com/<key>.txt.
 import { readFileSync } from 'node:fs';
@@ -9,7 +9,17 @@ const HOST = 'hindipdfeditor.com';
 const KEY = '2cb0e0db8ff34e8eb3666ac4ec72525a';
 const webAppRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const sitemap = readFileSync(path.join(webAppRoot, 'sitemap.xml'), 'utf8');
+// The deployed sitemap is built from the route manifest and articles at publish time, so it is the
+// one to submit; the source copy is only a fallback when the site cannot be reached.
+let sitemap;
+try {
+  const live = await fetch(`https://${HOST}/sitemap.xml`);
+  if (!live.ok) throw new Error(`HTTP ${live.status}`);
+  sitemap = await live.text();
+} catch (error) {
+  console.warn(`Live sitemap unavailable (${error.message}); using the source copy`);
+  sitemap = readFileSync(path.join(webAppRoot, 'sitemap.xml'), 'utf8');
+}
 const urlList = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
 
 const response = await fetch('https://api.indexnow.org/indexnow', {
