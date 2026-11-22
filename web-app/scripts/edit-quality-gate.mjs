@@ -4,7 +4,7 @@
 // unexported edits must survive a reload, new words in faux-bold (stroked) lines must be as
 // heavy as the original, a line that grows must flow into the next line of its paragraph, and
 // page changes must keep each page's edits with it, and Hindi text whose font lacks Unicode for
-// some glyphs must read correctly. Runs the real editor in Chrome against a preview or production.
+// some glyphs must read correctly; Hindi typed mid-line stays in order and is spell-checked. Runs the real editor in Chrome against a preview or production.
 //   SMOKE_BASE_URL=http://127.0.0.1:8788 node web-app/scripts/edit-quality-gate.mjs
 // Requires Playwright (resolvable through NODE_PATH) and system Chrome.
 import assert from "node:assert/strict";
@@ -666,6 +666,47 @@ async function findReplaceFlowCase(browser) {
   await page.close();
 }
 
+async function spellCheckCase(browser) {
+  const file = path.join(fixtures, "devanagari-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await openPdf(page, file, 0);
+  const count = await page.locator(".ocr-highlight-layer__box").count();
+  for (let i = 0; i < count; i++) {
+    const box = await page.locator(".ocr-highlight-layer__box").nth(i).boundingBox();
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await page.waitForTimeout(400);
+    if ((await page.evaluate(() => document.activeElement.value ?? "")).startsWith("धर्म और")) break;
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(150);
+    await page.keyboard.press("Control+z");
+    await page.waitForTimeout(200);
+  }
+  // Typed before the next word with no space yet: the virama must not pull the caret into it.
+  await page.evaluate(() => {
+    const field = document.activeElement;
+    const at = field.value.indexOf("दिया");
+    field.setSelectionRange(at, at);
+  });
+  await page.keyboard.type("कार्यलय ");
+  assert.equal(
+    await page.evaluate(() => document.activeElement.value),
+    "धर्म और क्षेत्र में गुरुजी ने ज्ञान कार्यलय दिया।",
+    "typing before a word keeps the letters in order",
+  );
+  const fix = page.getByRole("button", { name: "Replace कार्यलय with कार्यालय" });
+  await fix.waitFor({ timeout: 20000 });
+  assert.equal(await page.locator(".spelling-panel__word").count(), 1, "only the added misspelling is flagged, not the line's own words");
+  await fix.click();
+  await page.waitForTimeout(300);
+  assert.equal(
+    await page.evaluate(() => document.activeElement.value),
+    "धर्म और क्षेत्र में गुरुजी ने ज्ञान कार्यालय दिया।",
+    "the suggestion replaces the word",
+  );
+  console.log("SPELL_CHECK_OK typed word kept in order, misspelling flagged and fixed from a suggestion");
+  await page.close();
+}
+
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
@@ -679,6 +720,7 @@ try {
   await pageOpsCase(browser);
   await glyphRepairCase(browser);
   await findReplaceFlowCase(browser);
+  await spellCheckCase(browser);
 } finally {
   await browser.close();
 }
