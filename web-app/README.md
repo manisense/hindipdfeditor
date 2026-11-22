@@ -30,7 +30,7 @@ The site runs on the `hindipdfeditor` Cloudflare Worker. Deploy with `npm run de
 
 ## How editing works
 
-Edits are never written into the original file; export builds a new PDF from it (ADR 0009). Unedited pages are copied unchanged, so their text stays selectable and their links and forms survive. On edited pages, replaced text is deleted from the page content (`contentStreamText.ts`), or cleaned from scans with a line-preserving eraser (`inkEraser.ts`), and new words are shaped by the browser in Noto Sans Devanagari and placed as images. New words are therefore not searchable. Pages that use legacy Hindi fonts are detected and blocked, not converted.
+Edits are never written into the original file; export builds a new PDF from it (ADR 0009). Unedited pages are copied unchanged, so their text stays selectable and their links and forms survive. On edited pages, replaced text is deleted from the page content (`contentStreamText.ts`), or cleaned from scans with a line-preserving eraser (`inkEraser.ts`), and new words are shaped by the browser in Noto Sans Devanagari and placed as images. New words are therefore not searchable. Pages typed in Kruti Dev or DevLys are converted to Unicode (`krutiDev.ts`) and checked against OCR; other legacy fonts and unknown fonts are blocked.
 
 ## PDF libraries
 
