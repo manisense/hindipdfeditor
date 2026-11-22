@@ -913,6 +913,7 @@ export function EditPdfTool() {
       fontFamily?: EditFontFamily;
       fontWeight?: FontWeight;
       fontStyle?: "italic";
+      strokeEm?: number;
     },
     consumedOcrLine?: OcrLine,
     requestId = ++pendingEditRequestRef.current,
@@ -999,6 +1000,7 @@ export function EditPdfTool() {
       fontFamily: text.fontFamily ?? "NotoSansDevanagari",
       ...(text.fontWeight ? { fontWeight: text.fontWeight } : {}),
       ...(text.fontStyle ? { fontStyle: text.fontStyle } : {}),
+      ...(text.strokeEm ? { strokeEm: text.strokeEm } : {}),
       ...(text.widthPt !== undefined ? { widthPt: text.widthPt } : {}),
       maskId: maskEdit.id,
       ...(consumedOcrLine
@@ -1677,7 +1679,7 @@ export function EditPdfTool() {
                   : "NotoSansDevanagari"
               }
               color={focusedEdit.color}
-              fontWeight={isBoldWeight(focusedEdit.fontWeight) ? "bold" : "normal"}
+              fontWeight={isBoldWeight(focusedEdit.fontWeight) || focusedEdit.strokeEm ? "bold" : "normal"}
               onFontSizeChange={(fontSizePt) =>
                 updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
               }
@@ -1688,7 +1690,11 @@ export function EditPdfTool() {
                 updateTextEdit(currentPageIndex, focusedEdit.id, { color })
               }
               onFontWeightChange={(fontWeight) =>
-                updateTextEdit(currentPageIndex, focusedEdit.id, { fontWeight })
+                // Turning bold off also drops a faux-bold stroke copied from the original.
+                updateTextEdit(currentPageIndex, focusedEdit.id, {
+                  fontWeight,
+                  ...(fontWeight === "normal" ? { strokeEm: undefined } : {}),
+                })
               }
               onDelete={() => removeEditGroup(focusedEdit.id)}
               onDone={handleEditDone}

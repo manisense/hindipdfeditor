@@ -112,15 +112,23 @@ export async function rasteriseTextEdits(edits: readonly TextEdit[]): Promise<Ma
       context.font = `normal ${weight} ${fontPx}px ${cssFontStack(family)}`;
       context.fillStyle = getComputedStyle(span).color;
       context.textBaseline = 'alphabetic';
+      // Faux bold: the glyphs are filled, then stroked in the same colour, as the original was.
+      const strokePx = (edit.strokeEm ?? 0) * fontPx;
+      context.strokeStyle = context.fillStyle;
+      context.lineWidth = strokePx;
+      const paint = (text: string, x: number, y: number) => {
+        context.fillText(text, x, y);
+        if (strokePx > 0) context.strokeText(text, x, y);
+      };
       lines.forEach((line, index) => {
         const baseline = firstBaseline + index * lineHeightPx;
         if (edit.fontStyle !== 'italic') {
-          context.fillText(line.text, line.left, baseline);
+          paint(line.text, line.left, baseline);
           return;
         }
         context.save();
         context.setTransform(1, 0, -SYNTHETIC_ITALIC_SHEAR, 1, line.left + SYNTHETIC_ITALIC_SHEAR * baseline, 0);
-        context.fillText(line.text, 0, baseline);
+        paint(line.text, 0, baseline);
         context.restore();
       });
 

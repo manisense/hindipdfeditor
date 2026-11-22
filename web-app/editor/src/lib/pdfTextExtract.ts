@@ -1,10 +1,11 @@
 
-import { Util } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { OPS, Util } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import { fontHintFromPdfFont } from './fontMatch';
 import { krutiDevToUnicode } from './krutiDev';
 import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
 import { sharedPdfDocument } from './sharedPdfDocument';
+import { strokeEmPerItem, strokeRunsFromOperators } from './textStroke';
 import type { FontHint, OcrLine } from '../state/editStore';
 
 export type EmbeddedTextRun = {
@@ -139,7 +140,11 @@ export async function extractEmbeddedTextLines(
     const textContent = await page.getTextContent();
     // Font names (Times-Bold, Cambria,BoldItalic, Hind…) are only available once the page's
     // operators have been parsed.
-    await page.getOperatorList();
+    const operators = await page.getOperatorList();
+    const itemStrokes = strokeEmPerItem(
+      textContent.items.map((item) => ('str' in item ? item.str : '')),
+      strokeRunsFromOperators(operators.fnArray, operators.argsArray, OPS),
+    );
     const fontNameOf = (fontName: string): string | undefined => {
       try {
         return (page.commonObjs.get(fontName) as { name?: string } | undefined)?.name;
@@ -164,7 +169,7 @@ export async function extractEmbeddedTextLines(
       }
     }
 
-    for (const item of textContent.items) {
+    for (const [itemIndex, item] of textContent.items.entries()) {
       if (!('str' in item)) continue;
       const sanitized = sanitizeEmbeddedText(
         legacyFonts.has(item.fontName) ? krutiDevToUnicode(item.str) : item.str,
@@ -207,7 +212,10 @@ export async function extractEmbeddedTextLines(
         // Noto Sans is the closer look for them.
         font: legacyFonts.has(item.fontName)
           ? { serif: false, bold: false, italic: Math.abs(item.transform[2]) > 0.001 }
-          : fontHintFromPdfFont(fontNameOf(item.fontName), style?.fontFamily, Math.abs(item.transform[2]) > 0.001),
+          : withStroke(
+              fontHintFromPdfFont(fontNameOf(item.fontName), style?.fontFamily, Math.abs(item.transform[2]) > 0.001),
+              itemStrokes[itemIndex],
+            ),
       });
     }
 
@@ -225,6 +233,11 @@ export async function extractEmbeddedTextLines(
   } finally {
     page.cleanup();
   }
+}
+
+/** Adds a faux-bold stroke to a font hint when the run was painted with one. */
+function withStroke(font: FontHint, strokeEm: number): FontHint {
+  return strokeEm > 0 ? { ...font, strokeEm } : font;
 }
 
 function shouldInsertSpace(previous: EmbeddedTextRun, current: EmbeddedTextRun): boolean {

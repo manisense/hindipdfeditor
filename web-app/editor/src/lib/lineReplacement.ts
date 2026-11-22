@@ -11,7 +11,7 @@ import {
 import { replacementFontFor } from './fontMatch';
 import { readImageRegion } from './imageColor';
 import { sampleTextColor } from './pdfToImages';
-import { closestWeight, medianInkRunPx, type WeightSample } from './strokeWeight';
+import { closestWeight, fauxBoldWeight, medianInkRunPx, type WeightSample } from './strokeWeight';
 import type { OcrLine, PageState } from '../state/editStore';
 import { cssWeight, type FontWeight } from './fontWeight';
 
@@ -35,6 +35,8 @@ export type LineReplacement = {
     fontFamily: EditFontFamily;
     fontWeight: FontWeight;
     fontStyle?: 'italic';
+    /** Faux-bold stroke of the original, as a share of the font size. */
+    strokeEm?: number;
   };
 };
 
@@ -66,18 +68,26 @@ async function renderedStemPx(
 
 /**
  * The weight, among those the replacement family offers, whose strokes best match the original
- * line on the page image. Keeps `fallback` when the line cannot be measured.
+ * line on the page image, and for a faux-bold original (`strokeEm`) the stroke to repaint it with
+ * (see {@link fauxBoldWeight}). Keeps `fallback` and the PDF's stroke when the line cannot be
+ * measured, or when the family matches the original's (then the PDF's stroke is exact).
  *
  * @param fontSizePt Size the replacement will be drawn at, in pt.
+ * @param strokeEm Faux-bold stroke of the original, as a share of the font size.
  */
-async function matchedWeight(
+async function matchedFace(
   page: PageState,
   line: OcrLine,
   family: string,
   fontStyle: 'italic' | undefined,
   fontSizePt: number,
   fallback: FontWeight,
-): Promise<FontWeight> {
+  strokeEm: number | undefined,
+): Promise<{ fontWeight: FontWeight; strokeEm?: number }> {
+  const unmeasured = { fontWeight: fallback, ...(strokeEm ? { strokeEm } : {}) };
+  // With the original face itself or a metric match, the PDF's own stroke is exact; measuring the
+  // page image (2 px per pt) would only add rounding.
+  if (strokeEm && line.font?.match) return unmeasured;
   try {
     const pxPerPt = page.imagePxWidth / page.widthPt;
     const band = await readImageRegion(
@@ -88,18 +98,24 @@ async function matchedWeight(
       line.hPt * pxPerPt,
     );
     const originalStem = medianInkRunPx(band.data, band.width, band.height);
-    if (originalStem === null) return fallback;
+    if (originalStem === null) return unmeasured;
     const sample = line.text.slice(0, WEIGHT_SAMPLE_CHARS);
+    const fontPx = fontSizePt * pxPerPt;
     const samples: WeightSample[] = [];
     for (const weight of availableWeights(family)) {
-      const stemPx = await renderedStemPx(sample, family, weight, fontStyle, fontSizePt * pxPerPt);
+      const stemPx = await renderedStemPx(sample, family, weight, fontStyle, fontPx);
       if (stemPx !== null) samples.push({ weight, stemPx });
     }
+    if (strokeEm) {
+      const face = fauxBoldWeight(originalStem, samples, strokeEm * fontPx);
+      if (!face) return unmeasured;
+      return { fontWeight: face.weight, ...(face.strokePx > 0 ? { strokeEm: face.strokePx / fontPx } : {}) };
+    }
     const weight = closestWeight(originalStem, samples, cssWeight(fallback));
-    return weight === cssWeight(fallback) ? fallback : weight;
+    return { fontWeight: weight === cssWeight(fallback) ? fallback : weight };
   } catch (error) {
     console.warn('Stroke weight matching failed; keeping the detected weight', error);
-    return fallback;
+    return unmeasured;
   }
 }
 
@@ -115,10 +131,18 @@ export async function lineReplacementFor(page: PageState, line: OcrLine): Promis
   const hinted = replacementFontFor(line.font);
   const hintedRatio = await baselineOffsetRatio(hinted.fontFamily, hinted.fontWeight, hinted.fontStyle, line.text);
   const hintedSizePt = textGeometryForDetectedLine(line, page.widthPt, EDIT_TEXT_WIDTH_SLACK_RATIO, hintedRatio).fontSizePt;
-  const font = {
-    ...hinted,
-    fontWeight: await matchedWeight(page, line, hinted.fontFamily, hinted.fontStyle, hintedSizePt, hinted.fontWeight),
-  };
+  // A faux-bold original is a face plus a stroke: it is repainted as a face plus a stroke too,
+  // rather than approximated with a heavier face.
+  const { strokeEm, ...face } = await matchedFace(
+    page,
+    line,
+    hinted.fontFamily,
+    hinted.fontStyle,
+    hintedSizePt,
+    hinted.fontWeight,
+    line.font?.strokeEm,
+  );
+  const font = { ...hinted, ...face };
   const ratio = await baselineOffsetRatio(font.fontFamily, font.fontWeight, font.fontStyle, line.text);
   const detected = textGeometryForDetectedLine(line, page.widthPt, EDIT_TEXT_WIDTH_SLACK_RATIO, ratio);
   const fittedSizePt = fitFontSizeToLineWidth(
@@ -156,6 +180,7 @@ export async function lineReplacementFor(page: PageState, line: OcrLine): Promis
       widthPt: geometry.widthPt,
       color,
       ...font,
+      ...(strokeEm ? { strokeEm } : {}),
     },
   };
 }

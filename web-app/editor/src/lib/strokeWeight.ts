@@ -69,3 +69,32 @@ export function closestWeight(originalStemPx: number, samples: readonly WeightSa
   if (current && Math.exp(distance(current.stemPx)) <= KEEP_WITHIN) return fallback;
   return best.weight;
 }
+
+/**
+ * Face and stroke for repainting a faux-bold original (glyphs filled and stroked). A stroke adds
+ * its full width to every stem, so the stroke needed with a face is the original stem minus that
+ * face's stem. The face kept is the one needing a stroke closest to the one the PDF used, so the
+ * look stays "this face, emboldened" (on a tie, the one needing less); the stroke then makes the stems match exactly, even when the
+ * replacement font is a little lighter or heavier than the original.
+ *
+ * @param originalStemPx Median stem of the original line, in px.
+ * @param samples Candidate weights and their unstroked median stems at the same size, in px.
+ * @param pdfStrokePx Stroke width the PDF painted the original with, in px.
+ * @returns The weight (CSS 100–900) and the stroke width to paint, in px; null without samples.
+ */
+export function fauxBoldWeight(
+  originalStemPx: number,
+  samples: readonly WeightSample[],
+  pdfStrokePx: number,
+): { weight: number; strokePx: number } | null {
+  let best: { weight: number; strokePx: number; miss: number } | null = null;
+  for (const sample of samples) {
+    const needed = originalStemPx - sample.stemPx;
+    const miss = needed < 0 ? Math.abs(needed) + pdfStrokePx : Math.abs(needed - pdfStrokePx);
+    const strokePx = Math.max(0, needed);
+    // On a tie, the face needing less stroke stays closer to its own design.
+    const better = !best || miss < best.miss - 1e-6 || (Math.abs(miss - best.miss) <= 1e-6 && strokePx < best.strokePx);
+    if (better) best = { weight: sample.weight, strokePx, miss };
+  }
+  return best && { weight: best.weight, strokePx: best.strokePx };
+}
