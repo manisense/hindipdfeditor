@@ -1,4 +1,4 @@
-import { useTx } from "../lib/i18n";
+import { useLanguage, useTx } from "../lib/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
@@ -83,6 +83,8 @@ import { getTool, readEditModeFromLocation, type EditMode } from "../lib/tools";
 import { HIGHLIGHT_COLOR, linesOutsideWhiteouts } from "../lib/maskKinds";
 import { IMAGE_ACCEPT, ImageImportError, readImageFile, type ImportedImage } from "../lib/imageImport";
 import { clampToPage, placeImage, visiblePageCentre } from "../lib/imagePlacement";
+import { applyDraft, draftEditCount, draftOf, type Draft } from "../lib/draft";
+import { clearDraft, loadDraft, loadDraftPdf, saveDraft } from "../lib/draftStorage";
 import {
   detectTranslationDirection,
   isTranslatableEnglishLine,
@@ -111,6 +113,15 @@ const ROMAN_TYPING_KEY = "hpe-roman-typing";
 const RASTER_SCALE = 2;
 const MASK_SAMPLE_MARGIN_PX = 16;
 const MASK_EXPAND_PT = 3;
+/** Wait after the last change before keeping the draft, in ms. */
+const DRAFT_SAVE_DELAY_MS = 800;
+
+/** Date and time a draft was kept, in the UI language. */
+function savedAtLabel(savedAt: number, lang: string): string {
+  return new Intl.DateTimeFormat(lang === "hi" ? "hi-IN" : "en-IN", { dateStyle: "medium", timeStyle: "short" }).format(
+    savedAt,
+  );
+}
 
 type OcrStatusByPage = Record<number, "running" | "done" | "failed">;
 type EditPairing = { maskId?: string; ocrLine?: OcrLine };
@@ -158,6 +169,7 @@ async function detectLegacyFontWarnings(
 export function EditPdfTool() {
   const tx = useTx();
   const { showPopup } = useAppPopup();
+  const { lang } = useLanguage();
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const [focusedEditId, setFocusedEditId] = useState<string | null>(null);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
@@ -219,8 +231,54 @@ export function EditPdfTool() {
 
   const document = useEditStore((s) => s.document);
   const [exportedSnapshot, setExportedSnapshot] = useState<string | null>(null);
+  /** Draft kept in this browser from an earlier visit, offered for restoring on the open screen. */
+  const [keptDraft, setKeptDraft] = useState<Draft | null>(null);
+  /** Whether the latest edits are kept in this browser. */
+  const [draftKept, setDraftKept] = useState(false);
+  /** Document whose draft this visit wrote or restored, so only that draft is ever deleted. */
+  const draftDocumentIdRef = useRef<string | null>(null);
   const [discardVisible, setDiscardVisible] = useState(false);
   const dirty = hasUnexportedChanges(document, exportedSnapshot);
+
+  // Offer the draft kept from an earlier visit while no file is open.
+  useEffect(() => {
+    if (document) return;
+    let cancelled = false;
+    void loadDraft().then((draft) => {
+      if (!cancelled) setKeptDraft(draft);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [document]);
+
+  // Keep unexported edits in this browser, shortly after each change; drop the draft once the
+  // edits are exported.
+  useEffect(() => {
+    if (!document) return;
+    if (!dirty) {
+      if (draftDocumentIdRef.current === document.id) {
+        draftDocumentIdRef.current = null;
+        setDraftKept(false);
+        void clearDraft();
+      }
+      return;
+    }
+    setDraftKept(false);
+    const timer = window.setTimeout(() => {
+      const bytes = getPdfBytes();
+      if (!bytes) return;
+      const draft = draftOf(
+        document,
+        (pageIndex) => ocrStatusByPage[pageIndex] === "done",
+        editPairingsRef.current,
+        Date.now(),
+      );
+      draftDocumentIdRef.current = document.id;
+      void saveDraft(draft, bytes).then(setDraftKept);
+    }, DRAFT_SAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [document, dirty, ocrStatusByPage]);
   useUnsavedChanges(
     dirty || status.state === "saving" || translating || enhancingPage !== null,
   );
@@ -277,7 +335,7 @@ export function EditPdfTool() {
     setEditMode("edit");
   };
 
-  const openPdfFile = async (file: File) => {
+  const openPdfFile = async (file: File, restore?: Draft) => {
     pendingEditRequestRef.current += 1;
     setStatus({ state: "opening" });
     try {
@@ -309,24 +367,35 @@ export function EditPdfTool() {
       pages[0] = { ...pages[0], backgroundImageUri: (await renderPage(0, RASTER_SCALE)).uri };
 
       const legacyFontWarnings = await detectLegacyFontWarnings(pageCount);
+      const restored = restore ? applyDraft(pages, restore) : null;
+      if (restore && !restored) throw new Error("The kept draft does not match its PDF");
       const newDocument: DocumentState = {
-        id: crypto.randomUUID(),
+        id: restore?.documentId ?? crypto.randomUUID(),
         sourceName: file.name,
         pageCount,
-        pages,
+        pages: restored?.pages ?? pages,
         legacyFontWarnings,
       };
       loadDocument(newDocument);
-      setCurrentPageIndex(0);
+      // A restored draft opens on its first edited page.
+      const startPage = Math.max(0, newDocument.pages.findIndex((p) => p.edits.length > 0));
+      if (startPage > 0) void ensurePageImage(newDocument, startPage);
+      setCurrentPageIndex(startPage);
       setFocusedEditId(null);
       setSelectAllEditId(null);
       ocrAttemptedPagesRef.current.clear();
       pageImageRequestsRef.current.clear();
       aiJobIdRef.current = `document-${crypto.randomUUID()}`;
-      editPairingsRef.current.clear();
-      setOcrStatusByPage({});
+      editPairingsRef.current = new Map(restore?.pairings ?? []);
+      for (const pageIndex of restored?.detectedPages ?? []) ocrAttemptedPagesRef.current.add(pageIndex);
+      setOcrStatusByPage(
+        Object.fromEntries((restored?.detectedPages ?? []).map((pageIndex) => [pageIndex, "done" as const])),
+      );
+      draftDocumentIdRef.current = restore ? newDocument.id : null;
+      setKeptDraft(null);
+      setDraftKept(Boolean(restore));
       setEditMode(readEditModeFromLocation());
-      ocrPriorityPageRef.current = 0;
+      ocrPriorityPageRef.current = startPage;
       void runOcrQueue(newDocument);
       setStatus({ state: "idle" });
       trackToolEvent("pdf_open_success", "edit");
@@ -1251,6 +1320,11 @@ export function EditPdfTool() {
   const step = status.state === "saved" && !dirty ? 3 : document ? 2 : 1;
 
   const closeWithoutChanges = () => {
+    if (document && draftDocumentIdRef.current === document.id) {
+      draftDocumentIdRef.current = null;
+      void clearDraft();
+    }
+    setDraftKept(false);
     setDiscardVisible(false);
     setExportedSnapshot(null);
     pendingEditRequestRef.current += 1;
@@ -1262,6 +1336,22 @@ export function EditPdfTool() {
     editPairingsRef.current.clear();
     setOcrStatusByPage({});
     setStatus({ state: "idle" });
+  };
+
+  const restoreKeptDraft = async (draft: Draft) => {
+    const bytes = await loadDraftPdf(draft);
+    if (!bytes) {
+      setKeptDraft(null);
+      await clearDraft();
+      setStatus({ state: "error", message: { en: "The kept edits could not be read. Open the PDF again.", hi: "रखे गए बदलाव पढ़े नहीं जा सके। पीडीएफ फिर से खोलें।" } });
+      return;
+    }
+    await openPdfFile(new File([bytes.slice().buffer], draft.sourceName, { type: "application/pdf" }), draft);
+  };
+
+  const discardKeptDraft = () => {
+    setKeptDraft(null);
+    void clearDraft();
   };
 
   const handleCloseDocument = () => {
@@ -1322,6 +1412,23 @@ export function EditPdfTool() {
 
       {status.state !== "opening" && !document && (
         <div className="app__centered app__fill app__landing">
+          {keptDraft && (
+            <section className="app__kept-draft" aria-label={tx("Unsaved edits", "बिना सेव किए बदलाव")}>
+              <div className="app__kept-draft-text">
+                <strong>{tx("Continue where you left off?", "जहाँ छोड़ा था, वहीं से जारी रखें?")}</strong>
+                <span>
+                  {tx(
+                    `${keptDraft.sourceName}: ${draftEditCount(keptDraft)} unsaved ${draftEditCount(keptDraft) === 1 ? "change" : "changes"} from ${savedAtLabel(keptDraft.savedAt, lang)}. Kept only in this browser; opening another file and editing it replaces them.`,
+                    `${keptDraft.sourceName}: ${savedAtLabel(keptDraft.savedAt, lang)} के ${draftEditCount(keptDraft)} बिना सेव किए बदलाव। ये केवल इसी ब्राउज़र में रखे हैं; दूसरी फ़ाइल खोलकर बदलने पर ये हट जाएंगे।`,
+                  )}
+                </span>
+              </div>
+              <div className="app__kept-draft-actions">
+                <AppButton title={tx("Discard", "हटाएं")} small variant="secondary" onClick={discardKeptDraft} />
+                <AppButton title={tx("Restore edits", "बदलाव वापस लाएं")} small onClick={() => void restoreKeptDraft(keptDraft)} />
+              </div>
+            </section>
+          )}
           <DropZone
             accent={tool.accent}
             title={tx("Edit Hindi PDF", "हिंदी पीडीएफ एडिट करें")}
@@ -1391,6 +1498,11 @@ export function EditPdfTool() {
               <span className="app__filename">
                 <FileText size={15} aria-hidden="true" />
                 <span>{document.sourceName}</span>
+                {draftKept && dirty && (
+                  <span className="app__draft-kept" role="status">
+                    {tx("Edits kept in this browser", "बदलाव इस ब्राउज़र में रखे गए")}
+                  </span>
+                )}
               </span>
               <AppButton
                 title={tx("Undo", "पहले जैसा करें")}

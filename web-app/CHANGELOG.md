@@ -1,5 +1,14 @@
 # Changelog
 
+## Unsaved edits survive a reload, 23 November 2026
+
+### Added
+- Edits not yet exported are kept in the browser (IndexedDB) 0.8 s after each change, with a copy of the open PDF (written once per file) and the detected lines of pages already read, so a refresh, a crash or a closed tab does not lose work. The file name row shows "Edits kept in this browser".
+- The open screen offers "Continue where you left off?" with the file name, number of changes and time, above the drop zone. Restore reopens the PDF on its first edited page with every edit, the detected lines (pages already read are not read again) and the replacement pairings, so deleting a restored edit still brings the original line back. Discard deletes the draft.
+- One draft is kept: editing another file replaces it. It is deleted once the edits are exported, or when the user closes the file and discards the changes.
+- Privacy and data-safety pages (English and Hindi) say that unexported edits and a copy of the open PDF are kept in the browser until export or discard. The Hindi data-safety page said typed text ended when the browser closed; that is no longer true and was corrected.
+- The edit-quality gate whiteouts a line, reloads, restores, exports and checks the text is still removed, then checks that an exported draft is not offered again.
+
 ## Images and signatures, 22 November 2026
 
 ### Added

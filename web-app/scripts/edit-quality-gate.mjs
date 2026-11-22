@@ -1,6 +1,7 @@
 // Edit quality gate: replacing text with itself must leave the page as it was, a one-word edit
 // must change only that word, a whiteout must delete the text it covers and a highlight must keep
-// the text it marks readable, and inserted images and signatures must land where they were put. Runs the real editor in Chrome against a preview or production.
+// the text it marks readable, inserted images and signatures must land where they were put, and
+// unexported edits must survive a reload. Runs the real editor in Chrome against a preview or production.
 //   SMOKE_BASE_URL=http://127.0.0.1:8788 node web-app/scripts/edit-quality-gate.mjs
 // Requires Playwright (resolvable through NODE_PATH) and system Chrome.
 import assert from "node:assert/strict";
@@ -352,6 +353,34 @@ async function imagesCase(browser) {
   await page.close();
 }
 
+async function autosaveCase(browser) {
+  const file = path.join(fixtures, "translation-bilingual-fixture.pdf");
+  const context = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+  const page = await context.newPage();
+  await openPdf(page, file, 1);
+  const original = new Uint8Array(await import("node:fs").then((fs) => fs.readFileSync(file)));
+  const squash = (text) => text.replace(/\s+/g, "");
+  const line = await lineBox(page, 0);
+  line.text = await textInBox(original, 1, line.share);
+  await page.getByRole("button", { name: "Whiteout" }).click();
+  await dragBox(page, line.screen);
+  await page.getByText("Edits kept in this browser").waitFor({ timeout: 10000 });
+
+  await page.reload({ waitUntil: "networkidle" });
+  await page.getByText("Continue where you left off?").waitFor({ timeout: 10000 });
+  await page.getByRole("button", { name: "Restore edits" }).click();
+  await page.locator(".mask-overlay__mask--whiteout").waitFor({ timeout: 120000 });
+  const exported = await exportPdf(page);
+  // The restored editor opens on the edited (second) page, where the whiteout is.
+  assert.ok(!squash(await pageText(exported, 1)).includes(squash(line.text)), "restored whiteout still deletes its text");
+
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
+  assert.equal(await page.getByText("Continue where you left off?").count(), 0, "an exported draft is not offered again");
+  console.log("AUTOSAVE_OK whiteout kept across a reload, restored and exported; draft dropped after export");
+  await context.close();
+}
+
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
@@ -359,6 +388,7 @@ try {
   await oneWordCase(browser);
   await boxMarksCase(browser);
   await imagesCase(browser);
+  await autosaveCase(browser);
 } finally {
   await browser.close();
 }
