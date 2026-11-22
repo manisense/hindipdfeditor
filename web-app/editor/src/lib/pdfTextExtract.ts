@@ -5,6 +5,7 @@ import { fontHintFromPdfFont } from './fontMatch';
 import { krutiDevToUnicode } from './krutiDev';
 import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
 import { sharedPdfDocument } from './sharedPdfDocument';
+import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
 import { strokeEmPerItem, strokeRunsFromOperators } from './textStroke';
 import type { FontHint, OcrLine } from '../state/editStore';
 
@@ -52,14 +53,20 @@ export type SanitizedEmbeddedText = {
   removedPrivateUseCodePoints: number;
 };
 
-/** Removes invalid text-map bytes and font-specific private-use glyphs from embedded PDF text. */
+/**
+ * Removes invalid text-map bytes and font-specific private-use glyphs from embedded PDF text.
+ * Glyph placeholders (see glyphRepair.ts) are kept.
+ */
 export function sanitizeEmbeddedText(text: string): SanitizedEmbeddedText {
   let sanitized = '';
   let removedCodePoints = 0;
   let removedPrivateUseCodePoints = 0;
   for (const character of text) {
     const codePoint = character.codePointAt(0);
-    if (isUnsafeExtractedCodePoint(codePoint)) {
+    if (isGlyphPlaceholder(character)) {
+      // Stands in for an unmapped glyph until it is repaired (see glyphRepair.ts).
+      sanitized += character;
+    } else if (isUnsafeExtractedCodePoint(codePoint)) {
       removedCodePoints += 1;
     } else if (isPrivateUseCodePoint(codePoint)) {
       removedCodePoints += 1;
@@ -131,7 +138,13 @@ function ascentRatio(style: { ascent?: number; descent?: number }): number {
 export async function extractEmbeddedTextLines(
   pdfBytes: Uint8Array,
   pageIndex: number,
-  options: { convertLegacy?: boolean } = {},
+  options: {
+    convertLegacy?: boolean;
+    /** Keep glyph placeholders in the text (for learning them) instead of dropping them. */
+    keepGlyphPlaceholders?: boolean;
+    /** Learned readings of unmapped glyphs, applied to each line. */
+    glyphReadings?: ReadonlyMap<string, GlyphReading>;
+  } = {},
 ): Promise<OcrLine[]> {
   const doc = await sharedPdfDocument(pdfBytes);
   const page = await doc.getPage(pageIndex + 1);
@@ -141,10 +154,6 @@ export async function extractEmbeddedTextLines(
     // Font names (Times-Bold, Cambria,BoldItalic, Hind…) are only available once the page's
     // operators have been parsed.
     const operators = await page.getOperatorList();
-    const itemStrokes = strokeEmPerItem(
-      textContent.items.map((item) => ('str' in item ? item.str : '')),
-      strokeRunsFromOperators(operators.fnArray, operators.argsArray, OPS),
-    );
     const fontNameOf = (fontName: string): string | undefined => {
       try {
         return (page.commonObjs.get(fontName) as { name?: string } | undefined)?.name;
@@ -152,6 +161,26 @@ export async function extractEmbeddedTextLines(
         return undefined;
       }
     };
+    // Unmapped glyphs come out as U+0000; each becomes a placeholder for its font and glyph, so it
+    // can be learned and repaired. Only when they line up one to one with the drawn glyphs.
+    const unmapped = unmappedGlyphs(operators.fnArray, operators.argsArray, (name) => fontNameOf(name) ?? name);
+    const itemTexts = textContent.items.map((item) => ('str' in item ? item.str : ''));
+    const NUL = String.fromCharCode(0);
+    const nulls = itemTexts.reduce((count, text) => count + text.split(NUL).length - 1, 0);
+    if (nulls > 0 && nulls === unmapped.length) {
+      let next = 0;
+      for (const [i, text] of itemTexts.entries()) {
+        itemTexts[i] = text.split(NUL).reduce((out, part, k) => {
+          if (k === 0) return part;
+          const glyph = unmapped[next++];
+          return out + glyphPlaceholder(pdfBytes, glyph.key, glyph.signature) + part;
+        }, '');
+      }
+    }
+    const itemStrokes = strokeEmPerItem(
+      textContent.items.map((item) => ('str' in item ? item.str : '')),
+      strokeRunsFromOperators(operators.fnArray, operators.argsArray, OPS),
+    );
     const runs: EmbeddedTextRun[] = [];
     let degraded = false;
 
@@ -171,8 +200,9 @@ export async function extractEmbeddedTextLines(
 
     for (const [itemIndex, item] of textContent.items.entries()) {
       if (!('str' in item)) continue;
+      const str = itemTexts[itemIndex];
       const sanitized = sanitizeEmbeddedText(
-        legacyFonts.has(item.fontName) ? krutiDevToUnicode(item.str) : item.str,
+        legacyFonts.has(item.fontName) ? krutiDevToUnicode(str) : str,
       );
       if (sanitized.removedCodePoints > sanitized.removedPrivateUseCodePoints) degraded = true;
 
@@ -219,7 +249,13 @@ export async function extractEmbeddedTextLines(
       });
     }
 
-    return clusterRunsIntoLines(runs).map((line) => ({
+    const lines = clusterRunsIntoLines(runs).map((line) => {
+      const repaired = options.glyphReadings ? repairText(line.text, options.glyphReadings, isGlyphPlaceholder) : line.text;
+      if (options.keepGlyphPlaceholders || !hasGlyphPlaceholder(repaired)) return { ...line, text: repaired };
+      degraded = true;
+      return { ...line, text: [...repaired].filter((c) => !isGlyphPlaceholder(c)).join('').replace(/\s+/gu, ' ').trim() };
+    });
+    return lines.map((line) => ({
       id: crypto.randomUUID(),
       text: line.text,
       xPt: line.xPt,
@@ -233,6 +269,36 @@ export async function extractEmbeddedTextLines(
   } finally {
     page.cleanup();
   }
+}
+
+/**
+ * Every glyph drawn without a Unicode value, in drawing order: its key (pdf.js's loaded font
+ * name, unique per PDF font, and the glyph's code) and its signature (the font's real name and the
+ * glyph's advance width), see glyphPlaceholder.
+ *
+ * @param fontName The font's real name, from pdf.js's loaded name.
+ */
+function unmappedGlyphs(
+  fnArray: number[],
+  argsArray: unknown[],
+  fontName: (loadedName: string) => string,
+): { key: string; signature: string }[] {
+  const glyphs: { key: string; signature: string }[] = [];
+  let loaded = '';
+  fnArray.forEach((fn, i) => {
+    const args = argsArray[i] as unknown[] | null;
+    if (fn === OPS.setFont) loaded = String(args?.[0]);
+    if (fn !== OPS.showText) return;
+    for (const glyph of (args?.[0] as ({ unicode?: string; originalCharCode?: number; width?: number } | number | null)[]) ?? []) {
+      if (glyph && typeof glyph === 'object' && glyph.unicode === '\u0000') {
+        glyphs.push({
+          key: `${loaded}:${glyph.originalCharCode}`,
+          signature: `${fontName(loaded)}|${Math.round(glyph.width ?? 0)}`,
+        });
+      }
+    }
+  });
+  return glyphs;
 }
 
 /** Adds a faux-bold stroke to a font hint when the run was painted with one. */

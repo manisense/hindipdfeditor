@@ -3,7 +3,8 @@
 // the text it marks readable, inserted images and signatures must land where they were put, and
 // unexported edits must survive a reload, new words in faux-bold (stroked) lines must be as
 // heavy as the original, a line that grows must flow into the next line of its paragraph, and
-// page changes must keep each page's edits with it. Runs the real editor in Chrome against a preview or production.
+// page changes must keep each page's edits with it, and Hindi text whose font lacks Unicode for
+// some glyphs must read correctly. Runs the real editor in Chrome against a preview or production.
 //   SMOKE_BASE_URL=http://127.0.0.1:8788 node web-app/scripts/edit-quality-gate.mjs
 // Requires Playwright (resolvable through NODE_PATH) and system Chrome.
 import assert from "node:assert/strict";
@@ -614,6 +615,31 @@ async function pageOpsCase(browser) {
   await page.close();
 }
 
+async function glyphRepairCase(browser) {
+  // Chrome printed this fixture with subset fonts that leave the reph, conjuncts, ें and ि without
+  // Unicode; the heading reads correctly only once those glyphs are repaired (or from OCR).
+  const file = path.join(fixtures, "devanagari-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await openPdf(page, file, 0);
+  const expected = "धर्म और क्षेत्र में गुरुजी ने ज्ञान दिया।";
+  let found = null;
+  const count = await page.locator(".ocr-highlight-layer__box").count();
+  for (let i = 0; i < count && !found; i++) {
+    // A tapped line becomes an edit and leaves the list: the next line is always the first box.
+    const box = await page.locator(".ocr-highlight-layer__box").first().boundingBox();
+    await page.mouse.click(box.x + 3, box.y + box.height / 2);
+    await page.waitForTimeout(500);
+    const value = await page.evaluate(() => document.activeElement.value ?? "");
+    if (value.startsWith("धर्म और")) found = value;
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(200);
+    if (found) break;
+  }
+  assert.equal(found, expected, "the Hindi heading reads as written");
+  console.log("GLYPH_REPAIR_OK heading reads", JSON.stringify(found));
+  await page.close();
+}
+
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
@@ -625,6 +651,7 @@ try {
   await fauxBoldCase(browser);
   await paragraphFlowCase(browser);
   await pageOpsCase(browser);
+  await glyphRepairCase(browser);
 } finally {
   await browser.close();
 }
