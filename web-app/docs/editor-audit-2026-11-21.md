@@ -17,7 +17,7 @@ Status column: open unless noted.
 
 ## Major
 
-Status as of 21 November 2026: M1 fixed (PR #9, #10: Hind/Tinos/Arimo/Carlito/Caladea, bold/italic; faux bold (stroked text) repainted with the same stroke, PR #27); M2 fixed (PR #9: baseline alignment); M3 fixed (PR #13: shared pdf.js document, 150-page limit; lazy page rendering and an OCR queue that reads the page on screen first); M4 partly (Tesseract measured best; self-hosted models and a visible "OCR unavailable" notice open); M5 fixed (PR #13); M6 open (needs decision); M7 partly fixed (word-level done; a longer word pushes the rest of the line into blank space after it; a line that outgrows its column flows into the rest of its paragraph, PR #28); M8 fixed (PR #16). Replacement weight is matched from stroke thickness (light originals no longer get heavier text); width still differs where no metric-compatible font exists.
+Status as of 21 November 2026: M1 fixed (PR #9, #10: Hind/Tinos/Arimo/Carlito/Caladea, bold/italic; faux bold (stroked text) repainted with the same stroke, PR #27); M2 fixed (PR #9: baseline alignment); M3 fixed (PR #13: shared pdf.js document, 150-page limit; lazy page rendering and an OCR queue that reads the page on screen first); M4 fixed (Tesseract measured best; worker, core and models self-hosted at `/edit/ocr/`; a visible "text recognition could not load" notice; small text re-read from a 4× render of its line, PR #31); M5 fixed (PR #13); M6 fixed (KrutiDev-family pages converted with a pinned map, checked against OCR and shown for review, web ADR 0010); M7 partly fixed (word-level done; a longer word pushes the rest of the line into blank space after it; a line that outgrows its column flows into the rest of its paragraph, PR #28); M8 fixed (PR #16). Replacement weight is matched from stroke thickness (light originals no longer get heavier text) and width by horizontal scaling to the PDF line's width (PR #31).
 
 | # | Issue |
 |---|---|
@@ -32,7 +32,7 @@ Status as of 21 November 2026: M1 fixed (PR #9, #10: Hind/Tinos/Arimo/Carlito/Ca
 
 ## Moderate
 
-Status: rotation-aware text (PR #13), password/damaged/long-file messages and translated error titles (PR #13), document IDs (PR #13), html2canvas removed (PR #9) and `EditPdfTool.tsx` partly split (`lineReplacement.ts`, `FindReplacePanel.tsx`) are done; pdf.js CMap/standard-font data open.
+Status: rotation-aware text (PR #13), password/damaged/long-file messages and translated error titles (PR #13), document IDs (PR #13), html2canvas removed (PR #9) and `EditPdfTool.tsx` partly split (`lineReplacement.ts`, `FindReplacePanel.tsx`) are done; pdf.js CMap, standard-font, image-decoder and ICC data configured (PR #21); text painted twice (Chrome stroked text) is read once (PR #31).
 
 - Rotated pages (`/Rotate`): the horizontal-text check uses the pre-rotation transform, so text drops to OCR.
 - Password-protected PDFs show a raw technical error.
@@ -45,7 +45,7 @@ Status: rotation-aware text (PR #13), password/damaged/long-file messages and tr
 
 ## Minor / missing
 
-Status: find and replace (PR #15), Roman→Hindi typing (PR #14), labelled pager buttons and toolbar focus fix (PR #12, #14), whiteout and highlight tools (PR #24), images and signatures (PR #25), autosave (PR #26), in-editor page operations (PR #29) done; unmapped-glyph repair (PR #30) done for Skia-printed PDFs; Hindi spell check open.
+Status: find and replace (PR #15), Roman→Hindi typing (PR #14), labelled pager buttons and toolbar focus fix (PR #12, #14), whiteout and highlight tools (PR #24), images and signatures (PR #25), autosave (PR #26), in-editor page operations (PR #29) done; unmapped-glyph repair (PR #30, #31) done for Skia-printed PDFs; Hindi spell check open. Still open: glyphs mapped to the wrong characters (some Word/Mangal exports) fall back to OCR; Plan B (searchable vector edits) needs a decision; once a paragraph reflows, its redrawn lines are an image.
 
 - No images, signatures, stamps, whiteout, highlight, alignment, underline, find-and-replace, Hindi spell check, Roman→Hindi typing, in-editor page operations, autosave.
 - No check for characters the selected font lacks.
