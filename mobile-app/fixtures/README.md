@@ -59,3 +59,11 @@ above; this is an additional translation fixture and does not replace the canoni
 ## `legacy-krutidev-fixture.pdf`
 
 A stand-in for a Kruti Dev document, used to check that editors refuse to edit legacy-font pages. It fails closed on the web and offers raster-only replacement on Android. Its text is stored as ASCII ("d\`fr nso" is how Kruti Dev stores कृति देव), and its font's BaseFont is `KrutiDev010`. The real font is proprietary and not shipped, so the glyphs render as Helvetica. The detector keys on the font name, exactly as it does for a real file. Regenerate it with `node scripts/make-legacy-font-fixture.mjs` from `web-app/editor`.
+
+## faux-bold-fixture.pdf
+
+Latin lines emboldened the way Word does for a font with no bold face: text render mode 2 (fill and stroke) with a line width of 0.025 and 0.05 of the 16 pt font size, next to a regular line and a real Helvetica-Bold line. Used by the web edit-quality gate to check that new words in faux-bold lines are repainted with the same stroke. Latin only, because pdf-lib (which writes the stroke operators) cannot shape Devanagari; headless Chrome prints `-webkit-text-stroke` as two separate passes, not render mode 2, so it cannot produce this either. Regenerate (deterministic) with:
+
+```bash
+node web-app/scripts/make-faux-bold-fixture.mjs
+```

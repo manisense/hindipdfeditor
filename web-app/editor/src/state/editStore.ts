@@ -14,6 +14,8 @@ export type TextEdit = {
   fontFamily: 'NotoSansDevanagari' | 'NotoSerifDevanagari' | string;
   fontWeight?: FontWeight;
   fontStyle?: 'italic';
+  /** Stroke painted around the glyphs, as a share of the font size (matches a faux-bold original). */
+  strokeEm?: number;
   widthPt?: number;
   /** The mask that clears the original text under this edit, for replacements. */
   maskId?: string;
@@ -82,6 +84,11 @@ export type FontHint = {
   italic: boolean;
   /** Bundled family that matches the original exactly or by metrics, when there is one. */
   match?: 'Hind' | 'Tinos' | 'Arimo' | 'Carlito' | 'Caladea';
+  /**
+   * Stroke painted around the glyphs to embolden them ("faux bold", text render mode 2), as a
+   * share of the font size; absent when the text is only filled.
+   */
+  strokeEm?: number;
 };
 
 export type PageState = {

@@ -1,7 +1,8 @@
 // Edit quality gate: replacing text with itself must leave the page as it was, a one-word edit
 // must change only that word, a whiteout must delete the text it covers and a highlight must keep
 // the text it marks readable, inserted images and signatures must land where they were put, and
-// unexported edits must survive a reload. Runs the real editor in Chrome against a preview or production.
+// unexported edits must survive a reload, and new words in faux-bold (stroked) lines must be as
+// heavy as the original. Runs the real editor in Chrome against a preview or production.
 //   SMOKE_BASE_URL=http://127.0.0.1:8788 node web-app/scripts/edit-quality-gate.mjs
 // Requires Playwright (resolvable through NODE_PATH) and system Chrome.
 import assert from "node:assert/strict";
@@ -26,6 +27,8 @@ async function openPdf(page, file, pageIndex) {
   await page.getByText("Edit text — click a highlighted line").waitFor({ timeout: 120000 });
   for (let i = 0; i < pageIndex; i++) await page.getByRole("button", { name: "Next page" }).click();
   await page.getByText("Edit text — click a highlighted line").waitFor({ timeout: 120000 });
+  // The hint also shows before a page has been read; wait for its detected lines.
+  await page.locator(".ocr-highlight-layer__box").first().waitFor({ timeout: 120000 });
 }
 
 async function tapLine(page, index) {
@@ -85,10 +88,10 @@ async function inkHeightAfterWord(bytes, pageIndex, word) {
   return bottom >= top ? (bottom - top + 1) / size : 0;
 }
 
-async function pagePixels(bytes, pageIndex) {
+async function pagePixels(bytes, pageIndex, scale = 1.5) {
   const doc = await pdfjs.getDocument({ data: bytes.slice(), verbosity: 0 }).promise;
   const pdfPage = await doc.getPage(pageIndex + 1);
-  const viewport = pdfPage.getViewport({ scale: 1.5 });
+  const viewport = pdfPage.getViewport({ scale });
   const canvas = createCanvas(viewport.width, viewport.height);
   const context = canvas.getContext("2d");
   context.fillStyle = "#fff";
@@ -381,6 +384,124 @@ async function autosaveCase(browser) {
   await context.close();
 }
 
+/**
+ * Median width of horizontal ink runs (stems) between two x positions in a band, in px; runs
+ * wider than 30 px (bars, joined letters) are left out.
+ */
+function medianStemPx(rgba, width, x0, x1, y0, y1) {
+  const runs = [];
+  for (let y = y0; y < y1; y++) {
+    let run = 0;
+    for (let x = x0; x <= x1; x++) {
+      const i = (y * width + x) * 4;
+      const ink = x < x1 && rgba[i] + rgba[i + 1] + rgba[i + 2] < 384;
+      if (ink) run++;
+      else if (run) {
+        if (run < 30) runs.push(run);
+        run = 0;
+      }
+    }
+  }
+  runs.sort((a, b) => a - b);
+  return runs[Math.floor(runs.length / 2)] ?? 0;
+}
+
+/** Ink width of the last word on a line band (right of the last word space), in px. */
+async function lastWordInkWidth(rgba, width, x, y0, y1, size) {
+  const inkAt = (col) => {
+    for (let y = y0; y < y1; y++) {
+      const i = (y * width + col) * 4;
+      if (rgba[i] + rgba[i + 1] + rgba[i + 2] < 384) return true;
+    }
+    return false;
+  };
+  let right = width - 1;
+  while (right > x && !inkAt(right)) right--;
+  const wordSpace = Math.round(size * 0.2);
+  let start = right;
+  for (let blank = 0; start > x && blank < wordSpace; start--) blank = inkAt(start) ? 0 : blank + 1;
+  return right + 1 - (start + wordSpace);
+}
+
+async function fauxBoldCase(browser) {
+  const file = path.join(fixtures, "faux-bold-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await openPdf(page, file, 0);
+  await page.locator(".ocr-highlight-layer__box").first().waitFor();
+  const boxes = await page.locator(".ocr-highlight-layer__box").evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const r = node.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    }),
+  );
+  // Lines 1 and 2 are faux bold (stroke 0.025 and 0.05 of the font size). Their last word is
+  // replaced by itself reversed: same letters and length, so the line is not shrunk to fit and
+  // stems compare like for like.
+  for (const box of boxes.slice(1, 3)) {
+    await page.mouse.click(box.x, box.y);
+    await page.waitForTimeout(800);
+    const last = await page.evaluate(() => {
+      const field = document.activeElement;
+      const keep = field.value.trimEnd().replace(/\S+$/u, "");
+      field.setSelectionRange(keep.length, field.value.length);
+      return field.value.trimEnd().slice(keep.length);
+    });
+    await page.keyboard.type([...last].reverse().join(""));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+  }
+  const exported = await exportPdf(page);
+  if (process.env.GATE_SAVE_DIR) {
+    const fs = await import("node:fs");
+    fs.writeFileSync(path.join(process.env.GATE_SAVE_DIR, "faux-bold.pdf"), exported);
+  }
+  const scale = 4;
+  const doc = await pdfjs.getDocument({ data: exported.slice(), verbosity: 0 }).promise;
+  const pdfPage = await doc.getPage(1);
+  const viewport = pdfPage.getViewport({ scale });
+  const items = (await pdfPage.getTextContent()).items.filter((item) => item.str?.trim());
+  await doc.destroy();
+  const width = Math.round(viewport.width);
+  const rgba = await pagePixels(exported, 0, scale);
+  const sourceRgba = await pagePixels(new Uint8Array((await import("node:fs")).readFileSync(file)), 0, scale);
+  const results = [];
+  for (const prefix of ["Faux bold", "Heavy faux"]) {
+    const item = items.find((it) => it.str.replace(/\s+/g, "").startsWith(prefix.replace(/\s+/g, "")));
+    assert.ok(item, "kept words of the line are still PDF text: " + prefix);
+    const [x, baseline] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
+    const size = item.height * scale;
+    const y0 = Math.round(baseline - size * 0.7);
+    const y1 = Math.round(baseline);
+    // The new word is the last one on the line: the ink right of the last word space.
+    const inkAt = (col) => {
+      for (let y = y0; y < y1; y++) {
+        const i = (y * width + col) * 4;
+        if (rgba[i] + rgba[i + 1] + rgba[i + 2] < 384) return true;
+      }
+      return false;
+    };
+    let right = width - 1;
+    while (right > x && !inkAt(right)) right--;
+    const wordSpace = Math.round(size * 0.2);
+    let start = right;
+    for (let blank = 0; start > x && blank < wordSpace; start--) blank = inkAt(start) ? 0 : blank + 1;
+    const newWordStart = start + wordSpace;
+    const original = medianStemPx(rgba, width, Math.round(x), start, y0, y1);
+    const replaced = medianStemPx(rgba, width, newWordStart, right + 1, y0, y1);
+    const ratio = replaced / original;
+    assert.ok(ratio > 0.85 && ratio < 1.2, prefix + ": new word stems " + replaced + " px vs original " + original + " px");
+    // Faux bold keeps the regular letter shapes: the reversed word is as wide as the original
+    // word, where a bold face would be wider.
+    const originalWordPx = await lastWordInkWidth(sourceRgba, width, x, y0, y1, size);
+    const newWordPx = right + 1 - newWordStart;
+    const widthRatio = newWordPx / originalWordPx;
+    assert.ok(Math.abs(widthRatio - 1) < 0.04, prefix + ": new word " + newWordPx + " px wide vs original " + originalWordPx + " px");
+    results.push(prefix + " stems " + replaced + "/" + original + " px, width " + (widthRatio * 100).toFixed(1) + " %");
+  }
+  console.log("FAUX_BOLD_OK new word stems match the stroked original:", results.join("; "));
+  await page.close();
+}
+
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
@@ -389,6 +510,7 @@ try {
   await boxMarksCase(browser);
   await imagesCase(browser);
   await autosaveCase(browser);
+  await fauxBoldCase(browser);
 } finally {
   await browser.close();
 }

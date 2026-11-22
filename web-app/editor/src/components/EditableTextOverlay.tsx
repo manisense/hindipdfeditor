@@ -131,6 +131,7 @@ export function EditableTextOverlay({
         fontFamily: cssFontStack(edit.fontFamily),
         fontWeight: cssWeight(edit.fontWeight),
         fontStyle: edit.fontStyle ?? 'normal',
+        ...(edit.strokeEm ? { WebkitTextStroke: `${edit.strokeEm * fontSizePx}px ${edit.color}` } : {}),
         width: widthPx,
       }}
       rows={1}

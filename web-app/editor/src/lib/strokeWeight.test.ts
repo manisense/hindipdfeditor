@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { closestWeight, medianInkRunPx } from './strokeWeight';
+import { closestWeight, fauxBoldWeight, medianInkRunPx } from './strokeWeight';
 
 /** White band with vertical black stems `stem` px wide, every 10 px. */
 function stems(stem: number, width = 200, height = 20): Uint8ClampedArray {
@@ -47,5 +47,27 @@ describe('closestWeight', () => {
 
   it('keeps the current weight when it is close enough', () => {
     expect(closestWeight(2.4, samples, 400)).toBe(400);
+  });
+});
+
+describe('fauxBoldWeight', () => {
+  const samples = [
+    { weight: 300, stemPx: 3 },
+    { weight: 400, stemPx: 4 },
+    { weight: 700, stemPx: 6 },
+  ];
+
+  it('keeps the face whose stems plus the PDF stroke make the original stem', () => {
+    // Original 5 px = 400 (4 px) + the 1 px stroke the PDF used.
+    expect(fauxBoldWeight(5, samples, 1)).toEqual({ weight: 400, strokePx: 1 });
+  });
+
+  it('sets the stroke to make up the exact difference when the face is heavier than the original', () => {
+    // A heavier replacement face: 400 + 1 px would be 5 px, the original is 4.5 px.
+    expect(fauxBoldWeight(4.5, samples, 1)).toEqual({ weight: 400, strokePx: 0.5 });
+  });
+
+  it('never strokes a face that is already heavier than the original', () => {
+    expect(fauxBoldWeight(2.5, samples, 1)).toEqual({ weight: 300, strokePx: 0 });
   });
 });

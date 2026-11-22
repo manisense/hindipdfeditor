@@ -1,5 +1,19 @@
 # Changelog
 
+## Faux-bold text keeps its look, 23 November 2026
+
+### Changed
+- Word and other producers embolden a font that has no bold face by filling and stroking its text (render mode 2). The editor now reads that stroke from the page's operators (lining pdf.js's drawn characters up with its text items) and repaints new words the same way: the same face, filled and stroked, in the editor (`-webkit-text-stroke`) and in the export (Canvas `strokeText`, still shaped by the browser). Before, a heavier face was chosen, which matched stem thickness but made letters wider (104.7 % of the original word's width on the heavy fixture line; now 100.6 %).
+- When the replacement face is the original or a metric match (Hind, Tinos, Arimo, Carlito, Caladea), the PDF's stroke is used as it is. Otherwise (for example Noto for Mangal) the face and stroke are chosen together so the stems match the page image, keeping the stroke closest to the PDF's.
+- The Bold chip shows as on for faux-bold text; turning it off removes the stroke.
+
+### Added
+- `mobile-app/fixtures/faux-bold-fixture.pdf`, written by `web-app/scripts/make-faux-bold-fixture.mjs`: Latin lines filled and stroked at 0.025 and 0.05 of the font size, as Word writes them, next to regular and real bold lines.
+- The edit-quality gate replaces a word on each faux-bold line and checks the new word's stems (7/7 px, 9/9 px at 4×) and width (within 4 %) against the original. It fails without stroke detection.
+
+### Fixed
+- The gate waited for the editing hint, which also shows before a page has been read, then read the page's line boxes; it now waits for the boxes.
+
 ## Unsaved edits survive a reload, 23 November 2026
 
 ### Added
