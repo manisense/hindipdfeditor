@@ -45,7 +45,7 @@ Status: rotation-aware text (PR #13), password/damaged/long-file messages and tr
 
 ## Minor / missing
 
-Status: find and replace (PR #15), Roman→Hindi typing (PR #14), labelled pager buttons and toolbar focus fix (PR #12, #14) done; images/signatures, whiteout/highlight tools, Hindi spell check, in-editor page operations and autosave open.
+Status: find and replace (PR #15), Roman→Hindi typing (PR #14), labelled pager buttons and toolbar focus fix (PR #12, #14), whiteout and highlight tools (PR #24) done; images/signatures, Hindi spell check, in-editor page operations and autosave open.
 
 - No images, signatures, stamps, whiteout, highlight, alignment, underline, find-and-replace, Hindi spell check, Roman→Hindi typing, in-editor page operations, autosave.
 - No check for characters the selected font lacks.

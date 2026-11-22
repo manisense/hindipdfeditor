@@ -32,14 +32,15 @@ export type MaskEdit = {
   yPt: number;
   wPt: number;
   hPt: number;
-  /** Fill colour for a whiteout; fallback colour for a replacement preview. */
+  /** Fill colour for a whiteout or highlight; fallback colour for a replacement preview. */
   color: string;
   /**
    * `replace`: the original text under the box is removed at export (glyphs deleted from the PDF,
-   * or ink cleaned from a scan) and borders survive. `whiteout` (default, the Erase box tool):
-   * the box is filled with `color`.
+   * or ink cleaned from a scan) and borders survive. `whiteout` (default, the Whiteout tool): the
+   * text under the box is deleted and the box is filled with `color`. `highlight`: `color` is
+   * painted over the box with a multiply blend and everything under it is kept.
    */
-  kind?: 'replace' | 'whiteout';
+  kind?: 'replace' | 'whiteout' | 'highlight';
   /** On-screen preview of the cleaned region (PNG data URL) for `replace` masks. */
   previewUri?: string;
 };

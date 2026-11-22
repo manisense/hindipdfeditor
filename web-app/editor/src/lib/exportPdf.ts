@@ -1,12 +1,14 @@
 import {
   concatTransformationMatrix,
   drawObject,
+  BlendMode,
   fill,
   PDFDocument,
   PDFName,
   popGraphicsState,
   pushGraphicsState,
   rectangle,
+  rgb,
   setFillingRgbColor,
   type PDFImage,
   type PDFPage,
@@ -18,6 +20,7 @@ import type { Matrix, UserRect } from './contentStreamText';
 import { applyChangedSpans } from './changedSpan';
 import { baselineOffsetRatio, loadFontFor, measureTextWidthPt } from './fontAsset';
 import { eraseInkKeepingLines } from './inkEraser';
+import { isHighlight, isWhiteout, patchesBackground, removesTextUnder } from './maskKinds';
 import { removePageText } from './pdfTextRemoval';
 import { rasteriseTextEdits } from './textRaster';
 import { inkColumns, nearestGap } from './wordGaps';
@@ -102,6 +105,21 @@ function fillInEditorSpace(page: PDFPage, editorToUser: Matrix, rect: EditorRect
     fill(),
     popGraphicsState(),
   );
+}
+
+/** Paints a highlight over `rect` with a multiply blend, so the marked content stays readable. */
+function highlightInEditorSpace(page: PDFPage, editorToUser: Matrix, rect: EditorRect, color: string) {
+  const [r, g, b] = hexToRgb(color);
+  page.pushOperators(pushGraphicsState(), concatTransformationMatrix(...editorToUser));
+  page.drawRectangle({
+    x: rect.xPt,
+    y: rect.yPt,
+    width: rect.wPt,
+    height: rect.hPt,
+    color: rgb(r, g, b),
+    blendMode: BlendMode.Multiply,
+  });
+  page.pushOperators(popGraphicsState());
 }
 
 /** Renders one page at `PATCH_PX_PER_PT` and returns cleaned PNG patches for `rects`. */
@@ -284,7 +302,8 @@ async function backgroundPatches(page: PageState, rects: EditorRect[]): Promise<
  * copied unchanged, so their text stays selectable and searchable and their links, forms and
  * bookmarks survive. On edited pages: replaced text is deleted from the page content (or, on
  * scans and wherever deletion cannot reach, cleaned from a raster patch that keeps ruled lines);
- * whiteouts are vector rectangles; new text is rendered by the browser, which shapes Devanagari
+ * whiteouts delete the text under them and are filled vector rectangles; highlights are
+ * multiply-blended rectangles over everything; new text is rendered by the browser, which shapes Devanagari
  * (Plan A), painted at the measured baseline and placed as a transparent image. Never overwrites the source file.
  *
  * @param source Full in-memory document state; positions are in PDF points.
@@ -347,22 +366,23 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
   const editorToUser = (page: PageState): Matrix =>
     transforms.get(page.pageIndex) ?? [1, 0, 0, -1, 0, page.heightPt];
 
-  const replaceRects = new Map<number, EditorRect[]>();
+  // Text is deleted under replacements and whiteouts; only replacements get a cleaned patch where
+  // deletion could not reach, since a whiteout is painted over anyway.
+  const removalMasks = new Map<number, MaskEdit[]>();
   const needsPatch = new Map<number, Set<number>>();
   for (const page of editedPages) {
-    const rects = page.edits
-      .filter((e): e is MaskEdit => e.type === 'mask' && e.kind === 'replace')
-      .map(({ xPt, yPt, wPt, hPt }) => ({ xPt, yPt, wPt, hPt }));
-    replaceRects.set(page.pageIndex, rects);
+    const masks = page.edits.filter((e): e is MaskEdit => e.type === 'mask' && removesTextUnder(e));
+    removalMasks.set(page.pageIndex, masks);
+    const patchable = masks.map((_, i) => i).filter((i) => patchesBackground(masks[i]));
     if (!loaded) {
-      needsPatch.set(page.pageIndex, new Set(rects.map((_, i) => i)));
+      needsPatch.set(page.pageIndex, new Set(patchable));
       continue;
     }
-    const userRects = rects.map((rect) => toUserRect(editorToUser(page), rect));
+    const userRects = masks.map((rect) => toUserRect(editorToUser(page), rect));
     const { removedPerRect, unresolvedRects } = removePageText(out, page.pageIndex, userRects);
     needsPatch.set(
       page.pageIndex,
-      new Set(rects.map((_, i) => i).filter((i) => removedPerRect[i] === 0 || unresolvedRects.has(i))),
+      new Set(patchable.filter((i) => removedPerRect[i] === 0 || unresolvedRects.has(i))),
     );
   }
 
@@ -370,10 +390,15 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
   if (loaded && editedPages.length > 0) {
     afterRemoval = await out.save();
     for (const page of editedPages) {
-      const rects = replaceRects.get(page.pageIndex) ?? [];
-      if (rects.length === 0) continue;
-      const remaining = await rectsWithRemainingText(afterRemoval, page.pageIndex, rects);
-      for (const i of remaining) needsPatch.get(page.pageIndex)?.add(i);
+      const masks = removalMasks.get(page.pageIndex) ?? [];
+      const patchable = masks.map((_, i) => i).filter((i) => patchesBackground(masks[i]));
+      if (patchable.length === 0) continue;
+      const remaining = await rectsWithRemainingText(
+        afterRemoval,
+        page.pageIndex,
+        patchable.map((i) => masks[i]),
+      );
+      for (const k of remaining) needsPatch.get(page.pageIndex)?.add(patchable[k]);
     }
   }
 
@@ -385,7 +410,7 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
   for (const page of editedPages) {
     const pdfPage = out.getPage(page.pageIndex);
     const toUser = editorToUser(page);
-    const rects = replaceRects.get(page.pageIndex) ?? [];
+    const rects = removalMasks.get(page.pageIndex) ?? [];
     const patchIndexes = [...(needsPatch.get(page.pageIndex) ?? [])];
     if (patchIndexes.length > 0) {
       const patchRects = patchIndexes.map((i) => rects[i]);
@@ -397,11 +422,14 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
       }
     }
     for (const mask of page.edits) {
-      if (mask.type === 'mask' && mask.kind !== 'replace') fillInEditorSpace(pdfPage, toUser, mask, mask.color);
+      if (mask.type === 'mask' && isWhiteout(mask)) fillInEditorSpace(pdfPage, toUser, mask, mask.color);
     }
     for (const edit of page.edits) {
       const text = edit.type === 'text' ? renderedText.get(edit.id) : undefined;
       if (text) drawImageInEditorSpace(pdfPage, toUser, await out.embedPng(text.png), text);
+    }
+    for (const mask of page.edits) {
+      if (mask.type === 'mask' && isHighlight(mask)) highlightInEditorSpace(pdfPage, toUser, mask, mask.color);
     }
   }
 

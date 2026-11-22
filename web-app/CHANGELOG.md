@@ -1,5 +1,17 @@
 # Changelog
 
+## Highlight and Whiteout tools, 22 November 2026
+
+### Added
+- **Highlight**: drag over text to mark it in yellow. It is drawn with a multiply blend, on screen and in the export, so the text under it stays dark, selectable and searchable.
+- **Whiteout**: drag a box to cover anything on the page. The box takes the surrounding paper colour, and on export the text under it is deleted from the page, so covered words cannot be copied or found by search. Images and drawings under it are covered, not removed. Detected lines under a whiteout can no longer be tapped and edited.
+- In either tool, each box has a × button to remove it; Undo works as for other edits. `?mode=highlight` and `?mode=whiteout` open the editor in those tools.
+- The edit-quality gate whiteouts one line and highlights another on the bilingual fixture, and checks that the covered text is gone from the export, the marked text is kept, the whiteout hides all ink and the highlight is visible with dark text under it. It fails if whiteouts stop deleting text.
+
+### Fixed
+- Box tools (Erase box, Highlight, Whiteout) accept a long thin box: a drag counts once one side is 12 px and the other 3 px. Before, both sides had to be 12 px, so a box over one line of text on a phone (about 7 px tall) was taken as a click and left the tool.
+- The hints for the new tools fit on one line on desktop, so switching tools no longer moves the page.
+
 ## Replacement text matches the original's weight, 22 November 2026
 
 ### Changed

@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react';
+import { X } from 'lucide-react';
+import { Fragment, useRef, useState } from 'react';
 
 import { dpSizeToPt, dpToPt, ptSizeToDp, ptToDp } from '../lib/coordinateMath';
+import { isBoxDrag } from '../lib/dragIntent';
 import type { MaskEdit } from '../state/editStore';
 import './MaskOverlay.css';
 
@@ -14,9 +16,16 @@ type Props = {
   onMaskDrawn: (rect: DrawnMaskRect) => void;
   /** Fired when the user clicks/taps without dragging a real erase box (cancel erase mode). */
   onCancel?: () => void;
+  /** Look of the box being dragged: the Highlight tool previews its colour. */
+  drawKind?: 'highlight';
+  /** Masks of this kind show a remove button (while their tool is selected). */
+  removableKind?: 'whiteout' | 'highlight';
+  /** Accessible name of the remove button. */
+  removeLabel?: string;
+  onRemove?: (id: string) => void;
 };
 
-const MIN_DRAG_PX = 12;
+const kindOf = (mask: MaskEdit) => mask.kind ?? 'whiteout';
 
 export function MaskOverlay({
   masks,
@@ -25,6 +34,10 @@ export function MaskOverlay({
   active,
   onMaskDrawn,
   onCancel,
+  drawKind,
+  removableKind,
+  removeLabel,
+  onRemove,
 }: Props) {
   const [dragRectPx, setDragRectPx] = useState<{ x: number; y: number; w: number; h: number } | null>(
     null,
@@ -71,7 +84,7 @@ export function MaskOverlay({
       onCancel?.();
       return;
     }
-    if (rect.w < MIN_DRAG_PX || rect.h < MIN_DRAG_PX) {
+    if (!isBoxDrag(rect.w, rect.h)) {
       onCancel?.();
       return;
     }
@@ -88,29 +101,49 @@ export function MaskOverlay({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {masks.map((mask) => {
+      {/* Highlights are drawn last, over whiteouts, as the export draws them. */}
+      {[...masks.filter((m) => kindOf(m) !== 'highlight'), ...masks.filter((m) => kindOf(m) === 'highlight')].map((mask) => {
         const { xDp, yDp } = ptToDp(mask.xPt, mask.yPt, viewWidthPx, pageWidthPt);
         const { wDp, hDp } = ptSizeToDp(mask.wPt, mask.hPt, viewWidthPx, pageWidthPt);
+        const kind = kindOf(mask);
         return (
-          <div
-            key={mask.id}
-            className="mask-overlay__mask"
-            style={{
-              left: xDp,
-              top: yDp,
-              width: wDp,
-              height: hDp,
-              backgroundColor: mask.color,
-              ...(mask.previewUri
-                ? { backgroundImage: `url(${mask.previewUri})`, backgroundSize: '100% 100%' }
-                : {}),
-            }}
-          />
+          <Fragment key={mask.id}>
+            <div
+              className={`mask-overlay__mask mask-overlay__mask--${kind}`}
+              style={{
+                left: xDp,
+                top: yDp,
+                width: wDp,
+                height: hDp,
+                backgroundColor: mask.color,
+                ...(mask.previewUri
+                  ? { backgroundImage: `url(${mask.previewUri})`, backgroundSize: '100% 100%' }
+                  : {}),
+              }}
+            />
+            {active && onRemove && removableKind === kind && (
+              <button
+                type="button"
+                className="mask-overlay__remove"
+                style={{ left: xDp + wDp - 12, top: yDp - 12 }}
+                aria-label={removeLabel}
+                title={removeLabel}
+                onPointerDown={(event) => event.stopPropagation()}
+                onPointerUp={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRemove(mask.id);
+                }}
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+            )}
+          </Fragment>
         );
       })}
       {dragRectPx && (
         <div
-          className="mask-overlay__drag"
+          className={`mask-overlay__drag${drawKind ? ` mask-overlay__drag--${drawKind}` : ''}`}
           style={{
             left: dragRectPx.x,
             top: dragRectPx.y,
