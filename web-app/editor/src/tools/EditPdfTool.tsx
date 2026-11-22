@@ -59,7 +59,7 @@ import {
   openFailureMessage,
   tooManyPagesMessage,
 } from "../lib/userMessages";
-import { detectTextLines, detectTextLinesWithGemini } from "../lib/ocr";
+import { detectTextLines, detectTextLinesWithGemini, onOcrUnavailable } from "../lib/ocr";
 import { findOcrTargetAt, findTextEditAt } from "../lib/ocrHitTest";
 import {
   getPageCount,
@@ -174,6 +174,8 @@ export function EditPdfTool() {
   );
   const [pageZoom, setPageZoom] = useState(1);
   const [findReplaceOpen, setFindReplaceOpen] = useState(false);
+  const [ocrUnavailable, setOcrUnavailable] = useState(false);
+  useEffect(() => onOcrUnavailable(() => setOcrUnavailable(true)), []);
   const [romanTyping, setRomanTyping] = useState(() => {
     try {
       return window.localStorage.getItem(ROMAN_TYPING_KEY) === "on";
@@ -1025,11 +1027,11 @@ export function EditPdfTool() {
               "टेक्स्ट जोड़ें — जहाँ लिखना है वहाँ पेज पर क्लिक करें। रद्द करने के लिए पेज के बाहर क्लिक करें या Esc दबाएं।",
             ) + zoomHint
         : ocrStatus === "running"
-          ? `Finding text… (${ocrReadyCount}/${document?.pages.length ?? 0} pages ready)`
+          ? findingText
           : ocrStatus === "failed"
             ? tx(
                 "Could not detect text automatically — use Erase box or Add text. Press Esc to clear selection.",
-                'टेक्स्ट अपने-आप नहीं पहचाना जा सका — "Erase box" या "Add text" इस्तेमाल करें। चुनाव हटाने के लिए Esc दबाएं।',
+                'टेक्स्ट अपने-आप नहीं पहचाना जा सका — "मिटाएं" या "टेक्स्ट जोड़ें" इस्तेमाल करें। चुनाव हटाने के लिए Esc दबाएं।',
               ) + zoomHint
             : (page?.ocrLines.length ?? 0) === 0
               ? tx(
@@ -1277,6 +1279,15 @@ export function EditPdfTool() {
             </div>
             <p className="app__hint">{hintText}</p>
           </section>
+
+          {ocrUnavailable && (
+            <AppStatus tone="warning" title={tx("Text recognition could not load", "टेक्स्ट पहचान लोड नहीं हो सकी")}>
+              {tx(
+                "Hindi text on some pages could not be double-checked. Check the text in each box before saving, or reload the page to try again.",
+                "कुछ पेज पर हिंदी टेक्स्ट की दोबारा जाँच नहीं हो सकी। सेव करने से पहले हर बॉक्स का टेक्स्ट देख लें, या पेज दोबारा लोड करके फिर कोशिश करें।",
+              )}
+            </AppStatus>
+          )}
 
           {findReplaceOpen && (
             <FindReplacePanel

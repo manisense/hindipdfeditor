@@ -27,21 +27,80 @@ import { getPdfBytes } from "./pdfToImages";
 import type { RecognizedLine } from "./recognizedLine";
 import type { OcrLine, PageState } from "../state/editStore";
 
-let hinWorker: Worker | null = null;
-let engWorker: Worker | null = null;
-
-async function getHinWorker(): Promise<Worker> {
-  if (!hinWorker) {
-    hinWorker = await createWorker("hin");
-  }
-  return hinWorker;
+/**
+ * OCR engine, worker and language data are served from this site (copied from pinned npm
+ * packages by `scripts/copy-ocr-assets.mjs`), not from a CDN that office networks may block.
+ * Absolute URLs: the worker runs from a blob URL, where relative paths do not resolve.
+ */
+function ocrAssetOptions() {
+  const base = new URL("/edit/ocr/", window.location.origin).href;
+  return {
+    workerPath: `${base}worker.min.js`,
+    corePath: `${base}core`,
+    langPath: `${base}lang`,
+  };
 }
 
-async function getEngWorker(): Promise<Worker> {
-  if (!engWorker) {
-    engWorker = await createWorker("eng");
-  }
-  return engWorker;
+const unavailableListeners = new Set<() => void>();
+
+/**
+ * Subscribes to "OCR could not run" (engine or language data failed to load). The editor shows a
+ * notice, because pages then keep their PDF text without the Hindi check.
+ *
+ * @returns Unsubscribe function.
+ */
+export function onOcrUnavailable(listener: () => void): () => void {
+  unavailableListeners.add(listener);
+  return () => unavailableListeners.delete(listener);
+}
+
+function reportOcrUnavailable(error: unknown): void {
+  console.warn("OCR is unavailable", error);
+  for (const listener of unavailableListeners) listener();
+}
+
+/** Language data is 1.4–3 MB; on a slow connection it can take a while, but never this long. */
+const OCR_LOAD_TIMEOUT_MS = 60_000;
+
+const workers = new Map<"hin" | "eng", Promise<Worker>>();
+
+/**
+ * Loads an OCR worker once, sharing the in-flight load. tesseract.js never settles `createWorker`
+ * when the language data fails to download (the error escapes as an uncaught exception), which
+ * left pages "Finding text…" forever; worker errors and a timeout now reject instead, the failure
+ * is reported, and the next call tries again.
+ */
+function getWorker(language: "hin" | "eng"): Promise<Worker> {
+  const existing = workers.get(language);
+  if (existing) return existing;
+  const loading = new Promise<Worker>((resolve, reject) => {
+    const timer = window.setTimeout(
+      () => reject(new Error(`OCR data for ${language} did not load in time`)),
+      OCR_LOAD_TIMEOUT_MS,
+    );
+    createWorker(language, 1, {
+      ...ocrAssetOptions(),
+      errorHandler: (error: unknown) => {
+        window.clearTimeout(timer);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      },
+    }).then(
+      (worker) => {
+        window.clearTimeout(timer);
+        resolve(worker);
+      },
+      (error: unknown) => {
+        window.clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+  workers.set(language, loading);
+  loading.catch((error: unknown) => {
+    workers.delete(language);
+    reportOcrUnavailable(error);
+  });
+  return loading;
 }
 
 type TesseractWord = TesseractPage["blocks"] extends (infer B)[] | null
@@ -180,7 +239,7 @@ async function recognizePage(
   language: "hin" | "eng",
 ): Promise<TesseractPage> {
   const worker =
-    language === "hin" ? await getHinWorker() : await getEngWorker();
+    await getWorker(language);
   // tesseract.js v6 returns no blocks (so no lines or words) unless asked for them.
   const { data } = await worker.recognize(imageUri, {}, { blocks: true });
   return data;
@@ -201,7 +260,7 @@ async function recognizeRow(
 ): Promise<OcrLine | null> {
   const { x, y } = ptToImagePx(crop.xPt, crop.yPt, page.imagePxWidth, page.widthPt);
   const { wPx, hPx } = ptSizeToImagePx(crop.wPt, crop.hPt, page.imagePxWidth, page.widthPt);
-  const worker = await getHinWorker();
+  const worker = await getWorker("hin");
   const { data } = await worker.recognize(page.backgroundImageUri, {
     rectangle: {
       left: Math.round(x),
@@ -257,7 +316,7 @@ async function verifyEmbeddedDevanagari(
     }
     return combineEmbeddedLatinWithOcr(embedded, [...hindiLines, ...rescued]);
   } catch (error) {
-    console.warn("Hindi OCR check failed; keeping embedded PDF text", error);
+    reportOcrUnavailable(error);
     return embedded;
   }
 }

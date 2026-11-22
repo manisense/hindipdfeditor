@@ -49,3 +49,6 @@ web-app/.wrangler/
 
 # Project-only Cloudflare deployment credentials
 /.env.cloudflare
+
+# OCR engine and language data copied from pinned npm packages at build time
+web-app/editor/public/ocr/
