@@ -17,7 +17,7 @@ Status column: open unless noted.
 
 ## Major
 
-Status as of 21 November 2026: M1 fixed (PR #9, #10: Hind/Tinos/Arimo/Carlito/Caladea, bold/italic; faux bold via stroke still open); M2 fixed (PR #9: baseline alignment); M3 partly fixed (PR #13: shared pdf.js document, 150-page limit; lazy rendering and a cancellable OCR queue open); M4 partly (Tesseract measured best; self-hosted models and a visible "OCR unavailable" notice open); M5 fixed (PR #13); M6 open (needs decision); M7 open (paragraph reflow; word-level done); M8 fixed (PR #16).
+Status as of 21 November 2026: M1 fixed (PR #9, #10: Hind/Tinos/Arimo/Carlito/Caladea, bold/italic; faux bold via stroke still open); M2 fixed (PR #9: baseline alignment); M3 partly fixed (PR #13: shared pdf.js document, 150-page limit; lazy rendering and a cancellable OCR queue open); M4 partly (Tesseract measured best; self-hosted models and a visible "OCR unavailable" notice open); M5 fixed (PR #13); M6 open (needs decision); M7 partly fixed (word-level done; a longer word pushes the rest of the line into blank space after it; wrapping to the next line open); M8 fixed (PR #16). New: replacement text can look heavier than a light original (stroke-weight matching open).
 
 | # | Issue |
 |---|---|
