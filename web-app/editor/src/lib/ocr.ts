@@ -332,12 +332,14 @@ async function verifyEmbeddedDevanagari(
  */
 export async function detectTextLines(
   page: PageState,
-  options?: { forceOcr?: boolean },
+  options?: { forceOcr?: boolean; convertLegacy?: boolean },
 ): Promise<OcrLine[]> {
   const pdfBytes = getPdfBytes();
   if (!options?.forceOcr && pdfBytes) {
     try {
-      const embedded = await extractEmbeddedTextLines(pdfBytes, page.pageIndex);
+      const embedded = await extractEmbeddedTextLines(pdfBytes, page.pageIndex, {
+        convertLegacy: options?.convertLegacy,
+      });
       if (embedded.length > 0) return await verifyEmbeddedDevanagari(embedded, page);
     } catch (error) {
       console.warn(

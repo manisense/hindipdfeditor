@@ -2,6 +2,8 @@
 import { Util } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import { fontHintFromPdfFont } from './fontMatch';
+import { krutiDevToUnicode } from './krutiDev';
+import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
 import { sharedPdfDocument } from './sharedPdfDocument';
 import type { FontHint, OcrLine } from '../state/editStore';
 
@@ -117,12 +119,18 @@ function ascentRatio(style: { ascent?: number; descent?: number }): number {
  * Vertical or rotated runs are skipped because their geometry is unsupported; the rest of the
  * page is still returned. Italic (sheared) text is horizontal and is kept.
  *
+ * With `convertLegacy`, runs set in a KrutiDev-family font (found by name, or by that font's text
+ * reading as KrutiDev keystrokes) are converted to Unicode; runs in other fonts (URLs, numbers in
+ * Arial) are left as they are.
+ *
  * @param pdfBytes Full PDF file bytes.
  * @param pageIndex Zero-based page index.
+ * @param options.convertLegacy Convert KrutiDev-family runs to Unicode.
  */
 export async function extractEmbeddedTextLines(
   pdfBytes: Uint8Array,
   pageIndex: number,
+  options: { convertLegacy?: boolean } = {},
 ): Promise<OcrLine[]> {
   const doc = await sharedPdfDocument(pdfBytes);
   const page = await doc.getPage(pageIndex + 1);
@@ -142,9 +150,25 @@ export async function extractEmbeddedTextLines(
     const runs: EmbeddedTextRun[] = [];
     let degraded = false;
 
+    const legacyFonts = new Set<string>();
+    if (options.convertLegacy) {
+      const textByFont = new Map<string, string>();
+      for (const item of textContent.items) {
+        if ('str' in item) textByFont.set(item.fontName, `${textByFont.get(item.fontName) ?? ''} ${item.str}`);
+      }
+      for (const [fontName, text] of textByFont) {
+        const name = fontNameOf(fontName) ?? '';
+        if ((isLegacyDevanagariFontName(name) && /kruti|devlys/i.test(name)) || looksLikeLegacyDevanagariText(text)) {
+          legacyFonts.add(fontName);
+        }
+      }
+    }
+
     for (const item of textContent.items) {
       if (!('str' in item)) continue;
-      const sanitized = sanitizeEmbeddedText(item.str);
+      const sanitized = sanitizeEmbeddedText(
+        legacyFonts.has(item.fontName) ? krutiDevToUnicode(item.str) : item.str,
+      );
       if (sanitized.removedCodePoints > sanitized.removedPrivateUseCodePoints) degraded = true;
 
       const normalized = sanitized.text.normalize('NFC').replace(/\s+/gu, ' ');
@@ -179,11 +203,11 @@ export async function extractEmbeddedTextLines(
         leadingSpace: /^\s/u.test(normalized),
         trailingSpace: /\s$/u.test(normalized),
         baselineYPt: baselineY,
-        font: fontHintFromPdfFont(
-          fontNameOf(item.fontName),
-          style?.fontFamily,
-          Math.abs(item.transform[2]) > 0.001,
-        ),
+        // Converted KrutiDev runs carry no usable style information (pdf.js guesses "serif");
+        // Noto Sans is the closer look for them.
+        font: legacyFonts.has(item.fontName)
+          ? { serif: false, bold: false, italic: Math.abs(item.transform[2]) > 0.001 }
+          : fontHintFromPdfFont(fontNameOf(item.fontName), style?.fontFamily, Math.abs(item.transform[2]) > 0.001),
       });
     }
 

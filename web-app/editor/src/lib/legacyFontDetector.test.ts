@@ -1,6 +1,11 @@
 import { PDFDocument, PDFName } from "@cantoo/pdf-lib";
 import { expect, it } from "vitest";
-import { detectLegacyFonts, looksLikeLegacyDevanagariText } from "./legacyFontDetector";
+import {
+  detectLegacyFonts,
+  isConvertibleLegacyFont,
+  LEGACY_TEXT_ENCODING_LABEL,
+  looksLikeLegacyDevanagariText,
+} from "./legacyFontDetector";
 it("rejects a referenced font with no inspectable name", async () => {
   const doc = await PDFDocument.create();
   const page = doc.addPage([612, 792]);
@@ -40,4 +45,12 @@ it("recognises KrutiDev-encoded text but not English or Unicode Hindi", () => {
   expect(
     looksLikeLegacyDevanagariText("केन्द्र सरकार के कर्मचारियों को समय समय पर देय सामान्य भत्तों सहित"),
   ).toBe(false);
+});
+
+it("converts only KrutiDev-family encodings", () => {
+  expect(isConvertibleLegacyFont("ABCDEF+KrutiDev010")).toBe(true);
+  expect(isConvertibleLegacyFont("DevLys010")).toBe(true);
+  expect(isConvertibleLegacyFont(LEGACY_TEXT_ENCODING_LABEL)).toBe(true);
+  expect(isConvertibleLegacyFont("Chanakya")).toBe(false);
+  expect(isConvertibleLegacyFont("unknown (font inspection failed)")).toBe(false);
 });

@@ -66,21 +66,21 @@ export function changedSpan(
   const oldMiddleWidth = measure(oldMiddle) * scale;
   const newMiddleWidth = measure(newMiddle) * scale;
 
+  // The cleared span never reaches past the original words: anything after the line (another run
+  // on the same visual line) must survive. New text that does not fit is shrunk by the caller.
   if (suffix === 0 || newMiddleWidth <= oldMiddleWidth * GROWTH_TOLERANCE) {
     // Only the changed words; a trailing change also takes the rest of the original line.
     const endPt = suffix === 0 ? lineXPt + lineWPt : startPt + oldMiddleWidth;
-    return { xPt: startPt, wPt: Math.max(endPt - startPt, newMiddleWidth), text: newMiddle };
+    return { xPt: startPt, wPt: endPt - startPt, text: newMiddle };
   }
   // The new words need more room: redraw from the first change to the end of the line.
-  return {
-    xPt: startPt,
-    wPt: Math.max(lineXPt + lineWPt - startPt, newMiddleWidth + measure(suffixText) * scale),
-    text: newMiddle + suffixText,
-  };
+  return { xPt: startPt, wPt: lineXPt + lineWPt - startPt, text: newMiddle + suffixText };
 }
 
 /** Clearance kept around a narrowed span so neighbouring glyphs are not clipped, in pt. */
 const SPAN_PAD_PT = 0.5;
+/** Largest reduction applied to new words that would otherwise run into the following text. */
+const MAX_SPAN_SHRINK = 0.25;
 
 /**
  * Narrows replacement edits on one page to their changed words: an unchanged replacement and its
@@ -92,12 +92,17 @@ const SPAN_PAD_PT = 0.5;
  *
  * @param edits Edits of one page; positions in pt.
  * @param measure Width of `text` in the edit's font at its size, in pt.
+ * New words that are wider than the cleared span (a trailing edit followed by another run on the
+ * same visual line) are shrunk to fit, by at most `MAX_SPAN_SHRINK`, keeping their baseline.
+ *
  * @param gapNear Blank gap on the page image near `xPt` in the mask's band, in pt, or null.
+ * @param baselineRatio Baseline offset of the edit's font as a fraction of its size (unitless).
  */
 export function applyChangedSpans(
   edits: readonly Edit[],
   measure: (edit: TextEdit, text: string) => number,
   gapNear?: (mask: MaskEdit, xPt: number) => { startPt: number; endPt: number } | null,
+  baselineRatio?: (edit: TextEdit) => number | undefined,
 ): Edit[] {
   const masks = new Map(edits.filter((e): e is MaskEdit => e.type === 'mask').map((m) => [m.id, m]));
   const dropped = new Set<string>();
@@ -128,6 +133,14 @@ export function applyChangedSpans(
     // A narrowed span is a single run of words: drop the wrap width so it is not re-wrapped.
     const narrowed: TextEdit = { ...edit, xPt: textX, text: span.text };
     delete narrowed.widthPt;
+    const available = clearEnd - textX;
+    const needed = measure(edit, span.text);
+    if (needed > available && available > 0) {
+      const scale = Math.max(1 - MAX_SPAN_SHRINK, available / needed);
+      const ratio = baselineRatio?.(edit) ?? 1;
+      narrowed.fontSizePt = edit.fontSizePt * scale;
+      narrowed.yPt = edit.yPt + ratio * (edit.fontSizePt - narrowed.fontSizePt);
+    }
     replaced.set(edit.id, narrowed);
   }
   return edits.filter((e) => !dropped.has(e.id)).map((e) => replaced.get(e.id) ?? e);

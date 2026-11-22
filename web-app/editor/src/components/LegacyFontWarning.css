@@ -32,3 +32,13 @@
   line-height: 1.45;
   margin: 0;
 }
+
+/* Converted pages can be edited: an informational tint, not a warning. */
+.legacy-font-warning--converted {
+  background: var(--brand-tint);
+  border-color: color-mix(in srgb, var(--brand) 22%, var(--line));
+}
+
+.legacy-font-warning--converted .legacy-font-warning__icon {
+  color: var(--brand);
+}
