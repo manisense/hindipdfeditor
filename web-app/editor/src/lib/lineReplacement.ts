@@ -1,9 +1,19 @@
 import { ptSizeToImagePx, ptToImagePx } from './coordinateMath';
 import { fitFontSizeToLineWidth, textGeometryForDetectedLine } from './detectedLineTextGeometry';
-import { baselineOffsetRatio, measureTextWidthPt, type EditFontFamily } from './fontAsset';
+import {
+  availableWeights,
+  baselineOffsetRatio,
+  cssFontStack,
+  loadFontFor,
+  measureTextWidthPt,
+  type EditFontFamily,
+} from './fontAsset';
 import { replacementFontFor } from './fontMatch';
+import { readImageRegion } from './imageColor';
 import { sampleTextColor } from './pdfToImages';
+import { closestWeight, medianInkRunPx, type WeightSample } from './strokeWeight';
 import type { OcrLine, PageState } from '../state/editStore';
+import { cssWeight, type FontWeight } from './fontWeight';
 
 /** Editable width as a multiple of the detected line width, so a slightly longer edit does not wrap. */
 const EDIT_TEXT_WIDTH_SLACK_RATIO = 1.25;
@@ -23,21 +33,92 @@ export type LineReplacement = {
     widthPt: number;
     color: string;
     fontFamily: EditFontFamily;
-    fontWeight: 'normal' | 'bold';
+    fontWeight: FontWeight;
     fontStyle?: 'italic';
   };
 };
 
+/** Longest stretch of a line rendered per candidate weight; enough strokes to judge. */
+const WEIGHT_SAMPLE_CHARS = 60;
+
+/** Median stroke width of `text` drawn black on white at `fontPx`, in px, or null. */
+async function renderedStemPx(
+  text: string,
+  family: string,
+  weight: number,
+  fontStyle: 'italic' | undefined,
+  fontPx: number,
+): Promise<number | null> {
+  await loadFontFor(text, family, weight, fontStyle);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(measureTextWidthPt(text, family, weight, fontPx) + fontPx);
+  canvas.height = Math.ceil(fontPx * 2);
+  const context = canvas.getContext('2d');
+  if (!context || canvas.width < 2) return null;
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = '#000000';
+  context.textBaseline = 'middle';
+  context.font = `${fontStyle ?? 'normal'} ${weight} ${fontPx}px ${cssFontStack(family)}`;
+  context.fillText(text, fontPx / 2, canvas.height / 2);
+  return medianInkRunPx(context.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+}
+
+/**
+ * The weight, among those the replacement family offers, whose strokes best match the original
+ * line on the page image. Keeps `fallback` when the line cannot be measured.
+ *
+ * @param fontSizePt Size the replacement will be drawn at, in pt.
+ */
+async function matchedWeight(
+  page: PageState,
+  line: OcrLine,
+  family: string,
+  fontStyle: 'italic' | undefined,
+  fontSizePt: number,
+  fallback: FontWeight,
+): Promise<FontWeight> {
+  try {
+    const pxPerPt = page.imagePxWidth / page.widthPt;
+    const band = await readImageRegion(
+      page.backgroundImageUri,
+      line.xPt * pxPerPt,
+      line.yPt * pxPerPt,
+      line.wPt * pxPerPt,
+      line.hPt * pxPerPt,
+    );
+    const originalStem = medianInkRunPx(band.data, band.width, band.height);
+    if (originalStem === null) return fallback;
+    const sample = line.text.slice(0, WEIGHT_SAMPLE_CHARS);
+    const samples: WeightSample[] = [];
+    for (const weight of availableWeights(family)) {
+      const stemPx = await renderedStemPx(sample, family, weight, fontStyle, fontSizePt * pxPerPt);
+      if (stemPx !== null) samples.push({ weight, stemPx });
+    }
+    const weight = closestWeight(originalStem, samples, cssWeight(fallback));
+    return weight === cssWeight(fallback) ? fallback : weight;
+  } catch (error) {
+    console.warn('Stroke weight matching failed; keeping the detected weight', error);
+    return fallback;
+  }
+}
+
 /**
  * Geometry and style for replacing one detected line: the original's typeface (or a metric match),
- * its baseline, its ink colour, and a size shrunk at most `MAX_FIT_SHRINK` when the substitute font
+ * its stroke weight (measured on the page image), its baseline, its ink colour, and a size shrunk at most `MAX_FIT_SHRINK` when the substitute font
  * is wider. Shared by tap-to-edit and find-and-replace so both produce the same result.
  *
  * @param page Page holding the line; sizes in pt and background-image px.
  * @param line Detected line, in pt.
  */
 export async function lineReplacementFor(page: PageState, line: OcrLine): Promise<LineReplacement> {
-  const font = replacementFontFor(line.font);
+  const hinted = replacementFontFor(line.font);
+  const hintedRatio = await baselineOffsetRatio(hinted.fontFamily, hinted.fontWeight, hinted.fontStyle, line.text);
+  const hintedSizePt = textGeometryForDetectedLine(line, page.widthPt, EDIT_TEXT_WIDTH_SLACK_RATIO, hintedRatio).fontSizePt;
+  const font = {
+    ...hinted,
+    fontWeight: await matchedWeight(page, line, hinted.fontFamily, hinted.fontStyle, hintedSizePt, hinted.fontWeight),
+  };
   const ratio = await baselineOffsetRatio(font.fontFamily, font.fontWeight, font.fontStyle, line.text);
   const detected = textGeometryForDetectedLine(line, page.widthPt, EDIT_TEXT_WIDTH_SLACK_RATIO, ratio);
   const fittedSizePt = fitFontSizeToLineWidth(

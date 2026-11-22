@@ -1,6 +1,7 @@
 import { cssFontStack } from './fontAsset';
 import { TEXT_LINE_HEIGHT, TEXT_OVERFLOW_WRAP } from './textLayout';
 import type { TextEdit } from '../state/editStore';
+import { cssWeight } from './fontWeight';
 
 /** CSS px per PDF point used when rasterising edited text: sharp, and far above any browser minimum font size. */
 export const TEXT_RENDER_PX_PER_PT = 4;
@@ -45,6 +46,7 @@ export function textEditFragmentHtml(edit: TextEdit, id: string): string {
     edit.widthPt === undefined
       ? 'white-space:pre;'
       : `width:${edit.widthPt * scale}px;white-space:pre-wrap;overflow-wrap:${TEXT_OVERFLOW_WRAP};`;
-  const weightStyle = `${edit.fontWeight === 'bold' ? 'font-weight:700;' : ''}${edit.fontStyle === 'italic' ? 'font-style:italic;' : ''}`;
+  const weight = cssWeight(edit.fontWeight);
+  const weightStyle = `${weight === 400 ? '' : `font-weight:${weight};`}${edit.fontStyle === 'italic' ? 'font-style:italic;' : ''}`;
   return `<div id="${id}" style="display:inline-block;padding:${padPx}px;background:transparent"><span style="display:block;font-size:${fontPx}px;font-family:${cssFontStack(family)};color:${color};line-height:${TEXT_LINE_HEIGHT};word-break:normal;writing-mode:horizontal-tb;overflow:visible;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span></div>`;
 }

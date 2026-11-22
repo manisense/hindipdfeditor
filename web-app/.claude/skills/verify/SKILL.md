@@ -23,7 +23,7 @@ Restart it after rebuilding.
   NODE_PATH=<scratchpad>/pw/node_modules SMOKE_BASE_URL=http://127.0.0.1:8817 SMOKE_OUTPUT_DIR=<scratchpad>/smoke node web-app/scripts/browser-smoke.cjs
   ```
   It must end with `BROWSER_ERRORS []`. Point `SMOKE_BASE_URL` at `https://hindipdfeditor.com` to check production after a deploy.
-- `scripts/edit-quality-gate.mjs` (`npm run test:edit-quality`, same `NODE_PATH`/`SMOKE_BASE_URL`): replacing lines with their own text must change 0 % of pixels and no text; a one-word edit must keep the line's other words as original text.
+- `scripts/edit-quality-gate.mjs` (`npm run test:edit-quality`, same `NODE_PATH`/`SMOKE_BASE_URL`): replacing lines with their own text must change 0 % of pixels and no text; a one-word edit must keep the line's other words as original text and draw the new word at the original size.
 - Render exported pages with pdf.js and view them to check shaping (conjuncts, pre-base ि, reph); edited words are PNG images, the rest stays original PDF content.
 
 ## Gotchas

@@ -90,6 +90,7 @@ import {
   type TextEdit,
 } from "../state/editStore";
 import "./EditPdfTool.css";
+import { isBoldWeight, type FontWeight } from "../lib/fontWeight";
 
 const tool = getTool("edit")!;
 
@@ -824,7 +825,7 @@ export function EditPdfTool() {
       widthPt?: number;
       color?: string;
       fontFamily?: EditFontFamily;
-      fontWeight?: "normal" | "bold";
+      fontWeight?: FontWeight;
       fontStyle?: "italic";
     },
     consumedOcrLine?: OcrLine,
@@ -1381,7 +1382,7 @@ export function EditPdfTool() {
                   : "NotoSansDevanagari"
               }
               color={focusedEdit.color}
-              fontWeight={focusedEdit.fontWeight === "bold" ? "bold" : "normal"}
+              fontWeight={isBoldWeight(focusedEdit.fontWeight) ? "bold" : "normal"}
               onFontSizeChange={(fontSizePt) =>
                 updateTextEdit(currentPageIndex, focusedEdit.id, { fontSizePt })
               }

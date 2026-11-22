@@ -1,5 +1,13 @@
 # Changelog
 
+## Replacement text matches the original's weight, 22 November 2026
+
+### Changed
+- The weight of replacement text is measured from the original's strokes on the page image and matched to the closest weight the replacement font offers (Noto 300–700, Arimo 400–700, others 400/700). Light originals no longer get heavier new words, and bold text in PDFs that hide font names (Chrome-printed) stays bold. On the Devanagari fixture: grey labels 300, Hindi sentences 400, headings 700.
+
+### Added
+- The edit-quality gate checks that an edited word is drawn at the original size. It caught a font string left pointing at a function during this change (new words drawn at 10 px).
+
 ## Long PDFs open quickly, 22 November 2026
 
 ### Changed
