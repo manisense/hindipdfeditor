@@ -28,6 +28,8 @@ import { useAppPopup } from "../components/appPopupContext";
 import { DropZone } from "../components/DropZone";
 import { EditableTextOverlay } from "../components/EditableTextOverlay";
 import { EditToolbar } from "../components/EditToolbar";
+import { SpellingPanel } from "../components/SpellingPanel";
+import { replaceWord } from "../lib/hindiSpell";
 import { ImageEditOverlay } from "../components/ImageEditOverlay";
 import { SignaturePad, type DrawnSignature } from "../components/SignaturePad";
 import { FindReplacePanel } from "../components/FindReplacePanel";
@@ -1573,7 +1575,7 @@ export function EditPdfTool() {
             const target = event.target as HTMLElement;
             if (
               target.closest(
-                ".app__page-card, .app__toolbar-card, .edit-toolbar",
+                ".app__page-card, .app__toolbar-card, .edit-toolbar, .spelling-panel",
               )
             ) {
               return;
@@ -1838,6 +1840,18 @@ export function EditPdfTool() {
               onDone={handleEditDone}
               romanTyping={romanTyping}
               onRomanTypingChange={changeRomanTyping}
+            />
+          )}
+          {focusedEdit && (
+            <SpellingPanel
+              text={focusedEdit.text}
+              original={[
+                editPairingsRef.current.get(focusedEdit.id)?.ocrLine?.text ?? "",
+                ...(editPairingsRef.current.get(focusedEdit.id)?.absorbed ?? []).map((line) => line.text),
+              ].join(" ")}
+              onReplace={(word, replacement) =>
+                handleEditTextChange(focusedEdit.id, replaceWord(focusedEdit.text, word, replacement))
+              }
             />
           )}
 

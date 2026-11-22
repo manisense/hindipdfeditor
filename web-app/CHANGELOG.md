@@ -1,5 +1,17 @@
 # Changelog
 
+## Hindi spell check, 23 November 2026
+
+### Added
+- While editing, Hindi words the user added that the word list does not know are listed under the text toolbar with up to four suggestions (one or two edits away, commonest first) and "Add to dictionary". Words from the original line (names, places) are not judged. Common inflections (आवेदनों, परीक्षाओं, लिखवाएंगे, करेंगे) are accepted from their stem, and nukta and chandrabindu spellings count as the same word.
+- Word list: about 19,700 Devanagari words from FrequencyWords (Hermit Dave; MIT licence, word lists described as CC BY-SA 4.0; built from OpenSubtitles), in `editor/public/dict/` with its source and licence, built by `scripts/build-hindi-dictionary.mjs`. It loads (360 KB) only when an edit has Hindi text; checking runs in the browser. Words the user adds are kept in this browser; the privacy pages say so. Hunspell Hindi dictionaries were not used: they are GPL.
+
+### Fixed
+- Typing Hindi in front of a word (no space yet) scrambled it: a virama joins with the next consonant into one cluster, and browsers move the caret past the whole cluster, so the following letters landed inside the next word. Typed letters are now inserted at a tracked caret (IME input is left to the browser).
+
+### Changed
+- The edit-quality gate types a misspelt word before a Hindi word, checks the letters stay in order, that only that word is flagged, and that the suggestion fixes it.
+
 ## Fixes and gaps closed, 23 November 2026
 
 ### Fixed

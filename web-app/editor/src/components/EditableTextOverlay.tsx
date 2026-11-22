@@ -41,6 +41,57 @@ export function EditableTextOverlay({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   /** Caret after the user's last change, restored if the text then grows elsewhere (paragraph flow). */
   const caretRef = useRef<number | null>(null);
+  /**
+   * Where the next typed letter goes, while the user keeps typing. Typing a virama before a
+   * consonant joins the two into one cluster, and browsers will not leave the caret inside a
+   * cluster: they move it past the whole cluster, so the next letters land in the following
+   * word. Typed letters are therefore inserted here instead; clicks and other keys reset it.
+   */
+  const typedCaretRef = useRef<number | null>(null);
+  const onChangeTextRef = useRef(onChangeText);
+  onChangeTextRef.current = onChangeText;
+  const romanTypingRef = useRef(romanTyping);
+  romanTypingRef.current = romanTyping;
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    const onBeforeInput = (event: InputEvent) => {
+      if (event.inputType !== 'insertText' || !event.data || event.isComposing) return;
+      event.preventDefault();
+      const tracked = typedCaretRef.current;
+      const start = tracked ?? input.selectionStart;
+      const end = tracked ?? input.selectionEnd;
+      let text = input.value.slice(0, start) + event.data + input.value.slice(end);
+      let caret = start + event.data.length;
+      const converted = romanTypingRef.current ? transliterateBeforeCaret(text, caret) : null;
+      if (converted) {
+        text = converted.value;
+        caret = converted.caret;
+      }
+      typedCaretRef.current = caret;
+      caretRef.current = caret;
+      onChangeTextRef.current(text);
+    };
+    const reset = () => {
+      typedCaretRef.current = null;
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key.length !== 1 || event.ctrlKey || event.metaKey || event.altKey) reset();
+    };
+    input.addEventListener('beforeinput', onBeforeInput);
+    input.addEventListener('keydown', onKeyDown);
+    input.addEventListener('mousedown', reset);
+    input.addEventListener('touchstart', reset);
+    input.addEventListener('blur', reset);
+    return () => {
+      input.removeEventListener('beforeinput', onBeforeInput);
+      input.removeEventListener('keydown', onKeyDown);
+      input.removeEventListener('mousedown', reset);
+      input.removeEventListener('touchstart', reset);
+      input.removeEventListener('blur', reset);
+    };
+  }, []);
   const { xDp, yDp } = ptToDp(edit.xPt, edit.yPt, viewWidthPx, pageWidthPt);
   const fontSizePx = edit.fontSizePt * (viewWidthPx / pageWidthPt);
   const widthPx =
@@ -107,7 +158,9 @@ export function EditableTextOverlay({
       data-edit-id={edit.id}
       value={edit.text}
       onChange={(e) => {
+        // Deletion, paste, line breaks and IME input (typed letters are inserted above).
         const field = e.target;
+        typedCaretRef.current = null;
         caretRef.current = field.selectionStart;
         const converted = romanTyping
           ? transliterateBeforeCaret(field.value, field.selectionStart ?? field.value.length)
