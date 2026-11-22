@@ -95,14 +95,21 @@ const MAX_SPAN_SHRINK = 0.25;
  * New words that are wider than the cleared span (a trailing edit followed by another run on the
  * same visual line) are shrunk to fit, by at most `MAX_SPAN_SHRINK`, keeping their baseline.
  *
+ * New words that reach the end of the line first take the blank space after it, so a longer word
+ * mid-line pushes the rest of the line along instead of being squeezed; only what that space
+ * cannot hold is made up by shrinking.
+ *
  * @param gapNear Blank gap on the page image near `xPt` in the mask's band, in pt, or null.
  * @param baselineRatio Baseline offset of the edit's font as a fraction of its size (unitless).
+ * @param freeRightOf Where the next ink (or the text column's right edge) begins to the right of
+ *   `fromPt` in the mask's band, in pt.
  */
 export function applyChangedSpans(
   edits: readonly Edit[],
   measure: (edit: TextEdit, text: string) => number,
   gapNear?: (mask: MaskEdit, xPt: number) => { startPt: number; endPt: number } | null,
   baselineRatio?: (edit: TextEdit) => number | undefined,
+  freeRightOf?: (mask: MaskEdit, fromPt: number) => number,
 ): Edit[] {
   const masks = new Map(edits.filter((e): e is MaskEdit => e.type === 'mask').map((m) => [m.id, m]));
   const dropped = new Set<string>();
@@ -129,12 +136,16 @@ export function applyChangedSpans(
     const spanEnd = span.xPt + span.wPt;
     const endGap = spanEnd < lineEnd - SPAN_PAD_PT ? gapNear?.(mask, spanEnd) : null;
     if (endGap) clearEnd = Math.max((endGap.startPt + endGap.endPt) / 2, textX + 1);
+    const needed = measure(edit, span.text);
+    if (!endGap && freeRightOf && needed > clearEnd - textX) {
+      const room = freeRightOf(mask, lineEnd + SPAN_PAD_PT) - SPAN_PAD_PT;
+      clearEnd = Math.max(clearEnd, Math.min(textX + needed + SPAN_PAD_PT, room));
+    }
     replaced.set(mask.id, { ...mask, xPt: clearStart, wPt: clearEnd - clearStart });
     // A narrowed span is a single run of words: drop the wrap width so it is not re-wrapped.
     const narrowed: TextEdit = { ...edit, xPt: textX, text: span.text };
     delete narrowed.widthPt;
     const available = clearEnd - textX;
-    const needed = measure(edit, span.text);
     if (needed > available && available > 0) {
       const scale = Math.max(1 - MAX_SPAN_SHRINK, available / needed);
       const ratio = baselineRatio?.(edit) ?? 1;

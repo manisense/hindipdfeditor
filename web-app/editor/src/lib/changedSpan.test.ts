@@ -71,6 +71,23 @@ describe('applyChangedSpans', () => {
     expect((fitted as { yPt: number }).yPt).toBeCloseTo(52.5); // baseline stays at yPt + 10
   });
 
+  it('lets longer new words run into blank space after the line before shrinking them', () => {
+    // "cd" → "XYZW" needs 4 pt, 2 pt is cleared; the page is blank up to x = 120.
+    const free = (_mask: unknown, fromPt: number) => (fromPt <= 105.5 ? 120 : fromPt);
+    const [grownMask, grown] = applyChangedSpans([mask, text('ab XYZW')], m, undefined, () => 1, free);
+    expect(grown).toMatchObject({ xPt: 103, text: 'XYZW', fontSizePt: 10, yPt: 50 });
+    expect(grownMask).toMatchObject({ xPt: 102.5, wPt: 5 }); // clears 102.5 → 107.5, not to 120
+  });
+
+  it('shrinks only by what the blank space after the line cannot hold', () => {
+    const free = () => 106;
+    const [, fitted] = applyChangedSpans([mask, text('ab XYZW')], m, undefined, () => 1, free);
+    expect((fitted as { fontSizePt: number }).fontSizePt).toBeCloseTo(7.5); // 2.5 pt room for 4 pt, capped
+    const roomy = () => 106.7; // 106.7 − 0.5 pad − 103 = 3.2 pt for 4 pt → 80 %
+    const [, partly] = applyChangedSpans([mask, text('ab XYZW')], m, undefined, () => 1, roomy);
+    expect((partly as { fontSizePt: number }).fontSizePt).toBeCloseTo(8);
+  });
+
   it('leaves a moved edit whole', () => {
     expect(applyChangedSpans([mask, text('ab XY', { xPt: 120 })], m)[1]).toMatchObject({ text: 'ab XY', xPt: 120 });
   });

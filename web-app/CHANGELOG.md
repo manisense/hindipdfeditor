@@ -1,5 +1,10 @@
 # Changelog
 
+## Longer words push the line along, 22 November 2026
+
+### Changed
+- A word replaced by a longer one mid-line no longer squeezes in: the new word and the rest of the line are redrawn at full size and run into the blank space after the line (up to the next ink, with a quarter-line clearance, or the text column's right edge). Text is shrunk (at most 25 %) only by what that space cannot hold. Checked on exported PDFs in English ("Name:" → "extraordinarily") and Hindi (अत्यधिकमहत्वपूर्ण). Wrapping into the next line is still open.
+
 ## Kruti Dev pages can be edited, 22 November 2026
 
 ### Added

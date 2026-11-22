@@ -224,6 +224,31 @@ function gapFinder(page: PageState, canvas: HTMLCanvasElement) {
   };
 }
 
+/** Blank space kept before the next word when new text runs past its line, as a fraction of the band height. */
+const NEXT_INK_CLEARANCE = 0.25;
+
+/**
+ * Finds where the page stops being blank to the right of a point in a mask's band: the next ink,
+ * or the right edge of the page's text column, whichever comes first.
+ */
+function freeSpaceFinder(page: PageState, canvas: HTMLCanvasElement) {
+  const context = canvas.getContext('2d');
+  const pxPerPt = page.imagePxWidth / page.widthPt;
+  const lineEnds = page.ocrLines.map((line) => line.xPt + line.wPt);
+  const columnRightPt = lineEnds.length > 0 ? Math.max(...lineEnds) : page.widthPt * 0.95;
+  return (mask: MaskEdit, fromPt: number): number => {
+    if (!context || fromPt >= columnRightPt) return fromPt;
+    const x0 = Math.max(0, Math.round(fromPt * pxPerPt));
+    const width = Math.min(canvas.width, Math.round(columnRightPt * pxPerPt)) - x0;
+    const y0 = Math.max(0, Math.round(mask.yPt * pxPerPt));
+    const height = Math.min(canvas.height - y0, Math.round(mask.hPt * pxPerPt));
+    if (width < 1 || height < 2) return fromPt;
+    const firstInk = inkColumns(context.getImageData(x0, y0, width, height).data, width, height).indexOf(1);
+    if (firstInk < 0) return columnRightPt;
+    return Math.max(fromPt, (x0 + firstInk) / pxPerPt - NEXT_INK_CLEARANCE * mask.hPt);
+  };
+}
+
 async function backgroundPatches(page: PageState, rects: EditorRect[]): Promise<Uint8Array[]> {
   const canvas = await backgroundCanvas(page);
   const pxPerPt = page.imagePxWidth / page.widthPt;
@@ -264,15 +289,16 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
   const narrowedPages: PageState[] = [];
   for (const page of source.pages) {
     const narrows = page.edits.some((e) => e.type === 'text' && e.original);
-    const gapNear = narrows ? gapFinder(page, await backgroundCanvas(page)) : undefined;
+    const canvas = narrows ? await backgroundCanvas(page) : undefined;
     narrowedPages.push({
       ...page,
       edits: applyChangedSpans(
         page.edits,
         (edit, text) =>
           measureTextWidthPt(text, edit.fontFamily, edit.fontWeight === 'bold' ? 'bold' : 'normal', edit.fontSizePt),
-        gapNear,
+        canvas && gapFinder(page, canvas),
         (edit) => baselineRatios.get(edit.id),
+        canvas && freeSpaceFinder(page, canvas),
       ),
     });
   }
