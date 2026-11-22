@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   clusterRunsIntoLines,
+  withoutRepeatedRuns,
   isHorizontalTextTransform,
   isSafeEmbeddedText,
   sanitizeEmbeddedText,
@@ -98,5 +99,17 @@ describe('embedded text safety and geometry', () => {
       removedCodePoints: 1,
       removedPrivateUseCodePoints: 1,
     });
+  });
+});
+
+describe('withoutRepeatedRuns', () => {
+  it('drops a run painted again at the same place (fill pass then stroke pass)', () => {
+    const runs = [run('Bold', 0, 20), run('words', 23, 24), run('Bold', 0.2, 20.1), run('words', 23, 24)];
+    expect(withoutRepeatedRuns(runs).map((r) => r.text)).toEqual(['Bold', 'words']);
+  });
+
+  it('keeps the same word written in two places', () => {
+    const runs = [run('the', 0, 12), run('the', 40, 12), run('the', 0, 12, { yPt: 30 })];
+    expect(withoutRepeatedRuns(runs)).toHaveLength(3);
   });
 });

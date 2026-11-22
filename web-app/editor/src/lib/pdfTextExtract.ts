@@ -249,7 +249,7 @@ export async function extractEmbeddedTextLines(
       });
     }
 
-    const lines = clusterRunsIntoLines(runs).map((line) => {
+    const lines = clusterRunsIntoLines(withoutRepeatedRuns(runs)).map((line) => {
       const repaired = options.glyphReadings ? repairText(line.text, options.glyphReadings, isGlyphPlaceholder) : line.text;
       if (options.keepGlyphPlaceholders || !hasGlyphPlaceholder(repaired)) return { ...line, text: repaired };
       degraded = true;
@@ -313,6 +313,29 @@ function shouldInsertSpace(previous: EmbeddedTextRun, current: EmbeddedTextRun):
 }
 
 /** Groups adjacent PDF.js text runs into trustworthy line-level boxes. */
+/** Positions closer than this, in PDF points, count as the same place. */
+const SAME_PLACE_PT = 0.75;
+
+/**
+ * Drops runs painted again with the same text at the same place. Chrome prints stroked text
+ * (`-webkit-text-stroke`) as a fill pass and a stroke pass, and some producers fake bold by
+ * printing text twice; either way the text layer holds every line twice.
+ */
+export function withoutRepeatedRuns(runs: readonly EmbeddedTextRun[]): EmbeddedTextRun[] {
+  const kept: EmbeddedTextRun[] = [];
+  for (const run of runs) {
+    const repeat = kept.some(
+      (other) =>
+        other.text === run.text &&
+        Math.abs(other.xPt - run.xPt) < SAME_PLACE_PT &&
+        Math.abs(other.yPt - run.yPt) < SAME_PLACE_PT &&
+        Math.abs(other.wPt - run.wPt) < SAME_PLACE_PT * 2,
+    );
+    if (!repeat) kept.push(run);
+  }
+  return kept;
+}
+
 export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): EmbeddedTextRun[] {
   if (runs.length === 0) return [];
 
