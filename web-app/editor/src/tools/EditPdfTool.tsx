@@ -580,14 +580,21 @@ export function EditPdfTool() {
     for (const match of found.edits) {
       updateTextEdit(match.pageIndex, match.edit.id, { text: match.newText });
     }
+    const created: { pageIndex: number; editId: string }[] = [];
     for (const match of found.lines) {
       const pageState = useEditStore.getState().document?.pages[match.pageIndex];
       if (!pageState) continue;
       const { rect, text } = await lineReplacementFor(pageState, match.line);
-      await maskAndReplaceRegion(rect, { ...text, prefill: match.newText }, match.line, requestId, {
+      const editId = await maskAndReplaceRegion(rect, { ...text, prefill: match.newText }, match.line, requestId, {
         pageIndex: match.pageIndex,
         batch: true,
       });
+      if (editId) created.push({ pageIndex: match.pageIndex, editId });
+    }
+    // A longer replacement flows into the rest of its paragraph, as typing does. After all
+    // replacements, so a line that is replaced itself is never taken into the one above.
+    for (const { pageIndex, editId } of [...created, ...found.edits.map((m) => ({ pageIndex: m.pageIndex, editId: m.edit.id }))]) {
+      flowIntoRestOfParagraph(pageIndex, editId);
     }
     return found.lines.length + found.edits.length;
   };
@@ -1146,9 +1153,10 @@ export function EditPdfTool() {
       maskId: maskEdit.id,
       ocrLine: consumedOcrLine,
     });
-    if (options.batch) return;
+    if (options.batch) return textEdit.id;
     setFocusedEditId(textEdit.id);
     if (consumedOcrLine) setSelectAllEditId(textEdit.id);
+    return textEdit.id;
   };
 
   /**
@@ -1156,8 +1164,12 @@ export function EditPdfTool() {
    * when it no longer fits (see flowIntoParagraph).
    */
   const handleEditTextChange = (editId: string, text: string) => {
-    const pageIndex = currentPageIndex;
-    updateTextEdit(pageIndex, editId, { text });
+    updateTextEdit(currentPageIndex, editId, { text });
+    flowIntoRestOfParagraph(currentPageIndex, editId);
+  };
+
+  /** Lets a replaced line take in the next lines of its paragraph while its text overflows. */
+  const flowIntoRestOfParagraph = (pageIndex: number, editId: string) => {
     const pageState = useEditStore.getState().document?.pages[pageIndex];
     const edit = pageState?.edits.find((e): e is TextEdit => e.type === "text" && e.id === editId);
     const pairing = editPairingsRef.current.get(editId);

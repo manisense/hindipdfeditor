@@ -648,6 +648,24 @@ async function glyphRepairCase(browser) {
   await page.close();
 }
 
+async function findReplaceFlowCase(browser) {
+  const file = path.join(fixtures, "translation-bilingual-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await openPdf(page, file, 1);
+  await page.getByRole("button", { name: "Find & replace" }).click();
+  await page.getByLabel("Find", { exact: true }).fill("the application");
+  await page.getByLabel("Replace with").fill("the application and the attached forms");
+  await page.getByRole("button", { name: /^Replace all/ }).click();
+  await page.getByText(/Replaced in \d+ place/).waitFor();
+  const exported = await exportPdf(page);
+  const text = (await pageText(exported, 1)).replace(/\s+/g, "");
+  // The grown line takes in "documents." from the next line: neither stays as PDF text.
+  assert.ok(!text.includes("documents."), "a longer replacement flows into the next line of its paragraph");
+  assert.ok(text.includes("EmployeeName:SeemaSharma"), "other lines keep their text");
+  console.log("FIND_REPLACE_FLOW_OK longer replacement took in the next line of its paragraph");
+  await page.close();
+}
+
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
@@ -660,6 +678,7 @@ try {
   await paragraphFlowCase(browser);
   await pageOpsCase(browser);
   await glyphRepairCase(browser);
+  await findReplaceFlowCase(browser);
 } finally {
   await browser.close();
 }
