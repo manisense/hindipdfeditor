@@ -10,6 +10,7 @@ import {
 } from '../lib/textLayout';
 import type { TextEdit } from '../state/editStore';
 import './EditableTextOverlay.css';
+import { cssWeight } from '../lib/fontWeight';
 
 type Props = {
   edit: TextEdit;
@@ -128,7 +129,7 @@ export function EditableTextOverlay({
         overflowWrap: TEXT_OVERFLOW_WRAP,
         color: edit.color,
         fontFamily: cssFontStack(edit.fontFamily),
-        fontWeight: edit.fontWeight === 'bold' ? 700 : 400,
+        fontWeight: cssWeight(edit.fontWeight),
         fontStyle: edit.fontStyle ?? 'normal',
         width: widthPx,
       }}

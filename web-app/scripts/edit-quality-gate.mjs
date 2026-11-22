@@ -47,6 +47,42 @@ async function pageText(bytes, pageIndex) {
   return content.items.map((item) => item.str ?? "").join("");
 }
 
+/**
+ * Height of the ink just right of `word` on its line in the rendered page, as a share of the
+ * word's font size. The edited word follows it, so a much smaller share means the replacement was
+ * drawn at the wrong size.
+ */
+async function inkHeightAfterWord(bytes, pageIndex, word) {
+  const scale = 1.5;
+  const doc = await pdfjs.getDocument({ data: bytes.slice(), verbosity: 0 }).promise;
+  const pdfPage = await doc.getPage(pageIndex + 1);
+  // Printed PDFs split words across text items: take the item where the word ends.
+  let joined = "";
+  const item = (await pdfPage.getTextContent()).items.find((i) => {
+    joined += i.str ?? "";
+    return i.str && joined.includes(word);
+  });
+  assert.ok(item, "kept word " + word + " is on the page");
+  const viewport = pdfPage.getViewport({ scale });
+  await doc.destroy();
+  const pixels = await pagePixels(bytes, pageIndex);
+  const width = Math.floor(viewport.width);
+  const size = item.height * scale;
+  const [x, y] = viewport.convertToViewportPoint(item.transform[4] + item.width, item.transform[5]);
+  let top = Infinity;
+  let bottom = -Infinity;
+  for (let row = Math.floor(y - 1.6 * size); row < y + 0.6 * size; row++) {
+    for (let col = Math.ceil(x + 1); col < Math.min(width, x + 12 * size); col++) {
+      const i = (row * width + col) * 4;
+      if (0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2] < 140) {
+        top = Math.min(top, row);
+        bottom = Math.max(bottom, row);
+      }
+    }
+  }
+  return bottom >= top ? (bottom - top + 1) / size : 0;
+}
+
 async function pagePixels(bytes, pageIndex) {
   const doc = await pdfjs.getDocument({ data: bytes.slice(), verbosity: 0 }).promise;
   const pdfPage = await doc.getPage(pageIndex + 1);
@@ -123,7 +159,9 @@ async function oneWordCase(browser) {
   for (const word of words.slice(0, -1).filter((w) => w.length > 3)) {
     assert.ok(text.includes(word), "one-word edit keeps original text for: " + word);
   }
-  console.log("ONE_WORD_OK", JSON.stringify(last), "→ Updated; kept", words.length - 1, "words as original text");
+  const inkShare = await inkHeightAfterWord(exported, 1, words[words.length - 2]);
+  assert.ok(inkShare >= 0.5, "edited word drawn at the original size (ink " + inkShare.toFixed(2) + " of the font size)");
+  console.log("ONE_WORD_OK", JSON.stringify(last), "→ Updated; kept", words.length - 1, "words as original text; new word ink", inkShare.toFixed(2), "of font size");
   await page.close();
 }
 

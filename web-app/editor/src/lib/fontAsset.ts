@@ -1,4 +1,5 @@
 import replacementFonts from '../../public/fonts/replacement/manifest.json';
+import { cssWeight, type FontWeight } from './fontWeight';
 
 /** Bundled Noto families: full Devanagari and Latin coverage. */
 export type DevanagariFontFamily = 'NotoSansDevanagari' | 'NotoSerifDevanagari';
@@ -22,6 +23,21 @@ const SERIF_FAMILIES = new Set<string>(['NotoSerifDevanagari', 'Tinos', 'Caladea
 /** Whether a family is a serif face (drives the toolbar chip and the Devanagari fallback). */
 export function isSerifFamily(family: string): boolean {
   return SERIF_FAMILIES.has(family);
+}
+
+/**
+ * Weights a family can be drawn in without the browser faking them (CSS 100–900, ascending). The
+ * Noto faces are variable fonts; matched families ship the weights listed in the manifest.
+ */
+export function availableWeights(family: string): number[] {
+  if (family in NOTO_URLS) return [300, 400, 500, 600, 700];
+  const weights = new Set<number>();
+  for (const font of replacementFonts) {
+    if (font.family !== family || font.style !== 'normal') continue;
+    const [low, high = low] = font.weight.split(' ').map(Number);
+    for (let weight = low; weight <= high; weight += 100) weights.add(weight);
+  }
+  return [...weights].sort((a, b) => a - b);
 }
 
 /**
@@ -71,24 +87,24 @@ const baselineRatioCache = new Map<string, number>();
  * sample decides whether the Devanagari fallback takes part in the line box.
  *
  * @param family Font family.
- * @param fontWeight CSS weight keyword.
+ * @param fontWeight Toolbar keyword or CSS weight (100–900).
  * @param fontStyle CSS style, or undefined for normal.
  * @param sample Text the box will hold; only its script matters.
  */
 export async function baselineOffsetRatio(
   family: string,
-  fontWeight: 'normal' | 'bold',
+  fontWeight: FontWeight,
   fontStyle?: 'italic',
   sample = 'क',
 ): Promise<number | undefined> {
   const probe = /[ऀ-ॿ]/u.test(sample) ? 'कA' : 'A';
-  const key = `${family}|${fontWeight}|${fontStyle ?? 'normal'}|${probe}`;
+  const key = `${family}|${cssWeight(fontWeight)}|${fontStyle ?? 'normal'}|${probe}`;
   const cached = baselineRatioCache.get(key);
   if (cached !== undefined) return cached;
   if (typeof document === 'undefined') return undefined;
   ensureFontsLoaded();
   const sizePx = 100;
-  const weight = fontWeight === 'bold' ? 700 : 400;
+  const weight = cssWeight(fontWeight);
   const stack = cssFontStack(family);
   await document.fonts.load(`${fontStyle ?? 'normal'} ${weight} ${sizePx}px ${stack}`, probe);
   const box = document.createElement('div');
@@ -115,13 +131,13 @@ export async function baselineOffsetRatio(
 export function measureTextWidthPt(
   text: string,
   family: string,
-  fontWeight: 'normal' | 'bold',
+  fontWeight: FontWeight,
   fontSizePt: number,
 ): number {
   if (typeof document === 'undefined') return 0;
   const context = document.createElement('canvas').getContext('2d');
   if (!context) return 0;
-  context.font = `${fontWeight === 'bold' ? 700 : 400} ${fontSizePt}px ${cssFontStack(family)}`;
+  context.font = `${cssWeight(fontWeight)} ${fontSizePt}px ${cssFontStack(family)}`;
   return context.measureText(text).width;
 }
 
@@ -133,12 +149,12 @@ export function measureTextWidthPt(
 export async function loadFontFor(
   text: string,
   family: string,
-  fontWeight: 'normal' | 'bold',
+  fontWeight: FontWeight,
   fontStyle?: 'italic',
   fontSizePx = 16,
 ): Promise<void> {
   if (typeof document === 'undefined') return;
   ensureFontsLoaded();
-  const weight = fontWeight === 'bold' ? 700 : 400;
+  const weight = cssWeight(fontWeight);
   await document.fonts.load(`${fontStyle ?? 'normal'} ${weight} ${fontSizePx}px ${cssFontStack(family)}`, text);
 }

@@ -300,14 +300,14 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
   );
   await Promise.all(
     allTextEdits.map((e) =>
-      loadFontFor(`${e.text}${e.original?.text ?? ''}`, e.fontFamily, e.fontWeight === 'bold' ? 'bold' : 'normal', e.fontStyle),
+      loadFontFor(`${e.text}${e.original?.text ?? ''}`, e.fontFamily, e.fontWeight ?? 'normal', e.fontStyle),
     ),
   );
   const baselineRatios = new Map<string, number | undefined>();
   for (const edit of allTextEdits.filter((e) => e.original)) {
     baselineRatios.set(
       edit.id,
-      await baselineOffsetRatio(edit.fontFamily, edit.fontWeight === 'bold' ? 'bold' : 'normal', edit.fontStyle, edit.text),
+      await baselineOffsetRatio(edit.fontFamily, edit.fontWeight ?? 'normal', edit.fontStyle, edit.text),
     );
   }
   const narrowedPages: PageState[] = [];
@@ -319,7 +319,7 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
       edits: applyChangedSpans(
         page.edits,
         (edit, text) =>
-          measureTextWidthPt(text, edit.fontFamily, edit.fontWeight === 'bold' ? 'bold' : 'normal', edit.fontSizePt),
+          measureTextWidthPt(text, edit.fontFamily, edit.fontWeight ?? 'normal', edit.fontSizePt),
         canvas && gapFinder(page, canvas),
         (edit) => baselineRatios.get(edit.id),
         canvas && freeSpaceFinder(page, canvas),

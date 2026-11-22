@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import type { FontWeight } from '../lib/fontWeight';
+
 export type TextEdit = {
   type: 'text';
   id: string;
@@ -10,7 +12,7 @@ export type TextEdit = {
   text: string;
   color: string;
   fontFamily: 'NotoSansDevanagari' | 'NotoSerifDevanagari' | string;
-  fontWeight?: 'normal' | 'bold';
+  fontWeight?: FontWeight;
   fontStyle?: 'italic';
   widthPt?: number;
   /** The mask that clears the original text under this edit, for replacements. */

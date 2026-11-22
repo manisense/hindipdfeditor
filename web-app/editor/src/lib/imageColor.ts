@@ -22,6 +22,34 @@ function lumaOf(r: number, g: number, b: number): number {
 }
 
 /**
+ * Pixels of one region of an image.
+ *
+ * @param dataUrl Image data URL.
+ * @param xPx Left edge, in image px.
+ * @param yPx Top edge, in image px.
+ * @param wPx Width, in image px.
+ * @param hPx Height, in image px.
+ */
+export async function readImageRegion(
+  dataUrl: string,
+  xPx: number,
+  yPx: number,
+  wPx: number,
+  hPx: number,
+): Promise<ImageData> {
+  const img = await loadImage(dataUrl);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(wPx));
+  canvas.height = Math.max(1, Math.round(hPx));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas 2D context unavailable');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, -Math.round(xPx), -Math.round(yPx));
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+/**
  * Samples paper/background color from a band around a rectangle.
  * Uses the median RGB channels so glyph antialiasing and other sparse foreground pixels do not
  * tint the result. Unlike the old light-pixel filter, this preserves grey and colored backgrounds
