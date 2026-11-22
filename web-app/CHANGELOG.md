@@ -1,5 +1,14 @@
 # Changelog
 
+## OCR served from this site, 22 November 2026
+
+### Changed
+- The OCR engine, worker and Hindi/English language data are served from `/edit/ocr/` (copied at build time from pinned npm packages: `tesseract.js`, `tesseract.js-core`, `@tesseract.js-data/hin` and `/eng` 1.0.0) instead of a public CDN. Tested with every CDN blocked: scans and the Hindi text check still work.
+
+### Fixed
+- A failed language-data download no longer leaves pages in "Finding text…" forever: tesseract.js never settled `createWorker`; worker errors and a 60 s timeout now fail the load, the page falls back, and a notice explains that text recognition could not load.
+- The "Finding text…" progress hint is translated, and Hindi hints name the Hindi buttons.
+
 ## Mixed Hindi and English lines, 21 November 2026
 
 ### Fixed
