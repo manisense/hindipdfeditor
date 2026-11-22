@@ -1039,6 +1039,7 @@ export function EditPdfTool() {
       fontWeight?: FontWeight;
       fontStyle?: "italic";
       strokeEm?: number;
+      scaleX?: number;
     },
     consumedOcrLine?: OcrLine,
     requestId = ++pendingEditRequestRef.current,
@@ -1126,6 +1127,7 @@ export function EditPdfTool() {
       ...(text.fontWeight ? { fontWeight: text.fontWeight } : {}),
       ...(text.fontStyle ? { fontStyle: text.fontStyle } : {}),
       ...(text.strokeEm ? { strokeEm: text.strokeEm } : {}),
+      ...(text.scaleX ? { scaleX: text.scaleX } : {}),
       ...(text.widthPt !== undefined ? { widthPt: text.widthPt } : {}),
       maskId: maskEdit.id,
       ...(consumedOcrLine
@@ -1161,7 +1163,7 @@ export function EditPdfTool() {
     const pairing = editPairingsRef.current.get(editId);
     if (!pageState || !edit || !pairing?.ocrLine || !pairing.maskId) return;
     const measure = (run: string) =>
-      measureTextWidthPt(run, edit.fontFamily, edit.fontWeight ?? "normal", edit.fontSizePt);
+      measureTextWidthPt(run, edit.fontFamily, edit.fontWeight ?? "normal", edit.fontSizePt) * (edit.scaleX ?? 1);
     const covered = [pairing.ocrLine, ...(pairing.absorbed ?? [])];
     const flow = flowIntoParagraph(edit.text, edit.xPt, covered, pageState.ocrLines, measure);
     if (!flow) return;

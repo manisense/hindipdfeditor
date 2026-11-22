@@ -97,3 +97,31 @@ export function fitFontSizeToLineWidth(
   const scale = Math.min(1, (availableWidthPt * FIT_WIDTH_TOLERANCE) / measuredWidthPt);
   return fontSizePt * Math.max(1 - maxShrink, scale);
 }
+
+/** Narrowest and widest horizontal scale used to match a replacement font to the original's width. */
+export const MIN_SCALE_X = 0.85;
+export const MAX_SCALE_X = 1.1;
+
+/**
+ * Horizontal scale and font size that make replacement text as wide as the original line: the
+ * text keeps the original's height and is squeezed or stretched (85–110 %) to its width; only what
+ * that range cannot cover is made up by a smaller size (at most `maxShrink`).
+ *
+ * @param fontSizePt Detected font size, in pt.
+ * @param measuredWidthPt Width of the text set at `fontSizePt` in the replacement font, in pt.
+ * @param originalWidthPt Width of the original line, in pt.
+ * @param maxShrink Largest allowed size reduction, as a fraction (unitless).
+ * @returns `scaleX` (unitless, 1 = unchanged) and the font size in pt.
+ */
+export function fitToOriginalWidth(
+  fontSizePt: number,
+  measuredWidthPt: number,
+  originalWidthPt: number,
+  maxShrink: number,
+): { scaleX: number; fontSizePt: number } {
+  if (!(measuredWidthPt > 0) || !(originalWidthPt > 0)) return { scaleX: 1, fontSizePt };
+  const wanted = originalWidthPt / measuredWidthPt;
+  const scaleX = Math.min(MAX_SCALE_X, Math.max(MIN_SCALE_X, wanted));
+  const sizeScale = Math.max(1 - maxShrink, Math.min(1, wanted / scaleX));
+  return { scaleX: Math.round(scaleX * 1000) / 1000, fontSizePt: fontSizePt * sizeScale };
+}

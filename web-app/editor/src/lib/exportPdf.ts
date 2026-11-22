@@ -345,7 +345,7 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
       edits: applyChangedSpans(
         page.edits,
         (edit, text) =>
-          measureTextWidthPt(text, edit.fontFamily, edit.fontWeight ?? 'normal', edit.fontSizePt),
+          measureTextWidthPt(text, edit.fontFamily, edit.fontWeight ?? 'normal', edit.fontSizePt) * (edit.scaleX ?? 1),
         canvas && gapFinder(page, canvas),
         (edit) => baselineRatios.get(edit.id),
         canvas && freeSpaceFinder(page, canvas),

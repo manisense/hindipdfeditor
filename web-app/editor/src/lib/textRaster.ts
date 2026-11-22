@@ -111,8 +111,10 @@ export async function rasteriseTextEdits(edits: readonly TextEdit[]): Promise<Ma
           : (edit.lineHeightPt * TEXT_RENDER_PX_PER_PT - normalRatio * fontPx) / 2;
       const firstBaseline = spanBox.top - containerBox.top + halfLeading + ratio * fontPx;
 
+      const scaleX = edit.scaleX ?? 1;
+      const padPx = edit.fontSizePt * TEXT_FRAGMENT_PAD_RATIO * TEXT_RENDER_PX_PER_PT;
       const canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(containerBox.width);
+      canvas.width = Math.ceil(containerBox.width * Math.max(1, scaleX));
       canvas.height = Math.ceil(containerBox.height);
       const context = canvas.getContext('2d');
       if (!context) throw new Error('Canvas 2D context unavailable');
@@ -129,12 +131,10 @@ export async function rasteriseTextEdits(edits: readonly TextEdit[]): Promise<Ma
       };
       lines.forEach((line, index) => {
         const baseline = firstBaseline + index * lineHeightPx;
-        if (edit.fontStyle !== 'italic') {
-          paint(line.text, line.left, baseline);
-          return;
-        }
+        // Horizontal scale about the text box's left edge, with the synthetic italic shear.
+        const shear = edit.fontStyle === 'italic' ? SYNTHETIC_ITALIC_SHEAR : 0;
         context.save();
-        context.setTransform(1, 0, -SYNTHETIC_ITALIC_SHEAR, 1, line.left + SYNTHETIC_ITALIC_SHEAR * baseline, 0);
+        context.setTransform(scaleX, 0, -shear, 1, padPx + (line.left - padPx) * scaleX + shear * baseline, 0);
         paint(line.text, 0, baseline);
         context.restore();
       });
