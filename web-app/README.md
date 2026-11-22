@@ -44,7 +44,7 @@ Edits are never written into the original file; export builds a new PDF from it 
 
 Replacement fonts: Noto Sans/Serif Devanagari (OFL), Hind (OFL), Tinos and Arimo (Apache-2.0), Carlito and Caladea (OFL), pinned in `editor/public/fonts/replacement/manifest.json`.
 
-Browser OCR uses Tesseract (tesseract.js, Apache-2.0) with its engine and language data served from this site; `npm run copy:ocr` (run by `dev` and `build`) copies them from pinned npm packages.
+Browser OCR uses Tesseract (tesseract.js, Apache-2.0) with its engine and language data served from this site; `npm run copy:assets` (run by `dev` and `build`) copies them from pinned npm packages, together with pdf.js character maps, standard font data, JPEG 2000/JBIG2 decoders and ICC profiles (served from `/edit/pdfjs/`).
 
 AI OCR and translation are optional and send page data to the AI service only after the user consents.
 

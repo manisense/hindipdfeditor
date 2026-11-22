@@ -6,6 +6,7 @@ import {
   type PDFPage,
 } from "@cantoo/pdf-lib";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+import { pdfjsDocumentParams } from './pdfjsParams';
 
 /**
  * Detects pages set in a pre-Unicode legacy Devanagari font (spec Section 9): KrutiDev,
@@ -151,7 +152,7 @@ function toBytes(pdfBytes: Uint8Array | string): Uint8Array {
 
 /** Zero-based indexes of pages whose embedded text is in a legacy Devanagari encoding. */
 async function detectLegacyTextPages(pdfBytes: Uint8Array): Promise<number[]> {
-  const doc = await pdfjs.getDocument({ data: pdfBytes }).promise;
+  const doc = await pdfjs.getDocument(pdfjsDocumentParams(pdfBytes)).promise;
   try {
     const pages: number[] = [];
     for (let pageIndex = 0; pageIndex < doc.numPages; pageIndex++) {

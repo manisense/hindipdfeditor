@@ -1,4 +1,5 @@
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { pdfjsDocumentParams } from './pdfjsParams';
 
 let current: { bytes: Uint8Array; document: Promise<pdfjs.PDFDocumentProxy> } | null = null;
 
@@ -12,7 +13,7 @@ let current: { bytes: Uint8Array; document: Promise<pdfjs.PDFDocumentProxy> } | 
 export function sharedPdfDocument(bytes: Uint8Array): Promise<pdfjs.PDFDocumentProxy> {
   if (current?.bytes === bytes) return current.document;
   const previous = current;
-  current = { bytes, document: pdfjs.getDocument({ data: bytes.slice() }).promise };
+  current = { bytes, document: pdfjs.getDocument(pdfjsDocumentParams(bytes.slice())).promise };
   void previous?.document.then((doc) => doc.destroy()).catch(() => undefined);
   return current.document;
 }
