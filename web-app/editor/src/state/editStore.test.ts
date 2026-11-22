@@ -44,4 +44,14 @@ describe('editStore history', () => {
     store.getState().checkpoint();
     expect(store.getState().future).toHaveLength(0);
   });
+
+  it('undo keeps a page image rendered after the snapshot', () => {
+    const store = createEditStore(() => 'e1');
+    store.getState().loadDocument(doc());
+    store.getState().checkpoint();
+    store.getState().addTextEdit(0, text);
+    store.getState().setPageImage(1, 'data:image/jpeg;base64,AAA');
+    store.getState().undo();
+    expect(store.getState().document!.pages[1].backgroundImageUri).toBe('data:image/jpeg;base64,AAA');
+  });
 });
