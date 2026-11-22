@@ -1,5 +1,17 @@
 # Changelog
 
+## Edited lines flow into their paragraph, 23 November 2026
+
+### Added
+- When an edited line no longer fits its column, the edit takes in the next line of the same paragraph: its words are joined on, its area is cleared, and the text rewraps live in the editor at the paragraph's width and baseline spacing, as in a word processor. The first line stays on its original baseline (the box moves up by the extra half-leading the explicit line height adds). This repeats while the text overflows and stops at the paragraph's end.
+- A line belongs to the paragraph when it is directly below (baseline step 0.9–2.2 line heights), left-aligned within one line height, the same size, and the line above it was full (the next line's first word would not have fitted after it). Rows OCR split into several boxes are taken whole, in reading order.
+- Widths are compared in the original's terms (the replacement font is calibrated on the replaced line), with 3 % allowed for kerning, so a same-length change never flows.
+- Deleting the edit brings back every line it took in; the caret stays where the user typed when words are joined on. Autosaved drafts keep the taken lines.
+- The edit-quality gate grows a line of the bilingual fixture's paragraph and checks that the next line is taken in, the paragraph keeps its two rows at the original positions (within 3 px), and other lines keep their text.
+
+### Changed
+- A paragraph edit is redrawn whole (the words of the lines it covers become an image); a change that fits its line still redraws only the changed words. The one-word gate case uses a same-length replacement so it keeps testing that.
+
 ## Faux-bold text keeps its look, 23 November 2026
 
 ### Changed

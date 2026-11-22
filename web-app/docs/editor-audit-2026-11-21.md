@@ -17,7 +17,7 @@ Status column: open unless noted.
 
 ## Major
 
-Status as of 21 November 2026: M1 fixed (PR #9, #10: Hind/Tinos/Arimo/Carlito/Caladea, bold/italic; faux bold (stroked text) repainted with the same stroke, PR #27); M2 fixed (PR #9: baseline alignment); M3 fixed (PR #13: shared pdf.js document, 150-page limit; lazy page rendering and an OCR queue that reads the page on screen first); M4 partly (Tesseract measured best; self-hosted models and a visible "OCR unavailable" notice open); M5 fixed (PR #13); M6 open (needs decision); M7 partly fixed (word-level done; a longer word pushes the rest of the line into blank space after it; wrapping to the next line open); M8 fixed (PR #16). Replacement weight is matched from stroke thickness (light originals no longer get heavier text); width still differs where no metric-compatible font exists.
+Status as of 21 November 2026: M1 fixed (PR #9, #10: Hind/Tinos/Arimo/Carlito/Caladea, bold/italic; faux bold (stroked text) repainted with the same stroke, PR #27); M2 fixed (PR #9: baseline alignment); M3 fixed (PR #13: shared pdf.js document, 150-page limit; lazy page rendering and an OCR queue that reads the page on screen first); M4 partly (Tesseract measured best; self-hosted models and a visible "OCR unavailable" notice open); M5 fixed (PR #13); M6 open (needs decision); M7 partly fixed (word-level done; a longer word pushes the rest of the line into blank space after it; a line that outgrows its column flows into the rest of its paragraph, PR #28); M8 fixed (PR #16). Replacement weight is matched from stroke thickness (light originals no longer get heavier text); width still differs where no metric-compatible font exists.
 
 | # | Issue |
 |---|---|

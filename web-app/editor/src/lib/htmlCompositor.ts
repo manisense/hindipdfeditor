@@ -28,7 +28,8 @@ const SAFE_FAMILY = /^[A-Za-z0-9 _-]+$/;
 
 /**
  * Builds the HTML for one text edit, positioned at the top-left of a padded container. Layout
- * matches the live editor: same font, size, weight, `line-height: normal` and wrapping width.
+ * matches the live editor: same font, size, weight, line height (`normal`, or the paragraph's
+ * `lineHeightPt`) and wrapping width.
  *
  * @param edit The text edit; its `fontSizePt` and `widthPt` are in PDF points.
  * @param id DOM id for the container, used to find it for rasterising.
@@ -46,7 +47,8 @@ export function textEditFragmentHtml(edit: TextEdit, id: string): string {
     edit.widthPt === undefined
       ? 'white-space:pre;'
       : `width:${edit.widthPt * scale}px;white-space:pre-wrap;overflow-wrap:${TEXT_OVERFLOW_WRAP};`;
+  const lineHeight = edit.lineHeightPt === undefined ? TEXT_LINE_HEIGHT : `${edit.lineHeightPt * scale}px`;
   const weight = cssWeight(edit.fontWeight);
   const weightStyle = `${weight === 400 ? '' : `font-weight:${weight};`}${edit.fontStyle === 'italic' ? 'font-style:italic;' : ''}`;
-  return `<div id="${id}" style="display:inline-block;padding:${padPx}px;background:transparent"><span style="display:block;font-size:${fontPx}px;font-family:${cssFontStack(family)};color:${color};line-height:${TEXT_LINE_HEIGHT};word-break:normal;writing-mode:horizontal-tb;overflow:visible;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span></div>`;
+  return `<div id="${id}" style="display:inline-block;padding:${padPx}px;background:transparent"><span style="display:block;font-size:${fontPx}px;font-family:${cssFontStack(family)};color:${color};line-height:${lineHeight};word-break:normal;writing-mode:horizontal-tb;overflow:visible;${weightStyle}${widthStyle}">${escapeHtml(edit.text)}</span></div>`;
 }

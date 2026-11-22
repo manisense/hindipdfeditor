@@ -1,7 +1,7 @@
 import type { DocumentState, Edit, OcrLine, PageState } from '../state/editStore';
 
 /** Link between a replacement edit and what it took over, kept so deleting it restores the line. */
-export type DraftPairing = { maskId?: string; ocrLine?: OcrLine };
+export type DraftPairing = { maskId?: string; ocrLine?: OcrLine; absorbed?: OcrLine[] };
 
 /** Unsaved work on one opened PDF, as kept in browser storage between visits. */
 export type Draft = {

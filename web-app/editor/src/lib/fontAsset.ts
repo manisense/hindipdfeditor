@@ -123,6 +123,43 @@ export async function baselineOffsetRatio(
   }
 }
 
+const normalLineHeightCache = new Map<string, number>();
+
+/**
+ * Height of a `line-height: normal` line box of the given font, as a fraction of the font size
+ * (unitless), measured in the live browser like {@link baselineOffsetRatio}. Used to keep the
+ * first baseline in place when an edit switches to an explicit line height.
+ */
+export async function normalLineHeightRatio(
+  family: string,
+  fontWeight: FontWeight,
+  fontStyle?: 'italic',
+  sample = 'क',
+): Promise<number | undefined> {
+  const probe = /[ऀ-ॿ]/u.test(sample) ? 'कA' : 'A';
+  const key = `${family}|${cssWeight(fontWeight)}|${fontStyle ?? 'normal'}|${probe}`;
+  const cached = normalLineHeightCache.get(key);
+  if (cached !== undefined) return cached;
+  if (typeof document === 'undefined') return undefined;
+  ensureFontsLoaded();
+  const sizePx = 100;
+  const weight = cssWeight(fontWeight);
+  const stack = cssFontStack(family);
+  await document.fonts.load(`${fontStyle ?? 'normal'} ${weight} ${sizePx}px ${stack}`, probe);
+  const box = document.createElement('div');
+  box.style.cssText = `position:absolute;left:-10000px;top:0;font-family:${stack};font-size:${sizePx}px;font-weight:${weight};font-style:${fontStyle ?? 'normal'};line-height:normal;white-space:pre`;
+  box.textContent = probe;
+  document.body.appendChild(box);
+  try {
+    const ratio = box.getBoundingClientRect().height / sizePx;
+    if (!Number.isFinite(ratio) || ratio <= 0) return undefined;
+    normalLineHeightCache.set(key, ratio);
+    return ratio;
+  } finally {
+    box.remove();
+  }
+}
+
 /**
  * Width of `text` set in a font, measured with Canvas 2D. The font must already be loaded.
  *
