@@ -6,6 +6,7 @@ import {
   Download,
   Eraser,
   FileText,
+  Highlighter,
   Languages,
   Plus,
   RotateCcw,
@@ -13,6 +14,7 @@ import {
   Type,
   Redo2,
   Search,
+  Square,
   Undo2,
 } from "lucide-react";
 
@@ -73,7 +75,8 @@ import {
   sampleTextColor,
   setPdfBytes,
 } from "../lib/pdfToImages";
-import { getTool, readEditModeFromLocation } from "../lib/tools";
+import { getTool, readEditModeFromLocation, type EditMode } from "../lib/tools";
+import { HIGHLIGHT_COLOR, linesOutsideWhiteouts } from "../lib/maskKinds";
 import {
   detectTranslationDirection,
   isTranslatableEnglishLine,
@@ -102,7 +105,6 @@ const RASTER_SCALE = 2;
 const MASK_SAMPLE_MARGIN_PX = 16;
 const MASK_EXPAND_PT = 3;
 
-type EditMode = "edit" | "addText" | "erase";
 type OcrStatusByPage = Record<number, "running" | "done" | "failed">;
 type EditPairing = { maskId?: string; ocrLine?: OcrLine };
 
@@ -178,6 +180,8 @@ export function EditPdfTool() {
   const [editMode, setEditMode] = useState<EditMode>(() =>
     readEditModeFromLocation(),
   );
+  /** Tools that drag a box on the page instead of tapping text. */
+  const boxMode = editMode === "erase" || editMode === "highlight" || editMode === "whiteout";
   const [pageZoom, setPageZoom] = useState(1);
   const [findReplaceOpen, setFindReplaceOpen] = useState(false);
   const [ocrUnavailable, setOcrUnavailable] = useState(false);
@@ -949,7 +953,7 @@ export function EditPdfTool() {
   };
 
   const handleTap = async (xPt: number, yPt: number) => {
-    if (editingBlocked || editMode === "erase") return;
+    if (editingBlocked || boxMode) return;
     if (!page) return;
     const requestId = ++pendingEditRequestRef.current;
 
@@ -979,7 +983,7 @@ export function EditPdfTool() {
       return;
     }
 
-    const hitLine = findOcrTargetAt(page.ocrLines, xPt, yPt);
+    const hitLine = findOcrTargetAt(linesOutsideWhiteouts(page.ocrLines, page.edits), xPt, yPt);
     if (hitLine) {
       const { rect, text } = await lineReplacementFor(page, hitLine);
       await maskAndReplaceRegion(rect, { ...text, prefill: hitLine.text }, hitLine, requestId);
@@ -1017,8 +1021,52 @@ export function EditPdfTool() {
     if (focusedEditId === id) setFocusedEditId(null);
   };
 
+  /** Adds a whiteout (filled with the surrounding paper colour) or a highlight over `rect`. */
+  const addBoxMark = async (rect: DrawnMaskRect, kind: "whiteout" | "highlight") => {
+    if (!page || !document) return;
+    const requestId = ++pendingEditRequestRef.current;
+    const pageIndex = currentPageIndex;
+    const documentId = document.id;
+    let color = HIGHLIGHT_COLOR;
+    if (kind === "whiteout") {
+      color = "#ffffff";
+      const { x, y } = ptToImagePx(rect.xPt, rect.yPt, page.imagePxWidth, page.widthPt);
+      const { wPx, hPx } = ptSizeToImagePx(rect.wPt, rect.hPt, page.imagePxWidth, page.widthPt);
+      try {
+        color = await sampleAverageColor(
+          page.backgroundImageUri,
+          Math.round(x),
+          Math.round(y),
+          Math.round(wPx),
+          Math.round(hPx),
+          MASK_SAMPLE_MARGIN_PX,
+        );
+      } catch (error) {
+        console.warn("sampleAverageColor failed, falling back to white", error);
+      }
+    }
+    if (
+      requestId !== pendingEditRequestRef.current ||
+      useEditStore.getState().document?.id !== documentId
+    ) {
+      return;
+    }
+    checkpoint();
+    addMaskEdit(pageIndex, { ...rect, color, kind });
+  };
+
+  const removeBoxMark = (id: string) => {
+    pendingEditRequestRef.current += 1;
+    checkpoint();
+    removeEdit(currentPageIndex, id);
+  };
+
   const handleMaskDrawn = async (rect: DrawnMaskRect) => {
-    if (!page || editingBlocked || editMode !== "erase") return;
+    if (!page || editingBlocked || !boxMode) return;
+    if (editMode === "highlight" || editMode === "whiteout") {
+      await addBoxMark(rect, editMode);
+      return;
+    }
     await maskAndReplaceRegion(rect, {
       xPt: rect.xPt,
       yPt: rect.yPt,
@@ -1079,6 +1127,16 @@ export function EditPdfTool() {
         "Editing is disabled on this page — see the warning above.",
         "इस पेज पर एडिटिंग बंद है — ऊपर की चेतावनी देखें।",
       )
+    : editMode === "highlight"
+      ? tx(
+          "Highlight — drag over text to mark it. × removes a highlight; Esc finishes.",
+          "हाइलाइट — टेक्स्ट पर खींचकर चिह्नित करें। × से हाइलाइट हटाएं; Esc से खत्म करें।",
+        ) + zoomHint
+    : editMode === "whiteout"
+      ? tx(
+          "Whiteout — drag a box to cover it; text under it is deleted on save. × removes a box; Esc finishes.",
+          "व्हाइटआउट — छिपाने के लिए बॉक्स खींचें; सेव पर उसके नीचे का टेक्स्ट हट जाता है। × से बॉक्स हटाएं; Esc से खत्म करें।",
+        ) + zoomHint
     : editMode === "erase"
       ? tx(
           "Erase mode — drag a box over text to replace. Click without dragging, click outside the page, or press Esc to cancel.",
@@ -1341,6 +1399,22 @@ export function EditPdfTool() {
                 onClick={() => selectEditMode("erase")}
                 disabled={editingBlocked}
               />
+              <AppButton
+                title={tx("Highlight", "हाइलाइट")}
+                icon={<Highlighter size={15} aria-hidden="true" />}
+                small
+                variant={editMode === "highlight" ? "primary" : "secondary"}
+                onClick={() => selectEditMode("highlight")}
+                disabled={editingBlocked}
+              />
+              <AppButton
+                title={tx("Whiteout", "व्हाइटआउट")}
+                icon={<Square size={15} aria-hidden="true" />}
+                small
+                variant={editMode === "whiteout" ? "primary" : "secondary"}
+                onClick={() => selectEditMode("whiteout")}
+                disabled={editingBlocked}
+              />
             </div>
             <p className="app__hint">{hintText}</p>
           </section>
@@ -1419,8 +1493,8 @@ export function EditPdfTool() {
               key={page.pageIndex}
               page={page}
               onTap={(xPt, yPt) => void handleTap(xPt, yPt)}
-              disablePress={editingBlocked || editMode === "erase"}
-              focusedEditId={editMode === "erase" ? null : focusedEditId}
+              disablePress={editingBlocked || boxMode}
+              focusedEditId={boxMode ? null : focusedEditId}
               onEditPinchStart={handleEditPinchStart}
               onEditPinchResize={handleEditPinchResize}
               onEditPinchEnd={handleEditPinchEnd}
@@ -1428,12 +1502,12 @@ export function EditPdfTool() {
               renderOverlays={(viewWidthPx) => (
                 <>
                   <OcrHighlightLayer
-                    lines={page.ocrLines}
+                    lines={linesOutsideWhiteouts(page.ocrLines, page.edits)}
                     viewWidthPx={viewWidthPx}
                     pageWidthPt={page.widthPt}
                     visible={
                       !editingBlocked &&
-                      editMode !== "erase" &&
+                      !boxMode &&
                       !focusedEditId &&
                       ocrStatus === "done"
                     }
@@ -1444,9 +1518,19 @@ export function EditPdfTool() {
                     )}
                     viewWidthPx={viewWidthPx}
                     pageWidthPt={page.widthPt}
-                    active={editMode === "erase" && !editingBlocked}
+                    active={boxMode && !editingBlocked}
                     onMaskDrawn={(rect) => void handleMaskDrawn(rect)}
                     onCancel={exitToolMode}
+                    drawKind={editMode === "highlight" ? "highlight" : undefined}
+                    removableKind={
+                      editMode === "highlight" || editMode === "whiteout" ? editMode : undefined
+                    }
+                    removeLabel={
+                      editMode === "highlight"
+                        ? tx("Remove highlight", "हाइलाइट हटाएं")
+                        : tx("Remove whiteout", "व्हाइटआउट हटाएं")
+                    }
+                    onRemove={removeBoxMark}
                   />
                   {page.edits
                     .filter((e): e is TextEdit => e.type === "text")

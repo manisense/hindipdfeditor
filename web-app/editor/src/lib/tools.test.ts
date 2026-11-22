@@ -21,6 +21,14 @@ describe("public tool routes", () => {
       expect(seoForTool(tool.id).canonicalPath).toBe(tool.path);
     }
   });
+  it("opens the editor in the Highlight and Whiteout modes from a link", () => {
+    for (const mode of ["highlight", "whiteout"] as const) {
+      window.history.replaceState({}, "", `/edit/?mode=${mode}`);
+      expect(readEditModeFromLocation()).toBe(mode);
+    }
+    window.history.replaceState({}, "", "/edit/?mode=nope");
+    expect(readEditModeFromLocation()).toBe("edit");
+  });
   it("still supports old query links during migration", () => {
     window.history.replaceState({}, "", "/edit/?tool=translate");
     expect(readToolIdFromLocation()).toBe("translate");

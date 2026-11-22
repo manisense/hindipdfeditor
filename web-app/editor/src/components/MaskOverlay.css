@@ -22,3 +22,40 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 10%, transparent);
   pointer-events: none;
 }
+
+/* Multiply keeps the marked text dark, as the exported PDF does. */
+.mask-overlay__mask--highlight {
+  mix-blend-mode: multiply;
+}
+
+.mask-overlay__drag--highlight {
+  border-color: #e0b400;
+  background: color-mix(in srgb, #ffe066 60%, transparent);
+  box-shadow: none;
+  mix-blend-mode: multiply;
+}
+
+.mask-overlay__remove {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.mask-overlay__remove:hover {
+  color: var(--danger);
+}
+
+.mask-overlay__remove:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}

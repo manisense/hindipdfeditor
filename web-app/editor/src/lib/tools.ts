@@ -43,9 +43,12 @@ export function readToolIdFromLocation(): ToolId | null {
   return null;
 }
 
-export function readEditModeFromLocation(): "edit" | "addText" | "erase" {
-  const params = new URLSearchParams(window.location.search);
-  const mode = params.get("mode");
-  if (mode === "addText" || mode === "erase" || mode === "edit") return mode;
-  return "edit";
+/** Editor tool selected on the page: tap to edit, place text, or drag a box. */
+export type EditMode = "edit" | "addText" | "erase" | "highlight" | "whiteout";
+
+const EDIT_MODES: readonly EditMode[] = ["edit", "addText", "erase", "highlight", "whiteout"];
+
+export function readEditModeFromLocation(): EditMode {
+  const mode = new URLSearchParams(window.location.search).get("mode");
+  return EDIT_MODES.find((m) => m === mode) ?? "edit";
 }

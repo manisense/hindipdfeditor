@@ -1,5 +1,6 @@
-// Edit quality gate: replacing text with itself must leave the page as it was, and a one-word edit
-// must change only that word. Runs the real editor in Chrome against a preview or production.
+// Edit quality gate: replacing text with itself must leave the page as it was, a one-word edit
+// must change only that word, a whiteout must delete the text it covers and a highlight must keep
+// the text it marks readable. Runs the real editor in Chrome against a preview or production.
 //   SMOKE_BASE_URL=http://127.0.0.1:8788 node web-app/scripts/edit-quality-gate.mjs
 // Requires Playwright (resolvable through NODE_PATH) and system Chrome.
 import assert from "node:assert/strict";
@@ -165,11 +166,118 @@ async function oneWordCase(browser) {
   await page.close();
 }
 
+/** A detected line's box on screen and as a share of the page size. */
+async function lineBox(page, index) {
+  await page.locator(".ocr-highlight-layer__box").nth(index).waitFor();
+  return page.evaluate((i) => {
+    const r = document.querySelectorAll(".ocr-highlight-layer__box")[i].getBoundingClientRect();
+    const p = document.querySelector(".pdf-page-viewer__image").getBoundingClientRect();
+    return {
+      screen: { x: r.x, y: r.y, w: r.width, h: r.height },
+      share: { x: (r.x - p.x) / p.width, y: (r.y - p.y) / p.height, w: r.width / p.width, h: r.height / p.height },
+    };
+  }, index);
+}
+
+/** Text of the PDF's text items whose centre lies inside a box given as page-size shares. */
+async function textInBox(bytes, pageIndex, share) {
+  const doc = await pdfjs.getDocument({ data: bytes.slice(), verbosity: 0 }).promise;
+  const pdfPage = await doc.getPage(pageIndex + 1);
+  const viewport = pdfPage.getViewport({ scale: 1 });
+  const content = await pdfPage.getTextContent();
+  await doc.destroy();
+  return content.items
+    .filter((item) => {
+      const [x, baseline] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
+      const cx = (x + item.width / 2) / viewport.width;
+      const cy = (baseline - item.height * 0.35) / viewport.height;
+      return cx >= share.x && cx <= share.x + share.w && cy >= share.y && cy <= share.y + share.h;
+    })
+    .map((item) => item.str)
+    .join(" ");
+}
+
+async function dragBox(page, { x, y, w, h }) {
+  await page.mouse.move(x - 2, y - 2);
+  await page.mouse.down();
+  await page.mouse.move(x + w + 2, y + h + 2, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+}
+
+/** Shares of yellow and of dark pixels inside a box given as page-size shares. */
+function boxInk(rgba, width, height, share) {
+  const x0 = Math.round(share.x * width);
+  const y0 = Math.round(share.y * height);
+  const x1 = Math.round((share.x + share.w) * width);
+  const y1 = Math.round((share.y + share.h) * height);
+  let yellow = 0;
+  let dark = 0;
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const i = (y * width + x) * 4;
+      const [r, g, b] = [rgba[i], rgba[i + 1], rgba[i + 2]];
+      if (r > 200 && g > 180 && b < 160) yellow++;
+      if (0.299 * r + 0.587 * g + 0.114 * b < 110) dark++;
+    }
+  }
+  const total = Math.max(1, (x1 - x0) * (y1 - y0));
+  return { yellow: yellow / total, dark: dark / total };
+}
+
+async function boxMarksCase(browser) {
+  const file = path.join(fixtures, "translation-bilingual-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await openPdf(page, file, 1);
+  const original = new Uint8Array(await import("node:fs").then((fs) => fs.readFileSync(file)));
+  // Whiteout one line and highlight another, each with text to check. This PDF splits words into
+  // fragments, so text is compared with whitespace removed.
+  const squash = (text) => text.replace(/\s+/g, "");
+  await page.locator(".ocr-highlight-layer__box").first().waitFor();
+  const count = await page.locator(".ocr-highlight-layer__box").count();
+  const lines = [];
+  for (let i = 0; i < count && lines.length < 2; i++) {
+    const line = await lineBox(page, i);
+    line.text = await textInBox(original, 1, line.share);
+    if (squash(line.text).length >= 12) lines.push(line);
+  }
+  assert.equal(lines.length, 2, "found two lines with words to check");
+  const [hidden, marked] = lines;
+  await page.getByRole("button", { name: "Whiteout" }).click();
+  await dragBox(page, hidden.screen);
+  await page.getByRole("button", { name: "Highlight" }).click();
+  await dragBox(page, marked.screen);
+  const exported = await exportPdf(page);
+  const text = await pageText(exported, 1);
+  assert.ok(squash(text).includes(squash(marked.text)), "highlight keeps the marked text: " + marked.text);
+  assert.ok(!squash(text).includes(squash(hidden.text)), "whiteout deletes the covered text: " + hidden.text);
+  const doc = await pdfjs.getDocument({ data: exported.slice(), verbosity: 0 }).promise;
+  const viewport = (await doc.getPage(2)).getViewport({ scale: 1.5 });
+  await doc.destroy();
+  const rgba = await pagePixels(exported, 1);
+  if (process.env.GATE_SAVE_DIR) {
+    const fs = await import("node:fs");
+    fs.writeFileSync(path.join(process.env.GATE_SAVE_DIR, "box-marks.pdf"), exported);
+  }
+  const whiteout = boxInk(rgba, Math.round(viewport.width), Math.round(viewport.height), hidden.share);
+  const highlight = boxInk(rgba, Math.round(viewport.width), Math.round(viewport.height), marked.share);
+  assert.ok(whiteout.dark < 0.005, "whiteout hides the ink (" + (whiteout.dark * 100).toFixed(2) + " % dark)");
+  assert.ok(highlight.yellow > 0.3, "highlight is visible (" + (highlight.yellow * 100).toFixed(1) + " % yellow)");
+  assert.ok(highlight.dark > 0.02, "text under the highlight stays dark (" + (highlight.dark * 100).toFixed(2) + " % dark)");
+  console.log(
+    "BOX_MARKS_OK whiteout removed", JSON.stringify(squash(hidden.text)), (whiteout.dark * 100).toFixed(2),
+    "% dark; highlight kept", JSON.stringify(squash(marked.text)),
+    (highlight.yellow * 100).toFixed(1), "% yellow,", (highlight.dark * 100).toFixed(2), "% dark",
+  );
+  await page.close();
+}
+
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
   await noOpCase(browser, "Hindi fixture page", path.join(fixtures, "devanagari-fixture.pdf"), 0, [1]);
   await oneWordCase(browser);
+  await boxMarksCase(browser);
 } finally {
   await browser.close();
 }
