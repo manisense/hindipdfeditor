@@ -45,7 +45,7 @@ Status: rotation-aware text (PR #13), password/damaged/long-file messages and tr
 
 ## Minor / missing
 
-Status: find and replace (PR #15), Roman→Hindi typing (PR #14), labelled pager buttons and toolbar focus fix (PR #12, #14), whiteout and highlight tools (PR #24), images and signatures (PR #25), autosave (PR #26), in-editor page operations (PR #29) done; Hindi spell check open.
+Status: find and replace (PR #15), Roman→Hindi typing (PR #14), labelled pager buttons and toolbar focus fix (PR #12, #14), whiteout and highlight tools (PR #24), images and signatures (PR #25), autosave (PR #26), in-editor page operations (PR #29) done; unmapped-glyph repair (PR #30) done for Skia-printed PDFs; Hindi spell check open.
 
 - No images, signatures, stamps, whiteout, highlight, alignment, underline, find-and-replace, Hindi spell check, Roman→Hindi typing, in-editor page operations, autosave.
 - No check for characters the selected font lacks.

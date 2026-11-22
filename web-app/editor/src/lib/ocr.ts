@@ -23,6 +23,15 @@ import {
 import { mergeOcrLines, mergeWordReadings, type RecognizedWord } from "./mergeOcrLines";
 import { textBandOfLine } from "./ocrLineGeometry";
 import { extractEmbeddedTextLines } from "./pdfTextExtract";
+import {
+  hasGlyphPlaceholder,
+  isGlyphPlaceholder,
+  learnDocumentGlyphs,
+  ocrLineFor,
+  pairLinesWithOcr,
+  repairText,
+  spacedLike,
+} from "./glyphRepair";
 import { getPdfBytes } from "./pdfToImages";
 import type { RecognizedLine } from "./recognizedLine";
 import type { OcrLine, PageState } from "../state/editStore";
@@ -275,6 +284,67 @@ async function recognizeRow(
 }
 
 /**
+ * The page's own lines with their unmapped glyphs repaired (see glyphRepair.ts), learned from this
+ * page's OCR and every page read before it, and re-spaced like OCR. Rows with a line whose glyphs
+ * could not all be repaired are left out (OCR reads them).
+ *
+ * @returns The repaired lines, or null when the page has nothing to repair or the repaired Hindi
+ *   does not agree with OCR.
+ */
+async function repairedEmbeddedLines(
+  pdfBytes: Uint8Array,
+  page: PageState,
+  convertLegacy: boolean | undefined,
+  ocrLines: OcrLine[],
+  ocrText: string,
+): Promise<OcrLine[] | null> {
+  const withGlyphs = await extractEmbeddedTextLines(pdfBytes, page.pageIndex, {
+    convertLegacy,
+    keepGlyphPlaceholders: true,
+  });
+  if (!withGlyphs.some((line) => hasGlyphPlaceholder(line.text))) return null;
+  const readings = learnDocumentGlyphs(pdfBytes, pairLinesWithOcr(withGlyphs, ocrLines));
+  const lines = withGlyphs.map((line) => ({ ...line, text: repairText(line.text, readings, isGlyphPlaceholder) }));
+  // A repaired word must also be in OCR of its line: a reading learned from one misread word
+  // must not put a wrong letter into the text.
+  const confirmed = (line: OcrLine, drawn: string) => {
+    const ocr = ocrLineFor(line, ocrLines)?.text.normalize("NFC").replace(/\s+/gu, "") ?? "";
+    return drawn
+      .split(/\s+/u)
+      .filter((word) => hasGlyphPlaceholder(word))
+      .every((word) => ocr.includes(repairText(word, readings, isGlyphPlaceholder)));
+  };
+  // A row with any line left unrepaired or unconfirmed is read by OCR as a whole: OCR does not
+  // split rows the way the text layer does, so keeping part of the row would lose the rest.
+  const unresolved = lines.filter(
+    (line, i) => hasGlyphPlaceholder(line.text) || !confirmed(line, withGlyphs[i].text),
+  );
+  const repaired = lines
+    .filter((line) => !unresolved.some((open) => sameBand(open, line)))
+    .map((line) => {
+      const ocr = hasDevanagari(line.text) ? ocrLineFor(line, ocrLines) : null;
+      return ocr ? { ...line, text: spacedLike(line.text, ocr.text) } : line;
+    });
+  const hindi = repaired.filter((line) => hasDevanagari(line.text));
+  if (hindi.length === 0) return null;
+  if (isEmbeddedDevanagariCorrupted(hindi.map((line) => line.text).join(" "), ocrText)) return null;
+  return repaired;
+}
+
+/** Whether two line boxes share at least half the smaller one's height (pt): one visual row. */
+function sameBand(a: OcrLine, b: OcrLine): boolean {
+  const v = Math.min(a.yPt + a.hPt, b.yPt + b.hPt) - Math.max(a.yPt, b.yPt);
+  return v >= 0.5 * Math.min(a.hPt, b.hPt);
+}
+
+/** Whether two line boxes share at least half the smaller one's height and some width (pt). */
+function sameRow(a: OcrLine, b: OcrLine): boolean {
+  const v = Math.min(a.yPt + a.hPt, b.yPt + b.hPt) - Math.max(a.yPt, b.yPt);
+  const h = Math.min(a.xPt + a.wPt, b.xPt + b.wPt) - Math.max(a.xPt, b.xPt);
+  return v >= 0.5 * Math.min(a.hPt, b.hPt) && h > 0;
+}
+
+/**
  * Checks embedded lines that contain Devanagari against Hindi OCR of the page. When the text layer
  * lost characters (`embedded-degraded`) or its ToUnicode map is corrupted, the positions of its
  * Devanagari runs are not trustworthy either, so Hindi lines come from image OCR and Latin lines
@@ -284,6 +354,8 @@ async function recognizeRow(
 async function verifyEmbeddedDevanagari(
   embedded: OcrLine[],
   page: PageState,
+  pdfBytes: Uint8Array,
+  convertLegacy?: boolean,
 ): Promise<OcrLine[]> {
   const degraded = embedded.some((line) => line.source === "embedded-degraded");
   if (!degraded && !embedded.some((line) => hasDevanagari(line.text))) {
@@ -314,7 +386,12 @@ async function verifyEmbeddedDevanagari(
       const line = await recognizeRow(page, crop, rowBox);
       if (line) rescued.push(line);
     }
-    return combineEmbeddedLatinWithOcr(embedded, [...hindiLines, ...rescued]);
+    const fromOcr = combineEmbeddedLatinWithOcr(embedded, [...hindiLines, ...rescued]);
+    // Lines whose glyphs were all repaired keep the PDF's own text and positions; OCR fills in
+    // the rest.
+    const repaired = await repairedEmbeddedLines(pdfBytes, page, convertLegacy, [...hindiLines, ...rescued], hindiPage.text);
+    if (!repaired) return fromOcr;
+    return [...repaired, ...fromOcr.filter((line) => !repaired.some((kept) => sameRow(kept, line)))];
   } catch (error) {
     reportOcrUnavailable(error);
     return embedded;
@@ -340,7 +417,9 @@ export async function detectTextLines(
       const embedded = await extractEmbeddedTextLines(pdfBytes, page.pageIndex, {
         convertLegacy: options?.convertLegacy,
       });
-      if (embedded.length > 0) return await verifyEmbeddedDevanagari(embedded, page);
+      if (embedded.length > 0) {
+        return await verifyEmbeddedDevanagari(embedded, page, pdfBytes, options?.convertLegacy);
+      }
     } catch (error) {
       console.warn(
         "Embedded PDF text extraction failed; falling back to Tesseract",

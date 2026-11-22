@@ -1,5 +1,18 @@
 # Changelog
 
+## Hindi text with unmapped glyphs is repaired, 23 November 2026
+
+### Added
+- PDFs printed by Chrome, Google Docs and other Skia-based producers leave some Devanagari glyphs without Unicode (reph, pre-base ि, conjuncts such as क्ष, ज्ञ and द्य, combined signs such as ें), so their text layer reads with gaps and with reph and ि in drawing order. Each such glyph now stands as a placeholder (keyed by its PDF font and code) and is learned from OCR of the same line: the known characters around it are found in the OCR line, ignoring spaces, and the one extra run between them is what it stands for; where that run sits gives its place in reading order (a reph moves back one syllable, ि forward one). Readings are voted across the whole document, so glyphs learned on one page are read on the next, and glyphs next to each other are learned in turn. Subsets of one font share a reading for a glyph of the same advance width when every learned glyph with that width agrees.
+- Repaired lines keep the PDF's own text and positions instead of OCR's, re-spaced like OCR where the two agree (text layers drop or add spaces where fonts switch). On the Devanagari fixture, the first heading comes from the PDF itself, exactly as written; rows whose repair OCR cannot confirm (the small grey labels, which OCR misreads) still use OCR.
+- Safeguards: every repaired word must also appear in OCR of its line, the repaired Hindi must agree with OCR overall, and a row with any line left unrepaired or unconfirmed is read by OCR as a whole, so no text is lost and no guessed letter is kept.
+
+### Not covered
+- Glyphs mapped to the wrong characters (some Word/Mangal exports) are not repaired; those pages keep the OCR fallback.
+
+### Changed
+- The edit-quality gate checks that the fixture's Hindi heading reads exactly as written.
+
 ## Page operations in the editor, 23 November 2026
 
 ### Added
