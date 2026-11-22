@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, FilePlus2, RotateCw, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FilePlus2, RotateCcw, RotateCw, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { useTx } from '../lib/i18n';
@@ -136,6 +136,13 @@ function PageCard({
         </IconButton>
         <IconButton label={tx(`Move page ${n} later`, `पेज ${n} को बाद में ले जाएं`)} disabled={busy || index === count - 1} onClick={() => onOp({ kind: 'move', from: index, to: index + 1 })}>
           <ChevronRight size={16} aria-hidden="true" />
+        </IconButton>
+        <IconButton
+          label={rotateBlocked ? tx(`Page ${n} has edits: turn pages before editing them`, `पेज ${n} पर बदलाव हैं: एडिट करने से पहले पेज घुमाएं`) : tx(`Turn page ${n} anticlockwise`, `पेज ${n} को बाईं ओर घुमाएं`)}
+          disabled={busy || rotateBlocked}
+          onClick={() => onOp({ kind: 'rotate', index, degrees: -90 })}
+        >
+          <RotateCcw size={16} aria-hidden="true" />
         </IconButton>
         <IconButton
           label={rotateBlocked ? tx(`Page ${n} has edits: turn pages before editing them`, `पेज ${n} पर बदलाव हैं: एडिट करने से पहले पेज घुमाएं`) : tx(`Turn page ${n} clockwise`, `पेज ${n} को दाईं ओर घुमाएं`)}
