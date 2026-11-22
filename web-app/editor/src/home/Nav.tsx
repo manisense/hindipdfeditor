@@ -9,6 +9,7 @@ import {
   Layers,
   Split,
   Minimize2,
+  Signature,
 } from "lucide-react";
 import { Btn } from "./ui/button";
 import { GooglePlayMark } from "./ui/google-play-link";
@@ -34,6 +35,14 @@ export function Nav() {
       nameEn: "Edit Hindi PDF",
       nameHi: "हिंदी एडिट",
       icon: FileEdit,
+      tintFg: "#1843DD",
+      tintBg: "#E8EDFF",
+    },
+    {
+      id: "sign" as const,
+      nameEn: "Sign PDF",
+      nameHi: "हस्ताक्षर",
+      icon: Signature,
       tintFg: "#1843DD",
       tintBg: "#E8EDFF",
     },

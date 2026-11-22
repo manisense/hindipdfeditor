@@ -24,6 +24,11 @@ const MergePdfTool = lazy(() =>
     default: module.MergePdfTool,
   })),
 );
+const SignPdfTool = lazy(() =>
+  import("./tools/SignPdfTool").then((module) => ({
+    default: module.SignPdfTool,
+  })),
+);
 const SplitPdfTool = lazy(() =>
   import("./tools/SplitPdfTool").then((module) => ({
     default: module.SplitPdfTool,
@@ -81,6 +86,8 @@ export default function App() {
             <ErrorBoundary>
               <TranslatePdfTool />
             </ErrorBoundary>
+          ) : toolId === "sign" ? (
+            <SignPdfTool />
           ) : toolId === "merge" ? (
             <MergePdfTool />
           ) : toolId === "split" ? (

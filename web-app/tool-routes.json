@@ -9,6 +9,15 @@
     "category": "edit"
   },
   {
+    "id": "sign",
+    "path": "/tools/sign-pdf/",
+    "title": "Sign PDF",
+    "shortTitle": "Sign",
+    "description": "Draw, type or upload your signature and place it by hand, on every page or on chosen pages. Processing stays on your device. Adds an electronic signature image, not a certificate-based digital signature.",
+    "accent": "#1843DD",
+    "category": "edit"
+  },
+  {
     "id": "translate",
     "path": "/tools/translate-hindi-pdf/",
     "title": "Translate Hindi ↔ English",

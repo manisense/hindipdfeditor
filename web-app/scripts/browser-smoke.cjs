@@ -73,6 +73,7 @@ const { chromium } = require("playwright");
   });
   for (const [old, path] of [
     ["edit", "edit-hindi-pdf"],
+    ["sign", "sign-pdf"],
     ["translate", "translate-hindi-pdf"],
     ["merge", "merge-pdf"],
     ["split", "split-pdf"],

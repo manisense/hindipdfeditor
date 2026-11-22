@@ -14,7 +14,7 @@ type Props = {
 export function SelectedFileSummary({
   name,
   meta,
-  label = "Selected PDF",
+  label,
   multiple = false,
 }: Props) {
   const tx = useTx();

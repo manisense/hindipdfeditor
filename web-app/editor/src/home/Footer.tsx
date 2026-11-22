@@ -19,11 +19,15 @@ export function Footer() {
         },
         {
           label: isHindi ? "टेक्स्ट बदलें व मास्क करें" : "Replace text",
-          href: `${toolHref("edit", lang)}?mode=erase`,
+          href: `${toolHref("edit", lang)}${lang === "hi" ? "&" : "?"}mode=erase`,
+        },
+        {
+          label: isHindi ? "पीडीएफ पर हस्ताक्षर करें" : "Sign PDF",
+          href: toolHref("sign", lang),
         },
         {
           label: isHindi ? "नया टेक्स्ट जोड़ें" : "Add text",
-          href: `${toolHref("edit", lang)}?mode=addText`,
+          href: `${toolHref("edit", lang)}${lang === "hi" ? "&" : "?"}mode=addText`,
         },
       ],
     },
