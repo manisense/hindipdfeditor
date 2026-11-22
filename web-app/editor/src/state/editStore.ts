@@ -45,7 +45,21 @@ export type MaskEdit = {
   previewUri?: string;
 };
 
-export type Edit = TextEdit | MaskEdit;
+export type ImageEdit = {
+  type: 'image';
+  id: string;
+  page: number;
+  xPt: number;
+  yPt: number;
+  wPt: number;
+  hPt: number;
+  /** PNG or JPEG data URL, already downscaled for the page. */
+  uri: string;
+  /** Drawn with the Signature pad rather than inserted from a file; only changes labels. */
+  signature?: boolean;
+};
+
+export type Edit = TextEdit | MaskEdit | ImageEdit;
 
 export type OcrLine = {
   id: string;
@@ -99,6 +113,7 @@ type NewTextEditInput = Omit<TextEdit, 'id' | 'type' | 'page'>;
 type NewMaskEditInput = Omit<MaskEdit, 'id' | 'type' | 'page'>;
 type TextEditFields = Omit<TextEdit, 'id' | 'type' | 'page'>;
 type MaskEditFields = Omit<MaskEdit, 'id' | 'type' | 'page'>;
+type ImageEditFields = Omit<ImageEdit, 'id' | 'type' | 'page'>;
 
 export type EditStoreState = {
   document: DocumentState | null;
@@ -111,8 +126,10 @@ export type EditStoreState = {
   closeDocument: () => void;
   addTextEdit: (page: number, edit: NewTextEditInput) => TextEdit;
   addMaskEdit: (page: number, edit: NewMaskEditInput) => MaskEdit;
+  addImageEdit: (page: number, edit: ImageEditFields) => ImageEdit;
   updateTextEdit: (page: number, id: string, changes: Partial<TextEditFields>) => void;
   updateMaskEdit: (page: number, id: string, changes: Partial<MaskEditFields>) => void;
+  updateImageEdit: (page: number, id: string, changes: Partial<ImageEditFields>) => void;
   removeEdit: (page: number, id: string) => void;
   setLegacyFontWarnings: (warnings: DocumentState['legacyFontWarnings']) => void;
   setOcrLines: (page: number, lines: OcrLine[]) => void;
@@ -209,6 +226,25 @@ export function createEditStore(generateId: () => string = () => crypto.randomUU
       const newEdit: MaskEdit = { ...edit, type: 'mask', id: generateId(), page };
       set({ document: withUpdatedPage(document!, page, [...pageState.edits, newEdit]) });
       return newEdit;
+    },
+
+    addImageEdit: (page, edit) => {
+      const document = get().document;
+      const pageState = requirePage(document, page);
+      const newEdit: ImageEdit = { ...edit, type: 'image', id: generateId(), page };
+      set({ document: withUpdatedPage(document!, page, [...pageState.edits, newEdit]) });
+      return newEdit;
+    },
+
+    updateImageEdit: (page, id, changes) => {
+      const document = get().document;
+      const pageState = requirePage(document, page);
+      const existing = pageState.edits.find((e) => e.id === id);
+      if (!existing || existing.type !== 'image') {
+        throw new Error(`editStore: no ImageEdit with id ${id} on page ${page}`);
+      }
+      const edits = pageState.edits.map((e) => (e.id === id ? { ...e, ...changes } : e));
+      set({ document: withUpdatedPage(document!, page, edits) });
     },
 
     updateTextEdit: (page, id, changes) => {

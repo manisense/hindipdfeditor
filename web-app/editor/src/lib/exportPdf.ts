@@ -107,6 +107,12 @@ function fillInEditorSpace(page: PDFPage, editorToUser: Matrix, rect: EditorRect
   );
 }
 
+/** Embeds a PNG or JPEG data URL; JPEG stays JPEG, so photos keep their size. */
+async function embedDataUrlImage(out: PDFDocument, uri: string): Promise<PDFImage> {
+  const bytes = dataUrlBytes(uri);
+  return uri.startsWith('data:image/jpeg') ? out.embedJpg(bytes) : out.embedPng(bytes);
+}
+
 /** Paints a highlight over `rect` with a multiply blend, so the marked content stays readable. */
 function highlightInEditorSpace(page: PDFPage, editorToUser: Matrix, rect: EditorRect, color: string) {
   const [r, g, b] = hexToRgb(color);
@@ -303,7 +309,8 @@ async function backgroundPatches(page: PageState, rects: EditorRect[]): Promise<
  * bookmarks survive. On edited pages: replaced text is deleted from the page content (or, on
  * scans and wherever deletion cannot reach, cleaned from a raster patch that keeps ruled lines);
  * whiteouts delete the text under them and are filled vector rectangles; highlights are
- * multiply-blended rectangles over everything; new text is rendered by the browser, which shapes Devanagari
+ * multiply-blended rectangles over everything; inserted images and signatures are embedded as
+ * they are (JPEG or PNG with transparency); new text is rendered by the browser, which shapes Devanagari
  * (Plan A), painted at the measured baseline and placed as a transparent image. Never overwrites the source file.
  *
  * @param source Full in-memory document state; positions are in PDF points.
@@ -424,7 +431,12 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
     for (const mask of page.edits) {
       if (mask.type === 'mask' && isWhiteout(mask)) fillInEditorSpace(pdfPage, toUser, mask, mask.color);
     }
+    // New text and inserted images are drawn in the order they were added.
     for (const edit of page.edits) {
+      if (edit.type === 'image') {
+        drawImageInEditorSpace(pdfPage, toUser, await embedDataUrlImage(out, edit.uri), edit);
+        continue;
+      }
       const text = edit.type === 'text' ? renderedText.get(edit.id) : undefined;
       if (text) drawImageInEditorSpace(pdfPage, toUser, await out.embedPng(text.png), text);
     }

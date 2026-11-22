@@ -7,6 +7,7 @@ import {
   Eraser,
   FileText,
   Highlighter,
+  ImagePlus,
   Languages,
   Plus,
   RotateCcw,
@@ -14,6 +15,7 @@ import {
   Type,
   Redo2,
   Search,
+  Signature,
   Square,
   Undo2,
 } from "lucide-react";
@@ -25,6 +27,8 @@ import { useAppPopup } from "../components/appPopupContext";
 import { DropZone } from "../components/DropZone";
 import { EditableTextOverlay } from "../components/EditableTextOverlay";
 import { EditToolbar } from "../components/EditToolbar";
+import { ImageEditOverlay } from "../components/ImageEditOverlay";
+import { SignaturePad, type DrawnSignature } from "../components/SignaturePad";
 import { FindReplacePanel } from "../components/FindReplacePanel";
 import { LegacyFontWarning } from "../components/LegacyFontWarning";
 import { MaskOverlay, type DrawnMaskRect } from "../components/MaskOverlay";
@@ -77,6 +81,8 @@ import {
 } from "../lib/pdfToImages";
 import { getTool, readEditModeFromLocation, type EditMode } from "../lib/tools";
 import { HIGHLIGHT_COLOR, linesOutsideWhiteouts } from "../lib/maskKinds";
+import { IMAGE_ACCEPT, ImageImportError, readImageFile, type ImportedImage } from "../lib/imageImport";
+import { clampToPage, placeImage, visiblePageCentre } from "../lib/imagePlacement";
 import {
   detectTranslationDirection,
   isTranslatableEnglishLine,
@@ -87,6 +93,7 @@ import { geometryForTranslatedLine } from "../lib/translateEdits";
 import {
   useEditStore,
   type DocumentState,
+  type ImageEdit,
   type MaskEdit,
   type OcrLine,
   type PageState,
@@ -153,6 +160,9 @@ export function EditPdfTool() {
   const { showPopup } = useAppPopup();
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const [focusedEditId, setFocusedEditId] = useState<string | null>(null);
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [signaturePadOpen, setSignaturePadOpen] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [selectAllEditId, setSelectAllEditId] = useState<string | null>(null);
   const [ocrStatusByPage, setOcrStatusByPage] = useState<OcrStatusByPage>({});
@@ -217,6 +227,8 @@ export function EditPdfTool() {
   const loadDocument = useEditStore((s) => s.loadDocument);
   const addTextEdit = useEditStore((s) => s.addTextEdit);
   const addMaskEdit = useEditStore((s) => s.addMaskEdit);
+  const addImageEdit = useEditStore((s) => s.addImageEdit);
+  const updateImageEdit = useEditStore((s) => s.updateImageEdit);
   const updateTextEdit = useEditStore((s) => s.updateTextEdit);
   const removeEdit = useEditStore((s) => s.removeEdit);
   const setOcrLines = useEditStore((s) => s.setOcrLines);
@@ -248,6 +260,7 @@ export function EditPdfTool() {
         return;
       }
       if (event.key !== "Escape") return;
+      setSelectedImageId(null);
       pendingEditRequestRef.current += 1;
       dismissOnlyGestureRef.current = false;
       setFocusedEditId(null);
@@ -953,6 +966,7 @@ export function EditPdfTool() {
   };
 
   const handleTap = async (xPt: number, yPt: number) => {
+    setSelectedImageId(null);
     if (editingBlocked || boxMode) return;
     if (!page) return;
     const requestId = ++pendingEditRequestRef.current;
@@ -1059,6 +1073,74 @@ export function EditPdfTool() {
     pendingEditRequestRef.current += 1;
     checkpoint();
     removeEdit(currentPageIndex, id);
+  };
+
+  /** Centre of the visible part of the current page, in PDF points, when it is laid out. */
+  const onScreenPageCentre = () => {
+    const pageElement = window.document.querySelector(".pdf-page-viewer__page");
+    if (!page || !pageElement) return null;
+    const pageBox = pageElement.getBoundingClientRect();
+    const scrollBox = window.document.querySelector(".pdf-page-viewer__scroll")?.getBoundingClientRect();
+    const clipLeft = Math.max(0, scrollBox?.left ?? 0);
+    const clipTop = Math.max(0, scrollBox?.top ?? 0);
+    const clipRight = Math.min(window.innerWidth, scrollBox?.right ?? window.innerWidth);
+    const clipBottom = Math.min(window.innerHeight, scrollBox?.bottom ?? window.innerHeight);
+    return visiblePageCentre(
+      { left: pageBox.left - clipLeft, top: pageBox.top - clipTop, width: pageBox.width, height: pageBox.height },
+      { width: clipRight - clipLeft, height: clipBottom - clipTop },
+      page.widthPt,
+    );
+  };
+
+  /** Places an image or drawn signature where the user is looking on the current page and selects it. */
+  const insertImage = (image: ImportedImage | DrawnSignature, signature: boolean) => {
+    if (!page) return;
+    pendingEditRequestRef.current += 1;
+    checkpoint();
+    const rect = placeImage(image.pxWidth, image.pxHeight, page.widthPt, page.heightPt);
+    // A drawn signature is sized like handwriting (about 160 pt wide at most), not like a picture.
+    const scale = signature ? Math.min(1, 160 / rect.wPt) : 1;
+    const wPt = rect.wPt * scale;
+    const hPt = rect.hPt * scale;
+    const centre = onScreenPageCentre() ?? { xPt: page.widthPt / 2, yPt: page.heightPt / 2 };
+    const placed = clampToPage(
+      { xPt: centre.xPt - wPt / 2, yPt: centre.yPt - hPt / 2, wPt, hPt },
+      page.widthPt,
+      page.heightPt,
+    );
+    const edit = addImageEdit(currentPageIndex, {
+      ...placed,
+      uri: image.uri,
+      ...(signature ? { signature: true } : {}),
+    });
+    setEditMode("edit");
+    setFocusedEditId(null);
+    setSelectedImageId(edit.id);
+  };
+
+  const handleImageFile = async (file: File) => {
+    try {
+      insertImage(await readImageFile(file), false);
+    } catch (error) {
+      const reason = error instanceof ImageImportError ? error.reason : "decode";
+      await showPopup({
+        title: tx("Could not add this image", "यह इमेज नहीं जोड़ी जा सकी"),
+        message:
+          reason === "type"
+            ? tx("Choose a PNG, JPEG or WebP image.", "PNG, JPEG या WebP इमेज चुनें।")
+            : reason === "size"
+              ? tx("Choose an image smaller than 20 MB.", "20 MB से छोटी इमेज चुनें।")
+              : tx("This image file could not be read. Try another file.", "यह इमेज फ़ाइल पढ़ी नहीं जा सकी। दूसरी फ़ाइल आज़माएं।"),
+        tone: "error",
+      });
+    }
+  };
+
+  const removeImage = (id: string) => {
+    pendingEditRequestRef.current += 1;
+    checkpoint();
+    removeEdit(currentPageIndex, id);
+    setSelectedImageId(null);
   };
 
   const handleMaskDrawn = async (rect: DrawnMaskRect) => {
@@ -1370,6 +1452,33 @@ export function EditPdfTool() {
                 onClick={() => setFindReplaceOpen((open) => !open)}
                 disabled={translating || enhancingPage !== null}
               />
+              <AppButton
+                title={tx("Image", "इमेज")}
+                icon={<ImagePlus size={15} aria-hidden="true" />}
+                small
+                variant="secondary"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={editingBlocked}
+              />
+              <AppButton
+                title={tx("Signature", "हस्ताक्षर")}
+                icon={<Signature size={15} aria-hidden="true" />}
+                small
+                variant="secondary"
+                onClick={() => setSignaturePadOpen(true)}
+                disabled={editingBlocked}
+              />
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept={IMAGE_ACCEPT}
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) void handleImageFile(file);
+                }}
+              />
             </div>
             <div
               className="app__toolbar-row app__toolbar-row--modes"
@@ -1533,6 +1642,31 @@ export function EditPdfTool() {
                     onRemove={removeBoxMark}
                   />
                   {page.edits
+                    .filter((e): e is ImageEdit => e.type === "image")
+                    .map((edit) => (
+                      <ImageEditOverlay
+                        key={edit.id}
+                        edit={edit}
+                        viewWidthPx={viewWidthPx}
+                        pageWidthPt={page.widthPt}
+                        pageHeightPt={page.heightPt}
+                        selected={edit.id === selectedImageId}
+                        interactive={!boxMode && !editingBlocked}
+                        label={edit.signature ? tx("Signature", "हस्ताक्षर") : tx("Image", "इमेज")}
+                        deleteLabel={edit.signature ? tx("Remove signature", "हस्ताक्षर हटाएं") : tx("Remove image", "इमेज हटाएं")}
+                        resizeLabel={tx("Drag to resize", "आकार बदलने के लिए खींचें")}
+                        onSelect={() => {
+                          setFocusedEditId(null);
+                          setSelectedImageId(edit.id);
+                        }}
+                        onChange={(rect) => {
+                          checkpoint();
+                          updateImageEdit(currentPageIndex, edit.id, rect);
+                        }}
+                        onDelete={() => removeImage(edit.id)}
+                      />
+                    ))}
+                  {page.edits
                     .filter((e): e is TextEdit => e.type === "text")
                     .map((edit) => (
                       <EditableTextOverlay
@@ -1551,6 +1685,7 @@ export function EditPdfTool() {
                             return false;
                           }
                           setFocusedEditId(edit.id);
+                          setSelectedImageId(null);
                           if (edit.id === selectAllEditId)
                             setSelectAllEditId(null);
                           return true;
@@ -1722,6 +1857,14 @@ export function EditPdfTool() {
           <TurnstileWidget onToken={setTurnstileToken} />
         </AppPopup>
       )}
+      <SignaturePad
+        open={signaturePadOpen}
+        onCancel={() => setSignaturePadOpen(false)}
+        onAdd={(signature) => {
+          setSignaturePadOpen(false);
+          insertImage(signature, true);
+        }}
+      />
     </ToolShell>
   );
 }

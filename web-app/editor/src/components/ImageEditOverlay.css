@@ -1,0 +1,75 @@
+.image-edit-overlay {
+  position: absolute;
+  z-index: 3;
+  cursor: move;
+  touch-action: none;
+  border-radius: 2px;
+  outline: none;
+}
+
+.image-edit-overlay--inert {
+  pointer-events: none;
+}
+
+.image-edit-overlay:hover:not(.image-edit-overlay--inert),
+.image-edit-overlay:focus-visible {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 50%, transparent);
+}
+
+.image-edit-overlay--selected {
+  box-shadow: 0 0 0 1.5px var(--brand), 0 0 0 4px color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+.image-edit-overlay__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+.image-edit-overlay__delete {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+}
+
+.image-edit-overlay__delete:hover {
+  color: var(--danger);
+}
+
+.image-edit-overlay__delete:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* 24px touch target around a 12px visible corner square. */
+.image-edit-overlay__handle {
+  position: absolute;
+  right: -12px;
+  bottom: -12px;
+  width: 24px;
+  height: 24px;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.image-edit-overlay__handle::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1.5px solid var(--brand);
+  border-radius: 3px;
+  background: var(--surface);
+}

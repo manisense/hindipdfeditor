@@ -1,6 +1,6 @@
 // Edit quality gate: replacing text with itself must leave the page as it was, a one-word edit
 // must change only that word, a whiteout must delete the text it covers and a highlight must keep
-// the text it marks readable. Runs the real editor in Chrome against a preview or production.
+// the text it marks readable, and inserted images and signatures must land where they were put. Runs the real editor in Chrome against a preview or production.
 //   SMOKE_BASE_URL=http://127.0.0.1:8788 node web-app/scripts/edit-quality-gate.mjs
 // Requires Playwright (resolvable through NODE_PATH) and system Chrome.
 import assert from "node:assert/strict";
@@ -272,12 +272,93 @@ async function boxMarksCase(browser) {
   await page.close();
 }
 
+/** An element's box as a share of the page image's size. */
+async function shareOf(page, selector) {
+  return page.evaluate((sel) => {
+    const r = document.querySelector(sel).getBoundingClientRect();
+    const p = document.querySelector(".pdf-page-viewer__image").getBoundingClientRect();
+    return { x: (r.x - p.x) / p.width, y: (r.y - p.y) / p.height, w: r.width / p.width, h: r.height / p.height };
+  }, selector);
+}
+
+/** Share of pixels inside a page-share box matching `test(r, g, b)`, with a small inset. */
+function boxShare(rgba, width, height, share, test) {
+  const inset = 0.15;
+  const x0 = Math.round((share.x + share.w * inset) * width);
+  const y0 = Math.round((share.y + share.h * inset) * height);
+  const x1 = Math.round((share.x + share.w * (1 - inset)) * width);
+  const y1 = Math.round((share.y + share.h * (1 - inset)) * height);
+  let hits = 0;
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const i = (y * width + x) * 4;
+      if (test(rgba[i], rgba[i + 1], rgba[i + 2])) hits++;
+    }
+  }
+  return hits / Math.max(1, (x1 - x0) * (y1 - y0));
+}
+
+async function imagesCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const file = path.join(fixtures, "translation-bilingual-fixture.pdf");
+  const red = createCanvas(200, 100);
+  const redContext = red.getContext("2d");
+  redContext.fillStyle = "#e01010";
+  redContext.fillRect(0, 0, 200, 100);
+  const redFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "gate-")), "red.png");
+  fs.writeFileSync(redFile, red.toBuffer("image/png"));
+
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await openPdf(page, file, 1);
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Image", exact: true }).click();
+  await (await chooser).setFiles(redFile);
+  const image = page.getByRole("group", { name: "Image" });
+  const placed = await image.boundingBox();
+  await page.mouse.move(placed.x + placed.width / 2, placed.y + placed.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(placed.x + placed.width / 2 - 120, placed.y + placed.height / 2 + 140, { steps: 10 });
+  await page.mouse.up();
+  const moved = await image.boundingBox();
+  assert.ok(Math.abs(moved.x - (placed.x - 120)) < 3 && Math.abs(moved.y - (placed.y + 140)) < 3, "image moves with the pointer");
+  const imageShare = await shareOf(page, '[role="group"][aria-label="Image"]');
+
+  await page.getByRole("button", { name: "Signature", exact: true }).click();
+  const pad = await page.getByLabel("Signature drawing area").boundingBox();
+  await page.mouse.move(pad.x + 40, pad.y + 120);
+  await page.mouse.down();
+  for (let i = 0; i <= 30; i++) {
+    await page.mouse.move(pad.x + 40 + i * 10, pad.y + 120 - Math.sin(i / 3) * 50);
+  }
+  await page.mouse.up();
+  await page.getByRole("button", { name: "Add signature" }).click();
+  await page.getByRole("group", { name: "Signature" }).waitFor();
+  const signatureShare = await shareOf(page, '[role="group"][aria-label="Signature"]');
+
+  const exported = await exportPdf(page);
+  const original = new Uint8Array(fs.readFileSync(file));
+  assert.equal(await pageText(exported, 1), await pageText(original, 1), "inserting images leaves the page text as it was");
+  const doc = await pdfjs.getDocument({ data: exported.slice(), verbosity: 0 }).promise;
+  const viewport = (await doc.getPage(2)).getViewport({ scale: 1.5 });
+  await doc.destroy();
+  const [w, h] = [Math.round(viewport.width), Math.round(viewport.height)];
+  const rgba = await pagePixels(exported, 1);
+  const redShare = boxShare(rgba, w, h, imageShare, (r, g, b) => r > 180 && g < 80 && b < 80);
+  const inkShare = boxShare(rgba, w, h, signatureShare, (r, g, b) => r + g + b < 300);
+  assert.ok(redShare > 0.95, "image is drawn where it was moved (" + (redShare * 100).toFixed(1) + " % red)");
+  assert.ok(inkShare > 0.01, "signature ink is drawn where it was placed (" + (inkShare * 100).toFixed(2) + " % ink)");
+  console.log("IMAGES_OK image", (redShare * 100).toFixed(1), "% red at its moved place; signature", (inkShare * 100).toFixed(2), "% ink; page text unchanged");
+  await page.close();
+}
+
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
   await noOpCase(browser, "Hindi fixture page", path.join(fixtures, "devanagari-fixture.pdf"), 0, [1]);
   await oneWordCase(browser);
   await boxMarksCase(browser);
+  await imagesCase(browser);
 } finally {
   await browser.close();
 }
