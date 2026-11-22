@@ -46,7 +46,8 @@ export function textEditFragmentHtml(edit: TextEdit, id: string): string {
   const widthStyle =
     edit.widthPt === undefined
       ? 'white-space:pre;'
-      : `width:${edit.widthPt * scale}px;white-space:pre-wrap;overflow-wrap:${TEXT_OVERFLOW_WRAP};`;
+      : // Laid out unscaled: the glyphs are squeezed by `scaleX` when drawn, so the box is wider.
+        `width:${(edit.widthPt * scale) / (edit.scaleX ?? 1)}px;white-space:pre-wrap;overflow-wrap:${TEXT_OVERFLOW_WRAP};`;
   const lineHeight = edit.lineHeightPt === undefined ? TEXT_LINE_HEIGHT : `${edit.lineHeightPt * scale}px`;
   const weight = cssWeight(edit.fontWeight);
   const weightStyle = `${weight === 400 ? '' : `font-weight:${weight};`}${edit.fontStyle === 'italic' ? 'font-style:italic;' : ''}`;

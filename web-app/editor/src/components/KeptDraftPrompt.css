@@ -1,0 +1,38 @@
+.kept-draft {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  width: min(100%, 640px);
+  margin-bottom: 16px;
+  text-align: left;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.kept-draft__text {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 280px;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.kept-draft__text strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.kept-draft__text span {
+  overflow-wrap: anywhere;
+}
+
+.kept-draft__actions {
+  display: flex;
+  gap: 8px;
+}

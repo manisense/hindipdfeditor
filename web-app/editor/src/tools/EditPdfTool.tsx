@@ -1,4 +1,4 @@
-import { useLanguage, useTx } from "../lib/i18n";
+import { useTx } from "../lib/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
@@ -90,8 +90,9 @@ import { getTool, readEditModeFromLocation, type EditMode } from "../lib/tools";
 import { HIGHLIGHT_COLOR, linesOutsideWhiteouts } from "../lib/maskKinds";
 import { IMAGE_ACCEPT, ImageImportError, readImageFile, type ImportedImage } from "../lib/imageImport";
 import { clampToPage, placeImage, visiblePageCentre } from "../lib/imagePlacement";
-import { applyDraft, draftEditCount, draftOf, type Draft } from "../lib/draft";
-import { clearDraft, loadDraft, loadDraftPdf, saveDraft } from "../lib/draftStorage";
+import { applyDraft, type Draft } from "../lib/draft";
+import { useDraftAutosave } from "../hooks/useDraftAutosave";
+import { KeptDraftPrompt } from "../components/KeptDraftPrompt";
 import {
   detectTranslationDirection,
   isTranslatableEnglishLine,
@@ -120,15 +121,7 @@ const ROMAN_TYPING_KEY = "hpe-roman-typing";
 const RASTER_SCALE = 2;
 const MASK_SAMPLE_MARGIN_PX = 16;
 const MASK_EXPAND_PT = 3;
-/** Wait after the last change before keeping the draft, in ms. */
-const DRAFT_SAVE_DELAY_MS = 800;
 
-/** Date and time a draft was kept, in the UI language. */
-function savedAtLabel(savedAt: number, lang: string): string {
-  return new Intl.DateTimeFormat(lang === "hi" ? "hi-IN" : "en-IN", { dateStyle: "medium", timeStyle: "short" }).format(
-    savedAt,
-  );
-}
 
 /** Everything a page change replaces, kept so Undo can put it back. */
 type PageOpRestore = {
@@ -187,7 +180,6 @@ async function detectLegacyFontWarnings(
 export function EditPdfTool() {
   const tx = useTx();
   const { showPopup } = useAppPopup();
-  const { lang } = useLanguage();
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const [focusedEditId, setFocusedEditId] = useState<string | null>(null);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
@@ -249,12 +241,6 @@ export function EditPdfTool() {
 
   const document = useEditStore((s) => s.document);
   const [exportedSnapshot, setExportedSnapshot] = useState<string | null>(null);
-  /** Draft kept in this browser from an earlier visit, offered for restoring on the open screen. */
-  const [keptDraft, setKeptDraft] = useState<Draft | null>(null);
-  /** Whether the latest edits are kept in this browser. */
-  const [draftKept, setDraftKept] = useState(false);
-  /** Document whose draft this visit wrote or restored, so only that draft is ever deleted. */
-  const draftDocumentIdRef = useRef<string | null>(null);
   const [discardVisible, setDiscardVisible] = useState(false);
   /** Pages were moved, turned, deleted or added since the last export. */
   const [pagesChanged, setPagesChanged] = useState(false);
@@ -269,45 +255,13 @@ export function EditPdfTool() {
   const pageOpRestoreRef = useRef<PageOpRestore[]>([]);
   const [pageOpUndoCount, setPageOpUndoCount] = useState(0);
 
-  // Offer the draft kept from an earlier visit while no file is open.
-  useEffect(() => {
-    if (document) return;
-    let cancelled = false;
-    void loadDraft().then((draft) => {
-      if (!cancelled) setKeptDraft(draft);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [document]);
-
-  // Keep unexported edits in this browser, shortly after each change; drop the draft once the
-  // edits are exported.
-  useEffect(() => {
-    if (!document) return;
-    if (!dirty) {
-      if (draftDocumentIdRef.current === document.id) {
-        draftDocumentIdRef.current = null;
-        setDraftKept(false);
-        void clearDraft();
-      }
-      return;
-    }
-    setDraftKept(false);
-    const timer = window.setTimeout(() => {
-      const bytes = getPdfBytes();
-      if (!bytes) return;
-      const draft = draftOf(
-        document,
-        (pageIndex) => ocrStatusByPage[pageIndex] === "done",
-        editPairingsRef.current,
-        Date.now(),
-      );
-      draftDocumentIdRef.current = document.id;
-      void saveDraft(draft, bytes).then(setDraftKept);
-    }, DRAFT_SAVE_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [document, dirty, ocrStatusByPage]);
+  const drafts = useDraftAutosave({
+    document,
+    dirty,
+    detected: (pageIndex) => ocrStatusByPage[pageIndex] === "done",
+    detectionKey: ocrStatusByPage,
+    pairings: editPairingsRef,
+  });
   useUnsavedChanges(
     dirty || status.state === "saving" || translating || enhancingPage !== null,
   );
@@ -421,13 +375,11 @@ export function EditPdfTool() {
       setOcrStatusByPage(
         Object.fromEntries((restored?.detectedPages ?? []).map((pageIndex) => [pageIndex, "done" as const])),
       );
-      draftDocumentIdRef.current = restore ? newDocument.id : null;
+      drafts.opened(newDocument.id, Boolean(restore));
       pageOpRestoreRef.current = [];
       setPageOpUndoCount(0);
       setPagesChanged(false);
       setPageOpStatus(null);
-      setKeptDraft(null);
-      setDraftKept(Boolean(restore));
       setEditMode(readEditModeFromLocation());
       ocrPriorityPageRef.current = startPage;
       void runOcrQueue(newDocument);
@@ -580,14 +532,21 @@ export function EditPdfTool() {
     for (const match of found.edits) {
       updateTextEdit(match.pageIndex, match.edit.id, { text: match.newText });
     }
+    const created: { pageIndex: number; editId: string }[] = [];
     for (const match of found.lines) {
       const pageState = useEditStore.getState().document?.pages[match.pageIndex];
       if (!pageState) continue;
       const { rect, text } = await lineReplacementFor(pageState, match.line);
-      await maskAndReplaceRegion(rect, { ...text, prefill: match.newText }, match.line, requestId, {
+      const editId = await maskAndReplaceRegion(rect, { ...text, prefill: match.newText }, match.line, requestId, {
         pageIndex: match.pageIndex,
         batch: true,
       });
+      if (editId) created.push({ pageIndex: match.pageIndex, editId });
+    }
+    // A longer replacement flows into the rest of its paragraph, as typing does. After all
+    // replacements, so a line that is replaced itself is never taken into the one above.
+    for (const { pageIndex, editId } of [...created, ...found.edits.map((m) => ({ pageIndex: m.pageIndex, editId: m.edit.id }))]) {
+      flowIntoRestOfParagraph(pageIndex, editId);
     }
     return found.lines.length + found.edits.length;
   };
@@ -1039,6 +998,7 @@ export function EditPdfTool() {
       fontWeight?: FontWeight;
       fontStyle?: "italic";
       strokeEm?: number;
+      scaleX?: number;
     },
     consumedOcrLine?: OcrLine,
     requestId = ++pendingEditRequestRef.current,
@@ -1126,6 +1086,7 @@ export function EditPdfTool() {
       ...(text.fontWeight ? { fontWeight: text.fontWeight } : {}),
       ...(text.fontStyle ? { fontStyle: text.fontStyle } : {}),
       ...(text.strokeEm ? { strokeEm: text.strokeEm } : {}),
+      ...(text.scaleX ? { scaleX: text.scaleX } : {}),
       ...(text.widthPt !== undefined ? { widthPt: text.widthPt } : {}),
       maskId: maskEdit.id,
       ...(consumedOcrLine
@@ -1144,9 +1105,10 @@ export function EditPdfTool() {
       maskId: maskEdit.id,
       ocrLine: consumedOcrLine,
     });
-    if (options.batch) return;
+    if (options.batch) return textEdit.id;
     setFocusedEditId(textEdit.id);
     if (consumedOcrLine) setSelectAllEditId(textEdit.id);
+    return textEdit.id;
   };
 
   /**
@@ -1154,14 +1116,18 @@ export function EditPdfTool() {
    * when it no longer fits (see flowIntoParagraph).
    */
   const handleEditTextChange = (editId: string, text: string) => {
-    const pageIndex = currentPageIndex;
-    updateTextEdit(pageIndex, editId, { text });
+    updateTextEdit(currentPageIndex, editId, { text });
+    flowIntoRestOfParagraph(currentPageIndex, editId);
+  };
+
+  /** Lets a replaced line take in the next lines of its paragraph while its text overflows. */
+  const flowIntoRestOfParagraph = (pageIndex: number, editId: string) => {
     const pageState = useEditStore.getState().document?.pages[pageIndex];
     const edit = pageState?.edits.find((e): e is TextEdit => e.type === "text" && e.id === editId);
     const pairing = editPairingsRef.current.get(editId);
     if (!pageState || !edit || !pairing?.ocrLine || !pairing.maskId) return;
     const measure = (run: string) =>
-      measureTextWidthPt(run, edit.fontFamily, edit.fontWeight ?? "normal", edit.fontSizePt);
+      measureTextWidthPt(run, edit.fontFamily, edit.fontWeight ?? "normal", edit.fontSizePt) * (edit.scaleX ?? 1);
     const covered = [pairing.ocrLine, ...(pairing.absorbed ?? [])];
     const flow = flowIntoParagraph(edit.text, edit.xPt, covered, pageState.ocrLines, measure);
     if (!flow) return;
@@ -1489,11 +1455,7 @@ export function EditPdfTool() {
   const step = status.state === "saved" && !dirty ? 3 : document ? 2 : 1;
 
   const closeWithoutChanges = () => {
-    if (document && draftDocumentIdRef.current === document.id) {
-      draftDocumentIdRef.current = null;
-      void clearDraft();
-    }
-    setDraftKept(false);
+    drafts.closedDiscarding(document?.id);
     pageOpRestoreRef.current = [];
     setPageOpUndoCount(0);
     setPagesChanged(false);
@@ -1512,19 +1474,12 @@ export function EditPdfTool() {
   };
 
   const restoreKeptDraft = async (draft: Draft) => {
-    const bytes = await loadDraftPdf(draft);
+    const bytes = await drafts.keptDraftPdf(draft);
     if (!bytes) {
-      setKeptDraft(null);
-      await clearDraft();
       setStatus({ state: "error", message: { en: "The kept edits could not be read. Open the PDF again.", hi: "रखे गए बदलाव पढ़े नहीं जा सके। पीडीएफ फिर से खोलें।" } });
       return;
     }
     await openPdfFile(new File([bytes.slice().buffer], draft.sourceName, { type: "application/pdf" }), draft);
-  };
-
-  const discardKeptDraft = () => {
-    setKeptDraft(null);
-    void clearDraft();
   };
 
   const handleCloseDocument = () => {
@@ -1585,22 +1540,12 @@ export function EditPdfTool() {
 
       {status.state !== "opening" && !document && (
         <div className="app__centered app__fill app__landing">
-          {keptDraft && (
-            <section className="app__kept-draft" aria-label={tx("Unsaved edits", "बिना सेव किए बदलाव")}>
-              <div className="app__kept-draft-text">
-                <strong>{tx("Continue where you left off?", "जहाँ छोड़ा था, वहीं से जारी रखें?")}</strong>
-                <span>
-                  {tx(
-                    `${keptDraft.sourceName}: ${draftEditCount(keptDraft)} unsaved ${draftEditCount(keptDraft) === 1 ? "change" : "changes"} from ${savedAtLabel(keptDraft.savedAt, lang)}. Kept only in this browser; opening another file and editing it replaces them.`,
-                    `${keptDraft.sourceName}: ${savedAtLabel(keptDraft.savedAt, lang)} के ${draftEditCount(keptDraft)} बिना सेव किए बदलाव। ये केवल इसी ब्राउज़र में रखे हैं; दूसरी फ़ाइल खोलकर बदलने पर ये हट जाएंगे।`,
-                  )}
-                </span>
-              </div>
-              <div className="app__kept-draft-actions">
-                <AppButton title={tx("Discard", "हटाएं")} small variant="secondary" onClick={discardKeptDraft} />
-                <AppButton title={tx("Restore edits", "बदलाव वापस लाएं")} small onClick={() => void restoreKeptDraft(keptDraft)} />
-              </div>
-            </section>
+          {drafts.keptDraft && (
+            <KeptDraftPrompt
+              draft={drafts.keptDraft}
+              onRestore={() => void restoreKeptDraft(drafts.keptDraft!)}
+              onDiscard={drafts.discardKeptDraft}
+            />
           )}
           <DropZone
             accent={tool.accent}
@@ -1671,7 +1616,7 @@ export function EditPdfTool() {
               <span className="app__filename">
                 <FileText size={15} aria-hidden="true" />
                 <span>{document.sourceName}</span>
-                {draftKept && dirty && (
+                {drafts.draftKept && dirty && (
                   <span className="app__draft-kept" role="status">
                     {tx("Edits kept in this browser", "बदलाव इस ब्राउज़र में रखे गए")}
                   </span>

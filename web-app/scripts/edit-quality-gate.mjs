@@ -617,26 +617,52 @@ async function pageOpsCase(browser) {
 
 async function glyphRepairCase(browser) {
   // Chrome printed this fixture with subset fonts that leave the reph, conjuncts, ें and ि without
-  // Unicode; the heading reads correctly only once those glyphs are repaired (or from OCR).
+  // Unicode. The label row reads "→" only from the PDF (OCR reads it as ">"), so reading it
+  // exactly shows the PDF's own text was repaired.
   const file = path.join(fixtures, "devanagari-fixture.pdf");
   const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
   await openPdf(page, file, 0);
-  const expected = "धर्म और क्षेत्र में गुरुजी ने ज्ञान दिया।";
-  let found = null;
+  const expected = [
+    "धर्म और क्षेत्र में गुरुजी ने ज्ञान दिया।",
+    "धर्म → reph (र्) | क्षेत्र → क्ष",
+    "विद्यालय में सूर्य की रोशनी आती है।",
+  ];
+  const read = [];
   const count = await page.locator(".ocr-highlight-layer__box").count();
-  for (let i = 0; i < count && !found; i++) {
-    // A tapped line becomes an edit and leaves the list: the next line is always the first box.
-    const box = await page.locator(".ocr-highlight-layer__box").first().boundingBox();
-    await page.mouse.click(box.x + 3, box.y + box.height / 2);
-    await page.waitForTimeout(500);
-    const value = await page.evaluate(() => document.activeElement.value ?? "");
-    if (value.startsWith("धर्म और")) found = value;
+  for (let i = 0; i < count; i++) {
+    // Each tapped line is undone again, so every line stays in the list at its index.
+    const box = page.locator(".ocr-highlight-layer__box").nth(i);
+    await box.scrollIntoViewIfNeeded();
+    const bb = await box.boundingBox();
+    await page.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.waitForTimeout(400);
+    read.push(await page.evaluate(() => document.activeElement.value ?? ""));
     await page.keyboard.press("Escape");
-    await page.waitForTimeout(200);
-    if (found) break;
+    await page.waitForTimeout(150);
+    await page.keyboard.press("Control+z");
+    await page.waitForTimeout(250);
+    if (expected.every((line) => read.includes(line))) break;
   }
-  assert.equal(found, expected, "the Hindi heading reads as written");
-  console.log("GLYPH_REPAIR_OK heading reads", JSON.stringify(found));
+  for (const line of expected) assert.ok(read.includes(line), "reads as written: " + line + " (read: " + JSON.stringify(read) + ")");
+  console.log("GLYPH_REPAIR_OK", expected.length, "Hindi lines read exactly from the PDF's repaired text");
+  await page.close();
+}
+
+async function findReplaceFlowCase(browser) {
+  const file = path.join(fixtures, "translation-bilingual-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await openPdf(page, file, 1);
+  await page.getByRole("button", { name: "Find & replace" }).click();
+  await page.getByLabel("Find", { exact: true }).fill("the application");
+  await page.getByLabel("Replace with").fill("the application and the attached forms");
+  await page.getByRole("button", { name: /^Replace all/ }).click();
+  await page.getByText(/Replaced in \d+ place/).waitFor();
+  const exported = await exportPdf(page);
+  const text = (await pageText(exported, 1)).replace(/\s+/g, "");
+  // The grown line takes in "documents." from the next line: neither stays as PDF text.
+  assert.ok(!text.includes("documents."), "a longer replacement flows into the next line of its paragraph");
+  assert.ok(text.includes("EmployeeName:SeemaSharma"), "other lines keep their text");
+  console.log("FIND_REPLACE_FLOW_OK longer replacement took in the next line of its paragraph");
   await page.close();
 }
 
@@ -652,6 +678,7 @@ try {
   await paragraphFlowCase(browser);
   await pageOpsCase(browser);
   await glyphRepairCase(browser);
+  await findReplaceFlowCase(browser);
 } finally {
   await browser.close();
 }

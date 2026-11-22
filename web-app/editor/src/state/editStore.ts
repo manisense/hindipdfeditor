@@ -17,6 +17,12 @@ export type TextEdit = {
   /** Stroke painted around the glyphs, as a share of the font size (matches a faux-bold original). */
   strokeEm?: number;
   /**
+   * Horizontal scale of the glyphs (unitless, 1 = unchanged), so a replacement font that sets
+   * the original's words wider or narrower matches their width. `widthPt` is the width on the
+   * page, after scaling.
+   */
+  scaleX?: number;
+  /**
    * Baseline-to-baseline distance when the text wraps, in PDF points: set when an edit flows into
    * the rest of its paragraph, so wrapped lines keep the paragraph's spacing. Absent: the font's
    * normal line height.

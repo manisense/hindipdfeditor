@@ -1,5 +1,5 @@
 import { ptSizeToImagePx, ptToImagePx } from './coordinateMath';
-import { fitFontSizeToLineWidth, textGeometryForDetectedLine } from './detectedLineTextGeometry';
+import { fitFontSizeToLineWidth, fitToOriginalWidth, textGeometryForDetectedLine } from './detectedLineTextGeometry';
 import {
   availableWeights,
   baselineOffsetRatio,
@@ -37,6 +37,8 @@ export type LineReplacement = {
     fontStyle?: 'italic';
     /** Faux-bold stroke of the original, as a share of the font size. */
     strokeEm?: number;
+    /** Horizontal scale matching the original's width (unitless). */
+    scaleX?: number;
   };
 };
 
@@ -145,12 +147,13 @@ export async function lineReplacementFor(page: PageState, line: OcrLine): Promis
   const font = { ...hinted, ...face };
   const ratio = await baselineOffsetRatio(font.fontFamily, font.fontWeight, font.fontStyle, line.text);
   const detected = textGeometryForDetectedLine(line, page.widthPt, EDIT_TEXT_WIDTH_SLACK_RATIO, ratio);
-  const fittedSizePt = fitFontSizeToLineWidth(
-    detected.fontSizePt,
-    measureTextWidthPt(line.text, font.fontFamily, font.fontWeight, detected.fontSizePt),
-    line.wPt,
-    MAX_FIT_SHRINK,
-  );
+  const measuredPt = measureTextWidthPt(line.text, font.fontFamily, font.fontWeight, detected.fontSizePt);
+  // A line from the PDF's text layer has its true width: match it by squeezing, keeping the size.
+  // OCR boxes are too rough for that, so OCR lines are only shrunk when wider.
+  const fromPdf = line.source === 'embedded' || line.source === 'embedded-degraded';
+  const widthFit = fromPdf ? fitToOriginalWidth(detected.fontSizePt, measuredPt, line.wPt, MAX_FIT_SHRINK) : null;
+  const fittedSizePt =
+    widthFit?.fontSizePt ?? fitFontSizeToLineWidth(detected.fontSizePt, measuredPt, line.wPt, MAX_FIT_SHRINK);
   const geometry =
     fittedSizePt < detected.fontSizePt
       ? textGeometryForDetectedLine(
@@ -181,6 +184,7 @@ export async function lineReplacementFor(page: PageState, line: OcrLine): Promis
       color,
       ...font,
       ...(strokeEm ? { strokeEm } : {}),
+      ...(widthFit && widthFit.scaleX !== 1 ? { scaleX: widthFit.scaleX } : {}),
     },
   };
 }

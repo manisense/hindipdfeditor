@@ -1,5 +1,6 @@
+import { describe, expect, it } from 'vitest';
 import type { OcrLine } from '../state/editStore';
-import { fitFontSizeToLineWidth, textGeometryForDetectedLine } from './detectedLineTextGeometry';
+import { fitFontSizeToLineWidth, fitToOriginalWidth, textGeometryForDetectedLine } from './detectedLineTextGeometry';
 
 function detectedLine(overrides: Partial<OcrLine> = {}): OcrLine {
   return {
@@ -88,4 +89,24 @@ it('keeps an exact-metric font at full size and shrinks a wider substitute withi
   expect(fitFontSizeToLineWidth(9, 101, 100, 0.12)).toBe(9);
   expect(fitFontSizeToLineWidth(10, 115.556, 100, 0.12)).toBeCloseTo(9, 2);
   expect(fitFontSizeToLineWidth(10, 200, 100, 0.12)).toBeCloseTo(8.8);
+});
+
+describe('fitToOriginalWidth', () => {
+  it('squeezes a wider replacement to the original width, keeping its size', () => {
+    expect(fitToOriginalWidth(10, 110, 100, 0.12)).toEqual({ scaleX: 0.909, fontSizePt: 10 });
+  });
+
+  it('stretches a narrower one a little', () => {
+    expect(fitToOriginalWidth(10, 95, 100, 0.12).scaleX).toBe(1.053);
+  });
+
+  it('shrinks the size only for what squeezing cannot cover', () => {
+    const fit = fitToOriginalWidth(10, 130, 100, 0.12);
+    expect(fit.scaleX).toBe(0.85);
+    expect(fit.fontSizePt).toBeCloseTo(10 * (100 / 130 / 0.85), 3);
+  });
+
+  it('leaves text alone when it cannot be measured', () => {
+    expect(fitToOriginalWidth(10, 0, 100, 0.12)).toEqual({ scaleX: 1, fontSizePt: 10 });
+  });
 });

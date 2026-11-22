@@ -73,6 +73,34 @@ export async function renderPage(page: number, scale: number): Promise<PageImage
 }
 
 /**
+ * Renders one area of a page, sharply, for reading small text (page images are 2 px per pt).
+ *
+ * @param page Zero-based page index.
+ * @param rect Area, in PDF points (editor space, top-left origin).
+ * @param scale Output px per PDF point.
+ * @returns PNG data URL on a white background.
+ */
+export async function renderRegion(
+  page: number,
+  rect: { xPt: number; yPt: number; wPt: number; hPt: number },
+  scale: number,
+): Promise<string> {
+  if (!pdfBytesCache) throw new Error('No PDF loaded');
+  const pdfPage = await (await sharedPdfDocument(pdfBytesCache)).getPage(page + 1);
+  const viewport = pdfPage.getViewport({ scale, offsetX: -rect.xPt * scale, offsetY: -rect.yPt * scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(rect.wPt * scale));
+  canvas.height = Math.max(1, Math.round(rect.hPt * scale));
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas 2D context unavailable');
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  await pdfPage.render({ canvasContext: context, viewport, canvas }).promise;
+  pdfPage.cleanup();
+  return canvas.toDataURL('image/png');
+}
+
+/**
  * Renders a small preview of one page for the page list.
  *
  * @param page Zero-based page index.

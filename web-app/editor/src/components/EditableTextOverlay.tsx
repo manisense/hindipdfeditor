@@ -143,7 +143,9 @@ export function EditableTextOverlay({
         fontWeight: cssWeight(edit.fontWeight),
         fontStyle: edit.fontStyle ?? 'normal',
         ...(edit.strokeEm ? { WebkitTextStroke: `${edit.strokeEm * fontSizePx}px ${edit.color}` } : {}),
-        width: widthPx,
+        // Squeezed to the original's width from the left edge; laid out unscaled, so wider.
+        ...(edit.scaleX && edit.scaleX !== 1 ? { transform: `scaleX(${edit.scaleX})`, transformOrigin: '0 0' } : {}),
+        width: widthPx === undefined ? undefined : widthPx / (edit.scaleX ?? 1),
       }}
       rows={1}
     />
