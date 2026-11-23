@@ -36,7 +36,7 @@ Dependencies are pinned to exact versions at least two weeks old; `npm audit` re
 
 - Server-side LibreOffice: best fidelity, but documents would leave the device.
 - `mammoth` for Word to PDF: semantic HTML without page size or layout.
-- Rebuilding images in PDF to Word: left out. Ruled tables are rebuilt since 23 November 2026 (see the addendum below).
+- Exact positions in PDF to Word: left out (Word reflows). Ruled tables and pictures are carried over since 23 November 2026 (see the addenda below).
   and stated on the tool page.
 
 ## Addendum, 23 November 2026: ruled tables
@@ -53,4 +53,14 @@ PDF to Word rebuilds ruled tables as Word tables.
   - Scanned pages have no drawn lines, so their tables stay as paragraphs.
   - A text line that spans two cells goes to the cell holding its centre.
 - **Checks:** gate case `WORD_TABLE_OK`. On the 31-page notice, 14 tables are rebuilt, including a two-level header and row merges.
+
+## Addendum, 23 November 2026: pictures
+
+PDF to Word carries pictures over.
+
+- **What counts:** a painted image at least 40 pt tall and 24 pt wide (`pictureBoxes`): a logo, photo, stamp or signature. Smaller images are text-line candidates (ADR 0016). Images covering more than 85 % of the page are backgrounds (scans) and are skipped. Tiles of one picture are joined.
+- **Cutting:** each picture is cut from one render of the page at 2 px/pt as a JPEG over white, so masks and transparency look as they do on the page.
+- **Placing:** pictures are placed in reading order by their top edge, as their own paragraph, indented to their left edge, at their size (capped to the text width). A picture inside a ruled table goes into its cell.
+- **Limits:** vector logos (drawn with paths) are not pictures, and text drawn over a picture stays as a paragraph beside it.
+- **Checks:** gate case `WORD_PICTURE_OK`. On the 31-page notice, the CISF emblem comes through at the top of page 1.
 

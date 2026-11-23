@@ -1,10 +1,11 @@
 import { buildWordDocument, type WordPage } from './pdfToWord';
 import { detectLegacyFonts, isConvertibleLegacyFont } from './legacyFontDetector';
 import { detectTextLines, ocrPoolSize } from './ocr';
-import { getPageCount, getPageSize, renderPage, setPdfBytes } from './pdfToImages';
+import type { PtBox } from './pdfImageRects';
+import { getPageCount, getPageSize, renderPage, renderPageCanvas, setPdfBytes } from './pdfToImages';
 import type { Ruling } from './pdfRulings';
 import { detectTables } from './tableDetect';
-import { pageBlocks } from './wordLayout';
+import { pageBlocks, type WordPicture } from './wordLayout';
 import type { PageState } from '../state/editStore';
 
 /** Scale pages are rendered at for reading, in px per PDF point (as the editor uses). */
@@ -17,7 +18,8 @@ export type PdfToWordResult = { blob: Blob; pages: number; emptyPages: number };
  * editor reads it: the PDF's own text where it is reliable (checked against OCR for Hindi, with
  * unmapped glyphs repaired and KrutiDev converted to Unicode), OCR for scans and for legacy fonts
  * that cannot be converted. Lines become paragraphs with their size, weight and alignment, and
- * ruled tables become Word tables. Pictures and exact positions are not carried over.
+ * ruled tables become Word tables, and pictures (logos, photos, stamps) are placed in reading
+ * order. Exact positions are not kept.
  *
  * @param onProgress Called after each page with pages done and total.
  */
@@ -53,8 +55,17 @@ export async function convertPdfToWord(
       return { backgroundImageUri: image.uri, imagePxWidth: image.pxWidth, imagePxHeight: image.pxHeight };
     };
     const rulings: Ruling[] = [];
-    const lines = await detectTextLines(page, { forceOcr: unconvertible, convertLegacy: legacy.length > 0, render, readTextImages: true, rulings });
-    return { widthPt: page.widthPt, heightPt: page.heightPt, blocks: pageBlocks(lines, page.widthPt, detectTables(rulings)) };
+    const pictureBoxes: PtBox[] = [];
+    const lines = await detectTextLines(page, {
+      forceOcr: unconvertible,
+      convertLegacy: legacy.length > 0,
+      render,
+      readTextImages: true,
+      rulings,
+      pictures: pictureBoxes,
+    });
+    const pictures = await cutPictures(pageIndex, pictureBoxes);
+    return { widthPt: page.widthPt, heightPt: page.heightPt, blocks: pageBlocks(lines, page.widthPt, detectTables(rulings), pictures) };
   };
   const lanes = Math.max(1, Math.min(total, ocrPoolSize()));
   await Promise.all(
@@ -70,3 +81,34 @@ export async function convertPdfToWord(
   const emptyPages = pages.filter((page) => page.blocks.length === 0).length;
   return { blob: await buildWordDocument(pages), pages: total, emptyPages };
 }
+
+/** Render scale for pictures, in px per pt (144 dpi: sharp in Word, small files). */
+const PICTURE_PX_PER_PT = 2;
+/** JPEG quality for pictures. */
+const PICTURE_QUALITY = 0.88;
+
+/**
+ * Cuts pictures out of one render of the page, as JPEGs, so masked and transparent images look
+ * exactly as they do on the page (over white).
+ *
+ * @param boxes Picture boxes, in pt (top-left origin).
+ */
+async function cutPictures(pageIndex: number, boxes: readonly PtBox[]): Promise<WordPicture[]> {
+  if (boxes.length === 0) return [];
+  const canvas = await renderPageCanvas(pageIndex, PICTURE_PX_PER_PT);
+  const pictures: WordPicture[] = [];
+  for (const box of boxes) {
+    const crop = document.createElement('canvas');
+    crop.width = Math.max(1, Math.round(box.wPt * PICTURE_PX_PER_PT));
+    crop.height = Math.max(1, Math.round(box.hPt * PICTURE_PX_PER_PT));
+    const context = crop.getContext('2d');
+    if (!context) continue;
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, crop.width, crop.height);
+    context.drawImage(canvas, box.xPt * PICTURE_PX_PER_PT, box.yPt * PICTURE_PX_PER_PT, crop.width, crop.height, 0, 0, crop.width, crop.height);
+    const blob = await new Promise<Blob | null>((resolve) => crop.toBlob(resolve, 'image/jpeg', PICTURE_QUALITY));
+    if (blob) pictures.push({ ...box, jpeg: new Uint8Array(await blob.arrayBuffer()) });
+  }
+  return pictures;
+}
+

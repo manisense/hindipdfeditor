@@ -67,7 +67,7 @@
     "path": "/tools/pdf-to-word/",
     "title": "PDF to Word",
     "shortTitle": "PDF to Word",
-    "description": "Convert a Hindi or English PDF into an editable Word (.docx) file. Text is read from the PDF or by OCR on your device, and ruled tables become Word tables; pictures are not carried over.",
+    "description": "Convert a Hindi or English PDF into an editable Word (.docx) file. Text is read from the PDF or by OCR on your device, ruled tables become Word tables and pictures come along in reading order.",
     "accent": "#16A34A",
     "category": "convert"
   },

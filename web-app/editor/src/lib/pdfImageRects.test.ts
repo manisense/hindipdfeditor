@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { imageRectsFromOperators, stackStrips, stripAt, textImageRows, type ImageOps } from './pdfImageRects';
+import { imageRectsFromOperators, pictureBoxes, stackStrips, stripAt, textImageRows, type ImageOps } from './pdfImageRects';
 
 const OPS: ImageOps = {
   save: 10,
@@ -84,3 +84,17 @@ describe('stackStrips', () => {
     expect(stripAt(strips, 50)).toBe(1);
   });
 });
+
+describe('pictureBoxes', () => {
+  const page = { widthPt: 595, heightPt: 842 };
+  const box = (xPt: number, yPt: number, wPt: number, hPt: number) => ({ xPt, yPt, wPt, hPt });
+
+  it('keeps logo-sized images and skips text lines and page backgrounds', () => {
+    expect(pictureBoxes([box(50, 50, 80, 60), box(50, 200, 300, 12), box(0, 0, 595, 842)], page)).toEqual([box(50, 50, 80, 60)]);
+  });
+
+  it('joins tiles of one picture', () => {
+    expect(pictureBoxes([box(100, 100, 100, 50), box(100, 150, 100, 50)], page)).toEqual([box(100, 100, 100, 100)]);
+  });
+});
+

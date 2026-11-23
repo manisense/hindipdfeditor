@@ -107,8 +107,11 @@ function joinRows(lines: readonly OcrLine[]): OcrLine[] {
   });
 }
 
-/** One cell of a Word table: where it starts, what it spans, and its paragraphs. */
-export type WordTableCell = { col: number; colSpan: number; rowSpan: number; paragraphs: WordParagraph[] };
+/** A picture cut from the page, with its place and size in PDF points (top-left origin). */
+export type WordPicture = { xPt: number; yPt: number; wPt: number; hPt: number; jpeg: Uint8Array };
+
+/** One cell of a Word table: where it starts, what it spans, its paragraphs and pictures. */
+export type WordTableCell = { col: number; colSpan: number; rowSpan: number; paragraphs: WordParagraph[]; pictures?: WordPicture[] };
 
 /** A table for the Word document; sizes in PDF points. */
 export type WordTable = {
@@ -119,46 +122,79 @@ export type WordTable = {
   rows: { heightPt: number; cells: WordTableCell[] }[];
 };
 
-/** Page content in reading order: paragraphs and tables. */
-export type WordBlock = { kind: 'paragraph'; paragraph: WordParagraph } | { kind: 'table'; table: WordTable };
+/** Page content in reading order: paragraphs, tables and pictures. */
+export type WordBlock =
+  | { kind: 'paragraph'; paragraph: WordParagraph }
+  | { kind: 'table'; table: WordTable }
+  | { kind: 'picture'; picture: WordPicture; indentPt: number };
 
 const centreOf = (line: OcrLine) => ({ x: line.xPt + line.wPt / 2, y: line.yPt + line.hPt / 2 });
 
 /**
- * Lays a page out as paragraphs and ruled tables in reading order: each line inside a table goes
- * to the cell holding its centre (a cell's lines become its paragraphs, indented from the cell's
- * edge); lines outside tables become paragraphs between them.
+ * Lays a page out as paragraphs, ruled tables and pictures in reading order: each line inside a
+ * table goes to the cell holding its centre (a cell's lines become its paragraphs, indented from
+ * the cell's edge), as does a picture inside a table; lines outside tables become paragraphs, and
+ * pictures sit between them by their top edge.
  *
  * @param lines Detected lines; boxes in PDF points (top-left origin).
  * @param pageWidthPt Page width, in PDF points.
  * @param tables Ruled tables on the page (see `detectTables`), boxes in PDF points.
+ * @param pictures Pictures cut from the page, boxes in PDF points.
  */
-export function pageBlocks(lines: readonly OcrLine[], pageWidthPt: number, tables: readonly DetectedTable[]): WordBlock[] {
+export function pageBlocks(
+  lines: readonly OcrLine[],
+  pageWidthPt: number,
+  tables: readonly DetectedTable[],
+  pictures: readonly WordPicture[] = [],
+): WordBlock[] {
   const textLines = lines.filter((line) => line.text.trim());
   const margin = Math.min(...textLines.map((line) => line.xPt), pageWidthPt * 0.1);
+  const tableAt = (x: number, y: number) => tables.find((t) => x >= t.xPt && x <= t.xPt + t.wPt && y >= t.yPt && y <= t.yPt + t.hPt);
   const inTable = new Map<OcrLine, DetectedTable>();
   for (const line of textLines) {
     const { x, y } = centreOf(line);
-    const table = tables.find((t) => x >= t.xPt && x <= t.xPt + t.wPt && y >= t.yPt && y <= t.yPt + t.hPt);
+    const table = tableAt(x, y);
     if (table) inTable.set(line, table);
   }
+  const pictureTable = new Map<WordPicture, DetectedTable>();
+  for (const picture of pictures) {
+    const table = tableAt(picture.xPt + picture.wPt / 2, picture.yPt + picture.hPt / 2);
+    if (table) pictureTable.set(picture, table);
+  }
   const flow = textLines.filter((line) => !inTable.has(line));
+  // Tables and free pictures anchor the page; paragraphs fill the space between them.
+  const anchors = [
+    ...tables.map((table) => ({ yPt: table.yPt, bottomPt: table.yPt + table.hPt, table })),
+    ...pictures.filter((p) => !pictureTable.has(p)).map((picture) => ({ yPt: picture.yPt, bottomPt: picture.yPt + picture.hPt, picture })),
+  ].sort((a, b) => a.yPt - b.yPt);
   const blocks: WordBlock[] = [];
   let top = -Infinity;
   const paragraphsBetween = (bottom: number) => {
     const chunk = flow.filter((line) => centreOf(line).y >= top && centreOf(line).y < bottom);
     for (const paragraph of paragraphsFromLines(chunk, pageWidthPt, margin)) blocks.push({ kind: 'paragraph', paragraph });
   };
-  for (const table of [...tables].sort((a, b) => a.yPt - b.yPt)) {
-    paragraphsBetween(table.yPt);
-    blocks.push({ kind: 'table', table: wordTable(table, textLines.filter((line) => inTable.get(line) === table)) });
-    top = table.yPt + table.hPt;
+  for (const anchor of anchors) {
+    paragraphsBetween(anchor.yPt);
+    if ('table' in anchor && anchor.table) {
+      const table = anchor.table;
+      blocks.push({
+        kind: 'table',
+        table: wordTable(
+          table,
+          textLines.filter((line) => inTable.get(line) === table),
+          pictures.filter((p) => pictureTable.get(p) === table),
+        ),
+      });
+    } else if ('picture' in anchor && anchor.picture) {
+      blocks.push({ kind: 'picture', picture: anchor.picture, indentPt: Math.max(0, Math.round(anchor.picture.xPt - margin)) });
+    }
+    top = Math.max(top, anchor.bottomPt);
   }
   paragraphsBetween(Infinity);
   return blocks;
 }
 
-function wordTable(table: DetectedTable, lines: readonly OcrLine[]): WordTable {
+function wordTable(table: DetectedTable, lines: readonly OcrLine[], pictures: readonly WordPicture[] = []): WordTable {
   const rows = table.rows.slice(0, -1).map((y, r) => ({ heightPt: table.rows[r + 1] - y, cells: [] as WordTableCell[] }));
   for (const cell of table.cells) {
     const own = lines
@@ -169,7 +205,18 @@ function wordTable(table: DetectedTable, lines: readonly OcrLine[]): WordTable {
       // Measured from the cell's own left edge, so indents and centring are the cell's.
       .map((line) => ({ ...line, xPt: line.xPt - cell.xPt }));
     const paragraphs = paragraphsFromLines(own, cell.wPt, 0).map((paragraph, i) => (i === 0 ? { ...paragraph, spaceBeforePt: 0 } : paragraph));
-    rows[cell.row].cells.push({ col: cell.col, colSpan: cell.colSpan, rowSpan: cell.rowSpan, paragraphs });
+    const cellPictures = pictures.filter((p) => {
+      const x = p.xPt + p.wPt / 2;
+      const y = p.yPt + p.hPt / 2;
+      return x >= cell.xPt && x < cell.xPt + cell.wPt && y >= cell.yPt && y < cell.yPt + cell.hPt;
+    });
+    rows[cell.row].cells.push({
+      col: cell.col,
+      colSpan: cell.colSpan,
+      rowSpan: cell.rowSpan,
+      paragraphs,
+      ...(cellPictures.length > 0 ? { pictures: cellPictures } : {}),
+    });
   }
   return {
     xPt: table.xPt,

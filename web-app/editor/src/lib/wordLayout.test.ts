@@ -91,4 +91,23 @@ describe('pageBlocks', () => {
     const blocks = pageBlocks([line('One', 50, 100, 100), line('Two', 50, 200, 100)], 595, []);
     expect(blocks.map((b) => b.kind)).toEqual(['paragraph', 'paragraph']);
   });
+
+  it('places pictures by their top edge, and a picture inside a table in its cell', () => {
+    const jpeg = new Uint8Array([1, 2, 3]);
+    const blocks = pageBlocks(
+      [line('Heading above', 50, 100, 200), line('अनारक्षित', 205, 204, 60), line('Text below', 50, 400, 200)],
+      595,
+      [table],
+      [
+        { xPt: 60, yPt: 300, wPt: 80, hPt: 60, jpeg },
+        { xPt: 60, yPt: 205, wPt: 30, hPt: 30, jpeg },
+      ],
+    );
+    expect(blocks.map((b) => b.kind)).toEqual(['paragraph', 'table', 'picture', 'paragraph']);
+    const picture = blocks[2].kind === 'picture' ? blocks[2] : null;
+    expect(picture?.indentPt).toBe(10);
+    const grid = blocks[1].kind === 'table' ? blocks[1].table : null;
+    expect(grid?.rows[0].cells[0].pictures).toHaveLength(1);
+  });
 });
+

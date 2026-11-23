@@ -6,7 +6,7 @@ import { krutiDevToUnicode } from './krutiDev';
 import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
 import { sharedPdfDocument } from './sharedPdfDocument';
 import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
-import { imageRectsFromOperators, textImageRows, type PtBox } from './pdfImageRects';
+import { imageRectsFromOperators, pictureBoxes, textImageRows, type PtBox } from './pdfImageRects';
 import { rulingsFromOperators, type Ruling } from './pdfRulings';
 import { strokeEmPerItem, strokeRunsFromOperators } from './textStroke';
 import type { FontHint, OcrLine } from '../state/editStore';
@@ -161,6 +161,8 @@ export async function extractEmbeddedTextLines(
      * `textImageRows`), in editor space (pt), without reading them.
      */
     textImageRows?: PtBox[];
+    /** Filled with the page's pictures (see `pictureBoxes`), in editor space (pt). */
+    pictures?: PtBox[];
   } = {},
 ): Promise<OcrLine[]> {
   const doc = await sharedPdfDocument(pdfBytes);
@@ -289,11 +291,15 @@ export async function extractEmbeddedTextLines(
       }
       options.rulings?.push(...rulings);
     }
+    const images =
+      options.readTextImages || options.textImageRows || options.pictures
+        ? imageRectsFromOperators(operators.fnArray, operators.argsArray, OPS).map((rect) => {
+            const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(rect);
+            return { xPt: Math.min(x1, x2), yPt: Math.min(y1, y2), wPt: Math.abs(x2 - x1), hPt: Math.abs(y2 - y1) };
+          })
+        : [];
+    options.pictures?.push(...pictureBoxes(images, { widthPt: viewport.width, heightPt: viewport.height }));
     if (options.readTextImages || options.textImageRows) {
-      const images = imageRectsFromOperators(operators.fnArray, operators.argsArray, OPS).map((rect) => {
-        const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(rect);
-        return { xPt: Math.min(x1, x2), yPt: Math.min(y1, y2), wPt: Math.abs(x2 - x1), hPt: Math.abs(y2 - y1) };
-      });
       const walls = rulings.filter((r) => !r.horizontal).map((r) => ({ x: r.at, y1: r.from, y2: r.to }));
       const rows = textImageRows(images, runs, walls);
       options.textImageRows?.push(...rows);
