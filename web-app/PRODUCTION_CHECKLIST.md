@@ -85,6 +85,17 @@ npm run deploy
 - [x] Live `/v1/capabilities` reports 10 documents and 50 pages a day; production D1 trigger reads `>= 10`.
 - [ ] IndexNow GitHub workflow: blocked because the GitHub account is locked over billing. Submit manually with `node web-app/scripts/indexnow.mjs` until billing is resolved.
 
+## 23 November 2026 release evidence
+
+- [x] npm audit: zero findings in `web-app`, `web-app/editor`, `services/ai-api`.
+- [x] 292 editor tests, lint, TypeScript, build; publish (9 tools), content and routing checks; AI API 22 tests; live `/v1/capabilities` responds.
+- [x] Edit-quality gate 16/16 locally; no-change, sign, converter and form cases on production; browser smoke `BROWSER_ERRORS []`.
+- [x] Live security headers: HSTS, nosniff, `X-Frame-Options: DENY`, referrer and permissions policy, and an enforced Content-Security-Policy (web ADR 0014). The production violation sweep found zero violations.
+- [x] Live status codes: `/`, `/hi/` and every tool return 200; unknown paths return 404; old `/edit/?tool=` URLs return 301 to `/tools/`.
+- [x] IndexNow submitted by hand (39 URLs, HTTP 200).
+- [ ] GA4 loads twice: `/assets/analytics.js` and Cloudflare's Google tag gateway (zone dashboard) both configure `G-1K5ZEEBHE5`. Check for doubled page views and keep one.
+- [ ] The CSP allows the tag gateway's two inline snippets by hash. If Cloudflare changes them, analytics stops until the hashes in `_headers` are updated (the site keeps working).
+
 ## Current deployment record
 
 Release commit `29181ad1`; project-token manual Worker version `02a7ab7f-d3f1-47aa-b773-e5ce6a26b9bb`; connected Workers Build also succeeded. Expected public Turnstile configuration verified in live Git-built chunks. GSC/GA4 account configuration, authenticated AI completion and field CWV remain unchecked above.
