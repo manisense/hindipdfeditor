@@ -1,11 +1,5 @@
 # Changelog
 
-## Content-Security-Policy, 23 November 2026
-
-### Security
-- The site now sends an enforced `Content-Security-Policy`. Scripts may come only from the site itself, Google Tag Manager and Cloudflare Turnstile; there are no inline scripts and no `eval`. WebAssembly compilation is allowed for the self-hosted OCR. Connections may go only to the site, the consented AI API, analytics, Google Fonts and Turnstile. Plugins, foreign `<base>` tags, foreign form posts and framing are blocked. Web ADR 0014.
-- Verified locally with the full edit-quality gate (16/16), browser smoke (no errors) and a violation sweep over every tool, OCR on a scan, PDF to Word and Fill form (zero violations).
-
 ## Fill PDF form: list boxes, turned fields, signature boxes, 23 November 2026
 
 ### Added
