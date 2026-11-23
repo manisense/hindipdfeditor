@@ -517,6 +517,7 @@ export function TranslatePdfTool() {
       <div className="utility-tool">
         {!file ? (
           <DropZone
+            sample
             accent={tool.accent}
             title={tx("Translate Hindi ↔ English PDF", "हिंदी ↔ अंग्रेज़ी पीडीएफ अनुवाद")}
             subtitle={tx(

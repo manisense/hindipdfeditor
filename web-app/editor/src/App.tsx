@@ -95,14 +95,14 @@ export default function App() {
             </div>
           }
         >
-          {toolId === "edit" ? (
-            <EditPdfTool />
+          {toolId === "edit" || toolId === "organize" ? (
+            <EditPdfTool toolId={toolId} />
           ) : toolId === "translate" ? (
             <ErrorBoundary>
               <TranslatePdfTool />
             </ErrorBoundary>
-          ) : toolId === "pdf-to-word" ? (
-            <PdfToWordTool />
+          ) : toolId === "pdf-to-word" || toolId === "krutidev" ? (
+            <PdfToWordTool toolId={toolId} />
           ) : toolId === "word-to-pdf" ? (
             <WordToPdfTool />
           ) : toolId === "sign" ? (

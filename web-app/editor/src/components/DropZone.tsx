@@ -18,7 +18,11 @@ type Props = {
   onFiles: (files: File[]) => void;
   children?: ReactNode;
   compact?: boolean;
+  /** Offer the bundled Hindi sample PDF so a visitor can try the tool without a file. */
+  sample?: boolean;
 };
+
+const SAMPLE_URL = "/assets/samples/devanagari-fixture.pdf";
 
 const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
@@ -44,6 +48,7 @@ export function DropZone({
   onFiles,
   children,
   compact = false,
+  sample = false,
 }: Props) {
   const tx = useTx();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,6 +56,23 @@ export function DropZone({
   const [validationMessage, setValidationMessage] = useState<string | null>(
     null,
   );
+  const [loadingSample, setLoadingSample] = useState(false);
+
+  const openSample = async () => {
+    setLoadingSample(true);
+    setValidationMessage(null);
+    try {
+      const response = await fetch(SAMPLE_URL);
+      if (!response.ok) throw new Error(`Sample PDF: HTTP ${response.status}`);
+      const blob = await response.blob();
+      onFiles([new File([blob], "hindi-sample.pdf", { type: "application/pdf" })]);
+    } catch (error) {
+      console.error(error);
+      setValidationMessage(tx("The sample PDF could not load. Check your connection and try again.", "नमूना पीडीएफ लोड नहीं हुई। इंटरनेट देखें और फिर कोशिश करें।"));
+    } finally {
+      setLoadingSample(false);
+    }
+  };
 
   const word = kind === "docx";
   const accepted = word ? isDocx : isPdf;
@@ -139,6 +161,18 @@ export function DropZone({
             ? tx("or drop PDFs here", "या पीडीएफ यहाँ छोड़ें")
             : tx("or drop PDF here", "या पीडीएफ यहाँ छोड़ें")}
       </p>
+      {sample && !compact && (
+        <button
+          type="button"
+          className="drop-zone__sample"
+          disabled={disabled || loadingSample}
+          onClick={() => void openSample()}
+        >
+          {loadingSample
+            ? tx("Opening sample…", "नमूना खुल रहा है…")
+            : tx("No PDF handy? Try a Hindi sample", "पीडीएफ नहीं है? हिंदी नमूना आज़माएं")}
+        </button>
+      )}
       {validationMessage && (
         <p className="drop-zone__validation" role="alert">
           {validationMessage}

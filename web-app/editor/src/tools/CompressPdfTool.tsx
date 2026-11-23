@@ -80,6 +80,7 @@ export function CompressPdfTool() {
       <div className="utility-tool">
         {!file ? (
           <DropZone
+            sample
             accent={tool.accent}
             title={tx("Compress a PDF", "पीडीएफ का साइज कम करें")}
             subtitle={tx(

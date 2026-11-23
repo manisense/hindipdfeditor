@@ -331,6 +331,84 @@ export const TOOL_GUIDES: Record<ToolId, ToolGuide> = {
       ],
     },
   },
+  organize: {
+    guides: ["merge-multiple-hindi-pdf-files-online"],
+    en: {
+      heading: "How to organize PDF pages",
+      steps: [
+        { title: "Open your PDF", body: "Select the file. The Pages panel opens with every page." },
+        { title: "Arrange the pages", body: "Turn pages left or right, move them earlier or later, delete pages, or add a blank page after any page." },
+        { title: "Download a new PDF", body: "Your changes are saved to a new file. You can also undo a page change before downloading." },
+      ],
+      notes: [
+        LOCAL_EN,
+        "Turn pages before you edit their text; a page with text edits cannot be turned.",
+        ORIGINAL_EN,
+      ],
+      faqs: [
+        { q: "Can I delete pages from a PDF?", a: "Yes. Open the PDF, delete the pages you do not need in the Pages panel, and download the new file." },
+        { q: "Can I rotate just one page?", a: "Yes. Each page has its own turn buttons, so you can fix a single sideways scan." },
+        { q: "How do I combine pages from two PDFs?", a: "Use Merge PDF to join the files first, then organize the pages of the merged file here." },
+      ],
+    },
+    hi: {
+      heading: "पीडीएफ के पेज कैसे व्यवस्थित करें",
+      steps: [
+        { title: "पीडीएफ खोलें", body: "फाइल चुनें। पेज पैनल सभी पेजों के साथ खुलता है।" },
+        { title: "पेज व्यवस्थित करें", body: "पेज बाएं या दाएं घुमाएं, आगे या पीछे करें, हटाएं, या किसी भी पेज के बाद खाली पेज जोड़ें।" },
+        { title: "नई पीडीएफ डाउनलोड करें", body: "बदलाव एक नई फाइल में सेव होते हैं। डाउनलोड से पहले पेज का बदलाव वापस भी ले सकते हैं।" },
+      ],
+      notes: [
+        LOCAL_HI,
+        "टेक्स्ट एडिट करने से पहले पेज घुमाएं; जिस पेज पर टेक्स्ट बदला गया है वह घूम नहीं सकता।",
+        ORIGINAL_HI,
+      ],
+      faqs: [
+        { q: "क्या पीडीएफ से पेज हटाए जा सकते हैं?", a: "हाँ। पीडीएफ खोलें, पेज पैनल में ज़रूरत न वाले पेज हटाएं और नई फाइल डाउनलोड करें।" },
+        { q: "क्या सिर्फ एक पेज घुमा सकते हैं?", a: "हाँ। हर पेज के अपने घुमाने वाले बटन हैं, इसलिए किसी एक टेढ़े स्कैन को ठीक कर सकते हैं।" },
+        { q: "दो पीडीएफ के पेज कैसे मिलाएं?", a: "पहले पीडीएफ जोड़ें टूल से फाइलें जोड़ें, फिर जुड़ी हुई फाइल के पेज यहाँ व्यवस्थित करें।" },
+      ],
+    },
+  },
+  krutidev: {
+    guides: ["kruti-dev-to-unicode-hindi-pdf-editor", "fix-broken-hindi-fonts-in-pdf"],
+    en: {
+      heading: "How to convert a KrutiDev PDF to Unicode",
+      steps: [
+        { title: "Open the KrutiDev PDF", body: "Select a PDF typed in KrutiDev or DevLys. The fonts on each page are checked first." },
+        { title: "Let it convert and check", body: "Text in KrutiDev fonts is converted to Unicode Hindi and compared with text recognition of the page. Where they disagree, the recognised text is used." },
+        { title: "Download the Word file", body: "You get a .docx with Unicode Hindi you can copy, search and edit, with tables and pictures in reading order." },
+      ],
+      notes: [
+        LOCAL_EN,
+        "Pages in other old fonts (Chanakya, Shivaji, Walkman-Chanakya and others) are read by text recognition instead of being converted.",
+        "Proofread names, numbers and conjuncts before you use the text.",
+      ],
+      faqs: [
+        { q: "What is the difference between KrutiDev and Unicode?", a: "KrutiDev draws Hindi letters on top of English key codes, so copied text turns into gibberish like 'fgUnh'. Unicode stores real Hindi letters that work in search, email, WhatsApp and every font." },
+        { q: "Can I keep editing the PDF instead?", a: "Yes. Open it in Edit PDF: KrutiDev lines are converted for display and you are asked to review them before you change any line." },
+        { q: "Does it support Chanakya or Shivaji fonts?", a: "Not as a conversion. Those pages are read by text recognition, which works but can make more mistakes, so check them carefully." },
+      ],
+    },
+    hi: {
+      heading: "कृतिदेव पीडीएफ को यूनिकोड में कैसे बदलें",
+      steps: [
+        { title: "कृतिदेव पीडीएफ खोलें", body: "कृतिदेव या देवलिस में टाइप की गई पीडीएफ चुनें। पहले हर पेज के फॉन्ट जाँचे जाते हैं।" },
+        { title: "बदलने और जाँचने दें", body: "कृतिदेव फॉन्ट का टेक्स्ट यूनिकोड हिंदी में बदला जाता है और पेज की टेक्स्ट पहचान से मिलाया जाता है। जहाँ दोनों अलग हों, पहचाना गया टेक्स्ट लिया जाता है।" },
+        { title: "वर्ड फाइल डाउनलोड करें", body: "आपको यूनिकोड हिंदी वाली .docx मिलती है जिसे कॉपी, खोज और एडिट कर सकते हैं, साथ में टेबल और तस्वीरें पढ़ने के क्रम में।" },
+      ],
+      notes: [
+        LOCAL_HI,
+        "दूसरे पुराने फॉन्ट (चाणक्य, शिवाजी, वॉकमैन-चाणक्य आदि) वाले पेज बदले नहीं जाते, टेक्स्ट पहचान से पढ़े जाते हैं।",
+        "टेक्स्ट इस्तेमाल करने से पहले नाम, अंक और संयुक्ताक्षर ज़रूर जाँचें।",
+      ],
+      faqs: [
+        { q: "कृतिदेव और यूनिकोड में क्या फर्क है?", a: "कृतिदेव अंग्रेज़ी कीबोर्ड के कोड पर हिंदी अक्षर दिखाता है, इसलिए कॉपी करने पर 'fgUnh' जैसा बेमतलब टेक्स्ट आता है। यूनिकोड असली हिंदी अक्षर रखता है जो खोज, ईमेल, व्हाट्सऐप और हर फॉन्ट में चलते हैं।" },
+        { q: "क्या पीडीएफ को ही एडिट करते रह सकते हैं?", a: "हाँ। इसे एडिट टूल में खोलें: कृतिदेव लाइनें दिखाने के लिए बदली जाती हैं और किसी लाइन को बदलने से पहले आपसे जाँचने को कहा जाता है।" },
+        { q: "क्या चाणक्य या शिवाजी फॉन्ट बदलते हैं?", a: "बदलाव के रूप में नहीं। ऐसे पेज टेक्स्ट पहचान से पढ़े जाते हैं, जो काम करती है पर ज़्यादा गलतियाँ कर सकती है, इसलिए ध्यान से जाँचें।" },
+      ],
+    },
+  },
 };
 
 /** Guide copy for one tool in one UI language. */

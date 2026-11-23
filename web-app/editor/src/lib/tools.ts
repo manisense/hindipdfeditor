@@ -9,7 +9,9 @@ export type ToolId =
   | "compress"
   | "translate"
   | "pdf-to-word"
-  | "word-to-pdf";
+  | "word-to-pdf"
+  | "organize"
+  | "krutidev";
 
 export type ToolMeta = {
   id: ToolId;
@@ -31,9 +33,11 @@ export const TOOL_HINDI_NAMES: Record<ToolId, string> = {
   "pdf-to-word": "पीडीएफ से वर्ड",
   "word-to-pdf": "वर्ड से पीडीएफ",
   translate: "अनुवाद",
-  merge: "मर्ज (जोड़ें)",
-  split: "स्प्लिट (अलग करें)",
-  compress: "कंप्रेस करें",
+  merge: "पीडीएफ जोड़ें",
+  split: "पेज अलग करें",
+  compress: "साइज कम करें",
+  organize: "पेज व्यवस्थित करें",
+  krutidev: "कृतिदेव से यूनिकोड",
 };
 
 
@@ -63,7 +67,9 @@ export function readToolIdFromLocation(): ToolId | null {
     raw === "merge" ||
     raw === "split" ||
     raw === "compress" ||
-    raw === "translate"
+    raw === "translate" ||
+    raw === "organize" ||
+    raw === "krutidev"
   ) {
     return raw;
   }

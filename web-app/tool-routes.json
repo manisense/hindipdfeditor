@@ -54,6 +54,15 @@
     "category": "organize"
   },
   {
+    "id": "organize",
+    "path": "/tools/organize-pdf/",
+    "title": "Organize PDF Pages",
+    "shortTitle": "Organize",
+    "description": "Turn, reorder or delete pages and add blank pages, then download a new PDF. Processing stays on your device.",
+    "accent": "#7C3AED",
+    "category": "organize"
+  },
+  {
     "id": "compress",
     "path": "/tools/compress-pdf/",
     "title": "Compress PDF",
@@ -69,6 +78,15 @@
     "shortTitle": "PDF to Word",
     "description": "Convert a Hindi or English PDF into an editable Word (.docx) file. Text is read from the PDF or by OCR on your device, ruled tables become Word tables and pictures come along in reading order.",
     "accent": "#16A34A",
+    "category": "convert"
+  },
+  {
+    "id": "krutidev",
+    "path": "/tools/krutidev-to-unicode/",
+    "title": "KrutiDev PDF to Unicode",
+    "shortTitle": "KrutiDev to Unicode",
+    "description": "Turn a PDF typed in KrutiDev or DevLys into a Word file with Unicode Hindi text, checked against text recognition on your device. Other old Hindi fonts are read by text recognition instead.",
+    "accent": "#0D9488",
     "category": "convert"
   },
   {

@@ -75,6 +75,7 @@ export function SplitPdfTool() {
       <div className="utility-tool">
         {!file ? (
           <DropZone
+            sample
             accent={tool.accent}
             title={tx("Split a PDF", "पीडीएफ के पेज अलग करें")}
             subtitle={tx(

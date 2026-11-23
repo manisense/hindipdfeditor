@@ -11,9 +11,11 @@
 - Fill PDF form: https://hindipdfeditor.com/tools/fill-pdf-form/
 - PDF to Word: https://hindipdfeditor.com/tools/pdf-to-word/
 - Word to PDF: https://hindipdfeditor.com/tools/word-to-pdf/
+- KrutiDev PDF to Unicode (Word file with Unicode Hindi; KrutiDev and DevLys only, checked against text recognition): https://hindipdfeditor.com/tools/krutidev-to-unicode/
 - Translate Hindi ↔ English: https://hindipdfeditor.com/tools/translate-hindi-pdf/
 - Merge PDF: https://hindipdfeditor.com/tools/merge-pdf/
 - Split PDF: https://hindipdfeditor.com/tools/split-pdf/
+- Organize PDF pages (turn, reorder, delete, add blank pages): https://hindipdfeditor.com/tools/organize-pdf/
 - Compress PDF: https://hindipdfeditor.com/tools/compress-pdf/
 
 ## Guides

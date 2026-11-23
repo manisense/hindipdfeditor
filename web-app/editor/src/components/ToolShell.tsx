@@ -4,6 +4,8 @@ import {
   FileArchive,
   Globe,
   Grid2X2,
+  LayoutGrid,
+  Type,
   Languages,
   Pencil,
   Scissors,
@@ -40,6 +42,8 @@ const toolIcons: Record<ToolId, LucideIcon> = {
   merge: Combine,
   split: Scissors,
   compress: FileArchive,
+  organize: LayoutGrid,
+  krutidev: Type,
 };
 
 

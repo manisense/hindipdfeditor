@@ -274,6 +274,7 @@ export function SignPdfTool() {
       <div className="utility-tool sign-tool">
         {!file ? (
           <DropZone
+            sample
             accent={tool.accent}
             title={tx("Sign a PDF", "पीडीएफ पर हस्ताक्षर करें")}
             subtitle={tx(

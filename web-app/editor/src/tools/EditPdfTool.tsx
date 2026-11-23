@@ -114,7 +114,6 @@ import {
 import "./EditPdfTool.css";
 import { isBoldWeight, type FontWeight } from "../lib/fontWeight";
 
-const tool = getTool("edit")!;
 
 const UNKNOWN_ENCODING_FONT_NAME = "unknown (font inspection failed)";
 const DEFAULT_FONT_SIZE_PT = 14;
@@ -179,7 +178,9 @@ async function detectLegacyFontWarnings(
   }
 }
 
-export function EditPdfTool() {
+/** The editor; also served as the Organize PDF page, which opens straight into the Pages panel. */
+export function EditPdfTool({ toolId = "edit" }: { toolId?: "edit" | "organize" }) {
+  const tool = getTool(toolId)!;
   const tx = useTx();
   const { showPopup } = useAppPopup();
   const [status, setStatus] = useState<Status>({ state: "idle" });
@@ -386,7 +387,8 @@ export function EditPdfTool() {
       ocrPriorityPageRef.current = startPage;
       void runOcrQueue(newDocument);
       setStatus({ state: "idle" });
-      trackToolEvent("pdf_open_success", "edit");
+      if (toolId === "organize") setPagesOpen(true);
+      trackToolEvent("pdf_open_success", toolId);
     } catch (error) {
       console.error("Opening the PDF failed", error);
       setStatus({
@@ -1392,9 +1394,9 @@ export function EditPdfTool() {
       setExportedSnapshot(snapshotToExport);
       setPagesChanged(false);
       setStatus({ state: "saved", filename });
-      trackToolEvent("export_success", "edit");
+      trackToolEvent("export_success", toolId);
     } catch (error) {
-      trackToolEvent("export_failed", "edit");
+      trackToolEvent("export_failed", toolId);
       console.error("Export failed", error);
       setStatus({
         state: "error",
@@ -1561,12 +1563,24 @@ export function EditPdfTool() {
             />
           )}
           <DropZone
+            sample
             accent={tool.accent}
-            title={tx("Edit Hindi PDF", "हिंदी पीडीएफ एडिट करें")}
-            subtitle={tx(
-              "Open a PDF in your browser. Tap detected text to edit, add overlays, or erase burned-in text. Your file stays on this device.",
-              "पीडीएफ अपने ब्राउज़र में खोलें। पहचाने गए टेक्स्ट पर टैप करके बदलें, नया टेक्स्ट जोड़ें या पेज पर छपा टेक्स्ट मिटाएं। फाइल इसी डिवाइस पर रहती है।",
-            )}
+            title={
+              toolId === "organize"
+                ? tx("Organize PDF pages", "पीडीएफ के पेज व्यवस्थित करें")
+                : tx("Edit Hindi PDF", "हिंदी पीडीएफ एडिट करें")
+            }
+            subtitle={
+              toolId === "organize"
+                ? tx(
+                    "Turn, reorder or delete pages and add blank ones, then download a new PDF. Your file stays on this device.",
+                    "पेज घुमाएं, आगे-पीछे करें, हटाएं या खाली पेज जोड़ें, फिर नई पीडीएफ डाउनलोड करें। फाइल इसी डिवाइस पर रहती है।",
+                  )
+                : tx(
+                    "Open a PDF in your browser. Tap detected text to edit, add overlays, or erase burned-in text. Your file stays on this device.",
+                    "पीडीएफ अपने ब्राउज़र में खोलें। पहचाने गए टेक्स्ट पर टैप करके बदलें, नया टेक्स्ट जोड़ें या पेज पर छपा टेक्स्ट मिटाएं। फाइल इसी डिवाइस पर रहती है।",
+                  )
+            }
             buttonLabel={tx("Select PDF", "पीडीएफ चुनें")}
             onFiles={(files) => void openPdfFile(files[0])}
             disabled={status.state === "saving"}

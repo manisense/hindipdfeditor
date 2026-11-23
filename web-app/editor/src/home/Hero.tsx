@@ -6,9 +6,11 @@ import {
   FileType2,
   Languages,
   Layers,
+  LayoutGrid,
   Pencil,
   Signature,
   Split,
+  Type,
 } from "lucide-react";
 import { Btn } from "./ui/button";
 import { GooglePlayLink } from "./ui/google-play-link";
@@ -52,8 +54,10 @@ export function Hero() {
     { icon: Languages, name: t("tool.translate"), detail: t("tool.translateSub"), tone: "bg-accent-tint text-accent", href: toolHref("translate", lang) },
     { icon: FileType2, name: t("tool.pdfToWord"), detail: t("tool.pdfToWordSub"), tone: "bg-accent-tint text-accent", href: toolHref("pdf-to-word", lang) },
     { icon: FileText, name: t("tool.wordToPdf"), detail: t("tool.wordToPdfSub"), tone: "bg-accent-tint text-accent", href: toolHref("word-to-pdf", lang) },
+    { icon: Type, name: t("tool.krutidev"), detail: t("tool.krutidevSub"), tone: "bg-accent-tint text-accent", href: toolHref("krutidev", lang) },
     { icon: Layers, name: t("tool.merge"), detail: t("tool.mergeSub"), tone: "bg-pop-lav text-[#5B4BD6]", href: toolHref("merge", lang) },
     { icon: Split, name: t("tool.split"), detail: t("tool.splitSub"), tone: "bg-pop-lav text-[#5B4BD6]", href: toolHref("split", lang) },
+    { icon: LayoutGrid, name: t("tool.organize"), detail: t("tool.organizeSub"), tone: "bg-pop-lav text-[#5B4BD6]", href: toolHref("organize", lang) },
     { icon: FileArchive, name: t("tool.compress"), detail: t("tool.compressSub"), tone: "bg-pop-yellow-tint text-[#B58400]", href: toolHref("compress", lang) },
   ];
 

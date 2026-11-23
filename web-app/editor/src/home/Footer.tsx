@@ -39,16 +39,20 @@ export function Footer() {
       title: t("footer.organize"),
       links: [
         {
-          label: isHindi ? "पीडीएफ फाइलें जोड़ें (Merge)" : "Merge PDF",
+          label: isHindi ? "पीडीएफ फाइलें जोड़ें" : "Merge PDF",
           href: toolHref("merge", lang),
         },
         {
-          label: isHindi ? "पेज अलग करें (Split)" : "Split PDF",
+          label: isHindi ? "पेज अलग करें" : "Split PDF",
           href: toolHref("split", lang),
         },
         {
-          label: isHindi ? "साइज कम करें (Compress)" : "Compress PDF",
+          label: isHindi ? "साइज कम करें" : "Compress PDF",
           href: toolHref("compress", lang),
+        },
+        {
+          label: isHindi ? "पेज व्यवस्थित करें" : "Organize pages",
+          href: toolHref("organize", lang),
         },
         {
           label: isHindi ? "पीडीएफ से वर्ड" : "PDF to Word",
@@ -57,6 +61,10 @@ export function Footer() {
         {
           label: isHindi ? "वर्ड से पीडीएफ" : "Word to PDF",
           href: toolHref("word-to-pdf", lang),
+        },
+        {
+          label: isHindi ? "कृतिदेव से यूनिकोड" : "KrutiDev to Unicode",
+          href: toolHref("krutidev", lang),
         },
         {
           label: isHindi ? "स्मार्ट OCR डिटेक्शन" : "OCR detection",
@@ -77,7 +85,7 @@ export function Footer() {
         },
         {
           label: isHindi
-            ? "टूल्स की तुलना (Compare)"
+            ? "टूल्स की तुलना"
             : "Compare vs Acrobat/Canva",
           href: "#compare",
         },
@@ -86,7 +94,7 @@ export function Footer() {
           href: "#use-cases",
         },
         {
-          label: isHindi ? "अक्सर पूछे जाने वाले सवाल (FAQ)" : "FAQ",
+          label: isHindi ? "अक्सर पूछे जाने वाले सवाल" : "FAQ",
           href: "#faq",
         },
         {
