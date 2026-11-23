@@ -32,13 +32,23 @@ export const translations: Record<Language, Record<string, string>> = {
     "tool.edit": "Edit Hindi PDF",
     "tool.editSub": "Live Devanagari shaping",
     "tool.translate": "Hindi ↔ English",
-    "tool.translateSub": "Free in your browser",
+    "tool.translateSub": "AI, after you approve",
     "tool.ocr": "OCR detection",
     "tool.ocrSub": "Hindi + English text",
-    "tool.merge": "Merge & split",
-    "tool.mergeSub": "Any order, any range",
+    "tool.sign": "Sign PDF",
+    "tool.signSub": "Any page, any spot",
+    "tool.fill": "Fill PDF form",
+    "tool.fillSub": "Type answers in Hindi",
+    "tool.merge": "Merge PDF",
+    "tool.mergeSub": "In the order you choose",
+    "tool.split": "Split PDF",
+    "tool.splitSub": "Pick the pages you need",
     "tool.compress": "Compress PDF",
     "tool.compressSub": "Shrink scanned files",
+    "tool.pdfToWord": "PDF to Word",
+    "tool.pdfToWordSub": "Text, tables and pictures",
+    "tool.wordToPdf": "Word to PDF",
+    "tool.wordToPdfSub": "Hindi stays joined",
 
     // Features Section
     "feat.eyebrow": "Everything in one place",
@@ -56,7 +66,16 @@ export const translations: Record<Language, Record<string, string>> = {
       "Detect printed Devanagari text inside scanned revenue records, admit cards, and certificates with local browser OCR.",
     "feat.privacyHeading": "Local-First Privacy",
     "feat.privacyDesc":
-      "Opening, editing, merging, splitting and compressing happen in your browser. AI text recognition and translation send data to our server only after you confirm.",
+      "Opening, editing, signing, filling forms, converting to and from Word, merging, splitting and compressing happen in your browser. AI text recognition and translation send data to our server only after you confirm.",
+    "feat.signHeading": "Sign Every Page, or Just One",
+    "feat.signDesc":
+      "Draw, type or upload your signature, place it by hand or at the same spot on chosen pages, and nudge any page on its own. It adds a signature image, not a certificate-based digital signature.",
+    "feat.formHeading": "Fill Forms in Hindi",
+    "feat.formDesc":
+      "Type into a PDF form's own fields in Hindi or English, tick boxes and pick options. Hindi answers are drawn by the browser, so matras stay joined.",
+    "feat.wordHeading": "PDF to Word, and Back",
+    "feat.wordDesc":
+      "Turn a Hindi or English PDF into an editable .docx: text is read from the file or by OCR on your device, ruled tables become Word tables and pictures come along. Word files turn into PDFs too.",
     "feat.compressHeading": "Shrink PDFs for Sarkari Portals",
     "feat.compressDesc":
       "Re-encode scanned pages with a quality slider to get under government portal upload limits (SSC, UP Police, BPSC). Lower quality means a smaller file.",
@@ -191,13 +210,23 @@ export const translations: Record<Language, Record<string, string>> = {
     "tool.edit": "हिंदी पीडीएफ एडिट करें",
     "tool.editSub": "सही देवनागरी फॉन्ट और मात्राएं",
     "tool.translate": "हिंदी ↔ अंग्रेजी अनुवाद",
-    "tool.translateSub": "ब्राउज़र में फ्री अनुवाद",
+    "tool.translateSub": "AI से, आपकी अनुमति के बाद",
     "tool.ocr": "स्मार्ट ओसीआर डिटेक्शन",
     "tool.ocrSub": "हिंदी + अंग्रेजी टेक्स्ट",
-    "tool.merge": "पीडीएफ जोड़ें व अलग करें",
-    "tool.mergeSub": "क्रम और पेज रेंज चुनें",
+    "tool.sign": "पीडीएफ पर हस्ताक्षर",
+    "tool.signSub": "किसी भी पेज पर, कहीं भी",
+    "tool.fill": "पीडीएफ फॉर्म भरें",
+    "tool.fillSub": "जवाब हिंदी में टाइप करें",
+    "tool.merge": "पीडीएफ जोड़ें",
+    "tool.mergeSub": "अपने चुने क्रम में",
+    "tool.split": "पीडीएफ अलग करें",
+    "tool.splitSub": "सिर्फ जरूरी पेज निकालें",
     "tool.compress": "पीडीएफ साइज कम करें",
     "tool.compressSub": "सरकारी पोर्टल के लिए छोटी फाइल",
+    "tool.pdfToWord": "पीडीएफ से वर्ड",
+    "tool.pdfToWordSub": "टेक्स्ट, टेबल और तस्वीरें",
+    "tool.wordToPdf": "वर्ड से पीडीएफ",
+    "tool.wordToPdfSub": "हिंदी जुड़ी हुई रहे",
 
     // Features Section
     "feat.eyebrow": "सभी सुविधाएं एक ही स्थान पर",
@@ -215,7 +244,16 @@ export const translations: Record<Language, Record<string, string>> = {
       "स्कैन किए गए राजस्व रिकॉर्ड, एडमिट कार्ड और पुराने प्रमाण पत्रों में से देवनागरी प्रिंटेड टेक्स्ट को तुरंत पहचानें और कॉपी करें।",
     "feat.privacyHeading": "लोकल और गोपनीय",
     "feat.privacyDesc":
-      "फाइल खोलना, एडिट, मर्ज, स्प्लिट और कंप्रेस आपके ब्राउज़र में होते हैं। AI टेक्स्ट पहचान और अनुवाद आपकी पुष्टि के बाद ही हमारे सर्वर को डेटा भेजते हैं।",
+      "फाइल खोलना, एडिट, हस्ताक्षर, फॉर्म भरना, वर्ड में बदलना, मर्ज, स्प्लिट और कंप्रेस आपके ब्राउज़र में होते हैं। AI टेक्स्ट पहचान और अनुवाद आपकी पुष्टि के बाद ही हमारे सर्वर को डेटा भेजते हैं।",
+    "feat.signHeading": "हर पेज पर या सिर्फ एक पर हस्ताक्षर",
+    "feat.signDesc":
+      "हस्ताक्षर बनाएं, टाइप करें या अपलोड करें, उसे हाथ से रखें या चुने हुए पेजों पर एक ही जगह लगाएं, और किसी भी पेज पर अलग से खिसकाएं। यह हस्ताक्षर की तस्वीर जोड़ता है, सर्टिफिकेट वाला डिजिटल सिग्नेचर नहीं।",
+    "feat.formHeading": "फॉर्म हिंदी में भरें",
+    "feat.formDesc":
+      "पीडीएफ फॉर्म के अपने खानों में हिंदी या अंग्रेजी में टाइप करें, बॉक्स टिक करें और विकल्प चुनें। हिंदी जवाब ब्राउज़र बनाता है, इसलिए मात्राएं जुड़ी रहती हैं।",
+    "feat.wordHeading": "पीडीएफ से वर्ड, और वापस",
+    "feat.wordDesc":
+      "हिंदी या अंग्रेजी पीडीएफ को एडिट होने वाली .docx फाइल बनाएं: टेक्स्ट फाइल से या आपके डिवाइस पर OCR से पढ़ा जाता है, लाइनों वाली टेबल वर्ड टेबल बनती हैं और तस्वीरें साथ आती हैं। वर्ड फाइल भी पीडीएफ में बदलें।",
     "feat.compressHeading": "सरकारी पोर्टल के लिए पीडीएफ छोटी करें",
     "feat.compressDesc":
       "स्कैन पेज क्वालिटी स्लाइडर से दोबारा बनाएं ताकि फाइल सरकारी पोर्टल की अपलोड लिमिट (SSC, UP Police, BPSC) में आ जाए। कम क्वालिटी यानी छोटी फाइल।",

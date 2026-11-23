@@ -1,10 +1,14 @@
 import {
-  Pencil,
-  Languages,
-  ScanText,
-  Layers,
-  ShieldCheck,
+  Check,
+  ClipboardPen,
   FileArchive,
+  FileType2,
+  Languages,
+  Layers,
+  Pencil,
+  ScanText,
+  ShieldCheck,
+  Signature,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
@@ -35,6 +39,21 @@ function Card({
     >
       {children}
     </motion.a>
+  );
+}
+
+function Chips({ items }: { items: string[] }) {
+  return (
+    <div className="mt-auto flex flex-wrap gap-2 pt-6">
+      {items.map((text) => (
+        <span
+          key={text}
+          className="rounded-full border border-line bg-white px-3 py-1 font-display text-[13px] font-semibold text-ink"
+        >
+          {text}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -131,6 +150,92 @@ function OrganizeVisual() {
   );
 }
 
+function SignVisual() {
+  return (
+    <div className="mt-6 flex items-end justify-center gap-2 rounded-2xl border border-line bg-cream p-5">
+      {[1, 2, 3].map((page) => (
+        <div
+          key={page}
+          className="relative h-20 w-14 rounded-md border border-line bg-white p-1.5 shadow-sm"
+        >
+          <div className="mb-1 h-1 rounded bg-slate-100" />
+          <div className="mb-1 h-1 w-3/4 rounded bg-slate-100" />
+          <div className="h-1 w-2/3 rounded bg-slate-100" />
+          <svg
+            viewBox="0 0 40 14"
+            aria-hidden="true"
+            className="absolute right-1.5 bottom-2 h-3.5 w-9 text-brand"
+            style={page === 2 ? { transform: "translate(-6px, -4px)" } : undefined}
+          >
+            <path
+              d="M2 10c4-7 6-7 7-2s3 4 6-2 4-3 5 1 3 3 7-1 6-2 11-1"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="1.8"
+            />
+          </svg>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FormVisual() {
+  return (
+    <div className="mt-6 space-y-2 rounded-2xl border border-line bg-cream p-4">
+      <div className="rounded-xl bg-white p-3 shadow-sm">
+        <div className="text-[13px] font-semibold text-muted">नाम</div>
+        <div className="mt-1 rounded-md border border-brand/40 bg-brand-tint/40 px-2 py-1 font-display text-[15px] font-semibold text-ink">
+          कृष्ण कुमार त्रिपाठी
+        </div>
+      </div>
+      <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 shadow-sm">
+        <span className="grid size-4 place-items-center rounded bg-brand text-white">
+          <Check className="size-3" strokeWidth={3} />
+        </span>
+        <span className="text-[13px] font-semibold text-ink">सामान्य वर्ग</span>
+      </div>
+    </div>
+  );
+}
+
+function WordVisual() {
+  return (
+    <div className="mt-6 flex items-center gap-3 rounded-2xl border border-line bg-cream p-4">
+      <div className="flex-1 rounded-xl bg-white p-3 shadow-sm">
+        <div className="mb-2 font-display text-[13px] font-bold text-ink">PDF</div>
+        <div className="mb-1.5 font-display text-[15px] font-semibold text-ink">
+          रिक्तियां
+        </div>
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded border border-line bg-line text-[12px]">
+          {["पद", "संख्या", "सहायक", "12"].map((cell) => (
+            <div key={cell} className="bg-white px-1.5 py-1 text-ink">
+              {cell}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="grid size-7 flex-none place-items-center rounded-full bg-accent text-white">
+        →
+      </div>
+      <div className="flex-1 rounded-xl bg-white p-3 shadow-sm">
+        <div className="mb-2 font-display text-[13px] font-bold text-accent">.docx</div>
+        <div className="mb-1.5 font-display text-[15px] font-semibold text-ink">
+          रिक्तियां
+        </div>
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded border border-accent/40 bg-accent/30 text-[12px]">
+          {["पद", "संख्या", "सहायक", "12"].map((cell) => (
+            <div key={cell} className="bg-white px-1.5 py-1 text-ink">
+              {cell}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Features() {
   const { lang, t, isHindi } = useLanguage();
 
@@ -170,6 +275,24 @@ export function Features() {
             <TranslateVisual />
           </Card>
 
+          <Card className="md:col-span-2" href={toolHref("sign", lang)}>
+            <Ico icon={Signature} tone="bg-brand-tint text-brand" />
+            <h3 className="text-xl font-bold text-ink">
+              {t("feat.signHeading")}
+            </h3>
+            <p className="mt-2 text-[15px] text-muted">{t("feat.signDesc")}</p>
+            <SignVisual />
+          </Card>
+
+          <Card className="md:col-span-2" href={toolHref("fill-form", lang)}>
+            <Ico icon={ClipboardPen} tone="bg-brand-tint text-brand" />
+            <h3 className="text-xl font-bold text-ink">
+              {t("feat.formHeading")}
+            </h3>
+            <p className="mt-2 text-[15px] text-muted">{t("feat.formDesc")}</p>
+            <FormVisual />
+          </Card>
+
           <Card className="md:col-span-2" href={toolHref("edit", lang)}>
             <Ico icon={ScanText} tone="bg-pop-yellow-tint text-[#B58400]" />
             <h3 className="text-xl font-bold text-ink">
@@ -177,6 +300,17 @@ export function Features() {
             </h3>
             <p className="mt-2 text-[15px] text-muted">{t("feat.ocrDesc")}</p>
             <OcrVisual />
+          </Card>
+
+          <Card className="md:col-span-4" href={toolHref("pdf-to-word", lang)}>
+            <Ico icon={FileType2} tone="bg-accent-tint text-accent" />
+            <h3 className="text-xl font-bold text-ink">
+              {t("feat.wordHeading")}
+            </h3>
+            <p className="mt-2 max-w-lg text-[15px] text-muted">
+              {t("feat.wordDesc")}
+            </p>
+            <WordVisual />
           </Card>
 
           <Card className="md:col-span-2" href={toolHref("merge", lang)}>
@@ -194,7 +328,7 @@ export function Features() {
             <OrganizeVisual />
           </Card>
 
-          <Card className="md:col-span-2" href={toolHref("compress", lang)}>
+          <Card className="md:col-span-3" href={toolHref("compress", lang)}>
             <Ico icon={FileArchive} tone="bg-brand-tint text-brand" />
             <h3 className="text-xl font-bold text-ink">
               {t("feat.compressHeading")}
@@ -202,22 +336,16 @@ export function Features() {
             <p className="mt-2 text-[15px] text-muted">
               {t("feat.compressDesc")}
             </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {(isHindi
-                ? ["छोटी फाइल", "ब्राउज़र में", "नया एक्सपोर्ट"]
-                : ["Smaller files", "Local-only", "New export"]
-              ).map((text) => (
-                <span
-                  key={text}
-                  className="rounded-full border border-line bg-white px-3 py-1 font-display text-[13px] font-semibold text-ink"
-                >
-                  {text}
-                </span>
-              ))}
-            </div>
+            <Chips
+              items={
+                isHindi
+                  ? ["छोटी फाइल", "ब्राउज़र में", "नया एक्सपोर्ट"]
+                  : ["Smaller files", "Local-only", "New export"]
+              }
+            />
           </Card>
 
-          <Card className="md:col-span-2" href={toolHref("edit", lang)}>
+          <Card className="md:col-span-3" href={toolHref("edit", lang)}>
             <Ico icon={ShieldCheck} tone="bg-accent-tint text-accent" />
             <h3 className="text-xl font-bold text-ink">
               {t("feat.privacyHeading")}
@@ -225,19 +353,13 @@ export function Features() {
             <p className="mt-2 text-[15px] text-muted">
               {t("feat.privacyDesc")}
             </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {(isHindi
-                ? ["टेक्स्ट जोड़ें", "मास्क करें", "सुरक्षित एक्सपोर्ट"]
-                : ["Add text", "Replace", "Export clean"]
-              ).map((text) => (
-                <span
-                  key={text}
-                  className="rounded-full border border-line bg-white px-3 py-1 font-display text-[13px] font-semibold text-ink"
-                >
-                  {text}
-                </span>
-              ))}
-            </div>
+            <Chips
+              items={
+                isHindi
+                  ? ["कोई अपलोड नहीं", "कोई खाता नहीं", "AI सिर्फ अनुमति से"]
+                  : ["No upload", "No account", "AI only on approval"]
+              }
+            />
           </Card>
         </div>
       </div>

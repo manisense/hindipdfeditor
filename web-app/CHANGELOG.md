@@ -1,5 +1,13 @@
 # Changelog
 
+## Homepage shows every tool; tool pages follow the design system, 23 November 2026
+
+### Changed
+- **Homepage lists all nine tools.** The hero's toolkit card listed five tools; it now lists all nine (Edit, Sign, Fill form, Translate, PDF to Word, Word to PDF, Merge, Split, Compress) in two columns, and its line names signing and converting. The features grid gains cards for Sign PDF, Fill PDF form and PDF to Word (with Word to PDF), each with a small drawing of the result, and no longer leaves the privacy card alone on its own row. The privacy card now names every in-browser tool. English and Hindi.
+- The translate shortcut said "Free in your browser"; translation goes to the AI service after you approve, so it now says that.
+- The five yellow stars beside "Loved for everyday Hindi paperwork" are gone: they stood for a rating the site has no source for, and failed contrast (1.5:1).
+- **Tool pages:** primary buttons and the current step are solid brand blue (`#1843DD`), as `design-system.md` says, instead of a gradient with a glow; the active tool tab has no shadow. On phones the progress steps fit the screen instead of being cut off at the edge; only the current step shows its label, and the others keep it for screen readers.
+
 ## PDF to Word finds tables on scanned pages, 23 November 2026
 
 ### Added

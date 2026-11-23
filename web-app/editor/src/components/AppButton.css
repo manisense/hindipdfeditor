@@ -44,9 +44,8 @@
 }
 
 .app-button--primary {
-  background: linear-gradient(135deg, var(--brand), var(--brand-hover));
+  background: var(--brand);
   color: #fff;
-  box-shadow: var(--shadow-brand);
 }
 
 .app-button--primary:not(:disabled):hover {

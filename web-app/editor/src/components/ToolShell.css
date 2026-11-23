@@ -195,7 +195,6 @@
   background: var(--brand-tint);
   border-color: var(--brand);
   color: var(--brand);
-  box-shadow: var(--shadow-soft);
 }
 
 .tool-shell__steps {
@@ -258,9 +257,8 @@
 }
 
 .tool-shell__step.is-active .tool-shell__step-num {
-  background: linear-gradient(135deg, var(--brand), var(--brand-hover));
+  background: var(--brand);
   border-color: var(--brand);
-  box-shadow: 0 7px 18px rgba(20, 22, 31, 0.06);
   color: white;
 }
 
@@ -382,25 +380,32 @@
     padding: 8px 10px;
   }
 
-  .tool-shell__steps {
-    justify-content: flex-start;
-    overflow-x: auto;
-    padding: 3px 2px 6px;
-    scrollbar-width: none;
-  }
-
-  .tool-shell__step {
-    flex: none;
-  }
-
   .tool-shell__step:not(:last-child)::after {
-    min-width: 18px;
+    margin: 0 8px;
+    min-width: 12px;
   }
 
   .tool-shell__footer {
     align-items: flex-start;
     flex-direction: column;
     padding: 20px;
+  }
+}
+
+/* Phones: the steps fit the width instead of scrolling. Only the current step keeps its label on
+   screen; the others keep it for screen readers. */
+@media (max-width: 520px) {
+  .tool-shell__step {
+    gap: 6px;
+  }
+
+  .tool-shell__step:not(.is-active) > span:last-child {
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
   }
 }
 
