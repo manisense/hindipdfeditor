@@ -25,6 +25,7 @@ import {
 import { mergeOcrLines, mergeWordReadings, type RecognizedWord } from "./mergeOcrLines";
 import { textBandOfLine } from "./ocrLineGeometry";
 import { mustVerifyPage, newFontTrust, noteSkippedPage, recordVerifiedPage, type FontTrust } from "./embeddedTextTrust";
+import { currentDeviceHints, poolSizeFor } from "./ocrPoolSize";
 import { extractEmbeddedTextLines } from "./pdfTextExtract";
 import {
   hasGlyphPlaceholder,
@@ -78,15 +79,9 @@ type OcrLanguage = "hin" | "eng";
 type PooledWorker = { worker: Promise<Worker>; busy: number };
 const pools = new Map<OcrLanguage, PooledWorker[]>();
 
-/**
- * How many OCR workers per language may run at once. Tesseract uses one core per worker, so
- * several pages are read side by side on multi-core devices; devices with little memory keep two.
- */
+/** How many OCR workers per language may run at once on this device (see `poolSizeFor`). */
 export function ocrPoolSize(): number {
-  const cores = navigator.hardwareConcurrency || 2;
-  // deviceMemory is Chromium-only (GB, rounded); absent elsewhere.
-  const memoryGb = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
-  return Math.max(1, Math.min(memoryGb <= 4 ? 2 : 4, cores - 1));
+  return poolSizeFor(currentDeviceHints());
 }
 
 /**

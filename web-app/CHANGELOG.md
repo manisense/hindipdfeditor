@@ -1,5 +1,11 @@
 # Changelog
 
+## Phone-safe OCR worker pool, 23 November 2026
+
+### Changed
+- The OCR worker count now follows device memory: 1 worker on devices with 2 GB or less, at most 2 on 4 GB devices and on phones that do not report memory (iPhone Safari), and up to 4 on desktops, always leaving a core for the page. Before, phones without a memory figure could get 4.
+- Measured on an emulated phone (CPU slowed 4×, 31 pages): 1 worker 74 s and 932 MB, 2 workers 49 s and 1001 MB, 4 workers 37 s and 1007 MB. A 120-page run holds steady at about 790 MB with no growth. Web ADR 0015 updated; a check on a real low-end phone is still open.
+
 ## Faster PDF to Word and page reading, 23 November 2026
 
 ### Changed
