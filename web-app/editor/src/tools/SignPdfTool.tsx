@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AppButton } from "../components/AppButton";
 import { AppStatus } from "../components/AppStatus";
 import { DropZone } from "../components/DropZone";
+import { PageJump } from "../components/PageJump";
 import { ImageEditOverlay } from "../components/ImageEditOverlay";
 import { SelectedFileSummary } from "../components/SelectedFileSummary";
 import { SignaturePad } from "../components/SignaturePad";
@@ -476,7 +477,7 @@ export function SignPdfTool() {
                 <button type="button" className="app-button app-button--secondary app-button--small" aria-label={tx("Previous page", "पिछला पेज")} disabled={current === 0} onClick={() => setCurrent((c) => c - 1)}>
                   <ChevronLeft size={16} aria-hidden="true" />
                 </button>
-                <span>{tx(`Page ${current + 1} of ${pageCount}`, `पेज ${current + 1} / ${pageCount}`)}</span>
+                <PageJump current={current} count={pageCount} onGo={setCurrent} />
                 <button type="button" className="app-button app-button--secondary app-button--small" aria-label={tx("Next page", "अगला पेज")} disabled={current >= pageCount - 1} onClick={() => setCurrent((c) => c + 1)}>
                   <ChevronRight size={16} aria-hidden="true" />
                 </button>

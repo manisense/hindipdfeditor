@@ -1,0 +1,27 @@
+.page-jump {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 8px;
+}
+
+.page-jump input {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 9999px;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  height: 32px;
+  padding: 0 8px;
+  text-align: center;
+  width: 56px;
+}
+
+.page-jump input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 10%, transparent);
+  outline: 0;
+}

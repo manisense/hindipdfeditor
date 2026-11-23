@@ -100,7 +100,7 @@ Nothing known is critical: no data loss, no broken tool, no silently wrong outpu
 11. **Fill PDF form:** Hindi answers are images (the value keeps the text), and a non-Latin list box shows only its selection. *Partly Plan B.*
 12. **CSP tag-gateway hash:** if Cloudflare changes the snippet, analytics stops silently (web ADR 0014). *Ours: an automated check.*
 13. **Band check (ADR 0015):** a page whose top band is correct but whose lower part is corrupted would keep its text. Unlikely, because corruption is font-wide. *Monitor.*
-14. **Sign PDF:** there is no page jump. *Ours.*
+14. **Sign PDF page jump:** *done:* a page number box in Sign PDF and Fill PDF form.
 15. **Certificate-based signatures (DSC):** only image signatures exist. *Owner: a certificate or signing service.*
 16. **Mobile app release:** on hold by the owner's instruction.
 
