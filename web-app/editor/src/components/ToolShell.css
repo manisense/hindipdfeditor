@@ -156,13 +156,14 @@
   border: 1px solid rgba(21, 23, 44, 0.06);
   border-radius: 18px;
   display: flex;
-  gap: 5px;
-  margin: 0 auto 18px;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  margin: 0 auto 16px;
   max-width: 100%;
-  overflow-x: auto;
   padding: 6px;
   scrollbar-width: none;
-  width: max-content;
+  width: fit-content;
 }
 
 .tool-shell__tool-switcher::-webkit-scrollbar {
@@ -178,8 +179,8 @@
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 650;
-  gap: 7px;
-  padding: 9px 12px;
+  gap: 6px;
+  padding: 8px 10px;
   text-decoration: none;
   transition:
     background 150ms ease,
@@ -327,6 +328,20 @@
   color: var(--brand);
 }
 
+/* Below desktop width the tool row swipes, fading at the edge, instead of wrapping one or two
+   tools onto a line of their own. */
+@media (max-width: 1180px) {
+  .tool-shell__tool-switcher {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+    overflow-x: auto;
+    padding-right: 40px;
+    width: 100%;
+  }
+}
+
 @media (max-width: 760px) {
   .tool-shell__nav-wrap {
     padding: 8px 10px 0;
@@ -372,12 +387,7 @@
   }
 
   .tool-shell__tool-switcher {
-    justify-content: flex-start;
     margin-bottom: 12px;
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
-    padding-right: 40px;
-    width: 100%;
   }
 
   .tool-shell__tool-switcher a {

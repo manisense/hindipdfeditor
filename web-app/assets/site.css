@@ -29,8 +29,8 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -579,8 +579,9 @@ img {
 /* ——— Footer ——— */
 
 .site-footer {
-  background: var(--navy, #14161f);
-  color: #c5c8d1;
+  background: #fff;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
 }
 
 .footer-inner {
@@ -636,12 +637,35 @@ img {
 }
 
 .footer-bottom {
-  border-top: 1px solid #2a2f3c;
-  color: #8b909c;
-  font-size: 12px;
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 14px;
+  gap: 16px;
+  justify-content: space-between;
   margin: 0 auto;
-  max-width: var(--max);
-  padding: 16px 24px 28px;
+  max-width: 1120px;
+  padding: 24px;
+}
+
+.footer-bottom nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.footer-bottom a {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  min-height: 44px;
+  text-decoration: none;
+}
+
+.footer-bottom a:hover,
+.footer-bottom a:focus-visible {
+  color: var(--hpe-primary);
 }
 
 /* ——— Inner pages (privacy, support, etc.) ——— */

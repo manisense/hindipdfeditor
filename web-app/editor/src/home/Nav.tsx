@@ -143,7 +143,7 @@ export function Nav() {
             alt="Hindi PDF Editor logo"
             className="size-7 sm:size-8 rounded-lg transition-transform group-hover:scale-105"
           />
-          <span className="font-display text-[14px] min-[360px]:text-[15.5px] sm:text-[17px] font-bold tracking-tight text-ink whitespace-nowrap">
+          <span className="font-display text-[14px] min-[360px]:text-[15px] sm:text-[17px] font-bold tracking-tight text-ink whitespace-nowrap">
             Hindi PDF <span className="text-brand">Editor</span>
           </span>
         </a>
@@ -157,7 +157,7 @@ export function Nav() {
             <a
               key={l.href}
               href={l.href}
-              className="text-[13.5px] lg:text-[14.5px] font-medium text-muted transition-colors hover:text-brand whitespace-nowrap"
+              className="text-sm lg:text-sm font-medium text-muted transition-colors hover:text-brand whitespace-nowrap"
             >
               {l.label}
             </a>
@@ -172,7 +172,7 @@ export function Nav() {
             onClick={toggleLanguage}
             title={isHindi ? "Switch to English" : "हिंदी भाषा में बदलें"}
             aria-label={isHindi ? "Switch to English" : "हिंदी भाषा में बदलें"}
-            className="inline-flex items-center gap-1 sm:gap-1.5 rounded-full border border-line bg-cream/70 px-2.5 sm:px-3 py-1.5 font-display text-[12px] sm:text-[13px] font-bold text-ink transition-[transform,background-color,border-color,box-shadow,color,opacity] hover:bg-white hover:border-brand/30 hover:shadow-sm"
+            className="inline-flex items-center gap-1 sm:gap-1.5 rounded-full border border-line bg-cream/70 px-2.5 sm:px-3 py-1.5 font-display text-[13px] sm:text-[13px] font-bold text-ink transition-[transform,background-color,border-color,box-shadow,color,opacity] hover:bg-white hover:border-brand/30 hover:shadow-sm"
           >
             <Globe className="size-3.5 text-brand shrink-0" />
             <span className="hidden min-[380px]:inline">
@@ -187,7 +187,7 @@ export function Nav() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Get Hindi PDF Editor on Google Play (opens in a new tab)"
-            className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 font-display text-[13.5px] font-semibold text-ink transition-colors hover:bg-black/[0.04] xl:inline-flex whitespace-nowrap"
+            className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 font-display text-sm font-semibold text-ink transition-colors hover:bg-black/[0.04] xl:inline-flex whitespace-nowrap"
           >
             <GooglePlayMark className="text-brand size-3.5" />
             <span>{t("nav.googlePlay")}</span>
@@ -195,7 +195,7 @@ export function Nav() {
 
           {/* Open Editor CTA */}
           <Btn
-            className="text-[12.5px] min-[380px]:text-[13px] sm:text-[14px] px-3 min-[380px]:px-4 sm:px-5 py-1.5 sm:py-2.5 shadow-sm shrink-0"
+            className="text-[13px] min-[380px]:text-[13px] sm:text-[14px] px-3 min-[380px]:px-4 sm:px-5 py-1.5 sm:py-2.5 shadow-sm shrink-0"
             href={toolHref("edit", lang)}
           >
             <span className="hidden min-[440px]:inline">
@@ -262,7 +262,7 @@ export function Nav() {
 
             {/* Quick Tools Category Chips */}
             <div className="pt-3 pb-3 border-b border-line">
-              <div className="px-3.5 pb-2 text-[11px] font-bold uppercase tracking-wider text-muted">
+              <div className="px-3.5 pb-2 text-[13px] font-bold uppercase tracking-wider text-muted">
                 {isHindi ? "सभी पीडीएफ टूल्स" : "Quick PDF Tools"}
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -271,7 +271,7 @@ export function Nav() {
                     key={tool.id}
                     href={toolHref(tool.id, lang)}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-2.5 rounded-xl p-2.5 text-[13.5px] font-medium text-ink transition-colors hover:bg-brand-wash"
+                    className="flex items-center gap-2.5 rounded-xl p-2.5 text-sm font-medium text-ink transition-colors hover:bg-brand-wash"
                   >
                     <span
                       className="flex size-7 items-center justify-center rounded-lg shrink-0"
@@ -311,7 +311,7 @@ export function Nav() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Get Hindi PDF Editor on Google Play"
-                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-cream/70 px-3.5 py-2 text-[12.5px] font-semibold text-ink hover:bg-white hover:border-brand/30"
+                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-cream/70 px-3.5 py-2 text-[13px] font-semibold text-ink hover:bg-white hover:border-brand/30"
               >
                 <GooglePlayMark className="size-3.5 text-brand" />
                 <span>Google Play</span>

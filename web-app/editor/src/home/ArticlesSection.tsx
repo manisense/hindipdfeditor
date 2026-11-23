@@ -92,7 +92,7 @@ export function ArticlesSection() {
           <div>
             <a
               href="/articles/"
-              className="inline-flex items-center gap-2 font-display text-[15px] font-bold text-brand hover:text-brand/80 transition-colors"
+              className="inline-flex items-center gap-2 font-display text-base font-bold text-brand hover:text-brand/80 transition-colors"
             >
               <span>
                 {isHindi ? "सभी गाइड्स और लेख देखें →" : "View all guides →"}
@@ -116,18 +116,18 @@ export function ArticlesSection() {
               <div>
                 <div className="flex items-center justify-between gap-2 mb-4">
                   <span
-                    className={`inline-block rounded-full px-3 py-0.5 font-display text-xs font-semibold ${art.badgeTone}`}
+                    className={`inline-block rounded-full px-3 py-0.5 font-display text-[13px] font-semibold ${art.badgeTone}`}
                   >
                     {art.category}
                   </span>
-                  <span className="text-xs text-muted font-medium">
+                  <span className="text-[13px] text-muted font-medium">
                     {art.readTime}
                   </span>
                 </div>
                 <h3 className="font-display text-lg font-bold text-ink group-hover:text-brand transition-colors leading-snug">
                   {art.title}
                 </h3>
-                <p className="mt-2.5 text-[14px] leading-relaxed text-muted">
+                <p className="mt-2.5 text-sm leading-relaxed text-muted">
                   {art.desc}
                 </p>
               </div>

@@ -75,7 +75,7 @@ export function Hero() {
             <Fade>
               <a
                 href="#features"
-                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1.5 text-[13.5px] font-medium text-muted shadow-[0_1px_2px_rgba(21,23,44,0.04)] transition-colors hover:text-ink"
+                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1.5 text-sm font-medium text-muted shadow-[0_1px_2px_rgba(21,23,44,0.04)] transition-colors hover:text-ink"
               >
                 <span className="size-1.5 rounded-full bg-accent" />
                 {t("hero.badge")}
@@ -87,7 +87,7 @@ export function Hero() {
               <h1 className="mt-6 font-display text-[clamp(34px,4.2vw,52px)] font-extrabold leading-[1.05] tracking-tight text-ink">
                 <span className="block text-ink">{t("hero.titlePre")}</span>
                 <span className="block text-ink">
-                  {isHindi ? "बिना फॉन्ट टूटे।" : "No broken Hindi fonts."}
+                  {isHindi ? "बिना फॉन्ट टूटे।" : "No broken fonts."}
                 </span>
               </h1>
             </Fade>
@@ -146,38 +146,31 @@ export function Hero() {
                   <Pencil className="size-4" strokeWidth={2} />
                 </span>
                 <div>
-                  <div className="font-display text-[14.5px] font-bold text-ink leading-none">
+                  <div className="font-display text-base font-bold text-ink leading-none">
                     {isHindi
                       ? "सीधे ब्राउज़र में एडिट करें"
                       : "Edit right in your browser"}
                   </div>
-                  <div className="mt-1 text-[12.5px] text-muted">
+                  <div className="mt-1 text-[13px] text-muted">
                     {isHindi
                       ? "बिना इंस्टालेशन — सही मात्राएं"
                       : "No setup — shaping stays correct"}
                   </div>
                 </div>
               </div>
-              <div className="rounded-xl border border-black/[0.06] bg-white p-4 shadow-[0_8px_24px_rgba(21,23,44,0.07)]">
-                <div className="mb-3 flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-line" />
-                  <span className="size-2 rounded-full bg-line" />
-                  <span className="size-2 rounded-full bg-line" />
-                  <span className="ml-1.5 h-3.5 flex-1 rounded bg-[#f4f5f7]" />
-                </div>
-                <div className="mb-2.5 font-display text-xl font-semibold text-ink">
-                  अनुबंध पत्र
-                </div>
-                <div className="mb-2 h-2.5 w-[92%] rounded bg-brand-tint" />
-                <div className="mb-2 flex items-center gap-1.5">
-                  <div className="h-2.5 w-1/3 rounded bg-slate-100" />
-                  <span className="rounded-md bg-brand px-2 py-0.5 font-display text-[11px] font-semibold text-white">
-                    हस्ताक्षर
-                  </span>
-                  <div className="h-2.5 w-1/5 rounded bg-slate-100" />
-                </div>
-                <div className="h-2.5 w-2/3 rounded bg-accent-tint" />
-              </div>
+              {/* A real capture of the editor: the subject line of a sample letter being retyped. */}
+              <img
+                src="/assets/product/editor-hindi-edit.webp"
+                width={1040}
+                height={373}
+                alt={
+                  isHindi
+                    ? "एडिटर में एक हिंदी प्रार्थना पत्र, विषय की लाइन बदली जा रही है"
+                    : "A Hindi letter open in the editor, with its subject line being retyped"
+                }
+                className="block h-auto w-full rounded-xl border border-black/[0.06] bg-white"
+                fetchPriority="high"
+              />
             </div>
 
             <div
@@ -185,12 +178,12 @@ export function Hero() {
               style={{ animationDelay: "0.25s" }}
             >
               <div className="mb-3 flex items-center justify-between">
-                <div className="font-display text-[14.5px] font-bold text-ink">
+                <div className="font-display text-base font-bold text-ink">
                   {isHindi
                     ? "एक ही टूलकिट, सभी कार्य"
                     : "One toolkit, every job"}
                 </div>
-                <span className="rounded-full bg-white px-2.5 py-1 font-display text-[12px] font-semibold text-muted">
+                <span className="rounded-full bg-white px-2.5 py-1 font-display text-[13px] font-semibold text-muted">
                   {tools.length} {isHindi ? "टूल्स" : "tools"}
                 </span>
               </div>
@@ -207,7 +200,7 @@ export function Hero() {
                       <t.icon className="size-[17px]" strokeWidth={2} />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="font-display text-[14px] font-semibold text-ink leading-tight">
+                      <div className="font-display text-sm font-semibold text-ink leading-tight">
                         {t.name}
                       </div>
                       <div className="text-[13px] text-muted">{t.detail}</div>

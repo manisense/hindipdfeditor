@@ -15,7 +15,7 @@ function Item({ q, a }: { q: string; a: string }) {
         className="flex w-full items-center justify-between gap-4 py-5 text-left"
         aria-expanded={open}
       >
-        <span className="font-display text-[17px] font-semibold text-ink">
+        <span className="font-display text-lg font-semibold text-ink">
           {q}
         </span>
         <span
@@ -36,7 +36,7 @@ function Item({ q, a }: { q: string; a: string }) {
             transition={{ duration: 0.28, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <p className="pb-5 pr-10 text-[15px] leading-relaxed text-muted">
+            <p className="pb-5 pr-10 text-base leading-relaxed text-muted">
               {a}
             </p>
           </motion.div>

@@ -41,10 +41,10 @@ export function WorkYourWay() {
                   <Check className="size-4" strokeWidth={2.5} />
                 </span>
                 <div>
-                  <h4 className="font-display text-[16.5px] font-semibold text-ink">
+                  <h4 className="font-display text-base font-semibold text-ink">
                     {f.h}
                   </h4>
-                  <p className="text-[14.5px] text-muted">{f.p}</p>
+                  <p className="text-base text-muted">{f.p}</p>
                 </div>
               </div>
             ))}
@@ -58,8 +58,8 @@ export function WorkYourWay() {
         </div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          whileInView={{ opacity: 1, scale: 1 }}
+          initial={{ scale: 0.96 }}
+          whileInView={{ scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="relative overflow-hidden rounded-[28px] border border-line p-8 shadow-[var(--shadow-soft)]"

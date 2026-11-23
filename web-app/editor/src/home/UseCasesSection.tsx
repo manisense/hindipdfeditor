@@ -84,14 +84,14 @@ export function UseCasesSection() {
                     <div className="grid size-11 place-items-center rounded-xl bg-brand-tint text-brand">
                       <Icon className="size-5" strokeWidth={2.2} />
                     </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 font-display text-xs font-semibold text-slate-700">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 font-display text-[13px] font-semibold text-slate-700">
                       {isHindi ? item.queryHi : item.queryEn}
                     </span>
                   </div>
                   <h3 className="font-display text-xl font-bold text-ink">
                     {item.title}
                   </h3>
-                  <p className="mt-3 text-[14.5px] leading-relaxed text-muted">
+                  <p className="mt-3 text-base leading-relaxed text-muted">
                     {item.desc}
                   </p>
                 </div>

@@ -77,7 +77,7 @@ export function HowItWorks() {
                 <h3 className="font-display text-lg font-bold text-ink">
                   {step.title}
                 </h3>
-                <p className="mt-2.5 text-[14.5px] leading-relaxed text-muted">
+                <p className="mt-2.5 text-base leading-relaxed text-muted">
                   {step.desc}
                 </p>
               </motion.li>

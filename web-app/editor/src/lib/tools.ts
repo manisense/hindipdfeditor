@@ -27,17 +27,17 @@ export const TOOLS = routeManifest as ToolMeta[];
 
 /** Tool names for Hindi screens (one language per screen). */
 export const TOOL_HINDI_NAMES: Record<ToolId, string> = {
-  edit: "हिंदी एडिट",
-  sign: "हस्ताक्षर करें",
+  edit: "एडिट",
+  sign: "हस्ताक्षर",
   "fill-form": "फॉर्म भरें",
   "pdf-to-word": "पीडीएफ से वर्ड",
   "word-to-pdf": "वर्ड से पीडीएफ",
   translate: "अनुवाद",
   merge: "पीडीएफ जोड़ें",
   split: "पेज अलग करें",
-  compress: "साइज कम करें",
-  organize: "पेज व्यवस्थित करें",
-  krutidev: "कृतिदेव से यूनिकोड",
+  compress: "साइज कम",
+  organize: "पेज व्यवस्थित",
+  krutidev: "कृतिदेव",
 };
 
 

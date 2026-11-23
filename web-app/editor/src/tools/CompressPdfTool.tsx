@@ -72,9 +72,9 @@ export function CompressPdfTool() {
       tool={tool}
       compact={Boolean(file)}
       steps={[
-        { label: "Select PDF", active: step === 1, done: step > 1 },
-        { label: "Compress", active: step === 2, done: step > 2 },
-        { label: "Download", active: step === 3, done: step === 3 },
+        { label: tx("Select PDF", "पीडीएफ चुनें"), active: step === 1, done: step > 1 },
+        { label: tx("Compress", "साइज कम करें"), active: step === 2, done: step > 2 },
+        { label: tx("Download", "डाउनलोड"), active: step === 3, done: step === 3 },
       ]}
     >
       <div className="utility-tool">

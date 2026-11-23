@@ -12,6 +12,14 @@ function link(url, label) {
     throw new Error("Unsupported article link");
   return `<a href="${escapeHtml(url)}">${escapeHtml(label)}</a>`;
 }
+
+/** Same six links, in the same order, as the tool and info page footers. */
+function footerLinks(hi) {
+  const items = hi
+    ? [["/articles/", "गाइड"], ["/hi/about/", "हमारे बारे में"], ["/hi/privacy/", "प्राइवेसी"], ["/hi/data-safety/", "डेटा सुरक्षा"], ["/hi/terms/", "शर्तें"], ["/hi/support/", "सहायता"]]
+    : [["/articles/", "Guides"], ["/about/", "About"], ["/privacy/", "Privacy"], ["/data-safety/", "Data safety"], ["/terms/", "Terms"], ["/support/", "Support"]];
+  return items.map(([url, label]) => link(url, label)).join("");
+}
 export function renderArticle(item, articles) {
   if (
     !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.slug) ||
@@ -113,13 +121,13 @@ export function renderArticle(item, articles) {
    .filter(Boolean)
    .map((a) => `<li>${link("/articles/" + a.slug + "/", a.title)}</li>`)
    .join("")}</ul></section></main>
- <footer class="guide-footer">© 2026 Hindi PDF Editor <nav>${link("/privacy/", hi ? "प्राइवेसी" : "Privacy")}${link("/support/", hi ? "सहायता" : "Support")}${link("/terms/", hi ? "शर्तें" : "Terms")}</nav></footer></body></html>`.replace(
+ <footer class="guide-footer">${hi ? "© 2026 हिंदी पीडीएफ एडिटर" : "© 2026 Hindi PDF Editor"} <nav aria-label="${hi ? "साइट" : "Site"}">${footerLinks(hi)}</nav></footer></body></html>`.replace(
     /[ \t]+$/gm,
     "",
   );
 }
 export function renderArticlesHub(articles) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Hindi PDF editing guides — Hindi PDF Editor</title><meta name="description" content="Practical Hindi and English guides for PDF editing, Devanagari fonts, translation and preparing supporting applications."/><link rel="canonical" href="${origin}/articles/"/><link rel="stylesheet" href="/assets/article.css"/><script src="/assets/analytics.js" defer></script></head><body><header class="guide-header"><a class="guide-brand" href="/">Hindi PDF Editor</a><nav>${link("/tools/edit-hindi-pdf/", "Open editor")}${link("/hi/", "हिन्दी")}</nav></header><main class="guide-main guide-hub"><h1>Hindi PDF guides<br/><span lang="hi">हिंदी PDF गाइड्स</span></h1><p>Choose a task. Each guide explains what the tools can do, their limitations and how to review the result.</p><div class="guide-grid">${articles.map((a) => `<a class="guide-card" lang="${a.language}" href="/articles/${a.slug}/"><span class="guide-category">${escapeHtml(a.category)}</span><h2>${escapeHtml(a.title)}</h2><p>${escapeHtml(a.metaDescription)}</p><span>${a.language === "hi" ? "गाइड पढ़ें" : "Read guide"}</span></a>`).join("")}</div></main><footer class="guide-footer">${link("/privacy/", "Privacy")}${link("/support/", "Support")}</footer></body></html>`.replace(
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Hindi PDF editing guides — Hindi PDF Editor</title><meta name="description" content="Practical Hindi and English guides for PDF editing, Devanagari fonts, translation and preparing supporting applications."/><link rel="canonical" href="${origin}/articles/"/><link rel="stylesheet" href="/assets/article.css"/><script src="/assets/analytics.js" defer></script></head><body><header class="guide-header"><a class="guide-brand" href="/">Hindi PDF Editor</a><nav>${link("/tools/edit-hindi-pdf/", "Open editor")}${link("/hi/", "हिन्दी")}</nav></header><main class="guide-main guide-hub"><h1>Hindi PDF guides<br/><span lang="hi">हिंदी PDF गाइड्स</span></h1><p>Choose a task. Each guide explains what the tools can do, their limitations and how to review the result.</p><div class="guide-grid">${articles.map((a) => `<a class="guide-card" lang="${a.language}" href="/articles/${a.slug}/"><span class="guide-category">${escapeHtml(a.category)}</span><h2>${escapeHtml(a.title)}</h2><p>${escapeHtml(a.metaDescription)}</p><span>${a.language === "hi" ? "गाइड पढ़ें" : "Read guide"}</span></a>`).join("")}</div></main><footer class="guide-footer">© 2026 Hindi PDF Editor <nav aria-label="Site">${footerLinks(false)}</nav></footer></body></html>`.replace(
     /[ \t]+$/gm,
     "",
   );

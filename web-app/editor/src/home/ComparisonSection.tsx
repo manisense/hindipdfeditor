@@ -88,10 +88,32 @@ export function ComparisonSection() {
           <p className="mt-4 text-lg text-muted">{t("comp.subtitle")}</p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-sm">
+        {/* Phones: one card per row (design-system.md, comparison table on mobile). */}
+        <ul className="space-y-3 md:hidden">
+          {rows.map((row) => (
+            <li key={row.feature} className="rounded-2xl border border-line bg-white p-4">
+              <h3 className="font-display text-base font-semibold text-ink">{row.feature}</h3>
+              <p className="mt-3 flex gap-2 rounded-xl bg-brand-tint/60 p-3 text-sm font-semibold text-brand">
+                <CheckCircle2 className="mt-0.5 size-4 flex-none" aria-hidden />
+                <span>
+                  <span className="sr-only">{t("comp.thOur")}: </span>
+                  {row.ours}
+                </span>
+              </p>
+              <p className="mt-2 flex gap-2 px-3 text-sm text-muted">
+                <AlertCircle className="mt-0.5 size-4 flex-none text-[#EF6C4D]" aria-hidden />
+                <span>
+                  <span className="sr-only">{t("comp.thTypical")}: </span>
+                  {row.typical}
+                </span>
+              </p>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden overflow-x-auto rounded-2xl border border-line bg-white shadow-sm md:block">
           <table className="w-full min-w-[560px] text-left border-collapse">
             <thead>
-              <tr className="border-b border-line bg-cream/70 text-[14px] font-bold text-ink">
+              <tr className="border-b border-line bg-cream/70 text-sm font-bold text-ink">
                 <th className="p-4 sm:p-5 w-[28%] font-display">
                   {t("comp.thFeature")}
                 </th>
@@ -103,7 +125,7 @@ export function ComparisonSection() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line text-[13.5px]">
+            <tbody className="divide-y divide-line text-sm">
               {rows.map((row) => (
                 <tr
                   key={row.feature}
@@ -120,7 +142,7 @@ export function ComparisonSection() {
                   </td>
                   <td className="p-4 sm:p-5 text-muted">
                     <div className="flex items-center gap-1.5">
-                      <AlertCircle className="size-4 text-amber-500 flex-none" />
+                      <AlertCircle className="size-4 text-[#EF6C4D] flex-none" />
                       <span>{row.typical}</span>
                     </div>
                   </td>

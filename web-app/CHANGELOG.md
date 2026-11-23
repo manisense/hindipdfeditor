@@ -1,5 +1,16 @@
 # Changelog
 
+## Design finish: one type scale, shared footer, real product shot, 23 November 2026
+
+### Changed
+- **Real editor in the hero.** The drawn mock document is replaced by a capture of the editor retyping the subject line of a fictional Hindi leave letter (`assets/product/editor-hindi-edit.webp`, 10 KB).
+- **One type scale on the homepage:** 13 / 14 / 16 / 18 / 20 / 24 px plus display sizes, instead of 17 sizes; body copy is 16px and no readable text is under 13px (tiny text is left only inside drawn illustrations). Info pages use 16px body text.
+- **Comparison on phones** is one card per row instead of a table cut off at the right edge.
+- **Tool row** fits one line from 1180px up in English and Hindi (shorter Hindi names, "KrutiDev" for the KrutiDev page); below that it swipes with a fade instead of wrapping one tool onto its own line.
+- **One footer pattern:** tool pages, guides and info pages show the same six links (Guides, About, Privacy, Data safety, Terms, Support), with Hindi labels and `/hi/` pages on Hindi screens. Info pages had only "Copyright 2026" on a navy bar.
+- **Hindi screens:** the Hindi homepage and FAQ use "हिंदी पीडीएफ एडिटर" and "यूपी पुलिस" inside Hindi sentences; Merge, Split and Compress step labels are translated; three Hindi guides name buttons as the Hindi UI shows them (re-reviewed 2026-11-23).
+- Homepage headline second line is "No broken fonts." so it stays on two lines; the "Work your way" visual no longer starts hidden (the last blank stretch on phones). Support's title says what the page is for, without an empty "Help" label or English in brackets.
+
 ## Text recognition loads on slow connections, 23 November 2026
 
 ### Fixed
