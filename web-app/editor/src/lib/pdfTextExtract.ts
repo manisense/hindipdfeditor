@@ -7,6 +7,7 @@ import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './leg
 import { sharedPdfDocument } from './sharedPdfDocument';
 import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
 import { imageRectsFromOperators, textImageRows, type PtBox } from './pdfImageRects';
+import { rulingsFromOperators, type Ruling } from './pdfRulings';
 import { strokeEmPerItem, strokeRunsFromOperators } from './textStroke';
 import type { FontHint, OcrLine } from '../state/editStore';
 
@@ -153,6 +154,8 @@ export async function extractEmbeddedTextLines(
      * as runs, so a word drawn as an image lands in its sentence.
      */
     readTextImages?: (rows: PtBox[]) => Promise<(string | null)[]>;
+    /** Filled with the page's ruling segments (table borders), in editor space (pt, top-left origin). */
+    rulings?: Ruling[];
   } = {},
 ): Promise<OcrLine[]> {
   const doc = await sharedPdfDocument(pdfBytes);
@@ -262,12 +265,32 @@ export async function extractEmbeddedTextLines(
       });
     }
 
+    // Table borders, in editor space: for table detection, and as walls text images are not
+    // joined across.
+    const rulings: Ruling[] = [];
+    if (options.rulings || options.readTextImages) {
+      for (const ruling of rulingsFromOperators(operators.fnArray, operators.argsArray, OPS)) {
+        const ends = ruling.horizontal
+          ? [viewport.convertToViewportPoint(ruling.from, ruling.at), viewport.convertToViewportPoint(ruling.to, ruling.at)]
+          : [viewport.convertToViewportPoint(ruling.at, ruling.from), viewport.convertToViewportPoint(ruling.at, ruling.to)];
+        const [[x1, y1], [x2, y2]] = ends;
+        // Page rotation can turn a horizontal line vertical.
+        const horizontal = Math.abs(y2 - y1) < Math.abs(x2 - x1);
+        rulings.push(
+          horizontal
+            ? { horizontal, at: (y1 + y2) / 2, from: Math.min(x1, x2), to: Math.max(x1, x2) }
+            : { horizontal, at: (x1 + x2) / 2, from: Math.min(y1, y2), to: Math.max(y1, y2) },
+        );
+      }
+      options.rulings?.push(...rulings);
+    }
     if (options.readTextImages) {
       const images = imageRectsFromOperators(operators.fnArray, operators.argsArray, OPS).map((rect) => {
         const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(rect);
         return { xPt: Math.min(x1, x2), yPt: Math.min(y1, y2), wPt: Math.abs(x2 - x1), hPt: Math.abs(y2 - y1) };
       });
-      const rows = textImageRows(images, runs);
+      const walls = rulings.filter((r) => !r.horizontal).map((r) => ({ x: r.at, y1: r.from, y2: r.to }));
+      const rows = textImageRows(images, runs, walls);
       const texts = rows.length > 0 ? await options.readTextImages(rows) : [];
       rows.forEach((row, i) => {
         const text = texts[i]?.trim();

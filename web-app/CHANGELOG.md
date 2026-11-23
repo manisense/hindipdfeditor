@@ -1,5 +1,12 @@
 # Changelog
 
+## PDF to Word keeps ruled tables, 23 November 2026
+
+### Added
+- **Ruled tables become Word tables.** PDF to Word finds tables drawn with lines (as Word, Excel and most government notices draw them), including borders drawn cell by cell. It rebuilds them as Word tables with their column widths, row heights and merged cells (a heading across columns, a label down several rows), and puts each line of text into its cell. Paragraphs above, between and below tables keep their order. On a 31-page recruitment notice, 14 tables come through, including a two-level header.
+- Text drawn as images is not joined across a table's column borders, so header words land in their own cells.
+- The tool's page, `tool-routes.json` and `llms` files now say ruled tables are carried over; pictures and exact positions still are not. Gate case `WORD_TABLE_OK`; web ADR 0012 addendum.
+
 ## PDF to Word reads text drawn as images; KrutiDev check fixed, 23 November 2026
 
 ### Fixed

@@ -50,6 +50,11 @@ describe('textImageRows', () => {
     expect(rows).toEqual([box(100, 500, 80, 12)]);
   });
 
+  it('does not join images across a table border', () => {
+    const rows = textImageRows([box(100, 50, 36, 11), box(140, 50, 30, 11)], [], [{ x: 138, y1: 40, y2: 70 }]);
+    expect(rows).toHaveLength(2);
+  });
+
   it('keeps separate lines apart', () => {
     expect(textImageRows([box(100, 50, 40, 11), box(100, 70, 40, 11)], [])).toHaveLength(2);
   });
