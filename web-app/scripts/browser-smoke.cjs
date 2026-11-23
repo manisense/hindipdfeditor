@@ -27,6 +27,9 @@ const { chromium } = require("playwright");
   await page.route("**/google-analytics.com/**", (r) => r.abort());
   await page.route("**/fonts.googleapis.com/**", (r) => r.abort());
   await page.route("**/fonts.gstatic.com/**", (r) => r.abort());
+  // Production only: the analytics beacons keep the network busy, so "networkidle" never comes.
+  await page.route("**/cloudflareinsights.com/**", (r) => r.abort());
+  await page.route("**/doubleclick.net/**", (r) => r.abort());
   for (const width of [320, 360, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(baseUrl + "/", { waitUntil: "networkidle" });
