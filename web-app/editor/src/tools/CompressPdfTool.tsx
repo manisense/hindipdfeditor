@@ -9,6 +9,7 @@ import { SelectedFileSummary } from "../components/SelectedFileSummary";
 import { ToolShell } from "../components/ToolShell";
 import { compressPdfFile, downloadPdfBytes } from "../lib/pdfOps";
 import { getTool } from "../lib/tools";
+import { openFailureMessage, type Bilingual } from "../lib/userMessages";
 import "./UtilityTool.css";
 
 const tool = getTool("compress")!;
@@ -31,7 +32,7 @@ export function CompressPdfTool() {
   const [file, setFile] = useState<File | null>(null);
   const [quality, setQuality] = useState(0.72);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Bilingual | null>(null);
   const [result, setResult] = useState<Result | null>(null);
 
   const step = result ? 3 : file ? 2 : 1;
@@ -60,7 +61,7 @@ export function CompressPdfTool() {
       });
     } catch (err) {
       trackToolEvent("export_failed", "compress");
-      setError(err instanceof Error ? err.message : String(err));
+      setError(openFailureMessage(err));
     } finally {
       setBusy(false);
     }
@@ -113,7 +114,7 @@ export function CompressPdfTool() {
               </div>
               <label className="utility-tool__slider">
                 <span className="utility-tool__sr-only">
-                  Compression quality
+                  {tx("Compression quality", "कंप्रेशन क्वालिटी")}
                 </span>
                 <input
                   type="range"
@@ -152,7 +153,7 @@ export function CompressPdfTool() {
                 }}
               />
               <AppButton
-                title={busy ? "Compressing…" : "Compress & download"}
+                title={busy ? tx("Compressing…", "साइज कम हो रहा है…") : tx("Compress & download", "साइज कम करें और डाउनलोड करें")}
                 onClick={() => void runCompress()}
                 disabled={busy}
               />
@@ -160,13 +161,13 @@ export function CompressPdfTool() {
           </div>
         )}
         {error && (
-          <AppStatus tone="error" title="Compression failed">
-            {error}
+          <AppStatus tone="error" title={tx("Compression failed", "साइज कम नहीं हो पाया")}>
+            {tx(error.en, error.hi)}
           </AppStatus>
         )}
         {result && (
-          <AppStatus tone="success" title="Your smaller PDF is ready">
-            Downloaded {result.filename} · {result.pageCount} pages ·{" "}
+          <AppStatus tone="success" title={tx("Your smaller PDF is ready", "छोटी पीडीएफ तैयार है")}>
+            {tx("Downloaded", "डाउनलोड हुई:")} {result.filename} · {result.pageCount} {tx("pages", "पेज")} ·{" "}
             {formatBytes(result.originalBytes)} →{" "}
             {formatBytes(result.compressedBytes)}
           </AppStatus>

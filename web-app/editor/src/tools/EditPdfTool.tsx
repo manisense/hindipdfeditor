@@ -1542,9 +1542,9 @@ export function EditPdfTool() {
           <div className="app__loading-card">
             <div className="app__spinner" />
             <div>
-              <p className="app__progress">Opening your PDF…</p>
+              <p className="app__progress">{tx("Opening your PDF…", "आपकी पीडीएफ खुल रही है…")}</p>
               <p className="app__progress-sub">
-                Rendering pages and detecting editable text
+                {tx("Rendering pages and detecting editable text", "पेज बन रहे हैं और एडिट होने वाला टेक्स्ट पहचाना जा रहा है")}
               </p>
             </div>
           </div>
@@ -1991,8 +1991,8 @@ export function EditPdfTool() {
             disabled={status.state === "saving"}
           />
           {status.state === "saved" && !dirty && (
-            <AppStatus tone="success" title="Edited PDF ready">
-              Download started as {status.filename}
+            <AppStatus tone="success" title={tx("Edited PDF ready", "एडिट की हुई पीडीएफ तैयार")}>
+              {tx("Download started as", "डाउनलोड शुरू हुआ:")} {status.filename}
             </AppStatus>
           )}
           {status.state === "error" && (
@@ -2005,18 +2005,18 @@ export function EditPdfTool() {
 
       <AppPopup
         open={discardVisible}
-        title="Discard unexported changes?"
+        title={tx("Discard unexported changes?", "बिना डाउनलोड किए बदलाव छोड़ दें?")}
         tone="warning"
         onClose={() => setDiscardVisible(false)}
         actions={
           <>
             <AppButton
-              title="Keep editing"
+              title={tx("Keep editing", "एडिट जारी रखें")}
               onClick={() => setDiscardVisible(false)}
               data-popup-initial-focus
             />
             <AppButton
-              title="Discard changes"
+              title={tx("Discard changes", "बदलाव छोड़ें")}
               variant="secondary"
               onClick={closeWithoutChanges}
             />
@@ -2024,8 +2024,10 @@ export function EditPdfTool() {
         }
       >
         <p>
-          Download your edited PDF before closing to keep your changes. The
-          original PDF will remain unchanged.
+          {tx(
+            "Download your edited PDF before closing to keep your changes. The original PDF will remain unchanged.",
+            "बदलाव रखने के लिए बंद करने से पहले एडिट की हुई पीडीएफ डाउनलोड करें। मूल पीडीएफ नहीं बदलेगी।",
+          )}
         </p>
       </AppPopup>
       {translationOptionsVisible && (

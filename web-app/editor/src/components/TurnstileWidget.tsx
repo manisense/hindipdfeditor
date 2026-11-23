@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+import { useTx } from "../lib/i18n";
+import type { Bilingual } from "../lib/userMessages";
 import { AppStatus } from "./AppStatus";
 import "./TurnstileWidget.css";
 
@@ -33,13 +35,14 @@ export function TurnstileWidget({
   onToken: (token: string | null) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
+  const tx = useTx();
+  const [error, setError] = useState<Bilingual | null>(null);
 
   useEffect(() => {
     const sitekey = import.meta.env.VITE_TURNSTILE_SITE_KEY as
       string | undefined;
     if (!sitekey) {
-      setError("AI security configuration is unavailable.");
+      setError({ en: "AI security configuration is unavailable.", hi: "AI सुरक्षा सेटिंग उपलब्ध नहीं है।" });
       onToken(null);
       return;
     }
@@ -58,7 +61,7 @@ export function TurnstileWidget({
         "expired-callback": () => onToken(null),
         "error-callback": () => {
           onToken(null);
-          setError("Security check failed. Reload and try again.");
+          setError({ en: "Security check failed. Reload and try again.", hi: "सुरक्षा जाँच नहीं हो पाई। पेज दोबारा लोड करके फिर कोशिश करें।" });
         },
         theme: "light",
         size: "compact",
@@ -76,9 +79,10 @@ export function TurnstileWidget({
     }
     const onScriptError = () => {
       onToken(null);
-      setError(
-        "Security check could not load. Check your connection and reload to retry.",
-      );
+      setError({
+        en: "Security check could not load. Check your connection and reload to retry.",
+        hi: "सुरक्षा जाँच लोड नहीं हुई। इंटरनेट देखें और पेज दोबारा लोड करें।",
+      });
     };
     script.addEventListener("error", onScriptError);
     script.addEventListener("load", render);
@@ -97,9 +101,9 @@ export function TurnstileWidget({
       <div
         className="turnstile-widget__frame"
         ref={containerRef}
-        aria-label="Security check"
+        aria-label={tx("Security check", "सुरक्षा जाँच")}
       />
-      {error && <AppStatus tone="error">{error}</AppStatus>}
+      {error && <AppStatus tone="error">{tx(error.en, error.hi)}</AppStatus>}
     </div>
   );
 }

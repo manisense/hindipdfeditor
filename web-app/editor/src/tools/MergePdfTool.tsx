@@ -1,6 +1,7 @@
 import { useTx } from "../lib/i18n";
 import { trackToolEvent } from "../lib/analytics";
 import { useState } from "react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 
 import { AppButton } from "../components/AppButton";
 import { AppStatus } from "../components/AppStatus";
@@ -9,15 +10,24 @@ import { SelectedFileSummary } from "../components/SelectedFileSummary";
 import { ToolShell } from "../components/ToolShell";
 import { downloadPdfBytes, mergePdfFiles } from "../lib/pdfOps";
 import { getTool } from "../lib/tools";
+import { openFailureMessage, type Bilingual } from "../lib/userMessages";
 import "./UtilityTool.css";
 
 const tool = getTool("merge")!;
+
+/** Copy of `list` with the item at `from` moved to index `to`. */
+function moveItem<T>(list: readonly T[], from: number, to: number): T[] {
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
 
 export function MergePdfTool() {
   const tx = useTx();
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Bilingual | null>(null);
   const [doneName, setDoneName] = useState<string | null>(null);
 
   const step = doneName ? 3 : files.length >= 2 ? 2 : 1;
@@ -41,7 +51,7 @@ export function MergePdfTool() {
       setDoneName(filename);
     } catch (err) {
       trackToolEvent("export_failed", "merge");
-      setError(err instanceof Error ? err.message : String(err));
+      setError(openFailureMessage(err));
     } finally {
       setBusy(false);
     }
@@ -78,15 +88,33 @@ export function MergePdfTool() {
           <div className="utility-tool__panel">
             <SelectedFileSummary
               multiple
-              label="Merge queue"
-              name={`${files.length} PDF${files.length === 1 ? "" : "s"} ready`}
-              meta="Files will be combined in the order shown below"
+              label={tx("Merge queue", "जोड़ने की सूची")}
+              name={tx(`${files.length} PDF${files.length === 1 ? "" : "s"} ready`, `${files.length} पीडीएफ तैयार`)}
+              meta={tx("Files are joined in this order. Use the arrows to change it.", "फाइलें इसी क्रम में जुड़ेंगी। क्रम बदलने के लिए तीर इस्तेमाल करें।")}
             />
             <ol className="utility-tool__list">
               {files.map((file, index) => (
                 <li key={`${file.name}-${index}`}>
                   <span className="utility-tool__list-index">{index + 1}</span>
                   <span className="utility-tool__list-name">{file.name}</span>
+                  <button
+                    type="button"
+                    className="utility-tool__move"
+                    disabled={busy || index === 0}
+                    aria-label={tx(`Move ${file.name} up`, `${file.name} को ऊपर करें`)}
+                    onClick={() => updateQueue(moveItem(files, index, index - 1))}
+                  >
+                    <ArrowUp size={16} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="utility-tool__move"
+                    disabled={busy || index === files.length - 1}
+                    aria-label={tx(`Move ${file.name} down`, `${file.name} को नीचे करें`)}
+                    onClick={() => updateQueue(moveItem(files, index, index + 1))}
+                  >
+                    <ArrowDown size={16} aria-hidden="true" />
+                  </button>
                   <button
                     type="button"
                     className="utility-tool__remove"
@@ -126,7 +154,7 @@ export function MergePdfTool() {
                 }}
               />
               <AppButton
-                title={busy ? "Merging…" : "Merge & download"}
+                title={busy ? tx("Merging…", "जोड़ रहे हैं…") : tx("Merge & download", "जोड़ें और डाउनलोड करें")}
                 onClick={() => void runMerge()}
                 disabled={busy || files.length < 2}
               />
@@ -134,8 +162,8 @@ export function MergePdfTool() {
           </div>
         )}
         {error && (
-          <AppStatus tone="error" title="Merge failed">
-            {error}
+          <AppStatus tone="error" title={tx("Merge failed", "फाइलें नहीं जुड़ पाईं")}>
+            {tx(error.en, error.hi)}
           </AppStatus>
         )}
         {doneName && (

@@ -185,7 +185,7 @@ export function ToolShell({
               : "Made for Devanagari · हिंदी"}
           </span>
         </div>
-        <nav aria-label="Legal and support">
+        <nav aria-label={isHindi ? "कानूनी जानकारी और सहायता" : "Legal and support"}>
           <a href="/privacy/">{isHindi ? "प्राइवेसी" : "Privacy"}</a>
           <a href="/support/">{isHindi ? "सपोर्ट" : "Support"}</a>
           <a href="/terms/">{isHindi ? "शर्तें" : "Terms"}</a>

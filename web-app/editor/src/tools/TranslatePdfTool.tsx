@@ -1,6 +1,8 @@
 import { inspectFontsOrBlock } from "../lib/fontInspectionPolicy";
 import { trackToolEvent } from "../lib/analytics";
 import { useRef, useState } from "react";
+import { useTx } from "../lib/i18n";
+import type { Bilingual } from "../lib/userMessages";
 import {
   AI_LIMITS,
   type TranslationDirection,
@@ -58,8 +60,25 @@ const LATIN_RE = /[A-Za-z]/u;
 
 type Progress = {
   phase: "loading" | "detecting" | "translating" | "exporting";
-  detail: string;
+  detail: Bilingual;
 };
+
+/** An error whose message is written for the person using the tool, in both UI languages. */
+class UserFacingError extends Error {
+  constructor(readonly text: Bilingual) {
+    super(text.en);
+  }
+}
+
+/** Hindi or English screen text for whatever went wrong; library errors get a generic line. */
+function failureText(err: unknown): Bilingual {
+  if (err instanceof UserFacingError) return err.text;
+  if (err instanceof DOMException && err.name === "AbortError") {
+    return { en: "Translation cancelled.", hi: "अनुवाद रद्द किया गया।" };
+  }
+  const en = err instanceof Error ? err.message : String(err);
+  return { en, hi: "अनुवाद पूरा नहीं हो पाया। थोड़ी देर बाद दोबारा कोशिश करें।" };
+}
 
 type Result = {
   filename: string;
@@ -113,23 +132,26 @@ async function buildTranslatedDocument(
   usedOcrFallback: boolean;
 }> {
   if (file.size > MAX_FILE_BYTES) {
-    throw new Error(
-      `This PDF is too large for in-browser translation (max ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB). Try Compress PDF first, or split into smaller files.`,
-    );
+    const mb = Math.round(MAX_FILE_BYTES / (1024 * 1024));
+    throw new UserFacingError({
+      en: `This PDF is too large for in-browser translation (max ${mb} MB). Try Compress PDF first, or split into smaller files.`,
+      hi: `यह पीडीएफ ब्राउज़र में अनुवाद के लिए बहुत बड़ी है (अधिकतम ${mb} MB)। पहले साइज कम करें या फाइल को छोटे हिस्सों में बाँटें।`,
+    });
   }
 
-  onProgress({ phase: "loading", detail: "Reading PDF…" });
+  onProgress({ phase: "loading", detail: { en: "Reading PDF…", hi: "पीडीएफ पढ़ी जा रही है…" } });
   const bytes = new Uint8Array(await file.arrayBuffer());
   throwIfAborted(signal);
   setPdfBytes(bytes);
   const pageCount = await getPageCount();
   if (pageCount > MAX_PAGES) {
-    throw new Error(
-      `This PDF has ${pageCount} pages (max ${MAX_PAGES} for Translate). Split it into smaller ranges first.`,
-    );
+    throw new UserFacingError({
+      en: `This PDF has ${pageCount} pages (max ${MAX_PAGES} for Translate). Split it into smaller ranges first.`,
+      hi: `इस पीडीएफ में ${pageCount} पेज हैं (अनुवाद के लिए अधिकतम ${MAX_PAGES})। पहले इसे छोटे हिस्सों में बाँटें।`,
+    });
   }
 
-  onProgress({ phase: "loading", detail: "Checking fonts…" });
+  onProgress({ phase: "loading", detail: { en: "Checking fonts…", hi: "फॉन्ट जाँचे जा रहे हैं…" } });
   const legacyFontWarnings = await detectLegacyFontWarnings();
   throwIfAborted(signal);
   const forceOcrPages = new Set(
@@ -146,7 +168,10 @@ async function buildTranslatedDocument(
     throwIfAborted(signal);
     onProgress({
       phase: "loading",
-      detail: `Rasterizing page ${i + 1} of ${pageCount}…`,
+      detail: {
+        en: `Rendering page ${i + 1} of ${pageCount}…`,
+        hi: `पेज ${i + 1} / ${pageCount} बन रहा है…`,
+      },
     });
     const image = await renderPage(i, RASTER_SCALE);
     const widthPt = image.pxWidth / RASTER_SCALE;
@@ -165,8 +190,14 @@ async function buildTranslatedDocument(
     onProgress({
       phase: "detecting",
       detail: forceOcr
-        ? `OCR on page ${i + 1} of ${pageCount} (legacy font — skipping embedded text)…`
-        : `Detecting text on page ${i + 1} of ${pageCount}…`,
+        ? {
+            en: `Reading page ${i + 1} of ${pageCount} from its image (old font)…`,
+            hi: `पेज ${i + 1} / ${pageCount} इमेज से पढ़ा जा रहा है (पुराना फॉन्ट)…`,
+          }
+        : {
+            en: `Detecting text on page ${i + 1} of ${pageCount}…`,
+            hi: `पेज ${i + 1} / ${pageCount} का टेक्स्ट पहचाना जा रहा है…`,
+          },
     });
     let lines: OcrLine[] = [];
     try {
@@ -184,7 +215,10 @@ async function buildTranslatedDocument(
       usedOcrFallback = true;
       onProgress({
         phase: "detecting",
-        detail: `Improving text detection on page ${i + 1} of ${pageCount}…`,
+        detail: {
+          en: `Improving text detection on page ${i + 1} of ${pageCount}…`,
+          hi: `पेज ${i + 1} / ${pageCount} पर टेक्स्ट पहचान बेहतर की जा रही है…`,
+        },
       });
       lines = await detectTextLinesWithGemini(page, jobId, i);
       throwIfAborted(signal);
@@ -208,7 +242,10 @@ async function buildTranslatedDocument(
 
     onProgress({
       phase: "translating",
-      detail: `Translating ${sourceLines.length} line(s) on page ${i + 1}…`,
+      detail: {
+        en: `Translating ${sourceLines.length} line(s) on page ${i + 1}…`,
+        hi: `पेज ${i + 1} की ${sourceLines.length} लाइनों का अनुवाद हो रहा है…`,
+      },
     });
     const translatedById = new Map<string, string>();
     const requestLines = buildTranslationLinesWithContext(
@@ -346,11 +383,12 @@ async function buildTranslatedDocument(
 }
 
 export function TranslatePdfTool() {
+  const tx = useTx();
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [detectingLanguage, setDetectingLanguage] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Bilingual | null>(null);
   const [consented, setConsented] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [direction, setDirection] = useState<TranslationDirection | null>(null);
@@ -376,13 +414,14 @@ export function TranslatePdfTool() {
       trackToolEvent("pdf_open_success", "translate");
       setDirection(detected);
       if (!detected) {
-        setError(
-          "Could not detect clear Hindi or English text in this PDF. Try a digital (text-layer) file, or use Edit PDF → Enhance with AI first.",
-        );
+        setError({
+          en: "Could not detect clear Hindi or English text in this PDF. Try a digital (text-layer) file, or use Edit PDF → Enhance with AI first.",
+          hi: "इस पीडीएफ में साफ हिंदी या अंग्रेज़ी टेक्स्ट नहीं मिला। टेक्स्ट वाली डिजिटल फाइल आज़माएं, या पहले एडिट टूल में AI से सुधारें।",
+        });
       }
     } catch (err) {
       setDirection(null);
-      setError(err instanceof Error ? err.message : String(err));
+      setError(failureText(err));
     } finally {
       setDetectingLanguage(false);
     }
@@ -397,7 +436,10 @@ export function TranslatePdfTool() {
     setResult(null);
     try {
       if (!turnstileToken)
-        throw new Error("Complete the security check before translating.");
+        throw new UserFacingError({
+          en: "Complete the security check before translating.",
+          hi: "अनुवाद से पहले सुरक्षा जाँच पूरी करें।",
+        });
       aiApiClient.setTurnstileTokenProvider(() => turnstileToken);
       ensureFontsLoaded();
       await document.fonts.load("12px NotoSansDevanagari");
@@ -412,10 +454,17 @@ export function TranslatePdfTool() {
       if (translatedLines === 0) {
         const sourceLabel =
           direction === "hi-en" ? "Hindi (Devanagari)" : "English";
-        throw new Error(
+        const sourceHi = direction === "hi-en" ? "हिंदी" : "अंग्रेज़ी";
+        throw new UserFacingError(
           skippedLines > 0
-            ? `Found ${sourceLabel} text but could not translate any lines (${skippedLines} skipped). Try a clearer scan.`
-            : `No ${sourceLabel} text was found to translate. Try a clearer scan, or use AI OCR for difficult pages.`,
+            ? {
+                en: `Found ${sourceLabel} text but could not translate any lines (${skippedLines} skipped). Try a clearer scan.`,
+                hi: `${sourceHi} टेक्स्ट मिला, पर कोई लाइन अनुवाद नहीं हो पाई (${skippedLines} छोड़ी गईं)। साफ स्कैन आज़माएं।`,
+              }
+            : {
+                en: `No ${sourceLabel} text was found to translate. Try a clearer scan, or use AI OCR for difficult pages.`,
+                hi: `अनुवाद के लिए ${sourceHi} टेक्स्ट नहीं मिला। साफ स्कैन आज़माएं, या मुश्किल पेजों के लिए AI टेक्स्ट पहचान इस्तेमाल करें।`,
+              },
         );
       }
       throwIfAborted(controller.signal);
@@ -423,7 +472,10 @@ export function TranslatePdfTool() {
       const targetLabel = direction === "hi-en" ? "English" : "Hindi";
       setProgress({
         phase: "exporting",
-        detail: `Building ${targetLabel} PDF…`,
+        detail: {
+          en: `Building ${targetLabel} PDF…`,
+          hi: `${direction === "hi-en" ? "अंग्रेज़ी" : "हिंदी"} पीडीएफ बन रही है…`,
+        },
       });
       const sourceBytes = getPdfBytes();
       if (!sourceBytes) throw new Error("No PDF loaded");
@@ -441,12 +493,10 @@ export function TranslatePdfTool() {
         usedOcrFallback,
       });
     } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        setError("Translation cancelled.");
-      } else {
+      if (!(err instanceof DOMException && err.name === "AbortError")) {
         trackToolEvent("export_failed", "translate");
-        setError(err instanceof Error ? err.message : String(err));
       }
+      setError(failureText(err));
     } finally {
       abortRef.current = null;
       setBusy(false);
@@ -459,18 +509,21 @@ export function TranslatePdfTool() {
       tool={tool}
       compact={Boolean(file)}
       steps={[
-        { label: "Select PDF", active: step === 1, done: step > 1 },
-        { label: "Translate", active: step === 2, done: step > 2 },
-        { label: "Download", active: step === 3, done: step === 3 },
+        { label: tx("Select PDF", "पीडीएफ चुनें"), active: step === 1, done: step > 1 },
+        { label: tx("Translate", "अनुवाद"), active: step === 2, done: step > 2 },
+        { label: tx("Download", "डाउनलोड"), active: step === 3, done: step === 3 },
       ]}
     >
       <div className="utility-tool">
         {!file ? (
           <DropZone
             accent={tool.accent}
-            title="Translate Hindi ↔ English PDF"
-            subtitle="Language is detected automatically. No API key entry; the original file is never overwritten."
-            buttonLabel="Select PDF"
+            title={tx("Translate Hindi ↔ English PDF", "हिंदी ↔ अंग्रेज़ी पीडीएफ अनुवाद")}
+            subtitle={tx(
+              "The language is detected for you. Your original file is never changed.",
+              "भाषा अपने आप पहचानी जाती है। आपकी मूल फाइल कभी नहीं बदलती।",
+            )}
+            buttonLabel={tx("Select PDF", "पीडीएफ चुनें")}
             onFiles={(files) => {
               void selectFile(files[0]);
             }}
@@ -479,35 +532,40 @@ export function TranslatePdfTool() {
           <div className="utility-tool__panel">
             <SelectedFileSummary
               name={file.name}
-              meta={`${(file.size / 1024).toFixed(1)} KB · up to ${MAX_PAGES} pages / ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`}
+              meta={tx(
+                `${(file.size / 1024).toFixed(1)} KB · up to ${MAX_PAGES} pages / ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`,
+                `${(file.size / 1024).toFixed(1)} KB · अधिकतम ${MAX_PAGES} पेज / ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`,
+              )}
             />
             <div className="utility-tool__setting-card utility-tool__setting-card--translate">
               <fieldset disabled={busy || detectingLanguage}>
-                <legend>Translation direction</legend>
+                <legend>{tx("Translation direction", "अनुवाद की दिशा")}</legend>
                 {detectingLanguage ? (
-                  <AppStatus busy>Detecting the source language…</AppStatus>
+                  <AppStatus busy>{tx("Detecting the source language…", "मूल भाषा पहचानी जा रही है…")}</AppStatus>
                 ) : direction ? (
                   <div className="utility-tool__direction">
-                    <span>{direction === "hi-en" ? "हिंदी" : "English"}</span>
+                    <span>{direction === "hi-en" ? tx("Hindi", "हिंदी") : tx("English", "अंग्रेज़ी")}</span>
                     <strong>→</strong>
-                    <span>{direction === "hi-en" ? "English" : "हिंदी"}</span>
-                    <small>Auto-detected</small>
+                    <span>{direction === "hi-en" ? tx("English", "अंग्रेज़ी") : tx("Hindi", "हिंदी")}</span>
+                    <small>{tx("Auto-detected", "अपने आप पहचानी गई")}</small>
                   </div>
                 ) : (
                   <AppStatus tone="warning">
-                    No clear Hindi or English source text detected.
+                    {tx("No clear Hindi or English source text detected.", "साफ हिंदी या अंग्रेज़ी टेक्स्ट नहीं मिला।")}
                   </AppStatus>
                 )}
               </fieldset>
               <p className="utility-tool__note">
-                Detected lines are sent securely through our Gemini proxy.
-                Difficult pages may use consented AI OCR; the source PDF is
-                never modified.
+                {tx(
+                  "Detected lines are sent securely to our AI translation service. Hard-to-read pages may use AI text recognition. Your original PDF is never changed.",
+                  "पहचानी गई लाइनें सुरक्षित तरीके से हमारी AI अनुवाद सेवा को भेजी जाती हैं। मुश्किल पेजों के लिए AI टेक्स्ट पहचान इस्तेमाल हो सकती है। आपकी मूल पीडीएफ नहीं बदलती।",
+                )}
               </p>
               <p className="utility-tool__note">
-                AI allowance: up to {AI_LIMITS.anonymousDocumentsPerDay}{" "}
-                documents and {AI_LIMITS.anonymousPagesPerDay} pages per day.
-                The service enforces the current limits.
+                {tx(
+                  `AI allowance: up to ${AI_LIMITS.anonymousDocumentsPerDay} documents and ${AI_LIMITS.anonymousPagesPerDay} pages per day.`,
+                  `AI सीमा: हर दिन अधिकतम ${AI_LIMITS.anonymousDocumentsPerDay} दस्तावेज़ और ${AI_LIMITS.anonymousPagesPerDay} पेज।`,
+                )}
               </p>
               <label className="utility-tool__consent">
                 <input
@@ -517,22 +575,23 @@ export function TranslatePdfTool() {
                   onChange={(event) => setConsented(event.target.checked)}
                 />
                 <span>
-                  I agree to send detected text to the AI service for
-                  translation and, where needed, page images for AI OCR. I will
-                  review the translated PDF before using it.{" "}
+                  {tx(
+                    "I agree to send detected text to the AI service for translation and, where needed, page images for AI text recognition. I will review the translated PDF before using it.",
+                    "मैं अनुवाद के लिए पहचाना गया टेक्स्ट, और ज़रूरत हो तो AI टेक्स्ट पहचान के लिए पेज इमेज, AI सेवा को भेजने के लिए सहमत हूँ। इस्तेमाल से पहले मैं अनुवादित पीडीएफ जाँच लूँगा/लूँगी।",
+                  )}{" "}
                   <a href="/privacy/" target="_blank" rel="noopener noreferrer">
-                    Privacy details
+                    {tx("Privacy details", "प्राइवेसी की जानकारी")}
                   </a>
                 </span>
               </label>
               <div className="utility-tool__security-check">
-                <span>One quick security check</span>
+                <span>{tx("One quick security check", "एक छोटी सुरक्षा जाँच")}</span>
                 <TurnstileWidget onToken={setTurnstileToken} />
               </div>
             </div>
             <div className="utility-tool__actions">
               <AppButton
-                title="Choose another"
+                title={tx("Choose another", "दूसरी फाइल चुनें")}
                 variant="ghost"
                 small
                 disabled={busy || detectingLanguage}
@@ -545,13 +604,13 @@ export function TranslatePdfTool() {
               />
               {busy ? (
                 <AppButton
-                  title="Cancel"
+                  title={tx("Cancel", "रद्द करें")}
                   variant="secondary"
                   onClick={cancelTranslate}
                 />
               ) : (
                 <AppButton
-                  title="Translate & download"
+                  title={tx("Translate & download", "अनुवाद करें और डाउनलोड करें")}
                   onClick={() => void runTranslate()}
                   disabled={
                     !consented ||
@@ -565,22 +624,21 @@ export function TranslatePdfTool() {
           </div>
         )}
         {progress && (
-          <AppStatus busy title="Translation in progress">
-            {progress.detail}
+          <AppStatus busy title={tx("Translation in progress", "अनुवाद हो रहा है")}>
+            {tx(progress.detail.en, progress.detail.hi)}
           </AppStatus>
         )}
         {error && (
-          <AppStatus tone="error" title="Translation couldn’t finish">
-            {error}
+          <AppStatus tone="error" title={tx("Translation couldn’t finish", "अनुवाद पूरा नहीं हो पाया")}>
+            {tx(error.en, error.hi)}
           </AppStatus>
         )}
         {result && (
-          <AppStatus tone="success" title="Translated PDF ready">
-            Downloaded {result.filename} · {result.pageCount} pages ·{" "}
-            {result.translatedLines} line
-            {result.translatedLines === 1 ? "" : "s"} translated
-            {result.skippedLines > 0 ? ` · ${result.skippedLines} skipped` : ""}
-            {result.usedOcrFallback ? " · used OCR (legacy font)" : ""}
+          <AppStatus tone="success" title={tx("Translated PDF ready", "अनुवादित पीडीएफ तैयार")}>
+            {tx(
+              `Downloaded ${result.filename} · ${result.pageCount} pages · ${result.translatedLines} line${result.translatedLines === 1 ? "" : "s"} translated${result.skippedLines > 0 ? ` · ${result.skippedLines} skipped` : ""}${result.usedOcrFallback ? " · some pages read by text recognition" : ""}`,
+              `डाउनलोड हुई: ${result.filename} · ${result.pageCount} पेज · ${result.translatedLines} लाइनों का अनुवाद${result.skippedLines > 0 ? ` · ${result.skippedLines} छोड़ी गईं` : ""}${result.usedOcrFallback ? " · कुछ पेज टेक्स्ट पहचान से पढ़े गए" : ""}`,
+            )}
           </AppStatus>
         )}
       </div>
