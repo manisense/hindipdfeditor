@@ -17,11 +17,14 @@ import {
   isEmbeddedDevanagariCorrupted,
   isLikelyOcrNoise,
   missedDevanagariRows,
+  embeddedDevanagariVerdict,
   trimOcrBorderNoise,
+  verificationSample,
   type PtBox,
 } from "./embeddedTextVerification";
 import { mergeOcrLines, mergeWordReadings, type RecognizedWord } from "./mergeOcrLines";
 import { textBandOfLine } from "./ocrLineGeometry";
+import { mustVerifyPage, newFontTrust, noteSkippedPage, recordVerifiedPage, type FontTrust } from "./embeddedTextTrust";
 import { extractEmbeddedTextLines } from "./pdfTextExtract";
 import {
   hasGlyphPlaceholder,
@@ -71,18 +74,28 @@ function reportOcrUnavailable(error: unknown): void {
 /** Language data is 1.4–3 MB; on a slow connection it can take a while, but never this long. */
 const OCR_LOAD_TIMEOUT_MS = 60_000;
 
-const workers = new Map<"hin" | "eng", Promise<Worker>>();
+type OcrLanguage = "hin" | "eng";
+type PooledWorker = { worker: Promise<Worker>; busy: number };
+const pools = new Map<OcrLanguage, PooledWorker[]>();
 
 /**
- * Loads an OCR worker once, sharing the in-flight load. tesseract.js never settles `createWorker`
- * when the language data fails to download (the error escapes as an uncaught exception), which
- * left pages "Finding text…" forever; worker errors and a timeout now reject instead, the failure
- * is reported, and the next call tries again.
+ * How many OCR workers per language may run at once. Tesseract uses one core per worker, so
+ * several pages are read side by side on multi-core devices; devices with little memory keep two.
  */
-function getWorker(language: "hin" | "eng"): Promise<Worker> {
-  const existing = workers.get(language);
-  if (existing) return existing;
-  const loading = new Promise<Worker>((resolve, reject) => {
+export function ocrPoolSize(): number {
+  const cores = navigator.hardwareConcurrency || 2;
+  // deviceMemory is Chromium-only (GB, rounded); absent elsewhere.
+  const memoryGb = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
+  return Math.max(1, Math.min(memoryGb <= 4 ? 2 : 4, cores - 1));
+}
+
+/**
+ * Loads one OCR worker. tesseract.js never settles `createWorker` when the language data fails to
+ * download (the error escapes as an uncaught exception), which left pages "Finding text…"
+ * forever; worker errors and a timeout now reject instead, and the failure is reported.
+ */
+function loadWorker(language: OcrLanguage): Promise<Worker> {
+  return new Promise<Worker>((resolve, reject) => {
     const timer = window.setTimeout(
       () => reject(new Error(`OCR data for ${language} did not load in time`)),
       OCR_LOAD_TIMEOUT_MS,
@@ -104,12 +117,36 @@ function getWorker(language: "hin" | "eng"): Promise<Worker> {
       },
     );
   });
-  workers.set(language, loading);
-  loading.catch((error: unknown) => {
-    workers.delete(language);
+}
+
+function addWorker(language: OcrLanguage): PooledWorker {
+  const pool = pools.get(language) ?? [];
+  pools.set(language, pool);
+  const entry: PooledWorker = { worker: loadWorker(language), busy: 0 };
+  pool.push(entry);
+  // A worker that fails to load leaves the pool, so the next call tries again.
+  entry.worker.catch((error: unknown) => {
+    pool.splice(pool.indexOf(entry), 1);
     reportOcrUnavailable(error);
   });
-  return loading;
+  return entry;
+}
+
+/**
+ * Runs one OCR job on an idle worker: another worker is started while all are busy, up to
+ * {@link ocrPoolSize}; after that the least busy worker queues it.
+ */
+async function withWorker<T>(language: OcrLanguage, job: (worker: Worker) => Promise<T>): Promise<T> {
+  const pool = pools.get(language) ?? [];
+  let entry = pool.find((candidate) => candidate.busy === 0);
+  if (!entry && pool.length < ocrPoolSize()) entry = addWorker(language);
+  entry ??= pool.reduce((least, candidate) => (candidate.busy < least.busy ? candidate : least));
+  entry.busy += 1;
+  try {
+    return await job(await entry.worker);
+  } finally {
+    entry.busy -= 1;
+  }
 }
 
 type TesseractWord = TesseractPage["blocks"] extends (infer B)[] | null
@@ -247,10 +284,8 @@ async function recognizePage(
   imageUri: string,
   language: "hin" | "eng",
 ): Promise<TesseractPage> {
-  const worker =
-    await getWorker(language);
   // tesseract.js v6 returns no blocks (so no lines or words) unless asked for them.
-  const { data } = await worker.recognize(imageUri, {}, { blocks: true });
+  const { data } = await withWorker(language, (worker) => worker.recognize(imageUri, {}, { blocks: true }));
   return data;
 }
 
@@ -261,6 +296,29 @@ async function recognizeWithLanguage(
   return tesseractPageToRecognized(await recognizePage(imageUri, language));
 }
 
+/**
+ * Hindi OCR text of an area of the page image, a little larger than the area so edge letters
+ * are whole.
+ *
+ * @param area Area, in pt (top-left origin).
+ */
+async function recognizeArea(page: PageState, area: PtBox): Promise<string> {
+  const pad = 6;
+  const { x, y } = ptToImagePx(Math.max(0, area.xPt - pad), Math.max(0, area.yPt - pad), page.imagePxWidth, page.widthPt);
+  const { wPx, hPx } = ptSizeToImagePx(area.wPt + 2 * pad, area.hPt + 2 * pad, page.imagePxWidth, page.widthPt);
+  const { data } = await withWorker("hin", (worker) =>
+    worker.recognize(page.backgroundImageUri, {
+      rectangle: {
+        left: Math.round(x),
+        top: Math.round(y),
+        width: Math.round(Math.min(wPx, page.imagePxWidth - x)),
+        height: Math.round(Math.min(hPx, page.imagePxHeight - y)),
+      },
+    }),
+  );
+  return data.text;
+}
+
 /** Hindi OCR of one rectangle of the page, for rows full-page OCR skipped. */
 async function recognizeRow(
   page: PageState,
@@ -269,15 +327,16 @@ async function recognizeRow(
 ): Promise<OcrLine | null> {
   const { x, y } = ptToImagePx(crop.xPt, crop.yPt, page.imagePxWidth, page.widthPt);
   const { wPx, hPx } = ptSizeToImagePx(crop.wPt, crop.hPt, page.imagePxWidth, page.widthPt);
-  const worker = await getWorker("hin");
-  const { data } = await worker.recognize(page.backgroundImageUri, {
-    rectangle: {
-      left: Math.round(x),
-      top: Math.round(y),
-      width: Math.round(Math.min(wPx, page.imagePxWidth - x)),
-      height: Math.round(Math.min(hPx, page.imagePxHeight - y)),
-    },
-  });
+  const { data } = await withWorker("hin", (worker) =>
+    worker.recognize(page.backgroundImageUri, {
+      rectangle: {
+        left: Math.round(x),
+        top: Math.round(y),
+        width: Math.round(Math.min(wPx, page.imagePxWidth - x)),
+        height: Math.round(Math.min(hPx, page.imagePxHeight - y)),
+      },
+    }),
+  );
   const text = trimOcrBorderNoise(data.text.replace(/\s+/gu, " ")).normalize("NFC");
   if (!hasDevanagari(text)) return null;
   return { id: crypto.randomUUID(), text, ...line, source: "embedded-degraded" };
@@ -348,7 +407,6 @@ const MAX_SHARP_LINES = 20;
  * that fail to read are left out.
  */
 async function sharpLineOcr(page: PageState, lines: OcrLine[]): Promise<OcrLine[]> {
-  const worker = await getWorker("hin");
   const read: OcrLine[] = [];
   for (const line of lines.slice(0, MAX_SHARP_LINES)) {
     const padX = line.hPt * 0.5;
@@ -360,7 +418,8 @@ async function sharpLineOcr(page: PageState, lines: OcrLine[]): Promise<OcrLine[
       hPt: Math.min(page.heightPt, line.yPt + line.hPt + padY) - Math.max(0, line.yPt - padY),
     };
     try {
-      const { data } = await worker.recognize(await renderRegion(page.pageIndex, rect, SHARP_OCR_PX_PER_PT));
+      const image = await renderRegion(page.pageIndex, rect, SHARP_OCR_PX_PER_PT);
+      const { data } = await withWorker("hin", (worker) => worker.recognize(image));
       const text = trimOcrBorderNoise(data.text.replace(/\s+/gu, " ")).normalize("NFC");
       if (text) read.push({ ...line, text });
     } catch (error) {
@@ -395,13 +454,21 @@ async function verifyEmbeddedDevanagari(
   page: PageState,
   pdfBytes: Uint8Array,
   convertLegacy?: boolean,
+  onPageOcr?: (hindiText: string) => void,
 ): Promise<OcrLine[]> {
   const degraded = embedded.some((line) => line.source === "embedded-degraded");
   if (!degraded && !embedded.some((line) => hasDevanagari(line.text))) {
     return embedded;
   }
   try {
+    // A band of the page's lines is enough to judge it, and OCR of the band takes a fraction of
+    // the time. Only a passing band skips the full page; anything else reads the whole page.
+    const sample = degraded ? null : verificationSample(embedded);
+    if (sample && embeddedDevanagariVerdict(sample.text, await recognizeArea(page, sample)) === "ok") {
+      return embedded;
+    }
     const hindiPage = await recognizePage(page.backgroundImageUri, "hin");
+    onPageOcr?.(hindiPage.text);
     const embeddedText = embedded.map((line) => line.text).join(" ");
     if (!degraded && !isEmbeddedDevanagariCorrupted(embeddedText, hindiPage.text)) {
       return embedded;
@@ -448,16 +515,31 @@ async function verifyEmbeddedDevanagari(
  */
 export async function detectTextLines(
   page: PageState,
-  options?: { forceOcr?: boolean; convertLegacy?: boolean },
+  options?: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer },
 ): Promise<OcrLine[]> {
   const pdfBytes = getPdfBytes();
+  // The page image is drawn only when OCR needs it (when the caller passes `render`).
+  const withImage = async (): Promise<PageState> =>
+    page.backgroundImageUri || !options?.render ? page : { ...page, ...(await options.render()) };
   if (!options?.forceOcr && pdfBytes) {
     try {
+      const textByFont = new Map<string, string>();
       const embedded = await extractEmbeddedTextLines(pdfBytes, page.pageIndex, {
         convertLegacy: options?.convertLegacy,
+        devanagariTextByFont: textByFont,
       });
       if (embedded.length > 0) {
-        return await verifyEmbeddedDevanagari(embedded, page, pdfBytes, options?.convertLegacy);
+        // Fonts whose Devanagari already matched OCR on earlier pages are not checked again on
+        // every page (see embeddedTextTrust.ts). KrutiDev conversions and pages with unmapped
+        // glyphs are always checked.
+        const trust = fontTrustFor(pdfBytes);
+        const degraded = embedded.some((line) => line.source === "embedded-degraded");
+        if (!degraded && !options?.convertLegacy && !mustVerifyPage(trust, textByFont.keys())) {
+          if (textByFont.size > 0) noteSkippedPage(trust);
+          return embedded;
+        }
+        const record = options?.convertLegacy ? undefined : (ocrText: string) => recordVerifiedPage(trust, textByFont, ocrText);
+        return await verifyEmbeddedDevanagari(embedded, await withImage(), pdfBytes, options?.convertLegacy, record);
       }
     } catch (error) {
       console.warn(
@@ -467,11 +549,27 @@ export async function detectTextLines(
     }
   }
 
+  const imaged = await withImage();
   const [devanagariLines, latinLines] = await Promise.all([
-    recognizeWithLanguage(page.backgroundImageUri, "hin"),
-    recognizeWithLanguage(page.backgroundImageUri, "eng"),
+    recognizeWithLanguage(imaged.backgroundImageUri, "hin"),
+    recognizeWithLanguage(imaged.backgroundImageUri, "eng"),
   ]);
-  return toOcrLines(mergeOcrLines(devanagariLines, latinLines), page);
+  return toOcrLines(mergeOcrLines(devanagariLines, latinLines), imaged);
+}
+
+/** Draws a page image for OCR, in px (see `renderPage`). */
+export type PageRenderer = () => Promise<{ backgroundImageUri: string; imagePxWidth: number; imagePxHeight: number }>;
+
+const fontTrusts = new WeakMap<Uint8Array, FontTrust>();
+
+/** Font trust for one opened document (keyed by its bytes, so a new file starts fresh). */
+function fontTrustFor(pdfBytes: Uint8Array): FontTrust {
+  let trust = fontTrusts.get(pdfBytes);
+  if (!trust) {
+    trust = newFontTrust();
+    fontTrusts.set(pdfBytes, trust);
+  }
+  return trust;
 }
 
 /**

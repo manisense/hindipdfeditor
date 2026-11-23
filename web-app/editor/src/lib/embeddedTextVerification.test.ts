@@ -7,6 +7,7 @@ import {
   isLikelyOcrNoise,
   missedDevanagariRows,
   trimOcrBorderNoise,
+  verificationSample,
 } from "./embeddedTextVerification";
 import type { OcrLine } from "../state/editStore";
 
@@ -109,4 +110,26 @@ it("sizes OCR lines from the PDF run they cover, not the taller OCR box", () => 
   };
   const [result] = combineEmbeddedLatinWithOcr(embedded, [tallOcr]);
   expect(result).toMatchObject({ text: "1. कर्मचारी संवर्ग", xPt: 90, wPt: 320, yPt: 100, hPt: 12 });
+});
+
+describe("verificationSample", () => {
+  const line = (text: string, i: number): OcrLine => ({ id: `l${i}`, text, xPt: 50, yPt: 100 + i * 20, wPt: 400, hPt: 14 });
+  // Each line: 5 complex words (with ि) and 5 plain ones.
+  const text = "किताब लिखा दिन मिला सिर कमल घर जल नल बस";
+
+  it("takes the top lines of a long page, with enough words of each kind", () => {
+    const lines = Array.from({ length: 40 }, (_, i) => line(text, i));
+    const sample = verificationSample(lines);
+    expect(sample).not.toBeNull();
+    // 30 words of each kind need 6 lines.
+    expect(sample?.text.split(" ").length).toBe(60);
+    expect(sample?.yPt).toBe(100);
+    expect(sample?.hPt).toBe(5 * 20 + 14);
+  });
+
+  it("needs the whole page when it has too little text, or the band would be most of it", () => {
+    expect(verificationSample(Array.from({ length: 4 }, (_, i) => line(text, i)))).toBeNull();
+    expect(verificationSample(Array.from({ length: 8 }, (_, i) => line(text, i)))).toBeNull();
+    expect(verificationSample([])).toBeNull();
+  });
 });

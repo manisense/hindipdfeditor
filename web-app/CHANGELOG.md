@@ -1,5 +1,16 @@
 # Changelog
 
+## Faster PDF to Word and page reading, 23 November 2026
+
+### Changed
+- **PDF to Word is about 5–6× faster on long digital Hindi PDFs:** a 31-page, 2.8 MB KrutiDev Word export went from 184 s to 32.5 s, and the fixture mix from 37.5 s to 18 s. The Word output is identical. Web ADR 0015.
+  - OCR runs on a pool of up to 4 Tesseract workers (2 on low-memory devices), and pages are read side by side.
+  - Pages with enough Hindi text are checked against OCR of a band of their lines instead of the whole page; only a passing band skips full-page OCR. Every KrutiDev page is still checked.
+  - Unicode text in a font that has matched OCR on two pages is no longer checked on every page. Failed fonts are never trusted, and every 8th page is spot-checked.
+  - Page images are drawn only for pages that need OCR.
+- Progress reads "12 of 31 pages read" because pages finish side by side.
+- The band check and worker pool also apply to Edit PDF's page reading.
+
 ## Sign PDF: custom position and per-page adjustment, 23 November 2026
 
 ### Added

@@ -110,7 +110,7 @@ export function PdfToWordTool() {
             {progress && (
               <AppStatus busy title={tx("Converting…", "बदल रहे हैं…")}>
                 {progress.total > 0
-                  ? tx(`Reading page ${progress.done} of ${progress.total}`, `पेज ${progress.done} / ${progress.total} पढ़ रहे हैं`)
+                  ? tx(`${progress.done} of ${progress.total} pages read`, `${progress.total} में से ${progress.done} पेज पढ़े गए`)
                   : tx("Opening the PDF…", "पीडीएफ खुल रही है…")}
               </AppStatus>
             )}
