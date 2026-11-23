@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   combineEmbeddedLatinWithOcr,
+  embeddedDevanagariVerdict,
   hasDevanagari,
   isEmbeddedDevanagariCorrupted,
   isLikelyOcrNoise,
@@ -131,5 +132,22 @@ describe("verificationSample", () => {
     expect(verificationSample(Array.from({ length: 4 }, (_, i) => line(text, i)))).toBeNull();
     expect(verificationSample(Array.from({ length: 8 }, (_, i) => line(text, i)))).toBeNull();
     expect(verificationSample([])).toBeNull();
+  });
+});
+
+describe("embeddedDevanagariVerdict for converted KrutiDev text", () => {
+  const words = (word: string, n: number) => Array.from({ length: n }, () => word).join(" ");
+  // 20 complex words (10 read by OCR, 10 misread) and 20 plain ones (all read).
+  const embedded = `${words("जनजाति", 10)} ${words("अनुसूचित", 10)} ${words("कमल", 20)}`;
+
+  it("keeps a conversion when OCR misses many complex words in small table text", () => {
+    // OCR found the plain words and only some complex ones: a ratio test would call this broken.
+    const ocr = "कमल जनजाति";
+    expect(embeddedDevanagariVerdict(embedded, ocr)).toBe("corrupted");
+    expect(embeddedDevanagariVerdict(embedded, ocr, { converted: true })).toBe("ok");
+  });
+
+  it("rejects a conversion that matches almost nothing", () => {
+    expect(embeddedDevanagariVerdict(embedded, "राम श्याम सीता गीता", { converted: true })).toBe("corrupted");
   });
 });
