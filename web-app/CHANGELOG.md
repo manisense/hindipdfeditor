@@ -1,5 +1,10 @@
 # Changelog
 
+## CSP snippet check, 23 November 2026
+
+### Added
+- `scripts/check-csp-snippets.mjs` checks that every inline script the live site serves, including the Google tag gateway snippets Cloudflare injects, is allowed by the Content-Security-Policy. If one is not, it fails and prints the hash to add to `_headers`. It runs after each deploy, and weekly through `.github/workflows/csp-check.yml` once the GitHub billing lock is lifted. Tested against a page whose policy omits its inline script. Web ADR 0014 updated.
+
 ## Page jump in Sign PDF and Fill PDF form, 23 November 2026
 
 ### Added

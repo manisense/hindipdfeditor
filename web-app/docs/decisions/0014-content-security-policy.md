@@ -32,4 +32,4 @@ The editor opens untrusted PDFs and Word files and renders user text as HTML. A 
 
 ## Changing it
 
-A new third-party origin (a CDN, an API, an embed) must be added here and in `_headers`. Run the sweep on production in report-only mode before enforcing. If Cloudflare changes the gateway snippet, its hash changes: analytics stops (the site keeps working) and the sweep shows the new hash.
+A new third-party origin (a CDN, an API, an embed) must be added here and in `_headers`. Run the sweep on production in report-only mode before enforcing. If Cloudflare changes the gateway snippet, its hash changes and analytics stops (the site keeps working). `scripts/check-csp-snippets.mjs` catches this: it fetches live pages as a browser, hashes each inline script and fails with the hash to add. It runs after each deploy and weekly (`.github/workflows/csp-check.yml`, once GitHub Actions is unblocked).

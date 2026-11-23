@@ -1,0 +1,28 @@
+name: Check CSP allows edge-injected scripts
+
+# Cloudflare's Google tag gateway injects two inline scripts that the site's Content-Security-Policy
+# allows by hash (web-app/docs/decisions/0014). If Cloudflare changes them, analytics stops silently.
+# Runs weekly and after website changes; fails with the new hash to add to web-app/_headers.
+on:
+  schedule:
+    - cron: '30 3 * * 1'
+  push:
+    branches: [main]
+    paths:
+      - 'web-app/_headers'
+  workflow_dispatch:
+
+jobs:
+  csp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Wait for the deploy
+        if: github.event_name == 'push'
+        run: sleep 240
+      - name: Check inline scripts against the live policy
+        run: node web-app/scripts/check-csp-snippets.mjs
