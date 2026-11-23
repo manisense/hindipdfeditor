@@ -83,7 +83,7 @@ Quality gate: a fixed corpus of real PDFs (Word exports, government notices, sca
 Nothing known is critical: no data loss, no broken tool, no silently wrong output that the user cannot see. Ordered from most to least important. "Owner" means it needs the site owner. Status is updated as items ship.
 
 ### High
-1. **Phones untested:** the parallel OCR pool (web ADR 0015) was measured only on a desktop. Low-end Android memory use and speed are unknown. *Ours:* emulated CPU throttling plus memory-aware worker counts. *Owner:* a real phone check.
+1. **Phones:** *done (ours):* the worker count follows device memory, and an emulated phone was measured (about 70 MB per extra worker; no memory growth over 120 pages; ADR 0015). *Owner:* a check on a real low-end Android phone.
 2. **Mis-mapped glyphs:** some Word/Mangal exports map glyphs to the wrong characters, so those pages fall back to OCR, which can misread names and numbers. *Ours.*
 3. **Plan B (searchable vector Hindi edits):** new and edited words are images. *Owner decision.*
 4. **AI features untested live:** consented translation and AI OCR have not been tested end to end on production. *Owner, or ours with consent.*
