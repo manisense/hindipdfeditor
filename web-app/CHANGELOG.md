@@ -1,5 +1,10 @@
 # Changelog
 
+## Page jump in Sign PDF and Fill PDF form, 23 November 2026
+
+### Added
+- Sign PDF and Fill PDF form have a page number box between the arrows: type a page and press Enter (or leave the box) to go there. Hindi digits work (३), and numbers outside the document go to the first or last page.
+
 ## Word to PDF: selectable text first, 23 November 2026
 
 ### Changed
