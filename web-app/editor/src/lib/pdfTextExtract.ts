@@ -156,6 +156,11 @@ export async function extractEmbeddedTextLines(
     readTextImages?: (rows: PtBox[]) => Promise<(string | null)[]>;
     /** Filled with the page's ruling segments (table borders), in editor space (pt, top-left origin). */
     rulings?: Ruling[];
+    /**
+     * Filled with the rows of text drawn as images that the text layer does not cover (see
+     * `textImageRows`), in editor space (pt), without reading them.
+     */
+    textImageRows?: PtBox[];
   } = {},
 ): Promise<OcrLine[]> {
   const doc = await sharedPdfDocument(pdfBytes);
@@ -268,7 +273,7 @@ export async function extractEmbeddedTextLines(
     // Table borders, in editor space: for table detection, and as walls text images are not
     // joined across.
     const rulings: Ruling[] = [];
-    if (options.rulings || options.readTextImages) {
+    if (options.rulings || options.readTextImages || options.textImageRows) {
       for (const ruling of rulingsFromOperators(operators.fnArray, operators.argsArray, OPS)) {
         const ends = ruling.horizontal
           ? [viewport.convertToViewportPoint(ruling.from, ruling.at), viewport.convertToViewportPoint(ruling.to, ruling.at)]
@@ -284,14 +289,15 @@ export async function extractEmbeddedTextLines(
       }
       options.rulings?.push(...rulings);
     }
-    if (options.readTextImages) {
+    if (options.readTextImages || options.textImageRows) {
       const images = imageRectsFromOperators(operators.fnArray, operators.argsArray, OPS).map((rect) => {
         const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(rect);
         return { xPt: Math.min(x1, x2), yPt: Math.min(y1, y2), wPt: Math.abs(x2 - x1), hPt: Math.abs(y2 - y1) };
       });
       const walls = rulings.filter((r) => !r.horizontal).map((r) => ({ x: r.at, y1: r.from, y2: r.to }));
       const rows = textImageRows(images, runs, walls);
-      const texts = rows.length > 0 ? await options.readTextImages(rows) : [];
+      options.textImageRows?.push(...rows);
+      const texts = rows.length > 0 && options.readTextImages ? await options.readTextImages(rows) : [];
       rows.forEach((row, i) => {
         const text = texts[i]?.trim();
         if (!text) return;

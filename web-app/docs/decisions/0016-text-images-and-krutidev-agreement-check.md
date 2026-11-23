@@ -37,7 +37,7 @@ New gate cases:
 ## Trade-offs
 
 - Text from images is OCR, so it can carry OCR slips (a stray apostrophe, "/-2)" for "/-)"). The rest of the page keeps the PDF's exact text.
-- Edit PDF does not read text images yet. Editing such a word needs export support for erasing an image region on a digital page.
+- **Edit PDF (added later on 23 November):** Edit PDF reads text images in a second, background step, so the page's own lines appear as fast as before. It adds only rows that stand on their own (headings, titles, table labels) as separate `ocr` lines. Replacing one deletes no text: the export finds nothing to remove there, so it cleans the region's pixels as it does on scans and draws the new text. Gate case `EDIT_TEXT_IMAGE_OK`: 18 % of the old heading's ink remains, only where the new letters cross it. Image words inside a text line are not added. Replacing that line would delete its text but leave the image word under the new text; PDF to Word still reads them.
 - Reading images adds about half again to conversion time on image-heavy Word exports, and nothing on other files.
 
 ## Not done

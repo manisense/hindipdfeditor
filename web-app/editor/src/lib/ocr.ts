@@ -518,6 +518,32 @@ export async function detectTextLines(
   return readPageLines(page, options);
 }
 
+/**
+ * Lines of text drawn as images that stand on their own (headings, titles, table labels): image
+ * rows the page's text layer does not cover and that do not overlap any of `lines`, read with OCR.
+ * Words drawn as images inside a text line are left out, because replacing that line would delete
+ * its text but leave the image word under the new text. Each returned line is `ocr`, so replacing
+ * it cleans its pixels like a scan's.
+ *
+ * @param lines The page's lines already found, boxes in pt.
+ */
+export async function detectTextImageLines(page: PageState, lines: readonly OcrLine[]): Promise<OcrLine[]> {
+  const pdfBytes = getPdfBytes();
+  if (!pdfBytes) return [];
+  const rows: ImageBox[] = [];
+  await extractEmbeddedTextLines(pdfBytes, page.pageIndex, { textImageRows: rows });
+  const overlap = (a: ImageBox, b: ImageBox) =>
+    Math.max(0, Math.min(a.xPt + a.wPt, b.xPt + b.wPt) - Math.max(a.xPt, b.xPt)) *
+    Math.max(0, Math.min(a.yPt + a.hPt, b.yPt + b.hPt) - Math.max(a.yPt, b.yPt));
+  const alone = rows.filter((row) => !lines.some((line) => overlap(row, line) > 0.1 * row.wPt * row.hPt));
+  if (alone.length === 0) return [];
+  const texts = await readImageRows(page.pageIndex, alone);
+  return alone.flatMap((row, i) => {
+    const text = texts[i]?.trim();
+    return text ? [{ id: crypto.randomUUID(), text, ...row, baselineYPt: row.yPt + row.hPt * 0.8, source: "ocr" as const }] : [];
+  });
+}
+
 /** Render scale for text drawn as images, in px per pt (such images are often 600 ppi). */
 const TEXT_IMAGE_PX_PER_PT = 4;
 /** Lowest Tesseract confidence (0–100) at which an image row's reading is kept. */

@@ -84,7 +84,7 @@ Nothing known is critical: no data loss, no broken tool, no silently wrong outpu
 
 ### High
 1. **Phones:** *done (ours):* the worker count follows device memory, and an emulated phone was measured (about 70 MB per extra worker; no memory growth over 120 pages; ADR 0015). *Owner:* a check on a real low-end Android phone.
-2. **Mis-mapped glyphs:** some Word/Mangal exports map glyphs to the wrong characters, so those pages fall back to OCR, which can misread names and numbers. *Ours; open: needs a real sample file.* Two related accuracy bugs found while testing are fixed (ADR 0016): text drawn as images is now read, and correct KrutiDev conversions are no longer rejected on small-text tables. Edit PDF does not read text images yet.
+2. **Mis-mapped glyphs:** some Word/Mangal exports map glyphs to the wrong characters, so those pages fall back to OCR, which can misread names and numbers. *Ours; open: needs a real sample file.* Two related accuracy bugs found while testing are fixed (ADR 0016): text drawn as images is now read, and correct KrutiDev conversions are no longer rejected on small-text tables. Edit PDF reads text images that stand alone (headings, labels) as editable lines; image words inside sentences remain uneditable there.
 3. **Plan B (searchable vector Hindi edits):** new and edited words are images. *Owner decision.*
 4. **AI features untested live:** consented translation and AI OCR have not been tested end to end on production. *Owner, or ours with consent.*
 

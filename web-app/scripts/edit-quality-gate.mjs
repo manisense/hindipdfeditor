@@ -926,6 +926,82 @@ async function wordTableCase(browser) {
   await page.close();
 }
 
+// Edit PDF: a Hindi heading drawn as an image (as Word exports text with effects) becomes an
+// editable line; replacing it cleans the image's pixels and draws the new text.
+async function editTextImageCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { PDFDocument, StandardFonts } = await import(path.join(editorModules, "@cantoo/pdf-lib/es/index.js"));
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await page.goto(baseUrl + "/tools/edit-hindi-pdf/", { waitUntil: "networkidle" });
+  const pngBase64 = await page.evaluate(async () => {
+    const face = new FontFace("GateNoto", "url(/edit/fonts/NotoSansDevanagari-Variable.ttf)");
+    document.fonts.add(await face.load());
+    const canvas = document.createElement("canvas");
+    canvas.width = 2400;
+    canvas.height = 220;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#000";
+    context.font = "150px GateNoto";
+    context.textBaseline = "middle";
+    context.fillText("केन्द्रीय औद्योगिक सुरक्षा बल", 20, 115);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  const doc = await PDFDocument.create();
+  const sheet = doc.addPage([595, 842]);
+  sheet.drawText("Recruitment notice for the year 2026", { x: 60, y: 760, size: 12, font: await doc.embedFont(StandardFonts.Helvetica) });
+  sheet.drawImage(await doc.embedPng(Buffer.from(pngBase64, "base64")), { x: 60, y: 700, width: 288, height: 26.4 });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gate-"));
+  const pdfPath = path.join(dir, "edit-text-image.pdf");
+  const original = await doc.save();
+  fs.writeFileSync(pdfPath, original);
+  await openPdf(page, pdfPath, 0);
+  // The heading arrives after the page's own text (read in the background).
+  let headingBox = null;
+  for (let i = 0; i < 60 && !headingBox; i++) {
+    await page.waitForTimeout(500);
+    const boxes = await page.locator(".ocr-highlight-layer__box").evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().toJSON()));
+    const sheetBox = await page.locator(".pdf-page-canvas, .page-canvas, img[alt^='Page']").first().boundingBox().catch(() => null);
+    headingBox = boxes.find((b) => sheetBox && b.y - sheetBox.y > sheetBox.height * 0.12 && b.y - sheetBox.y < sheetBox.height * 0.2) ?? (boxes.length >= 2 ? boxes.sort((a, b) => b.y - a.y)[0] : null);
+  }
+  assert.ok(headingBox, "the image heading became an editable line");
+  await page.mouse.click(headingBox.x + headingBox.width / 2, headingBox.y + headingBox.height / 2);
+  await page.waitForTimeout(700);
+  const value = await page.evaluate(() => document.activeElement.value ?? "");
+  assert.ok(value.includes("सुरक्षा"), "the line reads the image heading: " + value);
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.type("NEW HEADING 2026");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+  const exported = await exportPdf(page);
+  if (process.env.GATE_DUMP) fs.writeFileSync(process.env.GATE_DUMP, exported);
+  // Heading area at 1.5 px/pt: x 60–348 pt, top 842 − 726.4 = 115.6 pt, 26.4 pt tall.
+  const w = Math.round(595 * 1.5);
+  // Of the old heading's ink, how much is still dark after the edit: nearly all if it was not
+  // cleaned; only where the new letters happen to cross it if it was.
+  const a = await pagePixels(original, 0);
+  const b = await pagePixels(exported, 0);
+  let oldInk = 0;
+  let kept = 0;
+  let newInk = 0;
+  for (let y = Math.round(113 * 1.5); y < Math.round(145 * 1.5); y++) {
+    for (let x = 85; x < Math.round(352 * 1.5); x++) {
+      const k = (y * w + x) * 4;
+      const wasDark = a[k] + a[k + 1] + a[k + 2] < 300;
+      const isDark = b[k] + b[k + 1] + b[k + 2] < 300;
+      if (wasDark) oldInk++;
+      if (wasDark && isDark) kept++;
+      if (isDark) newInk++;
+    }
+  }
+  const share = kept / Math.max(1, oldInk);
+  assert.ok(oldInk > 300, "the original heading has ink (" + oldInk + " px)");
+  assert.ok(share < 0.35 && newInk > 300, "old heading cleaned and new text drawn (" + (share * 100).toFixed(0) + " % of old ink left, new ink " + newInk + " px)");
+  assert.ok((await pageText(exported, 0)).includes("Recruitment notice for the year 2026"), "the page's own text is kept");
+  console.log("EDIT_TEXT_IMAGE_OK image heading became an editable line; replaced: " + (share * 100).toFixed(0) + " % of old ink left, new text drawn; page text kept");
+  await page.close();
+}
+
 async function convertersCase(browser) {
   const fs = await import("node:fs");
   const os = await import("node:os");
@@ -1062,6 +1138,7 @@ try {
   if (wanted("convertersCase")) await convertersCase(browser);
   if (wanted("krutiDevMixedCase")) await krutiDevMixedCase(browser);
   if (wanted("textImageCase")) await textImageCase(browser);
+  if (wanted("editTextImageCase")) await editTextImageCase(browser);
   if (wanted("wordTableCase")) await wordTableCase(browser);
   if (wanted("fillFormCase")) await fillFormCase(browser);
 } finally {
