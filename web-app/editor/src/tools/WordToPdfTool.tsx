@@ -31,6 +31,7 @@ export function WordToPdfTool() {
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [printed, setPrinted] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   // Read the current language without restarting the layout effect on every render.
   const txRef = useRef(tx);
@@ -75,7 +76,7 @@ export function WordToPdfTool() {
     } catch (err) {
       console.error("Word to PDF failed", err);
       trackToolEvent("export_failed", "word-to-pdf");
-      setError(tx("The PDF could not be made. Try “Print / Save as PDF” instead.", "पीडीएफ नहीं बन सकी। इसकी जगह “प्रिंट / पीडीएफ के रूप में सेव करें” आज़माएं।"));
+      setError(tx("The PDF could not be made. Try “Save as PDF (selectable text)” instead.", "पीडीएफ नहीं बन सकी। इसकी जगह “पीडीएफ सेव करें (सेलेक्ट होने वाला टेक्स्ट)” आज़माएं।"));
     } finally {
       setBusy(false);
       setProgress(null);
@@ -118,17 +119,33 @@ export function WordToPdfTool() {
             <SelectedFileSummary
               name={file.name}
               label={tx("Selected Word file", "चुनी गई वर्ड फाइल")}
-              meta={sections.length ? tx(`${sections.length} pages laid out`, `${sections.length} पेज तैयार`) : undefined}
+              meta={sections.length ? tx(`${sections.length} ${sections.length === 1 ? "page" : "pages"} laid out`, `${sections.length} पेज तैयार`) : undefined}
             />
             <div className="utility-tool__setting-card">
               <strong>{tx("Two ways to save", "सेव करने के दो तरीके")}</strong>
               <p className="utility-tool__note">
+                <b>{tx("Save as PDF (recommended):", "पीडीएफ के रूप में सेव करें (सुझाया गया):")}</b>{" "}
                 {tx(
-                  "“Download PDF” makes each page an image: it looks exactly like the preview, but its text cannot be selected or searched. “Print / Save as PDF” opens your browser's print window; choose “Save as PDF” there for selectable text.",
-                  "“पीडीएफ डाउनलोड करें” हर पेज को इमेज बनाता है: वह प्रीव्यू जैसा ही दिखेगा, पर उसका टेक्स्ट सेलेक्ट या खोजा नहीं जा सकेगा। “प्रिंट / पीडीएफ के रूप में सेव करें” ब्राउज़र की प्रिंट विंडो खोलता है; सेलेक्ट होने वाले टेक्स्ट के लिए वहाँ “Save as PDF” चुनें।",
+                  "real text you can select, search and copy, in Hindi too. Your browser's print window opens; choose “Save as PDF” as the destination.",
+                  "असली टेक्स्ट, जिसे हिंदी में भी सेलेक्ट, खोज और कॉपी कर सकते हैं। ब्राउज़र की प्रिंट विंडो खुलेगी; वहाँ डेस्टिनेशन में “Save as PDF” चुनें।",
+                )}
+              </p>
+              <p className="utility-tool__note">
+                <b>{tx("Image PDF:", "इमेज पीडीएफ:")}</b>{" "}
+                {tx(
+                  "downloads straight away and looks exactly like the preview, but each page is a picture, so its text cannot be selected or searched.",
+                  "तुरंत डाउनलोड होती है और प्रीव्यू जैसी ही दिखती है, पर हर पेज एक तस्वीर होता है, इसलिए उसका टेक्स्ट सेलेक्ट या खोजा नहीं जा सकता।",
                 )}
               </p>
             </div>
+            {printed && (
+              <AppStatus tone="info" title={tx("Print window opened", "प्रिंट विंडो खुली")}>
+                {tx(
+                  "Set the destination to “Save as PDF” and press Save. On a phone, use Share or Save to Files from the print screen.",
+                  "डेस्टिनेशन में “Save as PDF” चुनें और Save दबाएं। फोन पर प्रिंट स्क्रीन से Share या Save to Files चुनें।",
+                )}
+              </AppStatus>
+            )}
             {(rendering || progress) && (
               <AppStatus busy title={rendering ? tx("Reading the Word file…", "वर्ड फाइल पढ़ रहे हैं…") : tx("Making the PDF…", "पीडीएफ बन रही है…")}>
                 {progress ? tx(`Page ${progress.done} of ${progress.total}`, `पेज ${progress.done} / ${progress.total}`) : tx("Laying out pages", "पेज तैयार हो रहे हैं")}
@@ -145,18 +162,25 @@ export function WordToPdfTool() {
                   setSections([]);
                   setResult(null);
                   setError(null);
+                  setPrinted(false);
                 }}
               />
               <AppButton
-                title={tx("Print / Save as PDF", "प्रिंट / पीडीएफ के रूप में सेव करें")}
+                title={busy ? tx("Making PDF…", "पीडीएफ बन रही है…") : tx("Download image PDF", "इमेज पीडीएफ डाउनलोड करें")}
                 variant="secondary"
                 disabled={busy || rendering || sections.length === 0}
-                onClick={() => void printWordDocument(file).catch(() => setError(tx("The print window could not open.", "प्रिंट विंडो नहीं खुल सकी।")))}
+                onClick={() => void makePdf()}
               />
               <AppButton
-                title={busy ? tx("Making PDF…", "पीडीएफ बन रही है…") : tx("Download PDF", "पीडीएफ डाउनलोड करें")}
+                title={tx("Save as PDF (selectable text)", "पीडीएफ सेव करें (सेलेक्ट होने वाला टेक्स्ट)")}
                 disabled={busy || rendering || sections.length === 0}
-                onClick={() => void makePdf()}
+                onClick={() => {
+                  setPrinted(true);
+                  void printWordDocument(file).catch(() => {
+                    setPrinted(false);
+                    setError(tx("The print window could not open.", "प्रिंट विंडो नहीं खुल सकी।"));
+                  });
+                }}
               />
             </div>
           </div>

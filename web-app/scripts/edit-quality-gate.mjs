@@ -946,7 +946,7 @@ async function convertersCase(browser) {
   await page.locator("input[type=file]").first().setInputFiles(docxPath);
   await page.locator(".word-to-pdf__preview section.docx").first().waitFor({ timeout: 60000 });
   download = page.waitForEvent("download", { timeout: 240000 });
-  await page.getByRole("button", { name: "Download PDF", exact: true }).click();
+  await page.getByRole("button", { name: "Download image PDF", exact: true }).click();
   const pdf = new Uint8Array(fs.readFileSync(await (await download).path()));
   const doc = await pdfjs.getDocument({ data: pdf.slice(), verbosity: 0 }).promise;
   const pages = doc.numPages;

@@ -1,5 +1,14 @@
 # Changelog
 
+## Word to PDF: selectable text first, 23 November 2026
+
+### Changed
+- Word to PDF now leads with **Save as PDF (selectable text)**: the browser's print engine makes a PDF with real Hindi and English text you can select, search and copy. After the print window opens, the tool shows how to choose "Save as PDF" (and Share or Save to Files on phones). **Download image PDF** stays as the second option, described as exact-looking pages whose text cannot be selected.
+- An invisible text layer for the image PDF would mean drawing Devanagari with pdf-lib, which AGENTS.md forbids. It is listed with the Plan B decision.
+
+### Fixed
+- "1 pages laid out" now reads "1 page laid out".
+
 ## Edit PDF reads pages ahead in parallel, 23 November 2026
 
 ### Changed

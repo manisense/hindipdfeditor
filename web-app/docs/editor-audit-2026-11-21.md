@@ -93,7 +93,7 @@ Nothing known is critical: no data loss, no broken tool, no silently wrong outpu
 6. **GA4 counted twice:** the site script and the Cloudflare tag gateway both send page views. *Owner.*
 7. **IndexNow:** the workflow is blocked by the GitHub billing lock; it is run by hand after each deploy. *Owner.*
 8. **Search Console:** sitemap acceptance and indexing of priority URLs are unchecked. *Owner.*
-9. **Word to PDF:** "Download PDF" makes page images, so text is not selectable unless the user prints. *Ours.*
+9. **Word to PDF:** *done (ours):* selectable-text saving through the browser's print engine is now the main action, with guidance. *Owner decision:* an invisible text layer in the image PDF would draw Devanagari with pdf-lib, which AGENTS.md forbids; it belongs with Plan B.
 10. **Edit PDF reading:** *done:* pages are read ahead in parallel lanes (31 pages in 30 s instead of 66 s; ADR 0015).
 
 ### Low
