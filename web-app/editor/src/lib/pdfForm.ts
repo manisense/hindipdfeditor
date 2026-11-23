@@ -1,5 +1,8 @@
-/** Kinds of form field this app fills. List boxes, push buttons and signature fields are skipped. */
-export type FormFieldKind = 'text' | 'checkbox' | 'radio' | 'dropdown';
+/** Kinds of form field this app fills. Push buttons and signature fields are skipped. */
+export type FormFieldKind = 'text' | 'checkbox' | 'radio' | 'dropdown' | 'list';
+
+/** A quarter turn, in degrees. */
+export type QuarterTurn = 0 | 90 | 180 | 270;
 
 /** Rectangle in PDF user space (pt, bottom-left origin), normalised so x1 < x2 and y1 < y2. */
 export type PdfRect = [number, number, number, number];
@@ -34,17 +37,41 @@ export type FormWidget = {
   color: string;
   /** For a radio button: the name of its choice (its export value). */
   optionLabel?: string;
-  /** Dropdown choices. */
+  /** Dropdown and list box choices. */
   options?: { value: string; label: string }[];
+  /** For a list box: whether several choices can be selected. */
+  multiSelect?: boolean;
+  /**
+   * How far the answer's text is turned on screen, clockwise, once the field's own rotation (MK /R)
+   * and the page's rotation are both applied. 0 for nearly every form.
+   */
+  textRotation: QuarterTurn;
   /** Value when the file was opened (see {@link FormValue}). */
   initial: FormValue;
 };
 
 /**
  * A field's value: text or the chosen option's export value for text fields and dropdowns,
- * on/off for check boxes, and the chosen widget's `id` (or '') for radio groups.
+ * on/off for check boxes, the chosen widget's `id` (or '') for radio groups, and the selected
+ * export values, in option order, for list boxes.
  */
-export type FormValue = string | boolean;
+export type FormValue = string | boolean | readonly string[];
+
+/** Whether two field values are the same. */
+export function sameValue(a: FormValue | undefined, b: FormValue | undefined): boolean {
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((v, i) => v === b[i]);
+  return a === b;
+}
+
+/**
+ * Reduces an angle to a quarter turn.
+ *
+ * @param degrees Any angle that is a multiple of 90, in degrees; other angles count as 0.
+ */
+export function quarterTurn(degrees: number): QuarterTurn {
+  const turn = (((Math.round(degrees) % 360) + 360) % 360) as number;
+  return turn === 90 || turn === 180 || turn === 270 ? turn : 0;
+}
 
 /** Inner margin between a field's border and its text, in pt. */
 export const FIELD_PADDING_PT = 2;
@@ -179,7 +206,7 @@ export function changedFields(
   const changed = new Map<string, FormValue>();
   for (const widget of widgets) {
     const value = values[widget.field];
-    if (value !== undefined && value !== widget.initial && !widget.readOnly) changed.set(widget.field, value);
+    if (value !== undefined && !sameValue(value, widget.initial) && !widget.readOnly) changed.set(widget.field, value);
   }
   return changed;
 }

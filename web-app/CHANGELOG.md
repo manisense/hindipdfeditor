@@ -1,5 +1,16 @@
 # Changelog
 
+## Fill PDF form: list boxes, turned fields, signature boxes, 23 November 2026
+
+### Added
+- Fill PDF form fills **list boxes**, single- and multi-select, on the page and in the side list. The selected export values go into `/V` and their row numbers into `/I`. Lists whose choices are all Latin keep pdf-lib's own list appearance; any other list gets a browser-drawn appearance showing the selected choices, one per line.
+- Fields turned with their page (`/MK /R`, often on landscape pages stored as turned portrait pages) are drawn in their own turned box, so Hindi answers read upright in the output. The on-page control turns with the field.
+- A form with a signature box now says so and links to Sign PDF; other fields it can't fill are still counted.
+
+### Fixed
+- The Fill PDF form preview drew each field's saved look under its control, so a prefilled value showed twice. The preview now leaves out the fields' drawings (`AnnotationMode.ENABLE_FORMS`), and the controls show every value.
+- The form fixture adds a multi-select list box and a turned second page with a turned field. Gate case `FILL_FORM_OK` now also checks both list choices and an upright Hindi answer in the turned field (a horizontal headline run). Checked in pdf.js and Poppler.
+
 ## Fill PDF form, 23 November 2026
 
 ### Added

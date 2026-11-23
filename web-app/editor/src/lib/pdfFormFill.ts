@@ -1,4 +1,5 @@
 import {
+  adjustDimsForRotation,
   componentsToColor,
   degrees,
   drawImage,
@@ -9,10 +10,13 @@ import {
   PDFDropdown,
   PDFHexString,
   PDFName,
+  PDFOptionList,
   PDFRadioGroup,
   PDFTextField,
   popGraphicsState,
   pushGraphicsState,
+  reduceRotation,
+  rotateInPlace,
   StandardFonts,
   type PDFFont,
   type PDFWidgetAnnotation,
@@ -79,13 +83,15 @@ export async function fillPdfForm(
 
   const imageAppearance = async (widget: PDFWidgetAnnotation, request: Omit<AppearanceRequest, 'wPt' | 'hPt'>) => {
     const [x1, y1, x2, y2] = widgetRect(widget);
-    const wPt = x2 - x1;
-    const hPt = y2 - y1;
+    const rect = { width: x2 - x1, height: y2 - y1 };
+    // A field turned by MK /R is drawn in its own turned box, as pdf-lib and viewers do.
+    const look = widget.getAppearanceCharacteristics();
+    const rotation = reduceRotation(look?.getRotation());
+    const { width: wPt, height: hPt } = adjustDimsForRotation(rect, rotation);
     const png = await render({ ...request, wPt, hPt });
     const image = await doc.embedPng(png);
     const name = doc.context.addRandomSuffix('Answer', 10);
     // Keep the field's own background and border (MK, BS) under the answer, as viewers draw them.
-    const look = widget.getAppearanceCharacteristics();
     const background = componentsToColor(look?.getBackgroundColor());
     const borderColor = componentsToColor(look?.getBorderColor());
     const borderWidth = borderColor ? (widget.getBorderStyle()?.getWidth() ?? 1) : 0;
@@ -106,14 +112,15 @@ export async function fillPdfForm(
         : [];
     const stream = doc.context.formXObject(
       [
-        ...frame,
         pushGraphicsState(),
+        ...rotateInPlace({ ...rect, rotation }),
+        ...frame,
         ...drawImage(name, { x: 0, y: 0, width: wPt, height: hPt, rotate: degrees(0), xSkew: degrees(0), ySkew: degrees(0) }),
         popGraphicsState(),
       ],
       {
         Resources: { XObject: { [name]: image.ref } },
-        BBox: doc.context.obj([0, 0, wPt, hPt]),
+        BBox: doc.context.obj([0, 0, rect.width, rect.height]),
         Matrix: doc.context.obj([1, 0, 0, 1, 0, 0]),
       },
     );
@@ -168,6 +175,23 @@ export async function fillPdfForm(
       if (onValue) field.acroField.setValue(onValue);
       else field.acroField.setValue(PDFName.of('Off'));
       if (field.needsAppearancesUpdate()) field.updateAppearances();
+    } else if (field instanceof PDFOptionList && Array.isArray(value)) {
+      const options = widgets.find((w) => w.field === name)?.options ?? [];
+      const chosen = options.filter((o) => value.includes(o.value));
+      field.acroField.setValues(chosen.map((o) => PDFHexString.fromText(o.value)));
+      // /I lists the selected rows; viewers that read it would otherwise show the old choice.
+      const indices = options.flatMap((o, i) => (value.includes(o.value) ? [i] : []));
+      if (indices.length > 0) field.acroField.dict.set(PDFName.of('I'), doc.context.obj(indices));
+      else field.acroField.dict.delete(PDFName.of('I'));
+      if (options.every((o) => o.label === o.value && isLatinOnly(o.label))) {
+        field.updateAppearances(await latinFont());
+      } else {
+        // The browser draws the selected choices, one per line (Plan A: no Hindi through pdf-lib).
+        for (const widget of field.acroField.getWidgets()) {
+          const style = styleOf(name, widget);
+          await imageAppearance(widget, { text: chosen.map((o) => o.label).join('\n'), fontSizePt: style?.fontSizePt ?? 0, multiline: true, align: style?.align ?? 0, color: style?.color ?? '#000000' });
+        }
+      }
     } else if (field instanceof PDFDropdown && typeof value === 'string') {
       field.acroField.setValues([PDFHexString.fromText(value)]);
       const option = widgets.find((w) => w.field === name)?.options?.find((o) => o.value === value);

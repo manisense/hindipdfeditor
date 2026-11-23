@@ -1,6 +1,6 @@
 import { PDFDocument, PDFName, PDFRadioGroup, PDFString, PDFHexString } from '@cantoo/pdf-lib';
 
-import { cssColor, normaliseRect, sameRect, type FormFieldKind, type FormValue, type FormWidget } from './pdfForm';
+import { cssColor, normaliseRect, quarterTurn, sameRect, type FormFieldKind, type FormValue, type FormWidget } from './pdfForm';
 import { sharedPdfDocument } from './sharedPdfDocument';
 
 /** The parts of pdf.js widget annotation data this module reads. */
@@ -26,6 +26,8 @@ type WidgetData = {
   maxLen?: number | null;
   textAlignment?: number | null;
   options?: { exportValue: string; displayValue: string }[];
+  /** The widget's own rotation (MK /R), counter-clockwise, in degrees. */
+  rotation?: number;
   defaultAppearanceData?: { fontSize?: number; fontColor?: ArrayLike<number> | null };
 };
 
@@ -33,7 +35,8 @@ function kindOf(data: WidgetData): FormFieldKind | null {
   if (data.fieldType === 'Tx') return 'text';
   if (data.fieldType === 'Btn' && data.checkBox) return 'checkbox';
   if (data.fieldType === 'Btn' && data.radioButton) return 'radio';
-  if (data.fieldType === 'Ch' && data.combo && !data.multiSelect) return 'dropdown';
+  if (data.fieldType === 'Ch' && data.combo) return 'dropdown';
+  if (data.fieldType === 'Ch') return 'list';
   return null;
 }
 
@@ -45,8 +48,10 @@ function firstValue(value: WidgetData['fieldValue']): string {
 /** Result of reading a PDF's form. */
 export type FormReadResult = {
   widgets: FormWidget[];
-  /** Fields this tool cannot fill (list boxes, multi-select lists, signature fields). */
+  /** Fields this tool cannot fill, other than signature fields. */
   skipped: number;
+  /** Signature fields; they are signed with Sign PDF instead. */
+  signatures: number;
 };
 
 /**
@@ -58,16 +63,19 @@ export async function readFormWidgets(bytes: Uint8Array): Promise<FormReadResult
   const pdf = await sharedPdfDocument(bytes);
   const widgets: FormWidget[] = [];
   const skippedFields = new Set<string>();
+  const signatureFields = new Set<string>();
   for (let page = 0; page < pdf.numPages; page++) {
     const pdfPage = await pdf.getPage(page + 1);
     const viewport = pdfPage.getViewport({ scale: 1 });
+    const pageRotation = pdfPage.rotate;
     // pdf.js annotation data is untyped; WidgetData names the fields read here.
     const annotations = (await pdfPage.getAnnotations({ intent: 'display' })) as WidgetData[];
     annotations.forEach((data, index) => {
       if (data.subtype !== 'Widget' || !data.fieldName || data.hidden) return;
       const kind = kindOf(data);
       if (!kind) {
-        if (!data.pushButton) skippedFields.add(data.fieldName);
+        if (data.fieldType === 'Sig') signatureFields.add(data.fieldName);
+        else if (!data.pushButton) skippedFields.add(data.fieldName);
         return;
       }
       const pdfRect = normaliseRect(data.rect);
@@ -75,6 +83,10 @@ export async function readFormWidgets(bytes: Uint8Array): Promise<FormReadResult
       const id = `${page}:${index}`;
       const value = firstValue(data.fieldValue);
       let initial: FormValue = value;
+      if (kind === 'list') {
+        const chosen = new Set(Array.isArray(data.fieldValue) ? data.fieldValue : value ? [value] : []);
+        initial = (data.options ?? []).map((o) => o.exportValue).filter((v) => chosen.has(v));
+      }
       if (kind === 'checkbox') initial = value !== '' && value !== 'Off' && value === data.exportValue;
       if (kind === 'radio') {
         initial = value !== '' && value !== 'Off' && value === data.buttonValue ? id : '';
@@ -98,7 +110,10 @@ export async function readFormWidgets(bytes: Uint8Array): Promise<FormReadResult
         fontSizePt: Number.isFinite(fontSize) && fontSize > 0 ? fontSize : 0,
         color: cssColor(data.defaultAppearanceData?.fontColor),
         optionLabel: kind === 'radio' ? (data.buttonValue ?? undefined) : undefined,
-        options: kind === 'dropdown' ? (data.options ?? []).map((o) => ({ value: o.exportValue, label: o.displayValue || o.exportValue })) : undefined,
+        options: kind === 'dropdown' || kind === 'list' ? (data.options ?? []).map((o) => ({ value: o.exportValue, label: o.displayValue || o.exportValue })) : undefined,
+        multiSelect: kind === 'list' ? Boolean(data.multiSelect) : undefined,
+        // The field turns its text counter-clockwise; the page view turns it clockwise.
+        textRotation: quarterTurn(pageRotation - (data.rotation ?? 0)),
         initial,
       });
     });
@@ -111,7 +126,7 @@ export async function readFormWidgets(bytes: Uint8Array): Promise<FormReadResult
     widget.initial = chosen ? chosen.id : '';
   }
   await addAcroFormNames(bytes, widgets);
-  return { widgets, skipped: skippedFields.size };
+  return { widgets, skipped: skippedFields.size, signatures: signatureFields.size };
 }
 
 /**

@@ -152,6 +152,20 @@ textarea.fill-form__overlay {
   resize: none;
 }
 
+select.fill-form__overlay--list {
+  overflow-y: auto;
+  padding: 0;
+}
+
+.fill-form__field select[size] {
+  padding: 4px;
+}
+
+.fill-form__field select[size] option {
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
 @media (max-width: 860px) {
   .fill-form__layout {
     grid-template-columns: minmax(0, 1fr);

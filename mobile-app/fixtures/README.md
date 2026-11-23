@@ -70,7 +70,7 @@ node web-app/scripts/make-faux-bold-fixture.mjs
 
 ## form-fixture.pdf
 
-A one-page AcroForm: one-line text fields (one with a tooltip name), a multi-line text field, a check box, a two-button radio group and a dropdown, each with a printed Latin label. Used by the web edit-quality gate to check Fill PDF form: Hindi answers keep their Unicode value and get a browser-drawn appearance, Latin answers keep pdf-lib's vector appearance. Regenerate (deterministic) with:
+A two-page AcroForm. Page 1 has one-line text fields (one with a tooltip name), a multi-line text field, a check box, a two-button radio group, a dropdown and a multi-select list box, each with a printed Latin label. Page 2 is turned (`/Rotate 90`) and holds a text field turned with it (`/MK /R 90`), so its answer must read upright. Used by the web edit-quality gate to check Fill PDF form: Hindi answers keep their Unicode value and get a browser-drawn appearance, Latin answers keep pdf-lib's vector appearance. Regenerate (deterministic) with:
 
 ```bash
 node web-app/scripts/make-form-fixture.mjs
