@@ -78,20 +78,33 @@ Quality gate: a fixed corpus of real PDFs (Word exports, government notices, sca
 3. Accuracy: PaddleOCR benchmark, ToUnicode repair, paragraph reflow, Roman→Hindi typing, find and replace.
 4. After decisions: Plan B vector text, KrutiDev conversion, server-side rendering.
 
-## Open product gaps (noted 23 November 2026)
+## Priorities (23 November 2026)
 
-These are gaps that can be worked on without a decision from the owner, in suggested order:
+Nothing known is critical: no data loss, no broken tool, no silently wrong output that the user cannot see. Ordered from most to least important. "Owner" means it needs the site owner. Status is updated as items ship.
 
-1. **Mis-mapped glyphs:** some Word/Mangal exports map glyphs to the wrong characters (not just unmapped ones). Those pages fall back to OCR, which can misread names and numbers. The fix is to learn the wrong mappings from OCR the way unmapped glyphs are learned now.
-2. **Edit PDF reflow:** once a paragraph reflows, its redrawn lines are an image. Only Plan B removes this, and Plan B needs a decision.
-3. **Sign PDF:** no page jump. Long documents are paged with the arrows only.
-4. **PDF to Word:** tables, pictures and exact positions are not carried over. The next step is table detection from ruling lines and text columns.
-5. **Word to PDF:** "Download PDF" makes page images, so the text is not selectable. Selectable text needs "Print / Save as PDF".
-6. **Fill PDF form:** a Hindi answer is an image in the page; the field value keeps the text. A non-Latin list box shows only its selected choices.
-7. **CSP:** the hash for the Cloudflare tag-gateway snippet must be updated if Cloudflare changes it (web ADR 0014).
-8. **Speed:** reading time per page is dominated by Tesseract. PDF to Word reads pages in parallel and checks a band of lines instead of the whole page (web ADR 0015). Edit PDF opens pages one at a time and could use the same worker pool to read the next pages ahead.
+### High
+1. **Phones untested:** the parallel OCR pool (web ADR 0015) was measured only on a desktop. Low-end Android memory use and speed are unknown. *Ours:* emulated CPU throttling plus memory-aware worker counts. *Owner:* a real phone check.
+2. **Mis-mapped glyphs:** some Word/Mangal exports map glyphs to the wrong characters, so those pages fall back to OCR, which can misread names and numbers. *Ours.*
+3. **Plan B (searchable vector Hindi edits):** new and edited words are images. *Owner decision.*
+4. **AI features untested live:** consented translation and AI OCR have not been tested end to end on production. *Owner, or ours with consent.*
 
-Needs the owner: the GitHub billing lock (IndexNow workflow), GA4 loading twice (site script and Cloudflare tag gateway), Plan B, and a DSC signing certificate or service.
+### Medium
+5. **PDF to Word:** tables, pictures and exact positions are not carried over. *Ours: table detection.*
+6. **GA4 counted twice:** the site script and the Cloudflare tag gateway both send page views. *Owner.*
+7. **IndexNow:** the workflow is blocked by the GitHub billing lock; it is run by hand after each deploy. *Owner.*
+8. **Search Console:** sitemap acceptance and indexing of priority URLs are unchecked. *Owner.*
+9. **Word to PDF:** "Download PDF" makes page images, so text is not selectable unless the user prints. *Ours.*
+10. **Edit PDF reading:** pages are read one at a time and could be read ahead with the OCR pool. *Ours.*
+
+### Low
+11. **Fill PDF form:** Hindi answers are images (the value keeps the text), and a non-Latin list box shows only its selection. *Partly Plan B.*
+12. **CSP tag-gateway hash:** if Cloudflare changes the snippet, analytics stops silently (web ADR 0014). *Ours: an automated check.*
+13. **Band check (ADR 0015):** a page whose top band is correct but whose lower part is corrupted would keep its text. Unlikely, because corruption is font-wide. *Monitor.*
+14. **Sign PDF:** there is no page jump. *Ours.*
+15. **Certificate-based signatures (DSC):** only image signatures exist. *Owner: a certificate or signing service.*
+16. **Mobile app release:** on hold by the owner's instruction.
+
+Order we work in: 1 → 2 → 5 → 10 → 9 → 14 → 12. The owner's items (3, 4, 6, 7, 8, 15) run in parallel.
 
 ## Open decisions
 
