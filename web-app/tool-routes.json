@@ -18,6 +18,15 @@
     "category": "edit"
   },
   {
+    "id": "fill-form",
+    "path": "/tools/fill-pdf-form/",
+    "title": "Fill PDF Form",
+    "shortTitle": "Fill form",
+    "description": "Type into a PDF form's own fields in Hindi or English, tick boxes and choose options, then download the filled copy. Processing stays on your device.",
+    "accent": "#1843DD",
+    "category": "edit"
+  },
+  {
     "id": "translate",
     "path": "/tools/translate-hindi-pdf/",
     "title": "Translate Hindi ↔ English",

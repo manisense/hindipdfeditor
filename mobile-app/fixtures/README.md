@@ -67,3 +67,11 @@ Latin lines emboldened the way Word does for a font with no bold face: text rend
 ```bash
 node web-app/scripts/make-faux-bold-fixture.mjs
 ```
+
+## form-fixture.pdf
+
+A one-page AcroForm: one-line text fields (one with a tooltip name), a multi-line text field, a check box, a two-button radio group and a dropdown, each with a printed Latin label. Used by the web edit-quality gate to check Fill PDF form: Hindi answers keep their Unicode value and get a browser-drawn appearance, Latin answers keep pdf-lib's vector appearance. Regenerate (deterministic) with:
+
+```bash
+node web-app/scripts/make-form-fixture.mjs
+```
