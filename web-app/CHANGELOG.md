@@ -10,6 +10,7 @@
   - Page images are drawn only for pages that need OCR.
 - Progress reads "12 of 31 pages read" because pages finish side by side.
 - The band check and worker pool also apply to Edit PDF's page reading.
+- New gate case `KRUTIDEV_MIXED_OK`: a KrutiDev page with English in its own font converts only the KrutiDev line; the English, numbers and email stay exactly as written. (The repo fixture's English note is itself set in the KrutiDev font, so it is converted like the rest of that page; that is the correct reading of that font.)
 
 ## Sign PDF: custom position and per-page adjustment, 23 November 2026
 
