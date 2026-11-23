@@ -9,7 +9,9 @@ import {
   isLatinOnly,
   normaliseRect,
   placeInField,
+  quarterTurn,
   sameRect,
+  sameValue,
   type FormWidget,
 } from './pdfForm';
 
@@ -29,6 +31,7 @@ const widget = (over: Partial<FormWidget>): FormWidget => ({
   align: 0,
   fontSizePt: 0,
   color: '#000000',
+  textRotation: 0,
   initial: '',
   ...over,
 });
@@ -89,5 +92,21 @@ describe('pdfForm helpers', () => {
     ];
     const changed = changedFields(widgets, { name: 'राम', agree: false, locked: 'y' });
     expect([...changed]).toEqual([['name', 'राम']]);
+  });
+
+  it('compares list box selections by content', () => {
+    expect(sameValue(['a', 'b'], ['a', 'b'])).toBe(true);
+    expect(sameValue(['a'], ['a', 'b'])).toBe(false);
+    expect(sameValue('a', 'a')).toBe(true);
+    const widgets = [widget({ field: 'langs', kind: 'list', initial: ['a'] })];
+    expect(changedFields(widgets, { langs: ['a'] }).size).toBe(0);
+    expect([...changedFields(widgets, { langs: ['a', 'b'] })]).toEqual([['langs', ['a', 'b']]]);
+  });
+
+  it('reduces angles to quarter turns', () => {
+    expect(quarterTurn(0)).toBe(0);
+    expect(quarterTurn(-90)).toBe(270);
+    expect(quarterTurn(450)).toBe(90);
+    expect(quarterTurn(45)).toBe(0);
   });
 });

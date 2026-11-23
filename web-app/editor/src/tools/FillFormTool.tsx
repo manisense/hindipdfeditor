@@ -70,6 +70,25 @@ function FieldControl({ widget, value, romanTyping, onChange, label, className, 
       />
     );
   }
+  if (widget.kind === "list") {
+    const options = widget.options ?? [];
+    const selected = Array.isArray(value) ? value : [];
+    return (
+      <select
+        {...common}
+        multiple={widget.multiSelect}
+        size={Math.max(2, Math.min(5, options.length))}
+        value={widget.multiSelect ? [...selected] : (selected[0] ?? "")}
+        onChange={(event) => onChange(Array.from(event.target.selectedOptions, (option) => option.value))}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    );
+  }
   if (widget.kind === "dropdown") {
     return (
       <select {...common} value={typeof value === "string" ? value : ""} onChange={(event) => onChange(event.target.value)}>
@@ -101,7 +120,7 @@ export function FillFormTool() {
   const [bytes, setBytes] = useState<Uint8Array | null>(null);
   const [pageSizes, setPageSizes] = useState<PageSize[]>([]);
   const [widgets, setWidgets] = useState<FormWidget[]>([]);
-  const [skipped, setSkipped] = useState(0);
+  const [skipped, setSkipped] = useState({ fields: 0, signatures: 0 });
   const [values, setValues] = useState<Record<string, FormValue>>({});
   const [opening, setOpening] = useState(false);
   const [romanTyping, setRomanTyping] = useState(false);
@@ -147,7 +166,7 @@ export function FillFormTool() {
       setBytes(data);
       setPageSizes(sizes);
       setWidgets(form.widgets);
-      setSkipped(form.skipped);
+      setSkipped({ fields: form.skipped, signatures: form.signatures });
       setValues(initialValues(form.widgets));
       const first = form.widgets[0]?.page ?? 0;
       setCurrent(first);
@@ -167,7 +186,8 @@ export function FillFormTool() {
     if (!bytes || pageCount === 0) return;
     let cancelled = false;
     setPreview(null);
-    void renderPage(current, PREVIEW_PX_PER_PT)
+    // The page's own field drawings are left out: the controls laid over them show each value.
+    void renderPage(current, PREVIEW_PX_PER_PT, { withoutFormFields: true })
       .then((image) => {
         if (!cancelled) setPreview(image.uri);
       })
@@ -314,9 +334,19 @@ export function FillFormTool() {
                 <input type="checkbox" checked={flatten} onChange={(event) => { setFlatten(event.target.checked); setDone(null); }} />
                 {tx("Lock the answers (flatten the form so they can't be changed)", "जवाब लॉक करें (फॉर्म को फ्लैट करें ताकि जवाब बदले न जा सकें)")}
               </label>
-              {skipped > 0 && (
+              {skipped.fields > 0 && (
                 <p className="utility-tool__note">
-                  {tx(`${skipped} fields (lists, signature fields) can't be filled here and are left as they are.`, `${skipped} खाने (सूचियाँ, हस्ताक्षर के खाने) यहाँ नहीं भरे जा सकते; वे जैसे हैं वैसे रहेंगे।`)}
+                  {tx(
+                    `${skipped.fields} ${skipped.fields === 1 ? "field" : "fields"} of a kind this tool can't fill ${skipped.fields === 1 ? "is" : "are"} left as ${skipped.fields === 1 ? "it is" : "they are"}.`,
+                    `${skipped.fields} खाने ऐसे हैं जिन्हें यह टूल नहीं भर सकता; वे जैसे हैं वैसे रहेंगे।`,
+                  )}
+                </p>
+              )}
+              {skipped.signatures > 0 && (
+                <p className="utility-tool__note">
+                  {tx("This form has a signature box. Download the filled PDF, then sign it with ", "इस फॉर्म में हस्ताक्षर का खाना है। भरी हुई पीडीएफ डाउनलोड करें, फिर उस पर ")}
+                  <a href={toolHref("sign", lang)}>{tx("Sign PDF", "पीडीएफ पर हस्ताक्षर")}</a>
+                  {tx(".", " से हस्ताक्षर करें।")}
                 </p>
               )}
               <p className="utility-tool__note">
@@ -354,7 +384,11 @@ export function FillFormTool() {
                 {preview ? <img className="fill-form__page-image" src={preview} alt={tx(`Page ${current + 1}`, `पेज ${current + 1}`)} /> : <div className="fill-form__page-loading" aria-busy="true" />}
                 {scale > 0 &&
                   onPage.map((widget) => {
-                    const fontPt = Math.min(widget.fontSizePt > 0 ? widget.fontSizePt : 12, widget.multiline ? 12 : widget.hPt * 0.6);
+                    // A turned field shows its control turned the same way, in its own upright box.
+                    const sideways = widget.textRotation === 90 || widget.textRotation === 270;
+                    const boxW = (sideways ? widget.hPt : widget.wPt) * scale;
+                    const boxH = (sideways ? widget.wPt : widget.hPt) * scale;
+                    const fontPt = Math.min(widget.fontSizePt > 0 ? widget.fontSizePt : 12, widget.multiline || widget.kind === "list" ? 12 : boxH / scale * 0.6);
                     const k = widgets.filter((w) => w.field === widget.field).indexOf(widget);
                     return (
                       <FieldControl
@@ -364,7 +398,14 @@ export function FillFormTool() {
                         romanTyping={romanTyping}
                         label={widget.kind === "radio" ? `${widget.label}: ${optionName(widget, k)}` : widget.label}
                         className={`fill-form__overlay fill-form__overlay--${widget.kind}`}
-                        style={{ left: widget.xPt * scale, top: widget.yPt * scale, width: widget.wPt * scale, height: widget.hPt * scale, fontSize: Math.max(8, fontPt * scale) }}
+                        style={{
+                          left: (widget.xPt + widget.wPt / 2) * scale - boxW / 2,
+                          top: (widget.yPt + widget.hPt / 2) * scale - boxH / 2,
+                          width: boxW,
+                          height: boxH,
+                          fontSize: Math.max(8, fontPt * scale),
+                          transform: widget.textRotation ? `rotate(${widget.textRotation}deg)` : undefined,
+                        }}
                         onChange={(v) => setValue(widget.field, v)}
                       />
                     );

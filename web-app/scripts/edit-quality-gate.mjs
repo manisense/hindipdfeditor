@@ -793,7 +793,14 @@ async function fillFormCase(browser) {
   await side.getByLabel("applicant.agree").check();
   await side.getByLabel("Other").check();
   await side.getByLabel("applicant.state").selectOption("Bihar");
+  await side.getByLabel("applicant.languages").selectOption(["Hindi", "Urdu"]);
   assert.equal(await page.locator(".fill-form__overlay").first().inputValue(), "मनीष शर्मा", "the on-page box shows the answer");
+  // Page 2 is turned 90 degrees with its field: the on-page box must read upright.
+  await page.getByRole("button", { name: "Next page" }).click();
+  await side.getByLabel("Remarks").fill("सब ठीक है");
+  const remarksBox = page.locator(".fill-form__overlay").first();
+  assert.equal(await remarksBox.inputValue(), "सब ठीक है");
+  assert.equal(await remarksBox.evaluate((el) => getComputedStyle(el).transform), "none", "the turned field's box is upright on screen");
   const download = page.waitForEvent("download", { timeout: 120000 });
   await page.getByRole("button", { name: /Download filled PDF/ }).click();
   const filled = new Uint8Array(fs.readFileSync(await (await download).path()));
@@ -804,6 +811,8 @@ async function fillFormCase(browser) {
   assert.ok(form.getCheckBox("applicant.agree").isChecked(), "the box is ticked");
   assert.equal(form.getRadioGroup("applicant.category").getSelected(), "Other");
   assert.deepEqual(form.getDropdown("applicant.state").getSelected(), ["Bihar"]);
+  assert.deepEqual(form.getOptionList("applicant.languages").getSelected(), ["Hindi", "Urdu"], "both list choices are selected");
+  assert.equal(form.getTextField("applicant.remarks").getText(), "सब ठीक है");
   assert.equal(String(form.acroForm.dict.get(PDFName.of("NeedAppearances"))), "false", "viewers keep the drawn Hindi");
   // The Hindi answer is drawn in its box: ink inside the name field, none outside the fields.
   const original = new Uint8Array(fs.readFileSync(file));
@@ -823,7 +832,31 @@ async function fillFormCase(browser) {
   // Name field: x 200–520 pt, top 842-724 = 118 pt, height 24 pt; at 2 px/pt.
   const nameInk = inBox(400, 236, 1040, 284);
   assert.ok(nameInk > 300, "the Hindi name is drawn in its field (" + nameInk + " px)");
-  console.log("FILL_FORM_OK Hindi and English answers stored, Hindi drawn in its box (" + nameInk + " px), box, radio and dropdown set");
+  // The turned field: user space x 76–100, y 160–480 pt shows at x 160–480, y 76–100 pt on screen.
+  const a2 = await pagePixels(original, 1, 2);
+  const b2 = await pagePixels(filled, 1, 2);
+  const w2 = 842 * 2;
+  const band = (x0, y0, x1, y1) => {
+    let n = 0;
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      const k = (y * w2 + x) * 4;
+      if (b2[k] + b2[k + 1] + b2[k + 2] < 300 && a2[k] + a2[k + 1] + a2[k + 2] > 600) n++;
+    }
+    return n;
+  };
+  const remarksInk = band(324, 156, 956, 196);
+  // Upright Devanagari has its headline (shirorekha) as one long dark row; turned text has none.
+  let headline = 0;
+  for (let y = 156; y < 196; y++) {
+    let run = 0;
+    for (let x = 324; x < 956; x++) {
+      const k = (y * w2 + x) * 4;
+      run = b2[k] + b2[k + 1] + b2[k + 2] < 300 ? run + 1 : 0;
+      headline = Math.max(headline, run);
+    }
+  }
+  assert.ok(remarksInk > 300 && headline > 20, "the turned field's Hindi answer reads upright (" + remarksInk + " px, headline " + headline + " px)");
+  console.log("FILL_FORM_OK Hindi and English answers stored, Hindi drawn in its box (" + nameInk + " px), box, radio, dropdown and list set; turned field upright (headline " + headline + " px)");
   await page.close();
 }
 
