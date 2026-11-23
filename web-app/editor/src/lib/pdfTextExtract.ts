@@ -6,6 +6,7 @@ import { krutiDevToUnicode } from './krutiDev';
 import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
 import { sharedPdfDocument } from './sharedPdfDocument';
 import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
+import { imageRectsFromOperators, textImageRows, type PtBox } from './pdfImageRects';
 import { strokeEmPerItem, strokeRunsFromOperators } from './textStroke';
 import type { FontHint, OcrLine } from '../state/editStore';
 
@@ -146,6 +147,12 @@ export async function extractEmbeddedTextLines(
     glyphReadings?: ReadonlyMap<string, GlyphReading>;
     /** Filled with the page's Devanagari text by font (pdf.js loaded name), for font trust. */
     devanagariTextByFont?: Map<string, string>;
+    /**
+     * Reads text drawn as images (see pdfImageRects.ts): called once with the image rows the text
+     * layer does not cover, in pt, and returns each row's text (null for none). The rows are added
+     * as runs, so a word drawn as an image lands in its sentence.
+     */
+    readTextImages?: (rows: PtBox[]) => Promise<(string | null)[]>;
   } = {},
 ): Promise<OcrLine[]> {
   const doc = await sharedPdfDocument(pdfBytes);
@@ -252,6 +259,28 @@ export async function extractEmbeddedTextLines(
               fontHintFromPdfFont(fontNameOf(item.fontName), style?.fontFamily, Math.abs(item.transform[2]) > 0.001),
               itemStrokes[itemIndex],
             ),
+      });
+    }
+
+    if (options.readTextImages) {
+      const images = imageRectsFromOperators(operators.fnArray, operators.argsArray, OPS).map((rect) => {
+        const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(rect);
+        return { xPt: Math.min(x1, x2), yPt: Math.min(y1, y2), wPt: Math.abs(x2 - x1), hPt: Math.abs(y2 - y1) };
+      });
+      const rows = textImageRows(images, runs);
+      const texts = rows.length > 0 ? await options.readTextImages(rows) : [];
+      rows.forEach((row, i) => {
+        const text = texts[i]?.trim();
+        if (!text) return;
+        runs.push({
+          ...row,
+          text,
+          hasEol: false,
+          leadingSpace: true,
+          trailingSpace: true,
+          // Images carry no baseline; most of a text line's height sits above it.
+          baselineYPt: row.yPt + row.hPt * 0.8,
+        });
       });
     }
 

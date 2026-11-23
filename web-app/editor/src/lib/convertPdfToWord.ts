@@ -50,7 +50,7 @@ export async function convertPdfToWord(
       const image = await renderPage(pageIndex, READ_PX_PER_PT);
       return { backgroundImageUri: image.uri, imagePxWidth: image.pxWidth, imagePxHeight: image.pxHeight };
     };
-    const lines = await detectTextLines(page, { forceOcr: unconvertible, convertLegacy: legacy.length > 0, render });
+    const lines = await detectTextLines(page, { forceOcr: unconvertible, convertLegacy: legacy.length > 0, render, readTextImages: true });
     return { widthPt: page.widthPt, heightPt: page.heightPt, paragraphs: paragraphsFromLines(lines, page.widthPt) };
   };
   const lanes = Math.max(1, Math.min(total, ocrPoolSize()));

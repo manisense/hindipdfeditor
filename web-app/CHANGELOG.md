@@ -1,5 +1,15 @@
 # Changelog
 
+## PDF to Word reads text drawn as images; KrutiDev check fixed, 23 November 2026
+
+### Fixed
+- **Text drawn as images was dropped.** Word often draws headings with effects, text in shapes, and even single words as small images. PDF to Word now finds line-height images that the text layer does not cover and reads them with OCR, from one render per page with rows spread over the worker pool. Each reading is placed in its sentence. On a 31-page Word-made notice, page 1 gained its organisation name, title, dates, pay level and the word "ऑनलाइन" inside sentence 1.1.
+- **A correct KrutiDev conversion was rejected.** On a table of small text, OCR misreads complex words more than plain ones, and the check read that as a broken font. Converted text is now judged by overall agreement with OCR (rejected below 40 %), so the table keeps its exact converted text instead of OCR errors such as "मर्ती" for भर्ती. Every converted page is still checked.
+- Gate cases `TEXT_IMAGE_OK` (fails on the previous build) and `KRUTIDEV_MIXED_OK`. Web ADR 0016.
+
+### Changed
+- The 31-page notice now converts in about 46 s (32 s without reading images, 184 s before ADR 0015). Files without text images are unchanged in output and time.
+
 ## Phone-safe OCR worker pool, 23 November 2026
 
 ### Changed

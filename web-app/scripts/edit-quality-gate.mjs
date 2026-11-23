@@ -841,6 +841,50 @@ async function krutiDevMixedCase(browser) {
   await page.close();
 }
 
+// A Hindi heading drawn as an image (as Word exports text with effects) beside real text: PDF to
+// Word reads the image with OCR instead of dropping it.
+async function textImageCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { unzipSync, strFromU8 } = require(path.join(editorModules, "fflate"));
+  const { PDFDocument, StandardFonts } = await import(path.join(editorModules, "@cantoo/pdf-lib/es/index.js"));
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await page.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
+  // The browser shapes the Devanagari; the image is about 600 ppi, like Word's.
+  const pngBase64 = await page.evaluate(async () => {
+    const face = new FontFace("GateNoto", "url(/edit/fonts/NotoSansDevanagari-Variable.ttf)");
+    document.fonts.add(await face.load());
+    const canvas = document.createElement("canvas");
+    canvas.width = 2400;
+    canvas.height = 220;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#000";
+    context.font = "150px GateNoto";
+    context.textBaseline = "middle";
+    context.fillText("केन्द्रीय औद्योगिक सुरक्षा बल", 20, 115);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  const doc = await PDFDocument.create();
+  const sheet = doc.addPage([595, 842]);
+  sheet.drawText("Recruitment notice for the year 2026", { x: 60, y: 760, size: 12, font: await doc.embedFont(StandardFonts.Helvetica) });
+  const image = await doc.embedPng(Buffer.from(pngBase64, "base64"));
+  sheet.drawImage(image, { x: 60, y: 700, width: 288, height: 26.4 });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gate-"));
+  const pdfPath = path.join(dir, "text-image.pdf");
+  fs.writeFileSync(pdfPath, await doc.save());
+  await page.locator("input[type=file]").first().setInputFiles(pdfPath);
+  const download = page.waitForEvent("download", { timeout: 120000 });
+  await page.getByRole("button", { name: /Convert & download Word/ }).click();
+  const docx = path.join(dir, "out.docx");
+  fs.copyFileSync(await (await download).path(), docx);
+  const xml = strFromU8(unzipSync(new Uint8Array(fs.readFileSync(docx)))["word/document.xml"]);
+  const text = [...xml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((m) => m[1]).join("\n");
+  assert.ok(text.includes("Recruitment notice for the year 2026"), "real text kept: " + text);
+  assert.ok(text.includes("औद्योगिक") && text.includes("सुरक्षा"), "Hindi heading drawn as an image read: " + text);
+  console.log("TEXT_IMAGE_OK Hindi heading drawn as an image read into the Word file; real text kept");
+  await page.close();
+}
+
 async function convertersCase(browser) {
   const fs = await import("node:fs");
   const os = await import("node:os");
@@ -976,6 +1020,7 @@ try {
   if (wanted("signPositionsCase")) await signPositionsCase(browser);
   if (wanted("convertersCase")) await convertersCase(browser);
   if (wanted("krutiDevMixedCase")) await krutiDevMixedCase(browser);
+  if (wanted("textImageCase")) await textImageCase(browser);
   if (wanted("fillFormCase")) await fillFormCase(browser);
 } finally {
   await browser.close();

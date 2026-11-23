@@ -35,16 +35,34 @@ function devanagariWords(text: string): string[] {
 export type DevanagariVerdict = "ok" | "corrupted" | "unknown";
 
 /**
+ * Below this share of words found in OCR, text converted from a legacy font (KrutiDev) is
+ * treated as wrong. A wrong conversion (a font that is not really KrutiDev) matches almost no
+ * words; a right one matches 70–100 % even where OCR struggles with small table text.
+ */
+const MIN_CONVERTED_AGREEMENT = 0.4;
+
+/**
  * Judges embedded Devanagari text against OCR of the same page(s): "unknown" when there is too
  * little Devanagari to judge.
+ *
+ * Text from the PDF's own Unicode map is judged by how complex words agree compared with plain
+ * ones, which is how a broken map shows (see the top of this file). Text converted from KrutiDev
+ * with the pinned map (`converted`) is judged by overall agreement instead: a conversion is wrong
+ * everywhere or nowhere. On such pages OCR misreads complex words in small text far more than
+ * plain ones, which made right conversions look broken.
  */
-export function embeddedDevanagariVerdict(embeddedText: string, ocrText: string): DevanagariVerdict {
+export function embeddedDevanagariVerdict(
+  embeddedText: string,
+  ocrText: string,
+  options: { converted?: boolean } = {},
+): DevanagariVerdict {
   const ocrWords = new Set(devanagariWords(ocrText));
   const words = devanagariWords(embeddedText);
   const complex = words.filter((word) => COMPLEX_WORD.test(word));
   const plain = words.filter((word) => !COMPLEX_WORD.test(word));
   if (complex.length < MIN_WORDS_PER_GROUP || plain.length < MIN_WORDS_PER_GROUP) return "unknown";
   const rate = (group: string[]) => group.filter((word) => ocrWords.has(word)).length / group.length;
+  if (options.converted) return rate(words) < MIN_CONVERTED_AGREEMENT ? "corrupted" : "ok";
   const plainRate = rate(plain);
   if (plainRate === 0) return "corrupted";
   return rate(complex) / plainRate < MIN_COMPLEX_TO_PLAIN_RATIO ? "corrupted" : "ok";
@@ -54,8 +72,12 @@ export function embeddedDevanagariVerdict(embeddedText: string, ocrText: string)
  * Whether embedded Devanagari text looks corrupted compared with OCR of the same page.
  * Returns false when there is too little Devanagari to judge, so plain pages keep their text.
  */
-export function isEmbeddedDevanagariCorrupted(embeddedText: string, ocrText: string): boolean {
-  return embeddedDevanagariVerdict(embeddedText, ocrText) === "corrupted";
+export function isEmbeddedDevanagariCorrupted(
+  embeddedText: string,
+  ocrText: string,
+  options: { converted?: boolean } = {},
+): boolean {
+  return embeddedDevanagariVerdict(embeddedText, ocrText, options) === "corrupted";
 }
 
 /**

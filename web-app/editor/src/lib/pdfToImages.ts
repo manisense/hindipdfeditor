@@ -104,6 +104,28 @@ export async function renderRegion(
 }
 
 /**
+ * Renders one page to a canvas on a white background, for cutting several areas out of one render.
+ *
+ * @param page Zero-based page index.
+ * @param scale Output px per PDF point.
+ */
+export async function renderPageCanvas(page: number, scale: number): Promise<HTMLCanvasElement> {
+  if (!pdfBytesCache) throw new Error('No PDF loaded');
+  const pdfPage = await (await sharedPdfDocument(pdfBytesCache)).getPage(page + 1);
+  const viewport = pdfPage.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(viewport.width));
+  canvas.height = Math.max(1, Math.round(viewport.height));
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas 2D context unavailable');
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  await pdfPage.render({ canvasContext: context, viewport, canvas }).promise;
+  pdfPage.cleanup();
+  return canvas;
+}
+
+/**
  * Renders a small preview of one page for the page list.
  *
  * @param page Zero-based page index.

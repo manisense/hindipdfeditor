@@ -26,6 +26,7 @@ import { mergeOcrLines, mergeWordReadings, type RecognizedWord } from "./mergeOc
 import { textBandOfLine } from "./ocrLineGeometry";
 import { mustVerifyPage, newFontTrust, noteSkippedPage, recordVerifiedPage, type FontTrust } from "./embeddedTextTrust";
 import { currentDeviceHints, poolSizeFor } from "./ocrPoolSize";
+import { stackStrips, type PtBox as ImageBox } from "./pdfImageRects";
 import { extractEmbeddedTextLines } from "./pdfTextExtract";
 import {
   hasGlyphPlaceholder,
@@ -36,7 +37,7 @@ import {
   repairText,
   spacedLike,
 } from "./glyphRepair";
-import { getPdfBytes, renderRegion } from "./pdfToImages";
+import { getPdfBytes, renderPageCanvas, renderRegion } from "./pdfToImages";
 import type { RecognizedLine } from "./recognizedLine";
 import type { OcrLine, PageState } from "../state/editStore";
 
@@ -459,13 +460,14 @@ async function verifyEmbeddedDevanagari(
     // A band of the page's lines is enough to judge it, and OCR of the band takes a fraction of
     // the time. Only a passing band skips the full page; anything else reads the whole page.
     const sample = degraded ? null : verificationSample(embedded);
-    if (sample && embeddedDevanagariVerdict(sample.text, await recognizeArea(page, sample)) === "ok") {
+    const converted = Boolean(convertLegacy);
+    if (sample && embeddedDevanagariVerdict(sample.text, await recognizeArea(page, sample), { converted }) === "ok") {
       return embedded;
     }
     const hindiPage = await recognizePage(page.backgroundImageUri, "hin");
     onPageOcr?.(hindiPage.text);
     const embeddedText = embedded.map((line) => line.text).join(" ");
-    if (!degraded && !isEmbeddedDevanagariCorrupted(embeddedText, hindiPage.text)) {
+    if (!degraded && !isEmbeddedDevanagariCorrupted(embeddedText, hindiPage.text, { converted })) {
       return embedded;
     }
     // English names, IDs and dates inside Hindi lines are read by the English model.
@@ -510,7 +512,66 @@ async function verifyEmbeddedDevanagari(
  */
 export async function detectTextLines(
   page: PageState,
-  options?: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer },
+  options?: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean },
+): Promise<OcrLine[]> {
+  return readPageLines(page, options);
+}
+
+/** Render scale for text drawn as images, in px per pt (such images are often 600 ppi). */
+const TEXT_IMAGE_PX_PER_PT = 4;
+/** Lowest Tesseract confidence (0–100) at which an image row's reading is kept. */
+const MIN_TEXT_IMAGE_CONFIDENCE = 35;
+/** The same for readings with no Devanagari. */
+const MIN_LATIN_TEXT_IMAGE_CONFIDENCE = 60;
+
+/**
+ * Reads rows of text drawn as images: the page is rendered once and each row is cut from that
+ * render and read on its own (rows spread over the OCR worker pool). Hindi first; a row with no
+ * Devanagari is read again in English, and the English reading is kept only when it has Latin
+ * letters and at least the Hindi reading's confidence (numbers and dates read fine in Hindi).
+ *
+ * @param rows Areas, in pt (top-left origin).
+ * @returns Each row's text, or null when nothing readable was found.
+ */
+async function readImageRows(pageIndex: number, rows: ImageBox[]): Promise<(string | null)[]> {
+  const pageCanvas = await renderPageCanvas(pageIndex, TEXT_IMAGE_PX_PER_PT);
+  const { strips } = stackStrips(rows, { widthPx: pageCanvas.width, heightPx: pageCanvas.height }, TEXT_IMAGE_PX_PER_PT, 2);
+  const crops = strips.map((strip) => {
+    const margin = 12;
+    const crop = document.createElement("canvas");
+    crop.width = strip.w + 2 * margin;
+    crop.height = strip.h + 2 * margin;
+    const context = crop.getContext("2d");
+    if (!context) throw new Error("Canvas 2D context unavailable");
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, crop.width, crop.height);
+    context.drawImage(pageCanvas, strip.sx, strip.sy, strip.w, strip.h, margin, margin, strip.w, strip.h);
+    return crop;
+  });
+  const read = async (language: OcrLanguage, crop: HTMLCanvasElement) => {
+    const { data } = await withWorker(language, (worker) => worker.recognize(crop));
+    const text = trimOcrBorderNoise(data.text.replace(/[\u200c\u200d]/gu, "").replace(/\s+/gu, " ")).normalize("NFC").trim();
+    // Image rows are small and their own context: full-page noise rules reject good readings of
+    // them (a quoted word at 54 % confidence). Keep any reading with letters or digits.
+    // Latin-only readings need more confidence: signatures and logos read as stray Latin letters.
+    const minimum = hasDevanagari(text) ? MIN_TEXT_IMAGE_CONFIDENCE : MIN_LATIN_TEXT_IMAGE_CONFIDENCE;
+    const readable = /[\p{L}\p{N}]/u.test(text) && data.confidence >= minimum;
+    return { text: readable ? text : "", confidence: data.confidence };
+  };
+  return Promise.all(
+    crops.map(async (crop) => {
+      const hindi = await read("hin", crop);
+      if (hasDevanagari(hindi.text)) return hindi.text;
+      const english = await read("eng", crop);
+      if (/[A-Za-z]/.test(english.text) && english.confidence >= hindi.confidence) return english.text;
+      return hindi.text || null;
+    }),
+  );
+}
+
+async function readPageLines(
+  page: PageState,
+  options: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean } | undefined,
 ): Promise<OcrLine[]> {
   const pdfBytes = getPdfBytes();
   // The page image is drawn only when OCR needs it (when the caller passes `render`).
@@ -522,6 +583,7 @@ export async function detectTextLines(
       const embedded = await extractEmbeddedTextLines(pdfBytes, page.pageIndex, {
         convertLegacy: options?.convertLegacy,
         devanagariTextByFont: textByFont,
+        readTextImages: options?.readTextImages ? (rows) => readImageRows(page.pageIndex, rows) : undefined,
       });
       if (embedded.length > 0) {
         // Fonts whose Devanagari already matched OCR on earlier pages are not checked again on
