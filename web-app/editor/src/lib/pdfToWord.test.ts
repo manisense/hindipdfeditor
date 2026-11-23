@@ -58,4 +58,23 @@ describe('buildWordDocument', () => {
     expect(xml).toContain('आरक्षक / रसोइया');
     expect(xml.match(/<w:tr[ >]/g)).toHaveLength(2);
   });
+
+  it('embeds a picture at its size', async () => {
+    // A 1×1 white JPEG.
+    const jpeg = Uint8Array.from(
+      atob('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA='),
+      (c) => c.charCodeAt(0),
+    );
+    const blob = await buildWordDocument([
+      { widthPt: 595, heightPt: 842, blocks: [{ kind: 'picture', picture: { xPt: 72, yPt: 100, wPt: 144, hPt: 72, jpeg }, indentPt: 36 }] },
+    ]);
+    const files = unzipSync(new Uint8Array(await blob.arrayBuffer()));
+    const xml = strFromU8(files['word/document.xml']);
+    expect(Object.keys(files).some((name) => name.startsWith('word/media/'))).toBe(true);
+    expect(xml).toContain('<w:drawing>');
+    // 144 pt × 72 pt = 2 in × 1 in = 1828800 × 914400 EMU.
+    expect(xml).toContain('cx="1828800"');
+    expect(xml).toContain('cy="914400"');
+  });
 });
+

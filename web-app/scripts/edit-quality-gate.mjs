@@ -1002,6 +1002,64 @@ async function editTextImageCase(browser) {
   await page.close();
 }
 
+// Pictures (a photo, and a logo inside a table cell) are carried into the Word file in place.
+async function wordPictureCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { unzipSync, strFromU8 } = require(path.join(editorModules, "fflate"));
+  const { PDFDocument, StandardFonts } = await import(path.join(editorModules, "@cantoo/pdf-lib/es/index.js"));
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await page.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
+  const png = async (color) =>
+    Buffer.from(
+      (await page.evaluate((c) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 200;
+        canvas.height = 150;
+        const context = canvas.getContext("2d");
+        context.fillStyle = c;
+        context.fillRect(0, 0, 200, 150);
+        context.fillStyle = "#fff";
+        context.fillRect(40, 40, 120, 70);
+        return canvas.toDataURL("image/png");
+      }, color)).split(",")[1],
+      "base64",
+    );
+  const doc = await PDFDocument.create();
+  const sheet = doc.addPage([595, 842]);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  sheet.drawText("Candidate details", { x: 60, y: 770, size: 14, font });
+  sheet.drawImage(await doc.embedPng(await png("#c0392b")), { x: 60, y: 640, width: 120, height: 90 });
+  sheet.drawText("Photo above, table below.", { x: 60, y: 610, size: 11, font });
+  const xs = [60, 200, 400];
+  const ys = [590, 520, 490];
+  for (const y of ys) sheet.drawLine({ start: { x: xs[0], y }, end: { x: xs[2], y }, thickness: 0.75 });
+  for (const x of xs) sheet.drawLine({ start: { x, y: ys[0] }, end: { x, y: ys[2] }, thickness: 0.75 });
+  sheet.drawImage(await doc.embedPng(await png("#1f3a93")), { x: 70, y: 525, width: 56, height: 56 });
+  sheet.drawText("Office emblem", { x: 210, y: 550, size: 11, font });
+  sheet.drawText("Name", { x: 70, y: 500, size: 11, font });
+  sheet.drawText("Seema", { x: 210, y: 500, size: 11, font });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gate-"));
+  const pdfPath = path.join(dir, "pictures.pdf");
+  fs.writeFileSync(pdfPath, await doc.save());
+  await page.locator("input[type=file]").first().setInputFiles(pdfPath);
+  const download = page.waitForEvent("download", { timeout: 120000 });
+  await page.getByRole("button", { name: /Convert & download Word/ }).click();
+  const docx = path.join(dir, "out.docx");
+  fs.copyFileSync(await (await download).path(), docx);
+  const files = unzipSync(new Uint8Array(fs.readFileSync(docx)));
+  const xml = strFromU8(files["word/document.xml"]);
+  const media = Object.keys(files).filter((name) => name.startsWith("word/media/"));
+  assert.equal(media.length, 2, "two pictures carried over: " + media.join(", "));
+  const table = xml.match(/<w:tbl>[\s\S]*?<\/w:tbl>/)?.[0] ?? "";
+  assert.equal((table.match(/<w:drawing>/g) ?? []).length, 1, "the emblem is inside the table");
+  const photoAt = xml.indexOf("<w:drawing>");
+  assert.ok(xml.indexOf("Candidate details") < photoAt && photoAt < xml.indexOf("Photo above, table below."), "the photo sits between the text above and below it");
+  for (const text of ["Office emblem", "Name", "Seema"]) assert.ok(table.includes(text), "table text kept: " + text);
+  console.log("WORD_PICTURE_OK photo placed between its paragraphs and emblem inside its table cell; 2 pictures, table text kept");
+  await page.close();
+}
+
 async function convertersCase(browser) {
   const fs = await import("node:fs");
   const os = await import("node:os");
@@ -1140,6 +1198,7 @@ try {
   if (wanted("textImageCase")) await textImageCase(browser);
   if (wanted("editTextImageCase")) await editTextImageCase(browser);
   if (wanted("wordTableCase")) await wordTableCase(browser);
+  if (wanted("wordPictureCase")) await wordPictureCase(browser);
   if (wanted("fillFormCase")) await fillFormCase(browser);
 } finally {
   await browser.close();

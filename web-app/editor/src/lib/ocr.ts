@@ -513,7 +513,7 @@ async function verifyEmbeddedDevanagari(
  */
 export async function detectTextLines(
   page: PageState,
-  options?: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean; rulings?: Ruling[] },
+  options?: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean; rulings?: Ruling[]; pictures?: ImageBox[] },
 ): Promise<OcrLine[]> {
   return readPageLines(page, options);
 }
@@ -598,7 +598,7 @@ async function readImageRows(pageIndex: number, rows: ImageBox[]): Promise<(stri
 
 async function readPageLines(
   page: PageState,
-  options: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean; rulings?: Ruling[] } | undefined,
+  options: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean; rulings?: Ruling[]; pictures?: ImageBox[] } | undefined,
 ): Promise<OcrLine[]> {
   const pdfBytes = getPdfBytes();
   // The page image is drawn only when OCR needs it (when the caller passes `render`).
@@ -612,6 +612,7 @@ async function readPageLines(
         devanagariTextByFont: textByFont,
         readTextImages: options?.readTextImages ? (rows) => readImageRows(page.pageIndex, rows) : undefined,
         rulings: options?.rulings,
+        pictures: options?.pictures,
       });
       if (embedded.length > 0) {
         // Fonts whose Devanagari already matched OCR on earlier pages are not checked again on

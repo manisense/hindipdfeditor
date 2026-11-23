@@ -102,8 +102,8 @@ export function PdfToWordTool() {
               <strong>{tx("What you get", "आपको क्या मिलेगा")}</strong>
               <p className="utility-tool__note">
                 {tx(
-                  "A .docx file with each page's text as paragraphs, keeping sizes, bold headings and centred lines. Hindi uses Unicode (font: Nirmala UI). Tables drawn with lines become Word tables. Scanned pages and text drawn as images are read with OCR, so check names and numbers. Pictures and exact positions are not carried over.",
-                  "हर पेज का टेक्स्ट अनुच्छेदों में, साइज, बोल्ड शीर्षक और बीच की लाइनों के साथ .docx फाइल में। हिंदी यूनिकोड में होगी (फॉन्ट: Nirmala UI)। लाइनों से बनी टेबल Word टेबल बनती हैं। स्कैन पेज और इमेज के रूप में बना टेक्स्ट OCR से पढ़े जाते हैं, इसलिए नाम और नंबर जाँच लें। तस्वीरें और सटीक जगह साथ नहीं आतीं।",
+                  "A .docx file with each page's text as paragraphs, keeping sizes, bold headings and centred lines. Hindi uses Unicode (font: Nirmala UI). Tables drawn with lines become Word tables. Scanned pages and text drawn as images are read with OCR, so check names and numbers. Pictures (logos, photos, stamps) are placed in reading order; exact positions are not kept.",
+                  "हर पेज का टेक्स्ट अनुच्छेदों में, साइज, बोल्ड शीर्षक और बीच की लाइनों के साथ .docx फाइल में। हिंदी यूनिकोड में होगी (फॉन्ट: Nirmala UI)। लाइनों से बनी टेबल Word टेबल बनती हैं। स्कैन पेज और इमेज के रूप में बना टेक्स्ट OCR से पढ़े जाते हैं, इसलिए नाम और नंबर जाँच लें। तस्वीरें (लोगो, फोटो, मुहर) पढ़ने के क्रम में आती हैं; सटीक जगह नहीं रहती।",
                 )}
               </p>
             </div>

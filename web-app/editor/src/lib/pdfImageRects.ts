@@ -182,3 +182,42 @@ export function stackStrips(
 export function stripAt(strips: readonly Strip[], yPx: number): number {
   return strips.findIndex((strip) => yPx >= strip.top && yPx < strip.top + strip.h);
 }
+
+/** Images at least this tall (pt) are pictures (logos, photos, stamps), not lines of text. */
+const MIN_PICTURE_HEIGHT_PT = 40;
+/** And at least this wide (pt). */
+const MIN_PICTURE_WIDTH_PT = 24;
+/** Images covering more of the page than this are backgrounds (a scan), not pictures. */
+const MAX_PICTURE_PAGE_SHARE = 0.85;
+
+/**
+ * Pictures worth carrying into a Word file: images at least logo-sized that are not the page's
+ * background. Overlapping pieces of one picture (drawn in tiles) are joined.
+ *
+ * @param images Image boxes in editor space, in pt.
+ * @param page Page size, in pt.
+ */
+export function pictureBoxes(images: readonly PtBox[], page: { widthPt: number; heightPt: number }): PtBox[] {
+  const pictures: PtBox[] = [];
+  const candidates = images.filter(
+    (box) =>
+      box.hPt >= MIN_PICTURE_HEIGHT_PT &&
+      box.wPt >= MIN_PICTURE_WIDTH_PT &&
+      box.wPt * box.hPt <= MAX_PICTURE_PAGE_SHARE * page.widthPt * page.heightPt,
+  );
+  for (const box of candidates) {
+    // Tiles touch edge to edge; 1 pt of slack joins them.
+    const joined = pictures.find((p) => p.xPt <= box.xPt + box.wPt + 1 && box.xPt <= p.xPt + p.wPt + 1 && p.yPt <= box.yPt + box.hPt + 1 && box.yPt <= p.yPt + p.hPt + 1);
+    if (!joined) {
+      pictures.push({ ...box });
+      continue;
+    }
+    const x2 = Math.max(joined.xPt + joined.wPt, box.xPt + box.wPt);
+    const y2 = Math.max(joined.yPt + joined.hPt, box.yPt + box.hPt);
+    joined.xPt = Math.min(joined.xPt, box.xPt);
+    joined.yPt = Math.min(joined.yPt, box.yPt);
+    joined.wPt = x2 - joined.xPt;
+    joined.hPt = y2 - joined.yPt;
+  }
+  return pictures.sort((a, b) => a.yPt - b.yPt || a.xPt - b.xPt);
+}

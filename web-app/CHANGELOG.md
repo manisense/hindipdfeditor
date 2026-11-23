@@ -1,5 +1,11 @@
 # Changelog
 
+## PDF to Word keeps pictures, 23 November 2026
+
+### Added
+- **Pictures come through to Word:** logos, photos, stamps and signatures are carried over at their size, in reading order between the paragraphs around them. A picture inside a table, such as an emblem in a header table, goes into its cell. They are cut from the rendered page, so they look exactly as on the page; full-page scan backgrounds are not repeated. On a 31-page notice, the CISF emblem now appears at the top of page 1.
+- The tool page, `tool-routes.json` and `llms` files now say pictures are carried over; exact positions still are not. Gate case `WORD_PICTURE_OK`; web ADR 0012 addendum.
+
 ## Edit PDF: headings drawn as images are editable, 23 November 2026
 
 ### Added

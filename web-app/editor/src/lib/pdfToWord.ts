@@ -2,6 +2,7 @@ import {
   AlignmentType,
   Document,
   HeightRule,
+  ImageRun,
   Packer,
   PageOrientation,
   Paragraph,
@@ -13,7 +14,7 @@ import {
   WidthType,
 } from 'docx';
 
-import type { WordBlock, WordParagraph, WordTable } from './wordLayout';
+import type { WordBlock, WordParagraph, WordPicture, WordTable } from './wordLayout';
 
 /** One PDF page's text for the Word document. */
 export type WordPage = {
@@ -52,6 +53,28 @@ function wordParagraph(paragraph: WordParagraph): Paragraph {
   });
 }
 
+/** Word's image size unit: pixels at 96 per inch. */
+const PX_PER_PT = 96 / 72;
+
+/**
+ * A picture as its own paragraph, at its size, indented to its left edge.
+ *
+ * @param maxWidthPt Widest the picture may be (the page's or cell's text width), in PDF points.
+ */
+function wordPicture(picture: WordPicture, indentPt: number, maxWidthPt: number): Paragraph {
+  const scale = Math.min(1, maxWidthPt / Math.max(1, picture.wPt));
+  return new Paragraph({
+    indent: indentPt > 0 ? { left: Math.round(indentPt * TWIPS_PER_PT) } : undefined,
+    children: [
+      new ImageRun({
+        type: 'jpg',
+        data: picture.jpeg,
+        transformation: { width: Math.round(picture.wPt * scale * PX_PER_PT), height: Math.round(picture.hPt * scale * PX_PER_PT) },
+      }),
+    ],
+  });
+}
+
 /** Cell padding, in PDF points (Word's default is about 5.4 pt left and right). */
 const CELL_PADDING_PT = 3;
 
@@ -73,7 +96,15 @@ function wordTable(table: WordTable): Table {
                 rowSpan: cell.rowSpan > 1 ? cell.rowSpan : undefined,
                 width: { size: twips(table.columnWidthsPt.slice(cell.col, cell.col + cell.colSpan).reduce((sum, w) => sum + w, 0)), type: WidthType.DXA },
                 margins: { top: twips(1), bottom: twips(1), left: twips(CELL_PADDING_PT), right: twips(CELL_PADDING_PT) },
-                children: cell.paragraphs.length > 0 ? cell.paragraphs.map(wordParagraph) : [new Paragraph({})],
+                children:
+                  cell.paragraphs.length > 0 || cell.pictures?.length
+                    ? [
+                        ...cell.paragraphs.map(wordParagraph),
+                        ...(cell.pictures ?? []).map((picture) =>
+                          wordPicture(picture, 0, table.columnWidthsPt.slice(cell.col, cell.col + cell.colSpan).reduce((sum, w) => sum + w, 0) - 2 * CELL_PADDING_PT),
+                        ),
+                      ]
+                    : [new Paragraph({})],
               }),
           ),
         }),
@@ -108,7 +139,13 @@ export async function buildWordDocument(pages: readonly WordPage[]): Promise<Blo
       },
       children:
         page.blocks.length > 0
-          ? page.blocks.map((block) => (block.kind === 'table' ? wordTable(block.table) : wordParagraph(block.paragraph)))
+          ? page.blocks.map((block) =>
+              block.kind === 'table'
+                ? wordTable(block.table)
+                : block.kind === 'picture'
+                  ? wordPicture(block.picture, block.indentPt, page.widthPt - 2 * MARGIN_PT - block.indentPt)
+                  : wordParagraph(block.paragraph),
+            )
           : [new Paragraph({})],
     })),
   });
