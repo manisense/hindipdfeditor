@@ -1,0 +1,159 @@
+.fill-form__layout {
+  align-items: start;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  width: 100%;
+}
+
+.fill-form__side,
+.fill-form__empty {
+  display: grid;
+  gap: 16px;
+}
+
+.fill-form__list {
+  display: grid;
+  gap: 12px;
+}
+
+.fill-form__field textarea,
+.fill-form__field select {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 46px;
+  padding: 10px 12px;
+}
+
+.fill-form__field textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.fill-form__field textarea:focus,
+.fill-form__field select:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 10%, transparent);
+  outline: 0;
+}
+
+.fill-form__check {
+  align-items: center;
+  color: var(--ink);
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.fill-form__check input {
+  accent-color: var(--brand);
+  flex: none;
+  height: 16px;
+  width: 16px;
+}
+
+.fill-form__group {
+  border: 0;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.fill-form__group legend {
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.fill-form__preview {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.fill-form__pager {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fill-form__pager > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 96px;
+  text-align: center;
+}
+
+.fill-form__pager > .fill-form__pages {
+  text-align: left;
+}
+
+.fill-form__page {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: var(--shadow-card);
+  max-width: min(100%, 720px);
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.fill-form__page-image {
+  display: block;
+  height: 100%;
+  user-select: none;
+  width: 100%;
+}
+
+.fill-form__page-loading {
+  background: var(--surface-subtle);
+  height: 100%;
+  min-height: 320px;
+}
+
+/* Controls laid over the form's own boxes on the page preview. */
+.fill-form__overlay {
+  background: color-mix(in srgb, var(--brand) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand) 45%, transparent);
+  border-radius: 2px;
+  box-sizing: border-box;
+  color: #000;
+  font-family: "NotoSansDevanagari", system-ui, sans-serif;
+  line-height: 1.2;
+  margin: 0;
+  padding: 0 2px;
+  position: absolute;
+}
+
+.fill-form__overlay:focus {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--brand);
+  outline: 2px solid color-mix(in srgb, var(--brand) 30%, transparent);
+}
+
+.fill-form__overlay--checkbox,
+.fill-form__overlay--radio {
+  accent-color: var(--brand);
+  cursor: pointer;
+  padding: 0;
+}
+
+textarea.fill-form__overlay {
+  resize: none;
+}
+
+@media (max-width: 860px) {
+  .fill-form__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

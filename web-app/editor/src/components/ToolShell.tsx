@@ -7,6 +7,7 @@ import {
   Pencil,
   Scissors,
   Signature,
+  ClipboardPen,
   FileText,
   FileType2,
   type LucideIcon,
@@ -30,6 +31,7 @@ type Props = {
 const toolIcons: Record<ToolId, LucideIcon> = {
   edit: Pencil,
   sign: Signature,
+  "fill-form": ClipboardPen,
   "pdf-to-word": FileType2,
   "word-to-pdf": FileText,
   translate: Languages,
@@ -41,6 +43,7 @@ const toolIcons: Record<ToolId, LucideIcon> = {
 const toolHindiNames: Record<ToolId, string> = {
   edit: "हिंदी एडिट",
   sign: "हस्ताक्षर करें",
+  "fill-form": "फॉर्म भरें",
   "pdf-to-word": "पीडीएफ से वर्ड",
   "word-to-pdf": "वर्ड से पीडीएफ",
   translate: "अनुवाद",

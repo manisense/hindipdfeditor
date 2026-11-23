@@ -1,5 +1,12 @@
 # Changelog
 
+## Fill PDF form, 23 November 2026
+
+### Added
+- New tool, **Fill PDF form** (`/tools/fill-pdf-form/`): type into a PDF's own form fields (text, multi-line text, check boxes, radio buttons, dropdowns) in Hindi or English, on the page preview or in a labelled list for the current page, with optional Roman→Hindi typing; download the filled copy, optionally flattened. Fields come from pdf.js (positions on the rendered page, rotation applied) with names from the field tooltip and radio choices from `/Opt`. Answers are written with pdf-lib: Latin answers keep pdf-lib's vector Helvetica appearance; any other answer (Hindi) keeps its Unicode text as the field value and gets an appearance drawn by the browser (the same text rasteriser as Edit PDF, Plan A) over the field's own border and background, shrunk to fit; `NeedAppearances` is cleared so viewers do not redraw it unshaped. XFA data is removed so viewers show the filled fields. The source file is never changed and the output is re-opened before download. List boxes and signature fields are left as they are and counted on screen; PDFs without fields point to Edit PDF's Add text. Web ADR 0013.
+- Fixture `mobile-app/fixtures/form-fixture.pdf` (`scripts/make-form-fixture.mjs`) and gate case `FILL_FORM_OK`: Hindi and English answers stored, the Hindi name drawn inside its field, box, radio and dropdown set. Checked in pdf.js and Poppler: conjuncts, reph and nukta correct, borders kept. `GATE_ONLY=fillFormCase` runs chosen gate cases.
+- Listed in the tool bar, homepage menu and footer, `llms.txt`, `llms-full.txt` and the README; smoke test covers the route.
+
 ## PDF to Word and Word to PDF, 23 November 2026
 
 ### Added

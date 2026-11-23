@@ -779,22 +779,74 @@ async function convertersCase(browser) {
   await page.close();
 }
 
+async function fillFormCase(browser) {
+  const fs = await import("node:fs");
+  const { PDFDocument, PDFName } = await import(path.join(editorModules, "@cantoo/pdf-lib/es/index.js"));
+  const file = path.join(fixtures, "form-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await page.goto(baseUrl + "/tools/fill-pdf-form/", { waitUntil: "networkidle" });
+  await page.locator("input[type=file]").first().setInputFiles(file);
+  const side = page.locator(".fill-form__list");
+  await side.getByLabel("Full name").fill("मनीष शर्मा");
+  await side.getByLabel("applicant.address").fill("12, गांधी मार्ग\nलखनऊ");
+  await side.getByLabel("applicant.city").fill("Lucknow");
+  await side.getByLabel("applicant.agree").check();
+  await side.getByLabel("Other").check();
+  await side.getByLabel("applicant.state").selectOption("Bihar");
+  assert.equal(await page.locator(".fill-form__overlay").first().inputValue(), "मनीष शर्मा", "the on-page box shows the answer");
+  const download = page.waitForEvent("download", { timeout: 120000 });
+  await page.getByRole("button", { name: /Download filled PDF/ }).click();
+  const filled = new Uint8Array(fs.readFileSync(await (await download).path()));
+  const form = (await PDFDocument.load(filled)).getForm();
+  assert.equal(form.getTextField("applicant.name").getText(), "मनीष शर्मा", "the Hindi answer is stored as Unicode");
+  assert.equal(form.getTextField("applicant.address").getText(), "12, गांधी मार्ग\nलखनऊ");
+  assert.equal(form.getTextField("applicant.city").getText(), "Lucknow");
+  assert.ok(form.getCheckBox("applicant.agree").isChecked(), "the box is ticked");
+  assert.equal(form.getRadioGroup("applicant.category").getSelected(), "Other");
+  assert.deepEqual(form.getDropdown("applicant.state").getSelected(), ["Bihar"]);
+  assert.equal(String(form.acroForm.dict.get(PDFName.of("NeedAppearances"))), "false", "viewers keep the drawn Hindi");
+  // The Hindi answer is drawn in its box: ink inside the name field, none outside the fields.
+  const original = new Uint8Array(fs.readFileSync(file));
+  const a = await pagePixels(original, 0, 2);
+  const b = await pagePixels(filled, 0, 2);
+  const doc = await pdfjs.getDocument({ data: filled.slice(), verbosity: 0 }).promise;
+  const w = Math.round((await doc.getPage(1)).getViewport({ scale: 2 }).width);
+  await doc.destroy();
+  const inBox = (x0, y0, x1, y1) => {
+    let n = 0;
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      const k = (y * w + x) * 4;
+      if (b[k] + b[k + 1] + b[k + 2] < 300 && a[k] + a[k + 1] + a[k + 2] > 600) n++;
+    }
+    return n;
+  };
+  // Name field: x 200–520 pt, top 842-724 = 118 pt, height 24 pt; at 2 px/pt.
+  const nameInk = inBox(400, 236, 1040, 284);
+  assert.ok(nameInk > 300, "the Hindi name is drawn in its field (" + nameInk + " px)");
+  console.log("FILL_FORM_OK Hindi and English answers stored, Hindi drawn in its box (" + nameInk + " px), box, radio and dropdown set");
+  await page.close();
+}
+
+// GATE_ONLY=fillFormCase,signCase runs only the named cases.
+const only = process.env.GATE_ONLY?.split(",");
+const wanted = (name) => !only || only.includes(name);
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
-  await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
-  await noOpCase(browser, "Hindi fixture page", path.join(fixtures, "devanagari-fixture.pdf"), 0, [1]);
-  await oneWordCase(browser);
-  await boxMarksCase(browser);
-  await imagesCase(browser);
-  await autosaveCase(browser);
-  await fauxBoldCase(browser);
-  await paragraphFlowCase(browser);
-  await pageOpsCase(browser);
-  await glyphRepairCase(browser);
-  await findReplaceFlowCase(browser);
-  await spellCheckCase(browser);
-  await signCase(browser);
-  await convertersCase(browser);
+  if (wanted("noOpCase")) await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
+  if (wanted("noOpCase")) await noOpCase(browser, "Hindi fixture page", path.join(fixtures, "devanagari-fixture.pdf"), 0, [1]);
+  if (wanted("oneWordCase")) await oneWordCase(browser);
+  if (wanted("boxMarksCase")) await boxMarksCase(browser);
+  if (wanted("imagesCase")) await imagesCase(browser);
+  if (wanted("autosaveCase")) await autosaveCase(browser);
+  if (wanted("fauxBoldCase")) await fauxBoldCase(browser);
+  if (wanted("paragraphFlowCase")) await paragraphFlowCase(browser);
+  if (wanted("pageOpsCase")) await pageOpsCase(browser);
+  if (wanted("glyphRepairCase")) await glyphRepairCase(browser);
+  if (wanted("findReplaceFlowCase")) await findReplaceFlowCase(browser);
+  if (wanted("spellCheckCase")) await spellCheckCase(browser);
+  if (wanted("signCase")) await signCase(browser);
+  if (wanted("convertersCase")) await convertersCase(browser);
+  if (wanted("fillFormCase")) await fillFormCase(browser);
 } finally {
   await browser.close();
 }

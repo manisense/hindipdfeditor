@@ -10,6 +10,7 @@ import {
   Split,
   Minimize2,
   Signature,
+  ClipboardPen,
   FileType2,
   FileText,
 } from "lucide-react";
@@ -45,6 +46,14 @@ export function Nav() {
       nameEn: "Sign PDF",
       nameHi: "हस्ताक्षर",
       icon: Signature,
+      tintFg: "#1843DD",
+      tintBg: "#E8EDFF",
+    },
+    {
+      id: "fill-form" as const,
+      nameEn: "Fill PDF form",
+      nameHi: "फॉर्म भरें",
+      icon: ClipboardPen,
       tintFg: "#1843DD",
       tintBg: "#E8EDFF",
     },

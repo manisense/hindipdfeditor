@@ -26,6 +26,10 @@ export function Footer() {
           href: toolHref("sign", lang),
         },
         {
+          label: isHindi ? "पीडीएफ फॉर्म भरें" : "Fill PDF form",
+          href: toolHref("fill-form", lang),
+        },
+        {
           label: isHindi ? "नया टेक्स्ट जोड़ें" : "Add text",
           href: `${toolHref("edit", lang)}${lang === "hi" ? "&" : "?"}mode=addText`,
         },

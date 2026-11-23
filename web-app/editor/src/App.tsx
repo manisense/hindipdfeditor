@@ -34,6 +34,11 @@ const WordToPdfTool = lazy(() =>
     default: module.WordToPdfTool,
   })),
 );
+const FillFormTool = lazy(() =>
+  import("./tools/FillFormTool").then((module) => ({
+    default: module.FillFormTool,
+  })),
+);
 const SignPdfTool = lazy(() =>
   import("./tools/SignPdfTool").then((module) => ({
     default: module.SignPdfTool,
@@ -102,6 +107,8 @@ export default function App() {
             <WordToPdfTool />
           ) : toolId === "sign" ? (
             <SignPdfTool />
+          ) : toolId === "fill-form" ? (
+            <FillFormTool />
           ) : toolId === "merge" ? (
             <MergePdfTool />
           ) : toolId === "split" ? (
