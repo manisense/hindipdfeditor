@@ -1,12 +1,13 @@
 import { buildWordDocument, type WordPage } from './pdfToWord';
 import { detectLegacyFonts, isConvertibleLegacyFont } from './legacyFontDetector';
-import { detectTextLines, ocrPoolSize } from './ocr';
+import { detectTextLines, ocrPoolSize, readAreas } from './ocr';
 import type { PtBox } from './pdfImageRects';
 import { getPageCount, getPageSize, renderPage, renderPageCanvas, setPdfBytes } from './pdfToImages';
 import type { Ruling } from './pdfRulings';
-import { detectTables } from './tableDetect';
+import { rulingsFromImage } from './rasterRulings';
+import { detectTables, type DetectedTable } from './tableDetect';
 import { pageBlocks, type WordPicture } from './wordLayout';
-import type { PageState } from '../state/editStore';
+import type { OcrLine, PageState } from '../state/editStore';
 
 /** Scale pages are rendered at for reading, in px per PDF point (as the editor uses). */
 const READ_PX_PER_PT = 2;
@@ -65,7 +66,17 @@ export async function convertPdfToWord(
       pictures: pictureBoxes,
     });
     const pictures = await cutPictures(pageIndex, pictureBoxes);
-    return { widthPt: page.widthPt, heightPt: page.heightPt, blocks: pageBlocks(lines, page.widthPt, detectTables(rulings), pictures) };
+    let tables = detectTables(rulings);
+    let pageLines = lines;
+    // A scan has no drawn lines to read: find its tables in the page image and read each cell.
+    if (tables.length === 0 && lines.length > 0 && lines.every((line) => line.source === 'ocr')) {
+      const scanned = await scannedTables(pageIndex);
+      if (scanned.length > 0) {
+        tables = scanned;
+        pageLines = await withCellText(pageIndex, lines, scanned);
+      }
+    }
+    return { widthPt: page.widthPt, heightPt: page.heightPt, blocks: pageBlocks(pageLines, page.widthPt, tables, pictures) };
   };
   const lanes = Math.max(1, Math.min(total, ocrPoolSize()));
   await Promise.all(
@@ -110,5 +121,53 @@ async function cutPictures(pageIndex: number, boxes: readonly PtBox[]): Promise<
     if (blob) pictures.push({ ...box, jpeg: new Uint8Array(await blob.arrayBuffer()) });
   }
   return pictures;
+}
+
+/** Render scale for finding a scan's table lines, in px per pt. */
+const SCAN_RULING_PX_PER_PT = 2;
+/** How far inside its borders a cell is read, in pt, so border pixels are not read as text. */
+const CELL_INSET_PT = 3;
+
+/** Ruled tables found in the page image (for scans). */
+async function scannedTables(pageIndex: number): Promise<DetectedTable[]> {
+  const canvas = await renderPageCanvas(pageIndex, SCAN_RULING_PX_PER_PT);
+  const context = canvas.getContext('2d');
+  if (!context) return [];
+  const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+  return detectTables(rulingsFromImage(data, canvas.width, canvas.height, SCAN_RULING_PX_PER_PT));
+}
+
+/**
+ * The page's lines with every line inside a table replaced by its cell's own reading: full-page
+ * OCR runs a table row across its cells, while each cell read alone keeps its text in place.
+ */
+async function withCellText(pageIndex: number, lines: readonly OcrLine[], tables: readonly DetectedTable[]): Promise<OcrLine[]> {
+  const cells = tables.flatMap((table) => table.cells);
+  const inside = (line: OcrLine) => {
+    const x = line.xPt + line.wPt / 2;
+    const y = line.yPt + line.hPt / 2;
+    return tables.some((t) => x >= t.xPt && x <= t.xPt + t.wPt && y >= t.yPt && y <= t.yPt + t.hPt);
+  };
+  const areas = cells.map((cell) => ({
+    xPt: cell.xPt + CELL_INSET_PT,
+    yPt: cell.yPt + CELL_INSET_PT,
+    wPt: Math.max(1, cell.wPt - 2 * CELL_INSET_PT),
+    hPt: Math.max(1, cell.hPt - 2 * CELL_INSET_PT),
+  }));
+  const texts = await readAreas(pageIndex, areas);
+  const cellLines: OcrLine[] = [];
+  areas.forEach((area, i) => {
+    const text = texts[i]?.trim();
+    if (!text) return;
+    // Font size from the cell's own OCR lines when there are any, else from a typical row.
+    const sizes = lines.filter((line) => {
+      const x = line.xPt + line.wPt / 2;
+      const y = line.yPt + line.hPt / 2;
+      return x >= area.xPt && x <= area.xPt + area.wPt && y >= area.yPt && y <= area.yPt + area.hPt;
+    });
+    const hPt = sizes.length > 0 ? Math.min(...sizes.map((line) => line.hPt)) : Math.min(area.hPt, 14);
+    cellLines.push({ id: crypto.randomUUID(), text, xPt: area.xPt, yPt: area.yPt, wPt: area.wPt, hPt, source: 'ocr' });
+  });
+  return [...lines.filter((line) => !inside(line)), ...cellLines];
 }
 

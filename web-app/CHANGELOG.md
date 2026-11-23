@@ -1,5 +1,13 @@
 # Changelog
 
+## PDF to Word finds tables on scanned pages, 23 November 2026
+
+### Added
+- **Tables on scanned pages become Word tables.** A scan has no drawn lines to read, so PDF to Word looks for table lines in the page image and reads each cell on its own, in Hindi and English, keeping the better reading. Whole-page OCR used to run a row's cells together. Gate case `SCAN_TABLE_OK`; web ADR 0012 addendum.
+
+### Changed
+- Table cells and text drawn as images are read in single-block mode by their own OCR workers, which no longer drops short items such as a lone "14". A Hindi reading made only of Devanagari digits no longer counts as Hindi, so a Latin word misread by the Hindi model is read again in English. On the 31-page notice the output is unchanged, and conversion takes about 42 s instead of 46 s.
+
 ## PDF to Word keeps pictures, 23 November 2026
 
 ### Added

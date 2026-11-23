@@ -1,5 +1,6 @@
 import {
   createWorker,
+  PSM,
   type Worker,
   type Page as TesseractPage,
 } from "tesseract.js";
@@ -79,7 +80,14 @@ const OCR_LOAD_TIMEOUT_MS = 60_000;
 
 type OcrLanguage = "hin" | "eng";
 type PooledWorker = { worker: Promise<Worker>; busy: number };
-const pools = new Map<OcrLanguage, PooledWorker[]>();
+/**
+ * How a worker segments what it reads: `page` finds a page's layout (Tesseract's default); `block`
+ * reads one block of text, which is right for a table cell or one row cut from a page and misses
+ * far fewer short items (a lone "14") than page layout analysis does. Each mode has its own
+ * workers, so changing the mode never affects a page being read at the same time.
+ */
+type OcrMode = "page" | "block";
+const pools = new Map<string, PooledWorker[]>();
 
 /** How many OCR workers per language may run at once on this device (see `poolSizeFor`). */
 export function ocrPoolSize(): number {
@@ -91,7 +99,7 @@ export function ocrPoolSize(): number {
  * download (the error escapes as an uncaught exception), which left pages "Finding text…"
  * forever; worker errors and a timeout now reject instead, and the failure is reported.
  */
-function loadWorker(language: OcrLanguage): Promise<Worker> {
+function loadWorker(language: OcrLanguage, mode: OcrMode): Promise<Worker> {
   return new Promise<Worker>((resolve, reject) => {
     const timer = window.setTimeout(
       () => reject(new Error(`OCR data for ${language} did not load in time`)),
@@ -106,7 +114,8 @@ function loadWorker(language: OcrLanguage): Promise<Worker> {
     }).then(
       (worker) => {
         window.clearTimeout(timer);
-        resolve(worker);
+        if (mode === "page") resolve(worker);
+        else worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK }).then(() => resolve(worker), reject);
       },
       (error: unknown) => {
         window.clearTimeout(timer);
@@ -116,10 +125,11 @@ function loadWorker(language: OcrLanguage): Promise<Worker> {
   });
 }
 
-function addWorker(language: OcrLanguage): PooledWorker {
-  const pool = pools.get(language) ?? [];
-  pools.set(language, pool);
-  const entry: PooledWorker = { worker: loadWorker(language), busy: 0 };
+function addWorker(language: OcrLanguage, mode: OcrMode): PooledWorker {
+  const key = `${language}:${mode}`;
+  const pool = pools.get(key) ?? [];
+  pools.set(key, pool);
+  const entry: PooledWorker = { worker: loadWorker(language, mode), busy: 0 };
   pool.push(entry);
   // A worker that fails to load leaves the pool, so the next call tries again.
   entry.worker.catch((error: unknown) => {
@@ -133,10 +143,14 @@ function addWorker(language: OcrLanguage): PooledWorker {
  * Runs one OCR job on an idle worker: another worker is started while all are busy, up to
  * {@link ocrPoolSize}; after that the least busy worker queues it.
  */
-async function withWorker<T>(language: OcrLanguage, job: (worker: Worker) => Promise<T>): Promise<T> {
-  const pool = pools.get(language) ?? [];
+async function withWorker<T>(
+  language: OcrLanguage,
+  job: (worker: Worker) => Promise<T>,
+  mode: OcrMode = "page",
+): Promise<T> {
+  const pool = pools.get(`${language}:${mode}`) ?? [];
   let entry = pool.find((candidate) => candidate.busy === 0);
-  if (!entry && pool.length < ocrPoolSize()) entry = addWorker(language);
+  if (!entry && pool.length < ocrPoolSize()) entry = addWorker(language, mode);
   entry ??= pool.reduce((least, candidate) => (candidate.busy < least.busy ? candidate : least));
   entry.busy += 1;
   try {
@@ -544,6 +558,22 @@ export async function detectTextImageLines(page: PageState, lines: readonly OcrL
   });
 }
 
+/**
+ * Reads areas of a page with OCR, each on its own (Hindi, English when an area has no
+ * Devanagari): table cells of a scanned page, where full-page OCR runs rows across cells.
+ *
+ * @param areas Areas, in pt (top-left origin), already inside any borders.
+ * @returns Each area's text, or null when nothing readable was found.
+ */
+export function readAreas(pageIndex: number, areas: ImageBox[]): Promise<(string | null)[]> {
+  return areas.length > 0 ? readImageRows(pageIndex, areas, true) : Promise.resolve([]);
+}
+
+/** Whether text has Devanagari letters or signs (not just Devanagari digits or dandas). */
+function hasDevanagariLetters(text: string): boolean {
+  return /[\u0900-\u0963\u0971-\u097F]/u.test(text);
+}
+
 /** Render scale for text drawn as images, in px per pt (such images are often 600 ppi). */
 const TEXT_IMAGE_PX_PER_PT = 4;
 /** Lowest Tesseract confidence (0–100) at which an image row's reading is kept. */
@@ -553,14 +583,16 @@ const MIN_LATIN_TEXT_IMAGE_CONFIDENCE = 60;
 
 /**
  * Reads rows of text drawn as images: the page is rendered once and each row is cut from that
- * render and read on its own (rows spread over the OCR worker pool). Hindi first; a row with no
- * Devanagari is read again in English, and the English reading is kept only when it has Latin
+ * render and read on its own, as one block of text (rows spread over the OCR worker pool). Hindi
+ * first; a row with no Devanagari letters is read again in English, kept only when it has Latin
  * letters and at least the Hindi reading's confidence (numbers and dates read fine in Hindi).
+ * With `bothLanguages` (scanned table cells, as often English as Hindi) both models read every
+ * area and the better reading wins.
  *
  * @param rows Areas, in pt (top-left origin).
  * @returns Each row's text, or null when nothing readable was found.
  */
-async function readImageRows(pageIndex: number, rows: ImageBox[]): Promise<(string | null)[]> {
+async function readImageRows(pageIndex: number, rows: ImageBox[], bothLanguages = false): Promise<(string | null)[]> {
   const pageCanvas = await renderPageCanvas(pageIndex, TEXT_IMAGE_PX_PER_PT);
   const { strips } = stackStrips(rows, { widthPx: pageCanvas.width, heightPx: pageCanvas.height }, TEXT_IMAGE_PX_PER_PT, 2);
   const crops = strips.map((strip) => {
@@ -576,22 +608,33 @@ async function readImageRows(pageIndex: number, rows: ImageBox[]): Promise<(stri
     return crop;
   });
   const read = async (language: OcrLanguage, crop: HTMLCanvasElement) => {
-    const { data } = await withWorker(language, (worker) => worker.recognize(crop));
+    const { data } = await withWorker(language, (worker) => worker.recognize(crop), "block");
     const text = trimOcrBorderNoise(data.text.replace(/[\u200c\u200d]/gu, "").replace(/\s+/gu, " ")).normalize("NFC").trim();
     // Image rows are small and their own context: full-page noise rules reject good readings of
     // them (a quoted word at 54 % confidence). Keep any reading with letters or digits.
     // Latin-only readings need more confidence: signatures and logos read as stray Latin letters.
-    const minimum = hasDevanagari(text) ? MIN_TEXT_IMAGE_CONFIDENCE : MIN_LATIN_TEXT_IMAGE_CONFIDENCE;
+    const minimum = hasDevanagariLetters(text) ? MIN_TEXT_IMAGE_CONFIDENCE : MIN_LATIN_TEXT_IMAGE_CONFIDENCE;
     const readable = /[\p{L}\p{N}]/u.test(text) && data.confidence >= minimum;
     return { text: readable ? text : "", confidence: data.confidence };
   };
   return Promise.all(
     crops.map(async (crop) => {
-      const hindi = await read("hin", crop);
-      if (hasDevanagari(hindi.text)) return hindi.text;
-      const english = await read("eng", crop);
-      if (/[A-Za-z]/.test(english.text) && english.confidence >= hindi.confidence) return english.text;
-      return hindi.text || null;
+      if (!bothLanguages) {
+        // Rows of a digital page are mostly Hindi: English only when Hindi found no letters.
+        const hindi = await read("hin", crop);
+        if (hasDevanagariLetters(hindi.text) || /^[\p{N}\s.,:;/()%+\-–—]+$/u.test(hindi.text)) return hindi.text || null;
+        const english = await read("eng", crop);
+        if (/[A-Za-z]/.test(english.text) && english.confidence >= hindi.confidence) return english.text;
+        return hindi.text || null;
+      }
+      // Both models read each area: the Hindi model turns a Latin word into junk (often with a
+      // Devanagari digit), and the English one cannot read Hindi. Hindi wins when it found
+      // Devanagari letters and is about as sure; otherwise the surer reading wins.
+      const [hindi, english] = await Promise.all([read("hin", crop), read("eng", crop)]);
+      if (!english.text) return hindi.text || null;
+      if (!hindi.text) return english.text;
+      if (hasDevanagariLetters(hindi.text) && hindi.confidence >= english.confidence - 10) return hindi.text;
+      return english.confidence >= hindi.confidence ? english.text : hindi.text;
     }),
   );
 }
