@@ -1,5 +1,14 @@
 # Changelog
 
+## PDF to Word and Word to PDF, 23 November 2026
+
+### Added
+- **PDF to Word** (`/tools/pdf-to-word/`): converts a Hindi or English PDF, scans included, to an editable `.docx` in the browser. Pages are read with the editor's detection (PDF text, repaired Hindi glyphs, KrutiDev conversion, OCR), lines become paragraphs keeping size, bold headings, centred lines, indents and spacing (pieces of one row are joined), one Word section per page at the page's size, Hindi in Nirmala UI. Tables, pictures and exact positions are not carried over (stated on the page). On the Devanagari fixture every Hindi line arrives exactly as written.
+- **Word to PDF** (`/tools/word-to-pdf/`): lays out a `.docx` in the browser (docx-preview) with a preview; Office fonts use the bundled metric-compatible fonts and Hindi uses Noto. "Download PDF" makes page images (text not selectable; long sections cut at blank rows); "Print / Save as PDF" prints the same layout for selectable text.
+- New pinned dependencies: `docx` 9.15.3 (MIT), `docx-preview` 0.4.1 (Apache-2.0), `html-to-image` 1.11.13 (MIT); `npm audit`: 0 vulnerabilities. Web ADR 0012.
+- The drop zone takes Word files for the new tool, and its messages are now in Hindi on Hindi screens.
+- Both tools are in the tool bar, homepage menu and footer, `llms.txt` and `llms-full.txt`. Gate case `CONVERTERS_OK` converts the fixture to Word (Hindi text exact) and back to PDF; the smoke test covers both routes.
+
 ## Sign PDF, 23 November 2026
 
 ### Added

@@ -1,0 +1,17 @@
+.word-to-pdf__preview {
+  background: var(--surface-subtle);
+  border-radius: 14px;
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  max-height: 80vh;
+  overflow: auto;
+  padding: 16px;
+  width: 100%;
+}
+
+.word-to-pdf__preview section.docx {
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  flex-shrink: 0;
+}

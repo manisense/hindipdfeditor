@@ -24,6 +24,16 @@ const MergePdfTool = lazy(() =>
     default: module.MergePdfTool,
   })),
 );
+const PdfToWordTool = lazy(() =>
+  import("./tools/PdfToWordTool").then((module) => ({
+    default: module.PdfToWordTool,
+  })),
+);
+const WordToPdfTool = lazy(() =>
+  import("./tools/WordToPdfTool").then((module) => ({
+    default: module.WordToPdfTool,
+  })),
+);
 const SignPdfTool = lazy(() =>
   import("./tools/SignPdfTool").then((module) => ({
     default: module.SignPdfTool,
@@ -86,6 +96,10 @@ export default function App() {
             <ErrorBoundary>
               <TranslatePdfTool />
             </ErrorBoundary>
+          ) : toolId === "pdf-to-word" ? (
+            <PdfToWordTool />
+          ) : toolId === "word-to-pdf" ? (
+            <WordToPdfTool />
           ) : toolId === "sign" ? (
             <SignPdfTool />
           ) : toolId === "merge" ? (

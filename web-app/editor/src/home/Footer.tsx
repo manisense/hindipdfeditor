@@ -47,6 +47,14 @@ export function Footer() {
           href: toolHref("compress", lang),
         },
         {
+          label: isHindi ? "पीडीएफ से वर्ड" : "PDF to Word",
+          href: toolHref("pdf-to-word", lang),
+        },
+        {
+          label: isHindi ? "वर्ड से पीडीएफ" : "Word to PDF",
+          href: toolHref("word-to-pdf", lang),
+        },
+        {
           label: isHindi ? "स्मार्ट OCR डिटेक्शन" : "OCR detection",
           href: toolHref("edit", lang),
         },

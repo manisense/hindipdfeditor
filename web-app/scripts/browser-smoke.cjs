@@ -74,6 +74,8 @@ const { chromium } = require("playwright");
   for (const [old, path] of [
     ["edit", "edit-hindi-pdf"],
     ["sign", "sign-pdf"],
+    ["pdf-to-word", "pdf-to-word"],
+    ["word-to-pdf", "word-to-pdf"],
     ["translate", "translate-hindi-pdf"],
     ["merge", "merge-pdf"],
     ["split", "split-pdf"],

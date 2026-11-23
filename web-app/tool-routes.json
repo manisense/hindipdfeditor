@@ -52,5 +52,23 @@
     "description": "Reduce PDF size by re-encoding pages as images. Review readability before downloading; text becomes image-based.",
     "accent": "#F0700F",
     "category": "optimize"
+  },
+  {
+    "id": "pdf-to-word",
+    "path": "/tools/pdf-to-word/",
+    "title": "PDF to Word",
+    "shortTitle": "PDF to Word",
+    "description": "Convert a Hindi or English PDF into an editable Word (.docx) file. Text is read from the PDF or by OCR on your device; tables and pictures are not carried over.",
+    "accent": "#16A34A",
+    "category": "convert"
+  },
+  {
+    "id": "word-to-pdf",
+    "path": "/tools/word-to-pdf/",
+    "title": "Word to PDF",
+    "shortTitle": "Word to PDF",
+    "description": "Turn a Word (.docx) file with Hindi or English text into a PDF in your browser, as page images or through Save as PDF with selectable text.",
+    "accent": "#16A34A",
+    "category": "convert"
   }
 ]
