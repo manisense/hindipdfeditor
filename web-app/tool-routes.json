@@ -13,7 +13,7 @@
     "path": "/tools/sign-pdf/",
     "title": "Sign PDF",
     "shortTitle": "Sign",
-    "description": "Draw, type or upload your signature and place it by hand, on every page or on chosen pages. Processing stays on your device. Adds an electronic signature image, not a certificate-based digital signature.",
+    "description": "Draw, type or upload your signature and place it by hand, or on every page or chosen pages at the same spot, adjusting any page on its own. Processing stays on your device. Adds an electronic signature image, not a certificate-based digital signature.",
     "accent": "#1843DD",
     "category": "edit"
   },

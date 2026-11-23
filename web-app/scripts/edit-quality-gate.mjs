@@ -746,6 +746,64 @@ async function signCase(browser) {
   await page.close();
 }
 
+// Every page at a custom spot dragged on page 1, page 2 moved on its own, page 3 left unsigned.
+async function signPositionsCase(browser) {
+  const file = path.join(fixtures, "multipage-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1800 } });
+  await page.goto(baseUrl + "/tools/sign-pdf/", { waitUntil: "networkidle" });
+  await page.locator("input[type=file]").first().setInputFiles(file);
+  await page.getByRole("button", { name: "Type", exact: true }).click();
+  await page.getByLabel("Your name (Hindi or English)").fill("मनीष शर्मा");
+  await page.getByRole("button", { name: "Use this signature" }).click();
+  await page.getByRole("radio", { name: "Every page" }).click();
+  await page.getByRole("radio", { name: /Custom/ }).click();
+  const dragTo = async (fx, fy) => {
+    const box = await page.locator(".image-edit-overlay").boundingBox();
+    const sheet = await page.locator(".sign-tool__page").boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(sheet.x + sheet.width * fx, sheet.y + sheet.height * fy, { steps: 10 });
+    await page.mouse.up();
+  };
+  await dragTo(0.25, 0.2);
+  await page.getByRole("button", { name: "Next page" }).click();
+  await page.getByRole("radio", { name: "This page only" }).click();
+  await dragTo(0.5, 0.5);
+  assert.ok(await page.getByText("Own position on this page").isVisible(), "page 2 is marked as adjusted");
+  await page.getByRole("button", { name: "Next page" }).click();
+  await page.locator(".image-edit-overlay").click();
+  await page.getByRole("button", { name: "Remove from this page" }).click();
+  assert.ok(await page.getByText("Not signed on this page").isVisible(), "page 3 is marked as unsigned");
+  assert.ok(await page.getByText("2 signatures will be added.").isVisible(), "two signatures counted");
+  const download = page.waitForEvent("download", { timeout: 120000 });
+  await page.getByRole("button", { name: /Download signed PDF/ }).click();
+  const signed = new Uint8Array((await import("node:fs")).readFileSync(await (await download).path()));
+  const original = new Uint8Array((await import("node:fs")).readFileSync(file));
+  const doc = await pdfjs.getDocument({ data: signed.slice(), verbosity: 0 }).promise;
+  const viewport = (await doc.getPage(1)).getViewport({ scale: 1.5 });
+  await doc.destroy();
+  const [w, h] = [Math.round(viewport.width), Math.round(viewport.height)];
+  const centres = [];
+  for (let i = 0; i < 3; i++) {
+    const a = await pagePixels(original, i);
+    const b = await pagePixels(signed, i);
+    let n = 0, sx = 0, sy = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const k = (y * w + x) * 4;
+      if (Math.abs(a[k] - b[k]) + Math.abs(a[k + 1] - b[k + 1]) + Math.abs(a[k + 2] - b[k + 2]) <= 96) continue;
+      n++; sx += x; sy += y;
+    }
+    centres.push(n ? [sx / n / w, sy / n / h, n] : [0, 0, 0]);
+  }
+  const near = ([cx, cy, n], fx, fy) => n > 200 && Math.abs(cx - fx) < 0.06 && Math.abs(cy - fy) < 0.06;
+  const fmt = centres.map(([cx, cy, n]) => `(${cx.toFixed(2)}, ${cy.toFixed(2)}; ${n} px)`).join(" ");
+  assert.ok(near(centres[0], 0.25, 0.2), "page 1 signature at the custom spot " + fmt);
+  assert.ok(near(centres[1], 0.5, 0.5), "page 2 signature at its own spot " + fmt);
+  assert.equal(centres[2][2], 0, "page 3 unsigned " + fmt);
+  console.log("SIGN_POSITIONS_OK custom spot on page 1, own spot on page 2, page 3 unsigned: " + fmt);
+  await page.close();
+}
+
 async function convertersCase(browser) {
   const fs = await import("node:fs");
   const os = await import("node:os");
@@ -878,6 +936,7 @@ try {
   if (wanted("findReplaceFlowCase")) await findReplaceFlowCase(browser);
   if (wanted("spellCheckCase")) await spellCheckCase(browser);
   if (wanted("signCase")) await signCase(browser);
+  if (wanted("signPositionsCase")) await signPositionsCase(browser);
   if (wanted("convertersCase")) await convertersCase(browser);
   if (wanted("fillFormCase")) await fillFormCase(browser);
 } finally {

@@ -74,6 +74,49 @@
   outline-offset: 2px;
 }
 
+.sign-tool__chip--wide {
+  grid-column: 1 / -1;
+}
+
+/* Above the page preview in the automatic modes: what a drag changes, and this page's state. */
+.sign-tool__pagebar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  justify-content: space-between;
+}
+
+.sign-tool__scope,
+.sign-tool__page-state,
+.sign-tool__adjusted {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sign-tool__scope > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sign-tool__badge {
+  background: var(--brand-tint);
+  border-radius: 9999px;
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+}
+
+.sign-tool__adjusted {
+  color: var(--ink);
+  font-size: 13px;
+  justify-content: space-between;
+}
+
 .sign-tool__swatch {
   border-radius: 9999px;
   height: 12px;

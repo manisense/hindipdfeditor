@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ImagePlus, PenLine, Type } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImagePlus, Move, PenLine, RotateCcw, Type } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { AppButton } from "../components/AppButton";
@@ -14,7 +14,7 @@ import { useTx } from "../lib/i18n";
 import { IMAGE_ACCEPT, readImageFile } from "../lib/imageImport";
 import { getPageCount, getPageSize, renderPage, setPdfBytes } from "../lib/pdfToImages";
 import { signPdf, type SignaturePlacement } from "../lib/signPdf";
-import { parsePageList, presetRect, SIGN_POSITIONS, type SignPosition } from "../lib/signPlacement";
+import { anchorFromRect, parsePageList, placementRect, presetRect, SIGN_POSITIONS, type SignAnchor, type SignOverride, type SignPosition } from "../lib/signPlacement";
 import { typedSignature, withClearBackground, type SignatureImage } from "../lib/signatureImage";
 import { getTool } from "../lib/tools";
 import type { ImageEdit } from "../state/editStore";
@@ -24,6 +24,10 @@ import "./SignPdfTool.css";
 const tool = getTool("sign")!;
 
 type Mode = "manual" | "all" | "chosen";
+/** A preset spot, or "custom": the spot the user dragged the signature to. */
+type Position = SignPosition | "custom";
+/** What dragging a signature changes in "every page" and "chosen pages" modes. */
+type MoveScope = "all" | "page";
 type PageSize = { widthPt: number; heightPt: number };
 
 /** Preview render scale, in px per PDF point. */
@@ -51,6 +55,13 @@ const POSITION_LABELS: Record<SignPosition, [string, string]> = {
   "bottom-right": ["Bottom right", "नीचे दाएं"],
 };
 
+/** The per-page boxes without one page's. */
+function withoutPage(all: Record<number, SignOverride>, page: number): Record<number, SignOverride> {
+  const next = { ...all };
+  delete next[page];
+  return next;
+}
+
 /**
  * Sign PDF: make a signature (draw, type or upload), place it by hand, on every page or on chosen
  * pages, and download the signed copy. Everything runs in the browser.
@@ -70,7 +81,11 @@ export function SignPdfTool() {
   const [upload, setUpload] = useState<SignatureImage | null>(null);
   const [clearPaper, setClearPaper] = useState(true);
   const [mode, setMode] = useState<Mode>("manual");
-  const [position, setPosition] = useState<SignPosition>("bottom-right");
+  const [position, setPosition] = useState<Position>("bottom-right");
+  const [custom, setCustom] = useState({ cx: 0.75, cy: 0.85 });
+  const [moveScope, setMoveScope] = useState<MoveScope>("all");
+  const [overrides, setOverrides] = useState<Record<number, SignOverride>>({});
+  const [skipped, setSkipped] = useState<number[]>([]);
   const [widthPt, setWidthPt] = useState(DEFAULT_WIDTH_PT);
   const [pageText, setPageText] = useState("1");
   const [manual, setManual] = useState<(SignaturePlacement & { id: string })[]>([]);
@@ -88,6 +103,13 @@ export function SignPdfTool() {
   const pageCount = pageSizes.length;
   const chosen = mode === "chosen" ? parsePageList(pageText, Math.max(1, pageCount)) : null;
   const step = done ? 3 : file ? 2 : 1;
+  const anchor: SignAnchor = position === "custom" ? { kind: "custom", ...custom } : { kind: "preset", position };
+  const adjustedCount = new Set([...Object.keys(overrides).map(Number), ...skipped]).size;
+
+  const resetAdjustments = () => {
+    setOverrides({});
+    setSkipped([]);
+  };
 
   const openFile = async (next: File) => {
     setOpening(true);
@@ -107,6 +129,7 @@ export function SignPdfTool() {
       setBytes(data);
       setPageSizes(sizes);
       setManual([]);
+      resetAdjustments();
       setCurrent(0);
       trackToolEvent("pdf_open_success", "sign");
     } catch (err) {
@@ -145,8 +168,48 @@ export function SignPdfTool() {
   const placements = (): SignaturePlacement[] => {
     if (!signature) return [];
     if (mode === "manual") return manual;
-    const pages = mode === "all" ? pageSizes.map((_, i) => i) : chosen && "pages" in chosen ? chosen.pages : [];
-    return pages.map((page) => ({ page, ...presetRect(pageSizes[page], aspect, position, widthPt, MARGIN_PT) }));
+    return targetPages()
+      .filter((page) => !skipped.includes(page))
+      .map((page) => ({ page, ...placementRect(pageSizes[page], aspect, anchor, widthPt, MARGIN_PT, overrides[page]) }));
+  };
+
+  // Pages the automatic modes sign, before any page the user took the signature off.
+  function targetPages(): number[] {
+    if (mode === "all") return pageSizes.map((_, i) => i);
+    return chosen && "pages" in chosen ? chosen.pages : [];
+  }
+
+  const choosePosition = (value: Position) => {
+    // "Custom" starts where the signature is now, so it does not jump.
+    if (value === "custom" && position !== "custom" && pageSizes[current]) {
+      const from = anchorFromRect(pageSizes[current], presetRect(pageSizes[current], aspect, position, widthPt, MARGIN_PT));
+      if (from.kind === "custom") setCustom({ cx: from.cx, cy: from.cy });
+    }
+    if (value === "custom") setMoveScope("all");
+    setPosition(value);
+    setDone(null);
+  };
+
+  // A signature dragged or resized on the page preview in the automatic modes.
+  const moveAutomatic = (rect: { xPt: number; yPt: number; wPt: number; hPt: number }) => {
+    const pageSize = pageSizes[current];
+    if (!pageSize) return;
+    if (moveScope === "page") {
+      setOverrides((all) => ({ ...all, [current]: { xPt: rect.xPt, yPt: rect.yPt, wPt: rect.wPt } }));
+    } else {
+      const next = anchorFromRect(pageSize, rect);
+      if (next.kind === "custom") setCustom({ cx: next.cx, cy: next.cy });
+      setPosition("custom");
+      setWidthPt(Math.round(Math.min(MAX_WIDTH_PT, Math.max(MIN_WIDTH_PT, rect.wPt))));
+      setOverrides((all) => withoutPage(all, current));
+    }
+    setDone(null);
+  };
+
+  const resetPage = (page: number) => {
+    setOverrides((all) => withoutPage(all, page));
+    setSkipped((list) => list.filter((p) => p !== page));
+    setDone(null);
   };
 
   const addToPage = () => {
@@ -339,11 +402,32 @@ export function SignPdfTool() {
                     )}
                     <div className="sign-tool__positions" role="radiogroup" aria-label={tx("Position on the page", "पेज पर जगह")}>
                       {SIGN_POSITIONS.map((value) => (
-                        <button key={value} type="button" role="radio" aria-checked={position === value} className="sign-tool__chip" onClick={() => { setPosition(value); setDone(null); }}>
+                        <button key={value} type="button" role="radio" aria-checked={position === value} className="sign-tool__chip" onClick={() => choosePosition(value)}>
                           {tx(...POSITION_LABELS[value])}
                         </button>
                       ))}
+                      <button type="button" role="radio" aria-checked={position === "custom"} className="sign-tool__chip sign-tool__chip--wide" onClick={() => choosePosition("custom")}>
+                        <Move size={14} aria-hidden="true" />
+                        {tx("Custom: drag on the page", "अपनी जगह: पेज पर खींचें")}
+                      </button>
                     </div>
+                    <p className="utility-tool__note">
+                      {position === "custom"
+                        ? tx(
+                            "Drag the signature on the page preview. The same spot is used on every signed page; resize it from its corner.",
+                            "पेज पर हस्ताक्षर को खींचकर रखें। हर हस्ताक्षर वाले पेज पर यही जगह इस्तेमाल होगी; कोने से आकार बदलें।",
+                          )
+                        : tx(
+                            "To move the signature on one page only, open that page and choose “This page only” above it.",
+                            "किसी एक पेज पर हस्ताक्षर खिसकाने के लिए वह पेज खोलें और ऊपर “सिर्फ़ यह पेज” चुनें।",
+                          )}
+                    </p>
+                    {adjustedCount > 0 && (
+                      <div className="sign-tool__adjusted">
+                        <span>{tx(`${adjustedCount} ${adjustedCount === 1 ? "page has" : "pages have"} its own position.`, `${adjustedCount} पेज पर अलग जगह रखी गई है।`)}</span>
+                        <AppButton title={tx("Reset all pages", "सभी पेज रीसेट करें")} icon={<RotateCcw size={14} aria-hidden="true" />} variant="ghost" small onClick={() => { resetAdjustments(); setDone(null); }} />
+                      </div>
+                    )}
                   </>
                 )}
                 <label className="utility-tool__field">
@@ -370,6 +454,7 @@ export function SignPdfTool() {
                     setBytes(null);
                     setPageSizes([]);
                     setManual([]);
+                    resetAdjustments();
                     setDone(null);
                     setError(null);
                   }}
@@ -399,6 +484,34 @@ export function SignPdfTool() {
                   <AppButton title={tx("Sign this page", "इस पेज पर हस्ताक्षर करें")} small disabled={!signature} onClick={addToPage} />
                 )}
               </div>
+              {mode !== "manual" && signature && targetPages().includes(current) && (
+                <div className="sign-tool__pagebar">
+                  <div className="sign-tool__scope" role="radiogroup" aria-label={tx("Moving the signature changes", "हस्ताक्षर खिसकाने पर बदलेगा")}>
+                    <span>{tx("Move on:", "खिसकाएं:")}</span>
+                    {(
+                      [
+                        ["all", mode === "all" ? tx("All pages", "सभी पेज") : tx("All chosen pages", "सभी चुने पेज")],
+                        ["page", tx("This page only", "सिर्फ़ यह पेज")],
+                      ] as [MoveScope, string][]
+                    ).map(([value, label]) => (
+                      <button key={value} type="button" role="radio" aria-checked={moveScope === value} className="sign-tool__chip" onClick={() => setMoveScope(value)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {(overrides[current] || skipped.includes(current)) && (
+                    <div className="sign-tool__page-state">
+                      <span className="sign-tool__badge">
+                        {skipped.includes(current) ? tx("Not signed on this page", "इस पेज पर हस्ताक्षर नहीं") : tx("Own position on this page", "इस पेज पर अलग जगह")}
+                      </span>
+                      <AppButton title={tx("Reset this page", "यह पेज रीसेट करें")} icon={<RotateCcw size={14} aria-hidden="true" />} variant="ghost" small onClick={() => resetPage(current)} />
+                    </div>
+                  )}
+                </div>
+              )}
+              {mode === "chosen" && signature && !targetPages().includes(current) && (
+                <p className="utility-tool__note">{tx(`Page ${current + 1} is not in your list, so it won't be signed.`, `पेज ${current + 1} आपकी सूची में नहीं है, इसलिए इस पर हस्ताक्षर नहीं होगा।`)}</p>
+              )}
               <div
                 ref={pageRef}
                 className="sign-tool__page"
@@ -438,15 +551,28 @@ export function SignPdfTool() {
                             />
                           );
                         })
-                    : shown.map((placement, k) => {
-                        const scale = viewWidthPx / size.widthPt;
+                    : shown.map((placement) => {
+                        const id = `auto-${current}`;
+                        const edit: ImageEdit = { type: "image", id, page: current, xPt: placement.xPt, yPt: placement.yPt, wPt: placement.wPt, hPt: placement.hPt, uri: signature.uri, signature: true };
                         return (
-                          <img
-                            key={k}
-                            className="sign-tool__placed"
-                            src={signature.uri}
-                            alt=""
-                            style={{ left: placement.xPt * scale, top: placement.yPt * scale, width: placement.wPt * scale, height: placement.hPt * scale }}
+                          <ImageEditOverlay
+                            key={`${id}-${placement.xPt}-${placement.yPt}-${placement.wPt}`}
+                            edit={edit}
+                            viewWidthPx={viewWidthPx}
+                            pageWidthPt={size.widthPt}
+                            pageHeightPt={size.heightPt}
+                            selected={selected === id}
+                            interactive
+                            label={moveScope === "page" ? tx("Signature on this page", "इस पेज का हस्ताक्षर") : tx("Signature on every signed page", "हर हस्ताक्षर वाले पेज का हस्ताक्षर")}
+                            deleteLabel={tx("Remove from this page", "इस पेज से हटाएं")}
+                            resizeLabel={tx("Drag to resize", "आकार बदलने के लिए खींचें")}
+                            onSelect={() => setSelected(id)}
+                            onChange={moveAutomatic}
+                            onDelete={() => {
+                              setSkipped((list) => [...list, current]);
+                              setSelected(null);
+                              setDone(null);
+                            }}
                           />
                         );
                       }))}
