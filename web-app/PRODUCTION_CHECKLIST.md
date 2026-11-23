@@ -94,7 +94,7 @@ npm run deploy
 - [x] Live status codes: `/`, `/hi/` and every tool return 200; unknown paths return 404; old `/edit/?tool=` URLs return 301 to `/tools/`.
 - [x] IndexNow submitted by hand (39 URLs, HTTP 200).
 - [ ] GA4 loads twice: `/assets/analytics.js` and Cloudflare's Google tag gateway (zone dashboard) both configure `G-1K5ZEEBHE5`. Check for doubled page views and keep one.
-- [ ] The CSP allows the tag gateway's two inline snippets by hash. If Cloudflare changes them, analytics stops until the hashes in `_headers` are updated (the site keeps working).
+- [x] The CSP allows the tag gateway's two inline snippets by hash. `node web-app/scripts/check-csp-snippets.mjs` checks every live inline script against the policy and prints any new hash; run it after each deploy. A weekly workflow (`.github/workflows/csp-check.yml`) runs it once the GitHub billing lock is lifted.
 
 ## Current deployment record
 
