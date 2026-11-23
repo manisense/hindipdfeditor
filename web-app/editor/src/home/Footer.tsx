@@ -132,11 +132,11 @@ export function Footer() {
           <div>
             <a href="#top" className="flex items-center gap-2.5">
               <img src={LOGO_BADGE} alt="" className="size-8 rounded-lg" />
-              <span className="font-display text-[17px] font-bold">
+              <span className="font-display text-lg font-bold">
                 Hindi PDF <span className="text-brand">Editor</span>
               </span>
             </a>
-            <p className="mt-3.5 max-w-[260px] text-[14.5px] text-muted">
+            <p className="mt-3.5 max-w-[260px] text-base text-muted">
               {t("footer.desc")}
             </p>
           </div>
@@ -158,7 +158,7 @@ export function Footer() {
                               "Android app on Google Play (opens in a new tab)",
                           }
                         : {})}
-                      className="text-[14.5px] text-muted transition-colors hover:text-brand"
+                      className="text-base text-muted transition-colors hover:text-brand"
                     >
                       {l.label}
                     </a>
@@ -168,7 +168,7 @@ export function Footer() {
             </div>
           ))}
         </div>
-        <div className="mt-11 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 text-[13.5px] text-muted">
+        <div className="mt-11 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 text-sm text-muted">
           <span>{t("footer.rights")}</span>
           <span>{t("footer.tagline")}</span>
         </div>

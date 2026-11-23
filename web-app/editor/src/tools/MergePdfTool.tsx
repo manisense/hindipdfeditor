@@ -62,9 +62,9 @@ export function MergePdfTool() {
       tool={tool}
       compact={files.length > 0}
       steps={[
-        { label: "Select PDFs", active: step === 1, done: step > 1 },
-        { label: "Merge", active: step === 2, done: step > 2 },
-        { label: "Download", active: step === 3, done: step === 3 },
+        { label: tx("Select PDFs", "पीडीएफ चुनें"), active: step === 1, done: step > 1 },
+        { label: tx("Merge", "जोड़ें"), active: step === 2, done: step > 2 },
+        { label: tx("Download", "डाउनलोड"), active: step === 3, done: step === 3 },
       ]}
     >
       <div className="utility-tool">

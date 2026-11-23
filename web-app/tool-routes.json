@@ -84,7 +84,7 @@
     "id": "krutidev",
     "path": "/tools/krutidev-to-unicode/",
     "title": "KrutiDev PDF to Unicode",
-    "shortTitle": "KrutiDev to Unicode",
+    "shortTitle": "KrutiDev",
     "description": "Turn a PDF typed in KrutiDev or DevLys into a Word file with Unicode Hindi text, checked against text recognition on your device. Other old Hindi fonts are read by text recognition instead.",
     "accent": "#0D9488",
     "category": "convert"

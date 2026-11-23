@@ -93,7 +93,7 @@ function TranslateVisual() {
   return (
     <div className="mt-6 flex items-center gap-2 rounded-2xl border border-line bg-cream p-4">
       <div className="flex-1 rounded-xl bg-white p-3 shadow-sm">
-        <div className="font-display text-[15px] font-semibold text-ink">
+        <div className="font-display text-base font-semibold text-ink">
           नमस्ते
         </div>
         <div className="mt-1 h-1.5 w-3/4 rounded bg-brand-tint" />
@@ -102,7 +102,7 @@ function TranslateVisual() {
         →
       </div>
       <div className="flex-1 rounded-xl bg-white p-3 shadow-sm">
-        <div className="font-display text-[15px] font-semibold text-accent">
+        <div className="font-display text-base font-semibold text-accent">
           Hello
         </div>
         <div className="mt-1 h-1.5 w-3/4 rounded bg-accent-tint" />
@@ -186,7 +186,7 @@ function FormVisual() {
     <div className="mt-6 space-y-2 rounded-2xl border border-line bg-cream p-4">
       <div className="rounded-xl bg-white p-3 shadow-sm">
         <div className="text-[13px] font-semibold text-muted">नाम</div>
-        <div className="mt-1 rounded-md border border-brand/40 bg-brand-tint/40 px-2 py-1 font-display text-[15px] font-semibold text-ink">
+        <div className="mt-1 rounded-md border border-brand/40 bg-brand-tint/40 px-2 py-1 font-display text-base font-semibold text-ink">
           कृष्ण कुमार त्रिपाठी
         </div>
       </div>
@@ -205,7 +205,7 @@ function WordVisual() {
     <div className="mt-6 flex items-center gap-3 rounded-2xl border border-line bg-cream p-4">
       <div className="flex-1 rounded-xl bg-white p-3 shadow-sm">
         <div className="mb-2 font-display text-[13px] font-bold text-ink">PDF</div>
-        <div className="mb-1.5 font-display text-[15px] font-semibold text-ink">
+        <div className="mb-1.5 font-display text-base font-semibold text-ink">
           रिक्तियां
         </div>
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded border border-line bg-line text-[12px]">
@@ -221,7 +221,7 @@ function WordVisual() {
       </div>
       <div className="flex-1 rounded-xl bg-white p-3 shadow-sm">
         <div className="mb-2 font-display text-[13px] font-bold text-accent">.docx</div>
-        <div className="mb-1.5 font-display text-[15px] font-semibold text-ink">
+        <div className="mb-1.5 font-display text-base font-semibold text-ink">
           रिक्तियां
         </div>
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded border border-accent/40 bg-accent/30 text-[12px]">
@@ -258,7 +258,7 @@ export function Features() {
             <h3 className="text-xl font-bold text-ink">
               {t("feat.editHeading")}
             </h3>
-            <p className="mt-2 max-w-md text-[15px] text-muted">
+            <p className="mt-2 max-w-md text-base text-muted">
               {t("feat.editDesc")}
             </p>
             <EditVisual />
@@ -269,7 +269,7 @@ export function Features() {
             <h3 className="text-xl font-bold text-ink">
               {t("feat.translateHeading")}
             </h3>
-            <p className="mt-2 text-[15px] text-muted">
+            <p className="mt-2 text-base text-muted">
               {t("feat.translateDesc")}
             </p>
             <TranslateVisual />
@@ -280,7 +280,7 @@ export function Features() {
             <h3 className="text-xl font-bold text-ink">
               {t("feat.signHeading")}
             </h3>
-            <p className="mt-2 text-[15px] text-muted">{t("feat.signDesc")}</p>
+            <p className="mt-2 text-base text-muted">{t("feat.signDesc")}</p>
             <SignVisual />
           </Card>
 
@@ -289,7 +289,7 @@ export function Features() {
             <h3 className="text-xl font-bold text-ink">
               {t("feat.formHeading")}
             </h3>
-            <p className="mt-2 text-[15px] text-muted">{t("feat.formDesc")}</p>
+            <p className="mt-2 text-base text-muted">{t("feat.formDesc")}</p>
             <FormVisual />
           </Card>
 
@@ -298,7 +298,7 @@ export function Features() {
             <h3 className="text-xl font-bold text-ink">
               {t("feat.ocrHeading")}
             </h3>
-            <p className="mt-2 text-[15px] text-muted">{t("feat.ocrDesc")}</p>
+            <p className="mt-2 text-base text-muted">{t("feat.ocrDesc")}</p>
             <OcrVisual />
           </Card>
 
@@ -307,7 +307,7 @@ export function Features() {
             <h3 className="text-xl font-bold text-ink">
               {t("feat.wordHeading")}
             </h3>
-            <p className="mt-2 max-w-lg text-[15px] text-muted">
+            <p className="mt-2 max-w-lg text-base text-muted">
               {t("feat.wordDesc")}
             </p>
             <WordVisual />
@@ -320,7 +320,7 @@ export function Features() {
                 ? "पीडीएफ जोड़ें, अलग करें व क्रम बदलें"
                 : "Merge, split & reorder"}
             </h3>
-            <p className="mt-2 text-[15px] text-muted">
+            <p className="mt-2 text-base text-muted">
               {isHindi
                 ? "कई पीडीएफ को मनचाहे क्रम में जोड़ें या जरूरी पेज अलग करें।"
                 : "Combine, extract page ranges and rebuild documents in the order you want."}
@@ -333,7 +333,7 @@ export function Features() {
             <h3 className="text-xl font-bold text-ink">
               {t("feat.compressHeading")}
             </h3>
-            <p className="mt-2 text-[15px] text-muted">
+            <p className="mt-2 text-base text-muted">
               {t("feat.compressDesc")}
             </p>
             <Chips
@@ -350,7 +350,7 @@ export function Features() {
             <h3 className="text-xl font-bold text-ink">
               {t("feat.privacyHeading")}
             </h3>
-            <p className="mt-2 text-[15px] text-muted">
+            <p className="mt-2 text-base text-muted">
               {t("feat.privacyDesc")}
             </p>
             <Chips

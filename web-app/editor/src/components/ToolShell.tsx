@@ -22,6 +22,24 @@ import { ToolGuide } from "./ToolGuide";
 import { TOOL_HINDI_NAMES, TOOLS, toolHref, type ToolId, type ToolMeta } from "../lib/tools";
 import "./ToolShell.css";
 
+/** Same six links, in the same order, as the guide and info page footers. */
+const FOOTER_LINKS_EN = [
+  ["/articles/", "Guides"],
+  ["/about/", "About"],
+  ["/privacy/", "Privacy"],
+  ["/data-safety/", "Data safety"],
+  ["/terms/", "Terms"],
+  ["/support/", "Support"],
+] as const;
+const FOOTER_LINKS_HI = [
+  ["/articles/", "गाइड"],
+  ["/hi/about/", "हमारे बारे में"],
+  ["/hi/privacy/", "प्राइवेसी"],
+  ["/hi/data-safety/", "डेटा सुरक्षा"],
+  ["/hi/terms/", "शर्तें"],
+  ["/hi/support/", "सहायता"],
+] as const;
+
 type Step = { label: string; active?: boolean; done?: boolean };
 
 type Props = {
@@ -179,7 +197,7 @@ export function ToolShell({
 
       <footer className="tool-shell__footer">
         <div>
-          <span>© 2026 Hindi PDF Editor</span>
+          <span>© 2026 {isHindi ? "हिंदी पीडीएफ एडिटर" : "Hindi PDF Editor"}</span>
           <span className="tool-shell__footer-dot" aria-hidden="true">
             ·
           </span>
@@ -189,10 +207,12 @@ export function ToolShell({
               : "Made for Devanagari · हिंदी"}
           </span>
         </div>
-        <nav aria-label={isHindi ? "कानूनी जानकारी और सहायता" : "Legal and support"}>
-          <a href="/privacy/">{isHindi ? "प्राइवेसी" : "Privacy"}</a>
-          <a href="/support/">{isHindi ? "सपोर्ट" : "Support"}</a>
-          <a href="/terms/">{isHindi ? "शर्तें" : "Terms"}</a>
+        <nav aria-label={isHindi ? "साइट" : "Site"}>
+          {(isHindi ? FOOTER_LINKS_HI : FOOTER_LINKS_EN).map(([href, label]) => (
+            <a key={href} href={href}>
+              {label}
+            </a>
+          ))}
         </nav>
       </footer>
     </div>

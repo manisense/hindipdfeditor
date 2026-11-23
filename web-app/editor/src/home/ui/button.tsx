@@ -14,8 +14,8 @@ const variants = {
 };
 
 const sizes = {
-  md: "text-[15px] px-6 py-3",
-  lg: "text-[16px] px-7 py-4",
+  md: "text-base px-6 py-3",
+  lg: "text-base px-7 py-4",
 };
 
 export function Btn({
