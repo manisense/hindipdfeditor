@@ -11,7 +11,8 @@ PDF to Word took about 3 minutes for a 31-page, 2.8 MB Word-made Hindi PDF in Kr
 1. **Worker pool:** OCR runs on a pool of Tesseract workers per language (`poolSizeFor` in `ocrPoolSize.ts`). The pool is 1 worker on devices with 2 GB of memory or less, at most 2 on 4 GB devices and on phones that do not report memory (Safari), and at most 4 otherwise; never more than cores − 1. PDF to Word reads that many pages side by side and keeps them in page order. Progress counts finished pages.
 2. **Band check:** a page with enough embedded Devanagari is checked on a band of its top lines, about 30 complex and 30 plain words, twice the minimum the check needs. The band is cut from the page image and goes through the same complex/plain comparison as before (`embeddedDevanagariVerdict`). Only a passing band skips full-page OCR. A failing or too-short band reads the whole page exactly as before. Pages with unmapped glyphs always read the whole page. So every KrutiDev page is still checked against OCR, as AGENTS.md requires.
 3. **Per-font trust (Unicode text only):** when a font's own Devanagari has passed full-page checks over at least two pages, later pages that draw Devanagari only in trusted fonts keep their text without a check. A font that ever fails is never trusted again, and every 8th skippable page is checked anyway. KrutiDev conversions and pages with unmapped glyphs are never skipped. Trust is kept per opened document.
-4. **Lazy page images:** PDF to Word draws a page image only when that page needs OCR.
+4. **Edit PDF read-ahead:** Edit PDF's background reading runs as many lanes as there are OCR workers, each taking the next page in `nextOcrPage` order, so the page on screen goes first (added later on 23 November: all 31 pages ready in 30 s instead of 66 s).
+5. **Lazy page images:** PDF to Word draws a page image only when that page needs OCR.
 
 ## Result
 

@@ -73,7 +73,7 @@ import {
   openFailureMessage,
   tooManyPagesMessage,
 } from "../lib/userMessages";
-import { detectTextLines, detectTextLinesWithGemini, onOcrUnavailable } from "../lib/ocr";
+import { detectTextLines, detectTextLinesWithGemini, ocrPoolSize, onOcrUnavailable } from "../lib/ocr";
 import { nextOcrPage } from "../lib/ocrQueue";
 import { findOcrTargetAt, findTextEditAt } from "../lib/ocrHitTest";
 import {
@@ -481,14 +481,16 @@ export function EditPdfTool() {
       });
   };
 
-  // One page at a time, the page on screen first (see nextOcrPage): Hindi pages are checked with
-  // OCR, and queuing pages as they were passed made the page on screen wait behind all of them.
+  // Pages are read in the background in the order of nextOcrPage (the page on screen first, then
+  // the ones after it): queuing pages as they were passed made the page on screen wait behind all
+  // of them. Several lanes run side by side, one per OCR worker (see ocrPoolSize), so later pages
+  // are ready sooner; a lane that frees up always takes the page on screen next.
   const runOcrQueue = async (doc: DocumentState) => {
     if (ocrRunnerDocRef.current === doc.id) return;
     ocrRunnerDocRef.current = doc.id;
     const blocked = (pageIndex: number) =>
       doc.legacyFontWarnings.some((w) => w.page === pageIndex && !isConvertibleLegacyFont(w.fontName));
-    try {
+    const lane = async () => {
       while (useEditStore.getState().document?.id === doc.id) {
         const next = nextOcrPage(
           doc.pages.length,
@@ -498,6 +500,9 @@ export function EditPdfTool() {
         if (next === null) return;
         await ensureOcrForPage(doc, next);
       }
+    };
+    try {
+      await Promise.all(Array.from({ length: Math.max(1, Math.min(ocrPoolSize(), doc.pages.length)) }, lane));
     } finally {
       if (ocrRunnerDocRef.current === doc.id) ocrRunnerDocRef.current = null;
     }
