@@ -1,6 +1,6 @@
 # Hindi PDF Editor — website
 
-Public site for `hindipdfeditor.com` plus the browser PDF tools: edit Hindi text, merge, split and compress. The React app lives in `editor/`; static pages, articles and SEO files live at this level.
+Public site for `hindipdfeditor.com` plus the browser PDF tools: edit Hindi text, sign, translate, merge, split, compress, and convert PDF to Word and Word to PDF. The tool list (routes, pages, sitemap, redirects) is `tool-routes.json`. The React app lives in `editor/`; static pages, articles and SEO files live at this level.
 
 ## Development
 
