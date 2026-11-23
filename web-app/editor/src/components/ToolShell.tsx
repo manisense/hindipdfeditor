@@ -7,6 +7,8 @@ import {
   Pencil,
   Scissors,
   Signature,
+  FileText,
+  FileType2,
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -28,6 +30,8 @@ type Props = {
 const toolIcons: Record<ToolId, LucideIcon> = {
   edit: Pencil,
   sign: Signature,
+  "pdf-to-word": FileType2,
+  "word-to-pdf": FileText,
   translate: Languages,
   merge: Combine,
   split: Scissors,
@@ -37,6 +41,8 @@ const toolIcons: Record<ToolId, LucideIcon> = {
 const toolHindiNames: Record<ToolId, string> = {
   edit: "हिंदी एडिट",
   sign: "हस्ताक्षर करें",
+  "pdf-to-word": "पीडीएफ से वर्ड",
+  "word-to-pdf": "वर्ड से पीडीएफ",
   translate: "अनुवाद",
   merge: "मर्ज (जोड़ें)",
   split: "स्प्लिट (अलग करें)",

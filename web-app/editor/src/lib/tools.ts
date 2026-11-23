@@ -1,6 +1,14 @@
 import routeManifest from "../../../tool-routes.json";
 
-export type ToolId = "edit" | "sign" | "merge" | "split" | "compress" | "translate";
+export type ToolId =
+  | "edit"
+  | "sign"
+  | "merge"
+  | "split"
+  | "compress"
+  | "translate"
+  | "pdf-to-word"
+  | "word-to-pdf";
 
 export type ToolMeta = {
   id: ToolId;
@@ -33,6 +41,8 @@ export function readToolIdFromLocation(): ToolId | null {
   const raw = params.get("tool");
   if (
     raw === "sign" ||
+    raw === "pdf-to-word" ||
+    raw === "word-to-pdf" ||
     raw === "edit" ||
     raw === "merge" ||
     raw === "split" ||

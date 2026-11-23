@@ -6,6 +6,8 @@ import { AppButton } from "./AppButton";
 import "./DropZone.css";
 
 type Props = {
+  /** Files the zone takes: PDFs (default) or Word documents (.docx). */
+  kind?: "pdf" | "docx";
   accept?: string;
   multiple?: boolean;
   disabled?: boolean;
@@ -18,14 +20,21 @@ type Props = {
   compact?: boolean;
 };
 
+const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
 function isPdf(file: File): boolean {
   return (
     file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
   );
 }
 
+function isDocx(file: File): boolean {
+  return file.type === DOCX_TYPE || file.name.toLowerCase().endsWith(".docx");
+}
+
 export function DropZone({
-  accept = "application/pdf",
+  kind = "pdf",
+  accept,
   multiple = false,
   disabled,
   title,
@@ -43,22 +52,28 @@ export function DropZone({
     null,
   );
 
+  const word = kind === "docx";
+  const accepted = word ? isDocx : isPdf;
+  const fileType = word ? tx("Word file (.docx)", "वर्ड फाइल (.docx)") : tx("PDF file (.pdf)", "पीडीएफ फाइल (.pdf)");
   const emit = (list: FileList | File[]) => {
     if (disabled) return;
     const selected = Array.from(list);
-    const files = selected.filter(isPdf);
+    const files = selected.filter(accepted);
     if (files.length === 0) {
-      setValidationMessage("Choose a PDF file (.pdf). No file was opened.");
+      setValidationMessage(tx(`Choose a ${fileType}. No file was opened.`, `${fileType} चुनें। कोई फाइल नहीं खुली।`));
       return;
     }
     if (files.length !== selected.length) {
       setValidationMessage(
-        "Choose PDF files only. No files were opened; remove unsupported files and try again.",
+        tx(
+          `Choose ${word ? "Word files" : "PDF files"} only. No files were opened; remove unsupported files and try again.`,
+          `सिर्फ ${word ? "वर्ड" : "पीडीएफ"} फाइलें चुनें। कोई फाइल नहीं खुली; दूसरी फाइलें हटाकर फिर कोशिश करें।`,
+        ),
       );
       return;
     }
     if (!multiple && files.length > 1) {
-      setValidationMessage("Choose one PDF at a time. No file was opened.");
+      setValidationMessage(tx("Choose one file at a time. No file was opened.", "एक बार में एक फाइल चुनें। कोई फाइल नहीं खुली।"));
       return;
     }
     setValidationMessage(null);
@@ -87,7 +102,7 @@ export function DropZone({
       <input
         ref={inputRef}
         type="file"
-        accept={accept}
+        accept={accept ?? (word ? `.docx,${DOCX_TYPE}` : "application/pdf")}
         multiple={multiple}
         className="drop-zone__input"
         disabled={disabled}
@@ -116,20 +131,26 @@ export function DropZone({
         onClick={() => inputRef.current?.click()}
         disabled={disabled}
       />
-      <p className="drop-zone__hint">or drop PDF{multiple ? "s" : ""} here</p>
+      <p className="drop-zone__hint">
+        {word
+          ? tx("or drop a Word file here", "या वर्ड फाइल यहाँ छोड़ें")
+          : multiple
+            ? tx("or drop PDFs here", "या पीडीएफ यहाँ छोड़ें")
+            : tx("or drop PDF here", "या पीडीएफ यहाँ छोड़ें")}
+      </p>
       {validationMessage && (
         <p className="drop-zone__validation" role="alert">
           {validationMessage}
         </p>
       )}
-      <div className="drop-zone__assurances" aria-label="File handling details">
+      <div className="drop-zone__assurances" aria-label={tx("File handling details", "फाइल की जानकारी")}>
         <span>
           <ShieldCheck size={14} aria-hidden="true" />{" "}
           {tx("Private by default", "डिफ़ॉल्ट रूप से प्राइवेट")}
         </span>
         <span>
           <FileType2 size={14} aria-hidden="true" />{" "}
-          {tx("PDF files only", "सिर्फ पीडीएफ फाइलें")}
+          {word ? tx("Word .docx files only", "सिर्फ वर्ड .docx फाइलें") : tx("PDF files only", "सिर्फ पीडीएफ फाइलें")}
         </span>
       </div>
       {children}

@@ -10,6 +10,8 @@ import {
   Split,
   Minimize2,
   Signature,
+  FileType2,
+  FileText,
 } from "lucide-react";
 import { Btn } from "./ui/button";
 import { GooglePlayMark } from "./ui/google-play-link";
@@ -77,6 +79,22 @@ export function Nav() {
       icon: Minimize2,
       tintFg: "#F0700F",
       tintBg: "#FFF1E4",
+    },
+    {
+      id: "pdf-to-word" as const,
+      nameEn: "PDF to Word",
+      nameHi: "पीडीएफ से वर्ड",
+      icon: FileType2,
+      tintFg: "#16A34A",
+      tintBg: "#E6F7EC",
+    },
+    {
+      id: "word-to-pdf" as const,
+      nameEn: "Word to PDF",
+      nameHi: "वर्ड से पीडीएफ",
+      icon: FileText,
+      tintFg: "#16A34A",
+      tintBg: "#E6F7EC",
     },
   ];
 

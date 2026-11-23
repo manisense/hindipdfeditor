@@ -746,6 +746,39 @@ async function signCase(browser) {
   await page.close();
 }
 
+async function convertersCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { unzipSync, strFromU8 } = require(path.join(editorModules, "fflate"));
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await page.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
+  await page.locator("input[type=file]").first().setInputFiles(path.join(fixtures, "devanagari-fixture.pdf"));
+  let download = page.waitForEvent("download", { timeout: 240000 });
+  await page.getByRole("button", { name: /Convert & download Word/ }).click();
+  const docxPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "gate-")), "fixture.docx");
+  fs.copyFileSync(await (await download).path(), docxPath);
+  const xml = strFromU8(unzipSync(new Uint8Array(fs.readFileSync(docxPath)))["word/document.xml"]);
+  const text = [...xml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((m) => m[1]).join("\n");
+  for (const line of ["धर्म और क्षेत्र में गुरुजी ने ज्ञान दिया।", "विद्यालय में सूर्य की रोशनी आती है।", "धर्म → reph (र्) | क्षेत्र → क्ष"]) {
+    assert.ok(text.includes(line), "the Word file has the PDF's text: " + line);
+  }
+  await page.goto(baseUrl + "/tools/word-to-pdf/", { waitUntil: "networkidle" });
+  await page.locator("input[type=file]").first().setInputFiles(docxPath);
+  await page.locator(".word-to-pdf__preview section.docx").first().waitFor({ timeout: 60000 });
+  download = page.waitForEvent("download", { timeout: 240000 });
+  await page.getByRole("button", { name: "Download PDF", exact: true }).click();
+  const pdf = new Uint8Array(fs.readFileSync(await (await download).path()));
+  const doc = await pdfjs.getDocument({ data: pdf.slice(), verbosity: 0 }).promise;
+  const pages = doc.numPages;
+  await doc.destroy();
+  const rgba = await pagePixels(pdf, 0);
+  let ink = 0;
+  for (let i = 0; i < rgba.length; i += 4) if (rgba[i] + rgba[i + 1] + rgba[i + 2] < 300) ink++;
+  assert.ok(pages >= 1 && ink > 5000, "the PDF from the Word file has its text drawn (" + ink + " dark px)");
+  console.log("CONVERTERS_OK PDF to Word kept the Hindi text exactly; Word to PDF made", pages, "pages");
+  await page.close();
+}
+
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   await noOpCase(browser, "English digital page", path.join(fixtures, "translation-bilingual-fixture.pdf"), 1, [1, 3]);
@@ -761,6 +794,7 @@ try {
   await findReplaceFlowCase(browser);
   await spellCheckCase(browser);
   await signCase(browser);
+  await convertersCase(browser);
 } finally {
   await browser.close();
 }
