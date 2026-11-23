@@ -14,7 +14,8 @@ function errorName(error: unknown): string {
  * @param error What pdf.js or the editor threw while opening.
  */
 export function openFailureMessage(error: unknown): Bilingual {
-  if (errorName(error) === 'PasswordException') {
+  const text = error instanceof Error ? error.message : '';
+  if (errorName(error) === 'PasswordException' || /encrypt/i.test(text)) {
     return {
       en: 'This PDF is password-protected. Open it in a PDF reader, save a copy without the password, then open that copy here.',
       hi: 'यह PDF पासवर्ड से सुरक्षित है। इसे किसी PDF रीडर में खोलकर बिना पासवर्ड वाली कॉपी सेव करें, फिर वह कॉपी यहाँ खोलें।',

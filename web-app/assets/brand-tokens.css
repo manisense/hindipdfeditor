@@ -37,6 +37,7 @@
 :root {
   --hpe-primary: #1843dd;
   --hpe-primary-deep: #3226b8;
+  --hpe-primary-hover: #1130a8;
   --hpe-primary-tint: #eef2ff;
   --hpe-edit: #1843dd;
   --hpe-edit-tint: #e8edff;

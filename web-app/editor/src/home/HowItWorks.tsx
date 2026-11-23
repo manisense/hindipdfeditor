@@ -60,11 +60,11 @@ export function HowItWorks() {
             return (
               <motion.li
                 key={step.number}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ y: 20 }}
+                whileInView={{ y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
                 transition={{ duration: 0.4, delay: idx * 0.1 }}
-                className="relative flex flex-col rounded-2xl border border-line bg-cream/40 p-6 transition-all duration-200 hover:border-brand/30 hover:bg-white hover:shadow-[var(--shadow-soft)]"
+                className="relative flex flex-col rounded-2xl border border-line bg-cream/40 p-6 transition-[transform,background-color,border-color,box-shadow,color,opacity] duration-200 hover:border-brand/30 hover:bg-white hover:shadow-[var(--shadow-soft)]"
               >
                 <div className="mb-5 flex items-center justify-between">
                   <div className="grid size-11 place-items-center rounded-xl bg-brand-tint text-brand">

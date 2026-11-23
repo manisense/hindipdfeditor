@@ -1,7 +1,7 @@
 import { cn } from "../../lib/cn";
 
 const base =
-  "group inline-flex items-center justify-center gap-2 rounded-full font-display font-semibold transition-all active:translate-y-px whitespace-nowrap";
+  "group inline-flex items-center justify-center gap-2 rounded-full font-display font-semibold transition-[transform,background-color,border-color,box-shadow,color,opacity] active:translate-y-px whitespace-nowrap";
 
 const variants = {
   primary:

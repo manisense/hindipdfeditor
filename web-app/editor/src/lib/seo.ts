@@ -1,3 +1,4 @@
+import { toolGuide } from "./toolGuides";
 import { getTool, type ToolId } from "./tools";
 import { getFaqs } from "../home/faqData";
 export const SITE_ORIGIN = "https://hindipdfeditor.com";
@@ -152,20 +153,40 @@ export function applyHomeJsonLd(): void {
 export function clearHomeJsonLd(): void {
   document.getElementById("seo-site-graph")?.remove();
 }
-export function applyToolJsonLd(toolId: ToolId): void {
+/** Tool page graph: the app plus its FAQ, in the canonical (English) language. */
+export function toolGraphJsonLd(toolId: ToolId): Record<string, unknown> | null {
   const tool = getTool(toolId);
-  if (!tool) return;
+  if (!tool) return null;
   const url = `${SITE_ORIGIN}${tool.path}`;
-  upsertJsonLd("seo-tool-graph", {
+  return {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "@id": `${url}#app`,
-    name: tool.title,
-    url,
-    description: tool.description,
-    applicationCategory: "ProductivityApplication",
-    operatingSystem: "Web",
-  });
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "@id": `${url}#app`,
+        name: tool.title,
+        url,
+        description: tool.description,
+        applicationCategory: "ProductivityApplication",
+        operatingSystem: "Web",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${url}#faq`,
+        inLanguage: "en",
+        mainEntity: toolGuide(toolId, "en").faqs.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+    ],
+  };
+}
+export function applyToolJsonLd(toolId: ToolId): void {
+  const graph = toolGraphJsonLd(toolId);
+  if (graph) upsertJsonLd("seo-tool-graph", graph);
 }
 export function clearToolJsonLd(): void {
   document.getElementById("seo-tool-graph")?.remove();

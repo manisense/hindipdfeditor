@@ -9,7 +9,9 @@ export type ToolId =
   | "compress"
   | "translate"
   | "pdf-to-word"
-  | "word-to-pdf";
+  | "word-to-pdf"
+  | "organize"
+  | "krutidev";
 
 export type ToolMeta = {
   id: ToolId;
@@ -22,6 +24,22 @@ export type ToolMeta = {
 };
 
 export const TOOLS = routeManifest as ToolMeta[];
+
+/** Tool names for Hindi screens (one language per screen). */
+export const TOOL_HINDI_NAMES: Record<ToolId, string> = {
+  edit: "हिंदी एडिट",
+  sign: "हस्ताक्षर करें",
+  "fill-form": "फॉर्म भरें",
+  "pdf-to-word": "पीडीएफ से वर्ड",
+  "word-to-pdf": "वर्ड से पीडीएफ",
+  translate: "अनुवाद",
+  merge: "पीडीएफ जोड़ें",
+  split: "पेज अलग करें",
+  compress: "साइज कम करें",
+  organize: "पेज व्यवस्थित करें",
+  krutidev: "कृतिदेव से यूनिकोड",
+};
+
 
 export function getTool(id: string | null): ToolMeta | null {
   if (!id) return null;
@@ -49,7 +67,9 @@ export function readToolIdFromLocation(): ToolId | null {
     raw === "merge" ||
     raw === "split" ||
     raw === "compress" ||
-    raw === "translate"
+    raw === "translate" ||
+    raw === "organize" ||
+    raw === "krutidev"
   ) {
     return raw;
   }

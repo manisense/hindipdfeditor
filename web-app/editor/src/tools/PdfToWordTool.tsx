@@ -11,7 +11,6 @@ import { useTx } from "../lib/i18n";
 import { getTool } from "../lib/tools";
 import "./UtilityTool.css";
 
-const tool = getTool("pdf-to-word")!;
 
 /** Largest PDF converted, in pages: each page is read (and OCR'd when needed) in the browser. */
 const MAX_PAGES = 150;
@@ -29,7 +28,9 @@ function downloadBlob(blob: Blob, filename: string): void {
 }
 
 /** PDF to Word: reads each page's text (PDF text, repaired Hindi, or OCR) into a .docx file. */
-export function PdfToWordTool() {
+/** PDF to Word, also served as the KrutiDev-to-Unicode page with its own heading. */
+export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-word" | "krutidev" }) {
+  const tool = getTool(toolId)!;
   const tx = useTx();
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -50,14 +51,14 @@ export function PdfToWordTool() {
         if (total > MAX_PAGES) throw new Error("too-many-pages");
         setProgress({ done, total });
       });
-      trackToolEvent("pdf_open_success", "pdf-to-word");
+      trackToolEvent("pdf_open_success", toolId);
       const filename = `${file.name.replace(/\.pdf$/i, "") || "document"}.docx`;
       downloadBlob(converted.blob, filename);
-      trackToolEvent("export_success", "pdf-to-word");
+      trackToolEvent("export_success", toolId);
       setResult({ filename, pages: converted.pages, emptyPages: converted.emptyPages });
     } catch (err) {
       console.error("PDF to Word failed", err);
-      trackToolEvent("export_failed", "pdf-to-word");
+      trackToolEvent("export_failed", toolId);
       setError(
         err instanceof Error && err.message === "too-many-pages"
           ? tx(`Up to ${MAX_PAGES} pages can be converted at a time. Split the PDF first.`, `एक बार में ${MAX_PAGES} पेज तक बदले जा सकते हैं। पहले पीडीएफ को अलग करें।`)
@@ -82,12 +83,24 @@ export function PdfToWordTool() {
       <div className="utility-tool">
         {!file ? (
           <DropZone
+            sample={toolId === "pdf-to-word"}
             accent={tool.accent}
-            title={tx("PDF to Word", "पीडीएफ से वर्ड")}
-            subtitle={tx(
-              "Get an editable Word file from a Hindi or English PDF, including scans. Your file stays on this device.",
-              "हिंदी या अंग्रेज़ी पीडीएफ (स्कैन भी) से बदलने लायक वर्ड फाइल पाएं। फाइल इसी डिवाइस पर रहती है।",
-            )}
+            title={
+              toolId === "krutidev"
+                ? tx("KrutiDev PDF to Unicode", "कृतिदेव पीडीएफ से यूनिकोड")
+                : tx("PDF to Word", "पीडीएफ से वर्ड")
+            }
+            subtitle={
+              toolId === "krutidev"
+                ? tx(
+                    "Open a PDF typed in KrutiDev or DevLys and get a Word file with Unicode Hindi you can copy, search and edit. Your file stays on this device.",
+                    "कृतिदेव या देवलिस में टाइप की गई पीडीएफ खोलें और यूनिकोड हिंदी वाली वर्ड फाइल पाएं, जिसे कॉपी, खोज और एडिट कर सकें। फाइल इसी डिवाइस पर रहती है।",
+                  )
+                : tx(
+                    "Get an editable Word file from a Hindi or English PDF, including scans. Your file stays on this device.",
+                    "हिंदी या अंग्रेज़ी पीडीएफ (स्कैन भी) से बदलने लायक वर्ड फाइल पाएं। फाइल इसी डिवाइस पर रहती है।",
+                  )
+            }
             buttonLabel={tx("Select PDF", "पीडीएफ चुनें")}
             onFiles={(files) => {
               setFile(files[0]);

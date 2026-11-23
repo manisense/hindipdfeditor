@@ -7,6 +7,7 @@
   flex-direction: column;
   font-family: var(--font-body);
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: clip;
   position: relative;
 }
@@ -373,6 +374,9 @@
   .tool-shell__tool-switcher {
     justify-content: flex-start;
     margin-bottom: 12px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+    padding-right: 40px;
     width: 100%;
   }
 

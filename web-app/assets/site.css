@@ -1,9 +1,10 @@
 @import url("./brand-tokens.css");
 :root {
+  --icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
   color-scheme: light;
   --bg: var(--hpe-page);
   --accent: var(--hpe-primary);
-  --accent-dark: var(--hpe-primary-deep);
+  --accent-dark: var(--hpe-primary-hover);
   --orange: var(--hpe-orange);
   --blue: var(--hpe-edit);
   --green: var(--hpe-green);
@@ -49,8 +50,19 @@ img {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: #fff;
-  border-bottom: 1px solid var(--line);
+  padding: 12px 12px 0;
+}
+
+/* Same floating pill as the homepage and tool pages. */
+.site-header .nav {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid rgba(21, 23, 44, 0.07);
+  border-radius: 9999px;
+  box-shadow: var(--hpe-shadow);
+  max-width: 1120px;
+  min-height: 62px;
+  padding: 0 8px 0 16px;
 }
 
 .nav {
@@ -147,11 +159,7 @@ img {
 }
 
 .button.primary {
-  background: linear-gradient(
-    110deg,
-    var(--hpe-primary),
-    var(--hpe-primary-deep)
-  );
+  background: var(--hpe-primary);
   color: #fff;
 }
 
@@ -490,11 +498,15 @@ img {
 }
 
 .promo-list li::before {
-  color: var(--hpe-green);
-  content: "✓";
-  font-weight: 800;
+  background: var(--hpe-green);
+  content: "";
+  height: 16px;
   left: 0;
+  -webkit-mask: var(--icon-check) center / contain no-repeat;
+  mask: var(--icon-check) center / contain no-repeat;
   position: absolute;
+  top: 0.2em;
+  width: 16px;
 }
 
 .promo-band__art {
@@ -650,9 +662,16 @@ h3 {
   margin: 0;
 }
 
+/* The tinted band runs up behind the floating header. */
 .page-hero {
   background: var(--brand-wash);
-  border-bottom: 1px solid var(--line);
+  margin-top: -76px;
+  padding-top: 76px;
+}
+
+.content p,
+.page-hero-inner p {
+  max-width: 70ch;
 }
 
 .page-hero-inner,
@@ -831,6 +850,15 @@ td {
 }
 
 @media (max-width: 560px) {
+  .site-header {
+    padding: 8px 8px 0;
+  }
+
+  .site-header .nav {
+    border-radius: 20px;
+    padding: 0 8px 0 12px;
+  }
+
   .nav {
     min-height: 64px;
     padding: 0 12px;
@@ -979,13 +1007,13 @@ td {
   background: var(--accent);
   color: #ffffff !important;
   padding: 10px 22px;
-  box-shadow: 0 10px 24px rgba(24, 67, 221, 0.25);
+  box-shadow: var(--hpe-shadow);
 }
 
 .btn-pill-primary:hover {
   background: var(--accent-dark);
   transform: translateY(-1px);
-  box-shadow: 0 12px 28px rgba(24, 67, 221, 0.35);
+  box-shadow: var(--hpe-shadow);
   color: #ffffff !important;
 }
 

@@ -107,11 +107,11 @@ export function ArticlesSection() {
             <motion.a
               key={art.title}
               href={art.href}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ y: 18 }}
+              whileInView={{ y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.4, delay: idx * 0.1 }}
-              className="group flex flex-col justify-between rounded-2xl border border-line bg-white p-6 transition-all duration-200 hover:-translate-y-1 hover:border-brand/40 hover:shadow-[var(--shadow-soft)]"
+              className="group flex flex-col justify-between rounded-2xl border border-line bg-white p-6 transition-[transform,background-color,border-color,box-shadow,color,opacity] duration-200 hover:-translate-y-1 hover:border-brand/40 hover:shadow-[var(--shadow-soft)]"
             >
               <div>
                 <div className="flex items-center justify-between gap-2 mb-4">

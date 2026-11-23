@@ -6,15 +6,15 @@ import {
   FileType2,
   Languages,
   Layers,
+  LayoutGrid,
   Pencil,
   Signature,
   Split,
+  Type,
 } from "lucide-react";
 import { Btn } from "./ui/button";
 import { GooglePlayLink } from "./ui/google-play-link";
-import { TypewriterCycle } from "./ui/typewriter-cycle";
 import { PointerHighlight } from "./ui/pointer-highlight";
-import { Cover } from "./ui/cover";
 import { ImagesBadge } from "./ui/images-badge";
 import { useLanguage } from "../lib/i18n";
 import { toolHref } from "../lib/tools";
@@ -52,8 +52,10 @@ export function Hero() {
     { icon: Languages, name: t("tool.translate"), detail: t("tool.translateSub"), tone: "bg-accent-tint text-accent", href: toolHref("translate", lang) },
     { icon: FileType2, name: t("tool.pdfToWord"), detail: t("tool.pdfToWordSub"), tone: "bg-accent-tint text-accent", href: toolHref("pdf-to-word", lang) },
     { icon: FileText, name: t("tool.wordToPdf"), detail: t("tool.wordToPdfSub"), tone: "bg-accent-tint text-accent", href: toolHref("word-to-pdf", lang) },
+    { icon: Type, name: t("tool.krutidev"), detail: t("tool.krutidevSub"), tone: "bg-accent-tint text-accent", href: toolHref("krutidev", lang) },
     { icon: Layers, name: t("tool.merge"), detail: t("tool.mergeSub"), tone: "bg-pop-lav text-[#5B4BD6]", href: toolHref("merge", lang) },
     { icon: Split, name: t("tool.split"), detail: t("tool.splitSub"), tone: "bg-pop-lav text-[#5B4BD6]", href: toolHref("split", lang) },
+    { icon: LayoutGrid, name: t("tool.organize"), detail: t("tool.organizeSub"), tone: "bg-pop-lav text-[#5B4BD6]", href: toolHref("organize", lang) },
     { icon: FileArchive, name: t("tool.compress"), detail: t("tool.compressSub"), tone: "bg-pop-yellow-tint text-[#B58400]", href: toolHref("compress", lang) },
   ];
 
@@ -82,27 +84,11 @@ export function Hero() {
             </Fade>
 
             <Fade delay={0.05}>
-              <h1 className="mt-6 font-display text-[clamp(34px,4.6vw,56px)] font-extrabold leading-[1.05] tracking-tight text-ink">
+              <h1 className="mt-6 font-display text-[clamp(34px,4.2vw,52px)] font-extrabold leading-[1.05] tracking-tight text-ink">
                 <span className="block text-ink">{t("hero.titlePre")}</span>
-                <TypewriterCycle
-                  className="text-ink"
-                  caretClassName="bg-brand"
-                  phrases={
-                    isHindi
-                      ? [
-                          { text: "हिंदी टेक्स्ट एडिट करें।" },
-                          { text: "बिना फॉन्ट टूटे।" },
-                          { text: "सरकारी फॉर्म हेतु।" },
-                          { text: "फ्री, बिना साइन-अप।" },
-                        ]
-                      : [
-                          { text: "Edit Hindi text online." },
-                          { text: "No broken Hindi fonts." },
-                          { text: "हिंदी दस्तावेज़।" },
-                          { text: "Free, no sign-up." },
-                        ]
-                  }
-                />
+                <span className="block text-ink">
+                  {isHindi ? "बिना फॉन्ट टूटे।" : "No broken Hindi fonts."}
+                </span>
               </h1>
             </Fade>
 
@@ -114,7 +100,7 @@ export function Hero() {
                     <PointerHighlight className="mx-0.5 font-semibold text-ink">
                       एडिट, साइन, अनुवाद और वर्ड में कन्वर्ट
                     </PointerHighlight>{" "}
-                    करें — सब कुछ <Cover>एक ही जगह</Cover>।
+                    करें — सब कुछ एक ही जगह।
                   </>
                 ) : (
                   <>
@@ -122,7 +108,7 @@ export function Hero() {
                     <PointerHighlight className="mx-0.5 font-semibold text-ink">
                       Devanagari
                     </PointerHighlight>{" "}
-                    documents — all of it, in <Cover>one place</Cover>.
+                    documents, all in one place.
                   </>
                 )}
               </p>

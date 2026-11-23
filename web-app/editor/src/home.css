@@ -13,6 +13,8 @@
 
   --color-accent: #01873e;
   --color-accent-500: #12a551;
+  /* Green text on green tint: 6.4:1, where #16a34a gives 3.9:1. */
+  --color-accent-700: #166534;
   --color-accent-tint: #d6f3e3;
 
   --color-navy: #050839;
@@ -35,7 +37,7 @@
     "Inter", "Noto Sans Devanagari", ui-sans-serif, system-ui, sans-serif;
 
   --shadow-soft: 0 12px 34px rgba(21, 23, 44, 0.09);
-  --shadow-brand: 0 14px 34px rgba(24, 67, 221, 0.28);
+  --shadow-brand: 0 8px 24px rgba(20, 22, 31, 0.06);
 }
 
 @layer base {

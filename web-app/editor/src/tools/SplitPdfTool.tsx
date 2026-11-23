@@ -9,6 +9,7 @@ import { SelectedFileSummary } from "../components/SelectedFileSummary";
 import { ToolShell } from "../components/ToolShell";
 import { downloadPdfBytes, getPdfPageCount, splitPdfFile } from "../lib/pdfOps";
 import { getTool } from "../lib/tools";
+import { openFailureMessage, type Bilingual } from "../lib/userMessages";
 import "./UtilityTool.css";
 
 const tool = getTool("split")!;
@@ -20,7 +21,7 @@ export function SplitPdfTool() {
   const [fromPage, setFromPage] = useState(1);
   const [toPage, setToPage] = useState(1);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Bilingual | null>(null);
   const [doneName, setDoneName] = useState<string | null>(null);
 
   const step = doneName ? 3 : file ? 2 : 1;
@@ -36,7 +37,7 @@ export function SplitPdfTool() {
       setFromPage(1);
       setToPage(count);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(openFailureMessage(err));
     }
   };
 
@@ -55,7 +56,7 @@ export function SplitPdfTool() {
       setDoneName(filename);
     } catch (err) {
       trackToolEvent("export_failed", "split");
-      setError(err instanceof Error ? err.message : String(err));
+      setError(openFailureMessage(err));
     } finally {
       setBusy(false);
     }
@@ -74,6 +75,7 @@ export function SplitPdfTool() {
       <div className="utility-tool">
         {!file ? (
           <DropZone
+            sample
             accent={tool.accent}
             title={tx("Split a PDF", "पीडीएफ के पेज अलग करें")}
             subtitle={tx(
@@ -150,7 +152,7 @@ export function SplitPdfTool() {
                 }}
               />
               <AppButton
-                title={busy ? "Splitting…" : "Split & download"}
+                title={busy ? tx("Splitting…", "पेज अलग हो रहे हैं…") : tx("Split & download", "अलग करें और डाउनलोड करें")}
                 onClick={() => void runSplit()}
                 disabled={busy}
               />
@@ -158,8 +160,8 @@ export function SplitPdfTool() {
           </div>
         )}
         {error && (
-          <AppStatus tone="error" title="Couldn’t split this PDF">
-            {error}
+          <AppStatus tone="error" title={tx("Couldn’t split this PDF", "पीडीएफ के पेज अलग नहीं हो पाए")}>
+            {tx(error.en, error.hi)}
           </AppStatus>
         )}
         {doneName && (

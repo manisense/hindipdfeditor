@@ -1,5 +1,22 @@
 # Changelog
 
+## Design audit fixes: tool guides, Hindi screens, two new tool pages, 23 November 2026
+
+### Added
+- **Organize PDF pages** (`/tools/organize-pdf/`): opens the editor straight into the Pages panel to turn, reorder, delete or add blank pages. Web ADR 0017.
+- **KrutiDev PDF to Unicode** (`/tools/krutidev-to-unicode/`): the PDF to Word converter under its own heading. KrutiDev and DevLys text is converted to Unicode and checked against OCR; other old fonts are read by OCR. The Edit tool keeps the original KrutiDev text layer on lines you do not change, so this page uses PDF to Word, which gives real Unicode text. Web ADR 0017.
+- **Every tool page explains its task** under the file picker: three steps, what to know (limits and privacy), questions and related guides, in English or Hindi. The English copy is prerendered into the static page and published as a FAQPage graph. Every claim was checked against the tool's code.
+- **"Try a Hindi sample"** on Edit, Organize, Sign, Translate, Split, Compress and PDF to Word opens the bundled Devanagari fixture.
+- **Merge** has up and down buttons to set the order; before, the order was only the order files were picked.
+
+### Changed
+- **Hindi screens are fully Hindi** in Translate (labels, consent, progress, errors), Merge, Compress, Split, parts of Edit and the security check. Library error text is no longer shown; the shared open-failure messages are, including for password-protected files. Hindi tool names and footer labels no longer carry English in brackets.
+- The file picker's title is the page's h1 at display size (it was 28px at weight 400, under a "Ready when you are" label, which is gone). Body copy uses full ink at 17px.
+- On phones the tool row fades at its edge and scrolls to the current tool.
+- Static pages (guides, support, about): primary buttons are solid `#1843DD` with a darker hover, not a gradient with a blue shadow; the homepage brand button's blue shadow is now the neutral one. Check marks are icons, not text glyphs.
+- Guides and info pages (support, about, privacy, terms, data safety) use the same floating header as the homepage and tool pages. Guide text is 17px in a 760px column (lines ran ~102 characters); info paragraphs cap at 70ch.
+- **Homepage:** the hero headline no longer types and deletes itself; its second line is fixed ("No broken Hindi fonts." / "बिना फॉन्ट टूटे।"), and the hover-sparkle box is gone. Scroll reveals move cards but no longer hide them, so 27 blocks are visible in the prerendered page and on phones (two long blank stretches). The closing CTA uses the soft blurred mesh from `design-system.md` instead of hard arcs. The green "English" chip meets contrast. Hindi footer labels drop the English in brackets.
+
 ## Homepage shows every tool; tool pages follow the design system, 23 November 2026
 
 ### Changed

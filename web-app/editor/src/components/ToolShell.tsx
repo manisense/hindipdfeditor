@@ -1,8 +1,11 @@
 import {
+  Check,
   Combine,
   FileArchive,
   Globe,
   Grid2X2,
+  LayoutGrid,
+  Type,
   Languages,
   Pencil,
   Scissors,
@@ -12,10 +15,11 @@ import {
   FileType2,
   type LucideIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { useLanguage } from "../lib/i18n";
-import { TOOLS, toolHref, type ToolId, type ToolMeta } from "../lib/tools";
+import { ToolGuide } from "./ToolGuide";
+import { TOOL_HINDI_NAMES, TOOLS, toolHref, type ToolId, type ToolMeta } from "../lib/tools";
 import "./ToolShell.css";
 
 type Step = { label: string; active?: boolean; done?: boolean };
@@ -38,19 +42,10 @@ const toolIcons: Record<ToolId, LucideIcon> = {
   merge: Combine,
   split: Scissors,
   compress: FileArchive,
+  organize: LayoutGrid,
+  krutidev: Type,
 };
 
-const toolHindiNames: Record<ToolId, string> = {
-  edit: "हिंदी एडिट",
-  sign: "हस्ताक्षर करें",
-  "fill-form": "फॉर्म भरें",
-  "pdf-to-word": "पीडीएफ से वर्ड",
-  "word-to-pdf": "वर्ड से पीडीएफ",
-  translate: "अनुवाद",
-  merge: "मर्ज (जोड़ें)",
-  split: "स्प्लिट (अलग करें)",
-  compress: "कंप्रेस करें",
-};
 
 export function ToolShell({
   tool,
@@ -62,13 +57,23 @@ export function ToolShell({
   const { lang, setLang, isHindi } = useLanguage();
   const ActiveIcon = tool ? toolIcons[tool.id] : Grid2X2;
 
+  const switcherRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    // Phones show part of the tool row; bring the current tool into view.
+    const active = switcherRef.current?.querySelector<HTMLElement>(".is-active");
+    const row = switcherRef.current;
+    if (active && row && row.scrollWidth > row.clientWidth) {
+      row.scrollLeft = active.offsetLeft - row.clientWidth / 2 + active.offsetWidth / 2;
+    }
+  }, [tool?.id]);
+
   const toggleLanguage = () => {
     setLang(lang === "en" ? "hi" : "en");
   };
 
   const toolDisplayTitle = tool
     ? isHindi
-      ? toolHindiNames[tool.id] || tool.shortTitle
+      ? TOOL_HINDI_NAMES[tool.id]
       : tool.shortTitle
     : "";
 
@@ -94,10 +99,10 @@ export function ToolShell({
           {tool && (
             <div
               className="tool-shell__current-tool"
-              aria-label={`Current tool: ${toolDisplayTitle}`}
+              aria-label={isHindi ? `चुना गया टूल: ${toolDisplayTitle}` : `Current tool: ${toolDisplayTitle}`}
             >
               <ActiveIcon size={15} strokeWidth={2.2} aria-hidden="true" />
-              <h1>{toolDisplayTitle}</h1>
+              {compact ? <h1>{toolDisplayTitle}</h1> : <span>{toolDisplayTitle}</span>}
             </div>
           )}
           <div className="tool-shell__actions">
@@ -106,7 +111,7 @@ export function ToolShell({
               type="button"
               onClick={toggleLanguage}
               title={isHindi ? "Switch to English" : "हिंदी भाषा में बदलें"}
-              aria-label="Switch Language"
+              aria-label={isHindi ? "Switch to English" : "हिंदी में बदलें"}
               className="tool-shell__lang-btn"
             >
               <Globe size={13} style={{ color: "var(--brand)" }} />
@@ -126,11 +131,11 @@ export function ToolShell({
 
       <main className="tool-shell__main">
         {tool && (
-          <nav className="tool-shell__tool-switcher" aria-label="PDF tools">
+          <nav ref={switcherRef} className="tool-shell__tool-switcher" aria-label={isHindi ? "पीडीएफ टूल" : "PDF tools"}>
             {TOOLS.map((item) => {
               const Icon = toolIcons[item.id];
               const name = isHindi
-                ? toolHindiNames[item.id] || item.shortTitle
+                ? TOOL_HINDI_NAMES[item.id]
                 : item.shortTitle;
               return (
                 <a
@@ -148,7 +153,7 @@ export function ToolShell({
         )}
 
         {steps && steps.length > 0 && (
-          <ol className="tool-shell__steps" aria-label="Progress">
+          <ol className="tool-shell__steps" aria-label={isHindi ? "प्रगति" : "Progress"}>
             {steps.map((step, index) => (
               <li
                 key={step.label}
@@ -156,7 +161,11 @@ export function ToolShell({
                 aria-current={step.active ? "step" : undefined}
               >
                 <span className="tool-shell__step-num">
-                  {step.done ? "✓" : index + 1}
+                  {step.done ? (
+                    <Check size={14} strokeWidth={3} aria-hidden="true" />
+                  ) : (
+                    index + 1
+                  )}
                 </span>
                 <span>{step.label}</span>
               </li>
@@ -165,6 +174,7 @@ export function ToolShell({
         )}
 
         <div className="tool-shell__body">{children}</div>
+        {tool && !compact && <ToolGuide toolId={tool.id} language={lang} />}
       </main>
 
       <footer className="tool-shell__footer">
@@ -179,7 +189,7 @@ export function ToolShell({
               : "Made for Devanagari · हिंदी"}
           </span>
         </div>
-        <nav aria-label="Legal and support">
+        <nav aria-label={isHindi ? "कानूनी जानकारी और सहायता" : "Legal and support"}>
           <a href="/privacy/">{isHindi ? "प्राइवेसी" : "Privacy"}</a>
           <a href="/support/">{isHindi ? "सपोर्ट" : "Support"}</a>
           <a href="/terms/">{isHindi ? "शर्तें" : "Terms"}</a>

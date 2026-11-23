@@ -132,7 +132,7 @@ export function Nav() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-2.5 sm:top-3 z-50 px-2.5 sm:px-4">
-      <header className="pointer-events-auto mx-auto flex h-[56px] sm:h-[62px] max-w-5xl items-center justify-between gap-2 sm:gap-4 rounded-full border border-black/[0.08] bg-white/90 pl-3.5 sm:pl-5 pr-2 sm:pr-2.5 shadow-[0_8px_30px_rgba(21,23,44,0.08)] backdrop-blur-xl backdrop-saturate-150 transition-all">
+      <header className="pointer-events-auto mx-auto flex h-[56px] sm:h-[62px] max-w-5xl items-center justify-between gap-2 sm:gap-4 rounded-full border border-black/[0.08] bg-white/90 pl-3.5 sm:pl-5 pr-2 sm:pr-2.5 shadow-[0_8px_30px_rgba(21,23,44,0.08)] backdrop-blur-xl backdrop-saturate-150 transition-[transform,background-color,border-color,box-shadow,color,opacity]">
         {/* Brand */}
         <a
           href="#top"
@@ -172,7 +172,7 @@ export function Nav() {
             onClick={toggleLanguage}
             title={isHindi ? "Switch to English" : "हिंदी भाषा में बदलें"}
             aria-label={isHindi ? "Switch to English" : "हिंदी भाषा में बदलें"}
-            className="inline-flex items-center gap-1 sm:gap-1.5 rounded-full border border-line bg-cream/70 px-2.5 sm:px-3 py-1.5 font-display text-[12px] sm:text-[13px] font-bold text-ink transition-all hover:bg-white hover:border-brand/30 hover:shadow-sm"
+            className="inline-flex items-center gap-1 sm:gap-1.5 rounded-full border border-line bg-cream/70 px-2.5 sm:px-3 py-1.5 font-display text-[12px] sm:text-[13px] font-bold text-ink transition-[transform,background-color,border-color,box-shadow,color,opacity] hover:bg-white hover:border-brand/30 hover:shadow-sm"
           >
             <Globe className="size-3.5 text-brand shrink-0" />
             <span className="hidden min-[380px]:inline">
@@ -240,7 +240,7 @@ export function Nav() {
             id="mobile-nav-menu"
             role="dialog"
             aria-label="Navigation menu"
-            className="animate-mobile-menu pointer-events-auto mx-auto mt-2 w-full max-w-5xl max-h-[calc(100vh-76px)] overflow-y-auto rounded-2xl sm:rounded-3xl border border-black/[0.08] bg-white/95 p-4 sm:p-5 shadow-[0_20px_50px_rgba(21,23,44,0.18)] backdrop-blur-2xl backdrop-saturate-150 transition-all md:hidden"
+            className="animate-mobile-menu pointer-events-auto mx-auto mt-2 w-full max-w-5xl max-h-[calc(100dvh-76px)] overflow-y-auto rounded-2xl sm:rounded-3xl border border-black/[0.08] bg-white/95 p-4 sm:p-5 shadow-[0_20px_50px_rgba(21,23,44,0.18)] backdrop-blur-2xl backdrop-saturate-150 transition-[transform,background-color,border-color,box-shadow,color,opacity] md:hidden"
           >
             {/* Primary Navigation Links */}
             <nav
