@@ -73,7 +73,7 @@ import {
   openFailureMessage,
   tooManyPagesMessage,
 } from "../lib/userMessages";
-import { detectTextLines, detectTextLinesWithGemini, ocrPoolSize, onOcrUnavailable } from "../lib/ocr";
+import { detectTextImageLines, detectTextLines, detectTextLinesWithGemini, ocrPoolSize, onOcrUnavailable } from "../lib/ocr";
 import { nextOcrPage } from "../lib/ocrQueue";
 import { findOcrTargetAt, findTextEditAt } from "../lib/ocrHitTest";
 import {
@@ -467,11 +467,17 @@ export function EditPdfTool() {
         if (!rendered) throw new Error("document closed");
         return detectTextLines(rendered, { convertLegacy: pageWarnings.length > 0 });
       })
-      .then((lines) => {
+      .then(async (lines) => {
         if (useEditStore.getState().document?.id !== doc.id)
           return;
         setOcrLines(pageIndex, lines);
         setOcrStatusByPage((s) => ({ ...s, [pageIndex]: "done" }));
+        // Then, without holding the page back: headings and labels drawn as images (Word exports
+        // them so), added to the lines the page has by then.
+        const imageLines = await detectTextImageLines(pageState, lines).catch(() => []);
+        const live = useEditStore.getState().document;
+        if (imageLines.length === 0 || live?.id !== doc.id) return;
+        setOcrLines(pageIndex, [...(live.pages[pageIndex]?.ocrLines ?? []), ...imageLines]);
       })
       .catch((error) => {
         console.warn(`OCR failed on page ${pageIndex}`, error);

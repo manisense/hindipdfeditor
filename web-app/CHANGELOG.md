@@ -1,5 +1,10 @@
 # Changelog
 
+## Edit PDF: headings drawn as images are editable, 23 November 2026
+
+### Added
+- Edit PDF now finds text drawn as images (Word headings with effects, titles, table labels) and makes it editable. The page's own lines appear as fast as before; these image lines are added in the background a moment later. When one is replaced, the export cleans the old image text away and draws the new text. Image words inside a sentence are not added yet, because replacing that sentence would leave the image word underneath. Gate case `EDIT_TEXT_IMAGE_OK`; web ADR 0016 updated.
+
 ## PDF to Word: tall tables keep picture labels, 23 November 2026
 
 ### Fixed
