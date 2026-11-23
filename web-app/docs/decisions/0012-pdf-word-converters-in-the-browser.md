@@ -36,5 +36,21 @@ Dependencies are pinned to exact versions at least two weeks old; `npm audit` re
 
 - Server-side LibreOffice: best fidelity, but documents would leave the device.
 - `mammoth` for Word to PDF: semantic HTML without page size or layout.
-- Rebuilding tables and images in PDF to Word: needs layout analysis beyond text lines; left out
+- Rebuilding images in PDF to Word: left out. Ruled tables are rebuilt since 23 November 2026 (see the addendum below).
   and stated on the tool page.
+
+## Addendum, 23 November 2026: ruled tables
+
+PDF to Word rebuilds ruled tables as Word tables.
+
+- **Ruling lines:** these come from the page's operators (`pdfRulings.ts`): stroked straight segments and filled thin rectangles (up to 3 pt thick, at least 4 pt long), following save/restore, `cm` and form XObjects.
+- **Grid (`tableDetect.ts`):** collinear pieces are joined (Word draws borders cell by cell). Crossing lines form a grid. A missing inner border, under 70 % drawn, merges the cells on both sides; only rectangular merges are kept. A lone box (one cell) is a frame, not a table.
+- **Text into cells:** each text line goes to the cell holding its centre. A cell's lines become its paragraphs, indented from the cell's own edge.
+- **Word output:** the table carries fixed column widths, at-least row heights, `gridSpan` and `vMerge`, and the table's indent. Paragraphs above, between and below tables keep their order.
+- **Picture text:** text drawn as images is never joined across a vertical table border, so each header word lands in its own cell.
+- **Limits:**
+  - Tables aligned only by spaces, without lines, are not detected.
+  - Scanned pages have no drawn lines, so their tables stay as paragraphs.
+  - A text line that spans two cells goes to the cell holding its centre.
+- **Checks:** gate case `WORD_TABLE_OK`. On the 31-page notice, 14 tables are rebuilt, including a two-level header and row merges.
+

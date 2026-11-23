@@ -1,3 +1,4 @@
+import type { DetectedTable } from './tableDetect';
 import type { OcrLine } from '../state/editStore';
 
 /** A paragraph for the Word document, with its look taken from the PDF lines it came from. */
@@ -28,12 +29,13 @@ const baseline = (line: OcrLine) => line.baselineYPt ?? line.yPt + line.hPt;
  *
  * @param lines Detected lines; boxes in PDF points (top-left origin).
  * @param pageWidthPt Page width, in PDF points.
+ * @param marginPt Left edge that counts as no indent, in PDF points; by default the leftmost line.
  */
-export function paragraphsFromLines(lines: readonly OcrLine[], pageWidthPt: number): WordParagraph[] {
+export function paragraphsFromLines(lines: readonly OcrLine[], pageWidthPt: number, marginPt?: number): WordParagraph[] {
   const ordered = joinRows(lines.filter((line) => line.text.trim())).sort(
     (a, b) => baseline(a) - baseline(b) || a.xPt - b.xPt,
   );
-  const margin = Math.min(...ordered.map((line) => line.xPt), pageWidthPt * 0.1);
+  const margin = marginPt ?? Math.min(...ordered.map((line) => line.xPt), pageWidthPt * 0.1);
   const out: (WordParagraph & { last: OcrLine })[] = [];
   for (const line of ordered) {
     const fontSizePt = Math.max(6, Math.round(line.hPt * SIZE_PER_HEIGHT * 2) / 2);
@@ -103,4 +105,75 @@ function joinRows(lines: readonly OcrLine[]): OcrLine[] {
       hPt: Math.max(...ordered.map((l) => l.hPt)),
     };
   });
+}
+
+/** One cell of a Word table: where it starts, what it spans, and its paragraphs. */
+export type WordTableCell = { col: number; colSpan: number; rowSpan: number; paragraphs: WordParagraph[] };
+
+/** A table for the Word document; sizes in PDF points. */
+export type WordTable = {
+  /** Left edge of the table from the page's left edge, in PDF points. */
+  xPt: number;
+  columnWidthsPt: number[];
+  /** Rows top to bottom; a cell spanning rows appears only in its first row. */
+  rows: { heightPt: number; cells: WordTableCell[] }[];
+};
+
+/** Page content in reading order: paragraphs and tables. */
+export type WordBlock = { kind: 'paragraph'; paragraph: WordParagraph } | { kind: 'table'; table: WordTable };
+
+const centreOf = (line: OcrLine) => ({ x: line.xPt + line.wPt / 2, y: line.yPt + line.hPt / 2 });
+
+/**
+ * Lays a page out as paragraphs and ruled tables in reading order: each line inside a table goes
+ * to the cell holding its centre (a cell's lines become its paragraphs, indented from the cell's
+ * edge); lines outside tables become paragraphs between them.
+ *
+ * @param lines Detected lines; boxes in PDF points (top-left origin).
+ * @param pageWidthPt Page width, in PDF points.
+ * @param tables Ruled tables on the page (see `detectTables`), boxes in PDF points.
+ */
+export function pageBlocks(lines: readonly OcrLine[], pageWidthPt: number, tables: readonly DetectedTable[]): WordBlock[] {
+  const textLines = lines.filter((line) => line.text.trim());
+  const margin = Math.min(...textLines.map((line) => line.xPt), pageWidthPt * 0.1);
+  const inTable = new Map<OcrLine, DetectedTable>();
+  for (const line of textLines) {
+    const { x, y } = centreOf(line);
+    const table = tables.find((t) => x >= t.xPt && x <= t.xPt + t.wPt && y >= t.yPt && y <= t.yPt + t.hPt);
+    if (table) inTable.set(line, table);
+  }
+  const flow = textLines.filter((line) => !inTable.has(line));
+  const blocks: WordBlock[] = [];
+  let top = -Infinity;
+  const paragraphsBetween = (bottom: number) => {
+    const chunk = flow.filter((line) => centreOf(line).y >= top && centreOf(line).y < bottom);
+    for (const paragraph of paragraphsFromLines(chunk, pageWidthPt, margin)) blocks.push({ kind: 'paragraph', paragraph });
+  };
+  for (const table of [...tables].sort((a, b) => a.yPt - b.yPt)) {
+    paragraphsBetween(table.yPt);
+    blocks.push({ kind: 'table', table: wordTable(table, textLines.filter((line) => inTable.get(line) === table)) });
+    top = table.yPt + table.hPt;
+  }
+  paragraphsBetween(Infinity);
+  return blocks;
+}
+
+function wordTable(table: DetectedTable, lines: readonly OcrLine[]): WordTable {
+  const rows = table.rows.slice(0, -1).map((y, r) => ({ heightPt: table.rows[r + 1] - y, cells: [] as WordTableCell[] }));
+  for (const cell of table.cells) {
+    const own = lines
+      .filter((line) => {
+        const { x, y } = centreOf(line);
+        return x >= cell.xPt && x < cell.xPt + cell.wPt && y >= cell.yPt && y < cell.yPt + cell.hPt;
+      })
+      // Measured from the cell's own left edge, so indents and centring are the cell's.
+      .map((line) => ({ ...line, xPt: line.xPt - cell.xPt }));
+    const paragraphs = paragraphsFromLines(own, cell.wPt, 0).map((paragraph, i) => (i === 0 ? { ...paragraph, spaceBeforePt: 0 } : paragraph));
+    rows[cell.row].cells.push({ col: cell.col, colSpan: cell.colSpan, rowSpan: cell.rowSpan, paragraphs });
+  }
+  return {
+    xPt: table.xPt,
+    columnWidthsPt: table.columns.slice(0, -1).map((x, c) => table.columns[c + 1] - x),
+    rows,
+  };
 }

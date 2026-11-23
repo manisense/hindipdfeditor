@@ -89,7 +89,7 @@ Nothing known is critical: no data loss, no broken tool, no silently wrong outpu
 4. **AI features untested live:** consented translation and AI OCR have not been tested end to end on production. *Owner, or ours with consent.*
 
 ### Medium
-5. **PDF to Word:** tables, pictures and exact positions are not carried over. *Ours: table detection.*
+5. **PDF to Word tables:** *done:* ruled tables become Word tables with merged cells (ADR 0012 addendum). Still open: pictures, tables without lines, and tables on scanned pages.
 6. **GA4 counted twice:** the site script and the Cloudflare tag gateway both send page views. *Owner.*
 7. **IndexNow:** the workflow is blocked by the GitHub billing lock; it is run by hand after each deploy. *Owner.*
 8. **Search Console:** sitemap acceptance and indexing of priority URLs are unchecked. *Owner.*

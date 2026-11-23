@@ -18,14 +18,16 @@ export type ImageOps = {
   paintImageXObjectRepeat: number;
 };
 
-type Matrix = [number, number, number, number, number, number];
+/** A PDF transformation matrix [a, b, c, d, e, f]. */
+export type Matrix = [number, number, number, number, number, number];
 
 /** A box in PDF user space, in pt (bottom-left origin): [x1, y1, x2, y2]. */
 export type UserRect = [number, number, number, number];
 
-const IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
+export const IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
 
-function multiply(m: Matrix, n: Matrix): Matrix {
+/** The matrix that applies `n` first, then `m` (how PDF's `cm` composes with the current matrix). */
+export function multiply(m: Matrix, n: Matrix): Matrix {
   // n applied first, then m (PDF's "cm" pre-multiplies the current matrix).
   return [
     n[0] * m[0] + n[1] * m[2],
@@ -96,9 +98,14 @@ function overlapArea(a: PtBox, b: PtBox): number {
  *
  * @param images Image boxes in editor space, in pt.
  * @param textLines The page's text-layer lines, in pt.
+ * @param walls Vertical lines (table borders) images are never joined across: x and vertical span, in pt.
  * @returns Rows to read with OCR, top to bottom, at most {@link MAX_TEXT_IMAGE_ROWS}.
  */
-export function textImageRows(images: readonly PtBox[], textLines: readonly PtBox[]): PtBox[] {
+export function textImageRows(
+  images: readonly PtBox[],
+  textLines: readonly PtBox[],
+  walls: readonly { x: number; y1: number; y2: number }[] = [],
+): PtBox[] {
   const candidates = images
     .filter((box) => box.hPt >= MIN_TEXT_IMAGE_PT && box.hPt <= MAX_TEXT_IMAGE_PT && box.wPt >= 2)
     .sort((a, b) => a.yPt - b.yPt || a.xPt - b.xPt);
@@ -107,7 +114,11 @@ export function textImageRows(images: readonly PtBox[], textLines: readonly PtBo
     const row = rows.find((r) => {
       const sameLine = Math.abs(r.yPt + r.hPt / 2 - (box.yPt + box.hPt / 2)) < Math.min(r.hPt, box.hPt) / 2;
       const gap = Math.max(box.xPt - (r.xPt + r.wPt), r.xPt - (box.xPt + box.wPt));
-      return sameLine && gap < Math.max(r.hPt, box.hPt);
+      const left = Math.min(r.xPt + r.wPt, box.xPt + box.wPt);
+      const right = Math.max(r.xPt, box.xPt);
+      const middle = box.yPt + box.hPt / 2;
+      const walled = walls.some((wall) => wall.x > left - 1 && wall.x < right + 1 && wall.y1 <= middle && wall.y2 >= middle);
+      return sameLine && gap < Math.max(r.hPt, box.hPt) && !walled;
     });
     if (!row) {
       rows.push({ ...box });

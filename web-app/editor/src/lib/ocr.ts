@@ -27,6 +27,7 @@ import { textBandOfLine } from "./ocrLineGeometry";
 import { mustVerifyPage, newFontTrust, noteSkippedPage, recordVerifiedPage, type FontTrust } from "./embeddedTextTrust";
 import { currentDeviceHints, poolSizeFor } from "./ocrPoolSize";
 import { stackStrips, type PtBox as ImageBox } from "./pdfImageRects";
+import type { Ruling } from "./pdfRulings";
 import { extractEmbeddedTextLines } from "./pdfTextExtract";
 import {
   hasGlyphPlaceholder,
@@ -512,7 +513,7 @@ async function verifyEmbeddedDevanagari(
  */
 export async function detectTextLines(
   page: PageState,
-  options?: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean },
+  options?: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean; rulings?: Ruling[] },
 ): Promise<OcrLine[]> {
   return readPageLines(page, options);
 }
@@ -571,7 +572,7 @@ async function readImageRows(pageIndex: number, rows: ImageBox[]): Promise<(stri
 
 async function readPageLines(
   page: PageState,
-  options: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean } | undefined,
+  options: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean; rulings?: Ruling[] } | undefined,
 ): Promise<OcrLine[]> {
   const pdfBytes = getPdfBytes();
   // The page image is drawn only when OCR needs it (when the caller passes `render`).
@@ -584,6 +585,7 @@ async function readPageLines(
         convertLegacy: options?.convertLegacy,
         devanagariTextByFont: textByFont,
         readTextImages: options?.readTextImages ? (rows) => readImageRows(page.pageIndex, rows) : undefined,
+        rulings: options?.rulings,
       });
       if (embedded.length > 0) {
         // Fonts whose Devanagari already matched OCR on earlier pages are not checked again on
