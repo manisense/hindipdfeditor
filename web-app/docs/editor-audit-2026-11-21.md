@@ -94,7 +94,7 @@ Nothing known is critical: no data loss, no broken tool, no silently wrong outpu
 7. **IndexNow:** the workflow is blocked by the GitHub billing lock; it is run by hand after each deploy. *Owner.*
 8. **Search Console:** sitemap acceptance and indexing of priority URLs are unchecked. *Owner.*
 9. **Word to PDF:** "Download PDF" makes page images, so text is not selectable unless the user prints. *Ours.*
-10. **Edit PDF reading:** pages are read one at a time and could be read ahead with the OCR pool. *Ours.*
+10. **Edit PDF reading:** *done:* pages are read ahead in parallel lanes (31 pages in 30 s instead of 66 s; ADR 0015).
 
 ### Low
 11. **Fill PDF form:** Hindi answers are images (the value keeps the text), and a non-Latin list box shows only its selection. *Partly Plan B.*

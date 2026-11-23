@@ -1,5 +1,10 @@
 # Changelog
 
+## Edit PDF reads pages ahead in parallel, 23 November 2026
+
+### Changed
+- Edit PDF reads pages in the background in parallel lanes, one per OCR worker (2 on phones, up to 4 on desktops), still the page on screen first. On a 31-page Word-made Hindi notice, every page was ready for editing after 30 s instead of 66 s; the first page is ready in about 4 s, as before. Web ADR 0015 updated.
+
 ## PDF to Word keeps ruled tables, 23 November 2026
 
 ### Added
