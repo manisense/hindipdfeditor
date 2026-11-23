@@ -14,6 +14,8 @@
 - The file picker's title is the page's h1 at display size (it was 28px at weight 400, under a "Ready when you are" label, which is gone). Body copy uses full ink at 17px.
 - On phones the tool row fades at its edge and scrolls to the current tool.
 - Static pages (guides, support, about): primary buttons are solid `#1843DD` with a darker hover, not a gradient with a blue shadow; the homepage brand button's blue shadow is now the neutral one. Check marks are icons, not text glyphs.
+- Guides and info pages (support, about, privacy, terms, data safety) use the same floating header as the homepage and tool pages. Guide text is 17px in a 760px column (lines ran ~102 characters); info paragraphs cap at 70ch.
+- **Homepage:** the hero headline no longer types and deletes itself; its second line is fixed ("No broken Hindi fonts." / "बिना फॉन्ट टूटे।"), and the hover-sparkle box is gone. Scroll reveals move cards but no longer hide them, so 27 blocks are visible in the prerendered page and on phones (two long blank stretches). The closing CTA uses the soft blurred mesh from `design-system.md` instead of hard arcs. The green "English" chip meets contrast. Hindi footer labels drop the English in brackets.
 
 ## Homepage shows every tool; tool pages follow the design system, 23 November 2026
 
