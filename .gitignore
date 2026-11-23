@@ -53,3 +53,4 @@ web-app/.wrangler/
 # OCR engine and language data copied from pinned npm packages at build time
 web-app/editor/public/ocr/
 web-app/editor/public/pdfjs/
+.taste-skill/

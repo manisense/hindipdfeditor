@@ -1,10 +1,14 @@
 import {
   ChevronRight,
-  Pencil,
-  Languages,
-  ScanText,
-  Layers,
+  ClipboardPen,
   FileArchive,
+  FileText,
+  FileType2,
+  Languages,
+  Layers,
+  Pencil,
+  Signature,
+  Split,
 } from "lucide-react";
 import { Btn } from "./ui/button";
 import { GooglePlayLink } from "./ui/google-play-link";
@@ -39,42 +43,18 @@ function Fade({
 export function Hero() {
   const { lang, t, isHindi } = useLanguage();
 
+  // Every tool on the site, grouped by category colour (edit blue, convert green, organise
+  // violet, optimise amber), so the hero never lists fewer tools than the site has.
   const tools = [
-    {
-      icon: Pencil,
-      name: t("tool.edit"),
-      detail: t("tool.editSub"),
-      tone: "bg-brand-tint text-brand",
-      href: toolHref("edit", lang),
-    },
-    {
-      icon: Languages,
-      name: t("tool.translate"),
-      detail: t("tool.translateSub"),
-      tone: "bg-accent-tint text-accent",
-      href: toolHref("translate", lang),
-    },
-    {
-      icon: ScanText,
-      name: t("tool.ocr"),
-      detail: t("tool.ocrSub"),
-      tone: "bg-pop-yellow-tint text-[#B58400]",
-      href: toolHref("edit", lang),
-    },
-    {
-      icon: Layers,
-      name: t("tool.merge"),
-      detail: t("tool.mergeSub"),
-      tone: "bg-pop-lav text-[#5B4BD6]",
-      href: toolHref("merge", lang),
-    },
-    {
-      icon: FileArchive,
-      name: t("tool.compress"),
-      detail: t("tool.compressSub"),
-      tone: "bg-pop-yellow-tint text-[#B58400]",
-      href: toolHref("compress", lang),
-    },
+    { icon: Pencil, name: t("tool.edit"), detail: t("tool.editSub"), tone: "bg-brand-tint text-brand", href: toolHref("edit", lang) },
+    { icon: Signature, name: t("tool.sign"), detail: t("tool.signSub"), tone: "bg-brand-tint text-brand", href: toolHref("sign", lang) },
+    { icon: ClipboardPen, name: t("tool.fill"), detail: t("tool.fillSub"), tone: "bg-brand-tint text-brand", href: toolHref("fill-form", lang) },
+    { icon: Languages, name: t("tool.translate"), detail: t("tool.translateSub"), tone: "bg-accent-tint text-accent", href: toolHref("translate", lang) },
+    { icon: FileType2, name: t("tool.pdfToWord"), detail: t("tool.pdfToWordSub"), tone: "bg-accent-tint text-accent", href: toolHref("pdf-to-word", lang) },
+    { icon: FileText, name: t("tool.wordToPdf"), detail: t("tool.wordToPdfSub"), tone: "bg-accent-tint text-accent", href: toolHref("word-to-pdf", lang) },
+    { icon: Layers, name: t("tool.merge"), detail: t("tool.mergeSub"), tone: "bg-pop-lav text-[#5B4BD6]", href: toolHref("merge", lang) },
+    { icon: Split, name: t("tool.split"), detail: t("tool.splitSub"), tone: "bg-pop-lav text-[#5B4BD6]", href: toolHref("split", lang) },
+    { icon: FileArchive, name: t("tool.compress"), detail: t("tool.compressSub"), tone: "bg-pop-yellow-tint text-[#B58400]", href: toolHref("compress", lang) },
   ];
 
   return (
@@ -132,13 +112,13 @@ export function Hero() {
                   <>
                     देवनागरी के सही अक्षरों और मात्राओं के साथ पीडीएफ{" "}
                     <PointerHighlight className="mx-0.5 font-semibold text-ink">
-                      एडिट, अनुवाद और कंप्रेस
+                      एडिट, साइन, अनुवाद और वर्ड में कन्वर्ट
                     </PointerHighlight>{" "}
                     करें — सब कुछ <Cover>एक ही जगह</Cover>।
                   </>
                 ) : (
                   <>
-                    Edit, translate, merge, split, compress and OCR your{" "}
+                    Edit, sign, fill, translate, convert to Word, merge and compress your{" "}
                     <PointerHighlight className="mx-0.5 font-semibold text-ink">
                       Devanagari
                     </PointerHighlight>{" "}
@@ -228,7 +208,7 @@ export function Hero() {
                   {tools.length} {isHindi ? "टूल्स" : "tools"}
                 </span>
               </div>
-              <div className="rounded-xl border border-black/[0.06] bg-white p-2">
+              <div className="grid gap-x-1 rounded-xl border border-black/[0.06] bg-white p-2 sm:grid-cols-2">
                 {tools.map((t) => (
                   <a
                     key={t.name}
@@ -241,14 +221,11 @@ export function Hero() {
                       <t.icon className="size-[17px]" strokeWidth={2} />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="font-display text-[13.5px] font-semibold text-ink leading-tight">
+                      <div className="font-display text-[14px] font-semibold text-ink leading-tight">
                         {t.name}
                       </div>
-                      <div className="text-[12px] text-muted">{t.detail}</div>
+                      <div className="text-[13px] text-muted">{t.detail}</div>
                     </div>
-                    <span className="text-[16px] leading-none text-slate-300">
-                      ⋯
-                    </span>
                   </a>
                 ))}
               </div>

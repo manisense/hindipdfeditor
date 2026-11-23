@@ -47,9 +47,6 @@ export function ImagesBadge({
         ))}
       </div>
       <div className="leading-tight">
-        <div className="flex text-pop-yellow text-sm" aria-hidden>
-          {"★★★★★"}
-        </div>
         <span className="text-[13.5px] text-muted">{label}</span>
       </div>
     </div>
