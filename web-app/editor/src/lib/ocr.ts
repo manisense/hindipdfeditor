@@ -12,6 +12,7 @@ import {
   ptToImagePx,
 } from "./coordinateMath";
 import { aiApiClient } from "./aiApiClient";
+import { warmLanguageData } from "./ocrLanguageData";
 import {
   combineEmbeddedLatinWithOcr,
   hasDevanagari,
@@ -75,7 +76,10 @@ function reportOcrUnavailable(error: unknown): void {
   for (const listener of unavailableListeners) listener();
 }
 
-/** Language data is 1.4–3 MB; on a slow connection it can take a while, but never this long. */
+/**
+ * Starting a worker from language data already in memory takes seconds; the download itself is
+ * timed separately in `ocrLanguageData.ts`, by stalls rather than total time.
+ */
 const OCR_LOAD_TIMEOUT_MS = 60_000;
 
 type OcrLanguage = "hin" | "eng";
@@ -95,18 +99,21 @@ export function ocrPoolSize(): number {
 }
 
 /**
- * Loads one OCR worker. tesseract.js never settles `createWorker` when the language data fails to
- * download (the error escapes as an uncaught exception), which left pages "Finding text…"
- * forever; worker errors and a timeout now reject instead, and the failure is reported.
+ * Loads one OCR worker once its language data is in the browser cache. tesseract.js never
+ * settles `createWorker` when it fails (the error escapes as an uncaught exception), which left
+ * pages "Finding text…" forever; worker errors and a timeout now reject instead, and the failure
+ * is reported.
  */
-function loadWorker(language: OcrLanguage, mode: OcrMode): Promise<Worker> {
+async function loadWorker(language: OcrLanguage, mode: OcrMode): Promise<Worker> {
+  const options = ocrAssetOptions();
+  await warmLanguageData(language, options.langPath);
   return new Promise<Worker>((resolve, reject) => {
     const timer = window.setTimeout(
-      () => reject(new Error(`OCR data for ${language} did not load in time`)),
+      () => reject(new Error(`OCR worker for ${language} did not start in time`)),
       OCR_LOAD_TIMEOUT_MS,
     );
     createWorker(language, 1, {
-      ...ocrAssetOptions(),
+      ...options,
       errorHandler: (error: unknown) => {
         window.clearTimeout(timer);
         reject(error instanceof Error ? error : new Error(String(error)));

@@ -1,5 +1,10 @@
 # Changelog
 
+## Text recognition loads on slow connections, 23 November 2026
+
+### Fixed
+- **OCR no longer fails on slow connections.** Every OCR worker downloaded its own copy of the 1.4–3 MB language model, so up to four workers per language and mode fetched the same file at once, and on a slow link they all hit the 60 s limit: on a throttled 1.6 Mbit/s connection the editor took 125 s and then skipped the Hindi check ("Text recognition could not load"). Each model now downloads once, and the download fails only if no bytes arrive for 30 s, not when it is merely slow; workers then start from the browser cache. Same throttle: ready in 38 s with the Hindi check. `/edit/ocr/*` is cached for a week. tesseract.js 6 cannot take the bytes directly (`{ code, data }` initialises with the data as the language name), so the cache carries them.
+
 ## Design audit fixes: tool guides, Hindi screens, two new tool pages, 23 November 2026
 
 ### Added
