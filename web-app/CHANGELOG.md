@@ -1,5 +1,10 @@
 # Changelog
 
+## PDF to Word: tall tables keep picture labels, 23 November 2026
+
+### Fixed
+- Reading text drawn as images stopped after 40 rows per page, so tall tables lost their lower labels. On a 31-page notice, the trade names in a table's first column ("आरक्षक / मोची", "आरक्षक / दर्जी" and others) came out as "/". The limit is now 160 rows per page; the notice converts in about 50 s instead of 46 s. Web ADR 0016 updated.
+
 ## CSP snippet check, 23 November 2026
 
 ### Added

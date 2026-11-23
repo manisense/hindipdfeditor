@@ -16,7 +16,7 @@ Converting a 31-page Word-made KrutiDev PDF (a CISF recruitment notice) to Word 
   - **Reading them:** the page is rendered once at 4 px/pt. Each row is cut from that render and read on its own, spread over the OCR worker pool. Hindi is read first; a row with no Devanagari is read again in English. The English reading is kept only if it has Latin letters and at least the Hindi reading's confidence.
   - **Keeping readings:** a reading is kept when it has letters or digits and a confidence of at least 35 (60 for Latin-only, so signatures and logos do not become stray letters). The full-page noise rules are not used here, because they rejected good readings such as a quoted word at 54.
   - **Placing them:** each reading is added as a text run before lines are built, so a word drawn as an image lands inside its sentence.
-  - At most 40 rows per page.
+  - At most 160 rows per page. The first limit of 40 dropped the lower rows of tall tables whose labels are images. On the 31-page notice, the trade labels "आरक्षक / मोची", "आरक्षक / दर्जी" and others were missing until the limit was raised, which cost about 4 s on the whole file.
 - **KrutiDev check:** converted text is judged by overall agreement. The conversion is rejected only when fewer than 40 % of its words appear in OCR. A wrong conversion, from a font that is not really KrutiDev, matches almost nothing; right ones match 70–100 %. Unicode text keeps the complex/plain test, which matches how broken maps fail. Every converted page is still checked against OCR (web ADR 0010).
 
 ## Result

@@ -84,7 +84,7 @@ export type PtBox = { xPt: number; yPt: number; wPt: number; hPt: number };
 const MIN_TEXT_IMAGE_PT = 5;
 const MAX_TEXT_IMAGE_PT = 40;
 /** Most text-image rows read per page; more is a picture-heavy page, not text. */
-export const MAX_TEXT_IMAGE_ROWS = 40;
+export const MAX_TEXT_IMAGE_ROWS = 160;
 
 function overlapArea(a: PtBox, b: PtBox): number {
   const w = Math.min(a.xPt + a.wPt, b.xPt + b.wPt) - Math.max(a.xPt, b.xPt);
