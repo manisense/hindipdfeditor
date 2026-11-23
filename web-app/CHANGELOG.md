@@ -1,5 +1,12 @@
 # Changelog
 
+## Content-Security-Policy, 23 November 2026
+
+### Security
+- The site now sends an enforced `Content-Security-Policy`. Scripts may come only from the site itself, Google Tag Manager, Cloudflare Turnstile and the Cloudflare Web Analytics beacon; the two inline snippets Cloudflare's Google tag gateway injects are allowed by hash. Inline scripts and `eval` are otherwise blocked, and WebAssembly compilation is allowed for the self-hosted OCR. Connections may go only to the site, the consented AI API, analytics, Google Fonts and Turnstile. Plugins, foreign `<base>` tags, foreign form posts and framing are blocked. Web ADR 0014.
+- The first release (PR #39) blocked the edge-injected scripts, which the local preview doesn't have, and was reverted (PR #40). The policy then ran report-only on production (PR #41) and was enforced after a clean sweep (PR #42, this change).
+- Verified: locally, the full edit-quality gate (16/16), browser smoke and a violation sweep over every tool, OCR on a scan, PDF to Word and Fill form. On production, the same sweep (zero violations) and the gate's no-change, sign, converter and form cases.
+
 ## Fill PDF form: list boxes, turned fields, signature boxes, 23 November 2026
 
 ### Added
