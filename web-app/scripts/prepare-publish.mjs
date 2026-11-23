@@ -63,7 +63,7 @@ cpSync(editDir, path.join(distDir, "edit"), { recursive: true });
 
 // Keep asset URLs under /edit/assets while publishing task-specific entry documents.
 const editorHtml = readFileSync(path.join(editDir, "index.html"), "utf8");
-const { renderHome, seoForHome, siteGraphJsonLd } =
+const { renderHome, renderToolGuide, seoForHome, siteGraphJsonLd, toolGraphJsonLd } =
   await import("../editor/.prerender/prerender.js");
 for (const language of ["en", "hi"]) {
   const canonical = `https://hindipdfeditor.com${language === "hi" ? "/hi/" : "/"}`;
@@ -121,16 +121,7 @@ const escapeHtml = (value) =>
 for (const tool of routes) {
   const url = `https://hindipdfeditor.com${tool.path}`;
   const title = `${tool.title} | Hindi PDF Editor`;
-  const graph = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "@id": `${url}#app`,
-    name: tool.title,
-    url,
-    description: tool.description,
-    applicationCategory: "ProductivityApplication",
-    operatingSystem: "Web",
-  };
+  const graph = toolGraphJsonLd(tool.id);
   const html = editorHtml
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(title)}</title>`)
     .replace(/<link[^>]*rel="alternate"[^>]*>/g, "")
@@ -158,7 +149,7 @@ for (const tool of routes) {
     )
     .replace(
       '<div id="root"></div>',
-      `<div id="root"><main class="tool-entry"><h1>${escapeHtml(tool.title)}</h1><p>${escapeHtml(tool.description)}</p><p>Loading the PDF tool…</p><noscript>Enable JavaScript to open and process PDFs on your device.</noscript><a href="/">All Hindi PDF tools</a> · <a href="/privacy/">Privacy details</a></main></div>`,
+      `<div id="root"><main class="tool-entry"><h1>${escapeHtml(tool.title)}</h1><p>${escapeHtml(tool.description)}</p><p>Loading the PDF tool…</p><noscript>Enable JavaScript to open and process PDFs on your device.</noscript>${renderToolGuide(tool.id)}<a href="/">All Hindi PDF tools</a> · <a href="/privacy/">Privacy details</a></main></div>`,
     );
   const directory = path.join(distDir, tool.path);
   mkdirSync(directory, { recursive: true });

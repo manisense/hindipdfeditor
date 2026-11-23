@@ -16,6 +16,8 @@ for (const route of routes) {
   assert.equal(canonicalFor(html), `https://hindipdfeditor.com${route.path}`);
   assert.ok(html.includes(`id="seo-tool-graph"`));
   assert.ok(html.includes("<h1>"));
+  assert.ok(html.includes('"@type":"FAQPage"'), `${route.path} publishes its FAQ`);
+  assert.ok(html.includes('class="tool-guide"'), `${route.path} prerenders its guide`);
   assert.ok(
     !html.includes("hreflang="),
     "Tools have no fictitious translated page alternates",

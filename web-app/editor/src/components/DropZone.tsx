@@ -119,10 +119,11 @@ export function DropZone({
         )}
       </div>
       <div className="drop-zone__copy">
-        <span className="drop-zone__eyebrow">
-          {tx("Ready when you are", "तैयार हैं")}
-        </span>
-        <h2 className="drop-zone__title">{title}</h2>
+        {compact ? (
+          <h2 className="drop-zone__title">{title}</h2>
+        ) : (
+          <h1 className="drop-zone__title">{title}</h1>
+        )}
         {subtitle && <p className="drop-zone__subtitle">{subtitle}</p>}
       </div>
       <AppButton
