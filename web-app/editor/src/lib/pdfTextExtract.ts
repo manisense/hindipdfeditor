@@ -144,6 +144,8 @@ export async function extractEmbeddedTextLines(
     keepGlyphPlaceholders?: boolean;
     /** Learned readings of unmapped glyphs, applied to each line. */
     glyphReadings?: ReadonlyMap<string, GlyphReading>;
+    /** Filled with the page's Devanagari text by font (pdf.js loaded name), for font trust. */
+    devanagariTextByFont?: Map<string, string>;
   } = {},
 ): Promise<OcrLine[]> {
   const doc = await sharedPdfDocument(pdfBytes);
@@ -209,6 +211,10 @@ export async function extractEmbeddedTextLines(
       const normalized = sanitized.text.normalize('NFC').replace(/\s+/gu, ' ');
       const text = normalized.trim();
       if (text.length === 0) continue;
+      if (options.devanagariTextByFont && /[\u0900-\u097F]/u.test(text)) {
+        const byFont = options.devanagariTextByFont;
+        byFont.set(item.fontName, `${byFont.get(item.fontName) ?? ''} ${text}`);
+      }
 
       const style = textContent.styles[item.fontName];
       const [, , , , pdfX, pdfY] = item.transform;

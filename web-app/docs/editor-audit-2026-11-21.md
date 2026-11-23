@@ -78,6 +78,21 @@ Quality gate: a fixed corpus of real PDFs (Word exports, government notices, sca
 3. Accuracy: PaddleOCR benchmark, ToUnicode repair, paragraph reflow, Roman→Hindi typing, find and replace.
 4. After decisions: Plan B vector text, KrutiDev conversion, server-side rendering.
 
+## Open product gaps (noted 23 November 2026)
+
+These are gaps that can be worked on without a decision from the owner, in suggested order:
+
+1. **Mis-mapped glyphs:** some Word/Mangal exports map glyphs to the wrong characters (not just unmapped ones). Those pages fall back to OCR, which can misread names and numbers. The fix is to learn the wrong mappings from OCR the way unmapped glyphs are learned now.
+2. **Edit PDF reflow:** once a paragraph reflows, its redrawn lines are an image. Only Plan B removes this, and Plan B needs a decision.
+3. **Sign PDF:** no page jump. Long documents are paged with the arrows only.
+4. **PDF to Word:** tables, pictures and exact positions are not carried over. The next step is table detection from ruling lines and text columns.
+5. **Word to PDF:** "Download PDF" makes page images, so the text is not selectable. Selectable text needs "Print / Save as PDF".
+6. **Fill PDF form:** a Hindi answer is an image in the page; the field value keeps the text. A non-Latin list box shows only its selected choices.
+7. **CSP:** the hash for the Cloudflare tag-gateway snippet must be updated if Cloudflare changes it (web ADR 0014).
+8. **Speed:** reading time per page is dominated by Tesseract. PDF to Word reads pages in parallel and checks a band of lines instead of the whole page (web ADR 0015). Edit PDF opens pages one at a time and could use the same worker pool to read the next pages ahead.
+
+Needs the owner: the GitHub billing lock (IndexNow workflow), GA4 loading twice (site script and Cloudflare tag gateway), Plan B, and a DSC signing certificate or service.
+
 ## Open decisions
 
 - Plan B (shaped glyph injection) — only fully local route to searchable, vector Hindi edits.

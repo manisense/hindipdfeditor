@@ -31,26 +31,31 @@ function devanagariWords(text: string): string[] {
     .filter((word) => word.length >= 2 && DEVANAGARI.test(word));
 }
 
+/** What a comparison with OCR says about embedded Devanagari text. */
+export type DevanagariVerdict = "ok" | "corrupted" | "unknown";
+
 /**
- * Whether embedded Devanagari text looks corrupted compared with OCR of the same page.
- * Returns false when there is too little Devanagari to judge, so plain pages keep their text.
+ * Judges embedded Devanagari text against OCR of the same page(s): "unknown" when there is too
+ * little Devanagari to judge.
  */
-export function isEmbeddedDevanagariCorrupted(
-  embeddedText: string,
-  ocrText: string,
-): boolean {
+export function embeddedDevanagariVerdict(embeddedText: string, ocrText: string): DevanagariVerdict {
   const ocrWords = new Set(devanagariWords(ocrText));
   const words = devanagariWords(embeddedText);
   const complex = words.filter((word) => COMPLEX_WORD.test(word));
   const plain = words.filter((word) => !COMPLEX_WORD.test(word));
-  if (complex.length < MIN_WORDS_PER_GROUP || plain.length < MIN_WORDS_PER_GROUP) {
-    return false;
-  }
-  const rate = (group: string[]) =>
-    group.filter((word) => ocrWords.has(word)).length / group.length;
+  if (complex.length < MIN_WORDS_PER_GROUP || plain.length < MIN_WORDS_PER_GROUP) return "unknown";
+  const rate = (group: string[]) => group.filter((word) => ocrWords.has(word)).length / group.length;
   const plainRate = rate(plain);
-  if (plainRate === 0) return true;
-  return rate(complex) / plainRate < MIN_COMPLEX_TO_PLAIN_RATIO;
+  if (plainRate === 0) return "corrupted";
+  return rate(complex) / plainRate < MIN_COMPLEX_TO_PLAIN_RATIO ? "corrupted" : "ok";
+}
+
+/**
+ * Whether embedded Devanagari text looks corrupted compared with OCR of the same page.
+ * Returns false when there is too little Devanagari to judge, so plain pages keep their text.
+ */
+export function isEmbeddedDevanagariCorrupted(embeddedText: string, ocrText: string): boolean {
+  return embeddedDevanagariVerdict(embeddedText, ocrText) === "corrupted";
 }
 
 /**
@@ -210,4 +215,44 @@ function boxesOverlap(a: PtBox, b: PtBox): boolean {
     );
   };
   return contains(a, b) || contains(b, a);
+}
+
+/** Words of each kind (complex, plain) a verification sample aims for: twice the minimum. */
+const SAMPLE_WORDS_PER_GROUP = 2 * MIN_WORDS_PER_GROUP;
+
+/**
+ * A band of consecutive Devanagari lines with enough words to judge the page, so OCR can read
+ * that band instead of the whole page. Lines are taken in reading order from the top.
+ *
+ * @param lines The page's embedded lines, boxes in pt (top-left origin).
+ * @returns The band's text and its box in pt, or null when the whole page is needed (too little
+ *   text, or the band would cover most of the page anyway).
+ */
+export function verificationSample(
+  lines: readonly OcrLine[],
+): { text: string; xPt: number; yPt: number; wPt: number; hPt: number } | null {
+  const hindi = lines.filter((line) => DEVANAGARI.test(line.text)).sort((a, b) => a.yPt - b.yPt || a.xPt - b.xPt);
+  if (hindi.length === 0) return null;
+  let complex = 0;
+  let plain = 0;
+  let end = 0;
+  while (end < hindi.length && (complex < SAMPLE_WORDS_PER_GROUP || plain < SAMPLE_WORDS_PER_GROUP)) {
+    for (const word of devanagariWords(hindi[end].text)) {
+      if (COMPLEX_WORD.test(word)) complex += 1;
+      else plain += 1;
+    }
+    end += 1;
+  }
+  if (complex < SAMPLE_WORDS_PER_GROUP || plain < SAMPLE_WORDS_PER_GROUP) return null;
+  const band = hindi.slice(0, end);
+  // Lines at the band's height in other columns are read too, so OCR sees whole rows.
+  const top = Math.min(...band.map((line) => line.yPt));
+  const bottom = Math.max(...band.map((line) => line.yPt + line.hPt));
+  const inBand = hindi.filter((line) => line.yPt < bottom && line.yPt + line.hPt > top);
+  const left = Math.min(...inBand.map((line) => line.xPt));
+  const right = Math.max(...inBand.map((line) => line.xPt + line.wPt));
+  const lastBottom = Math.max(...hindi.map((line) => line.yPt + line.hPt));
+  const firstTop = hindi[0].yPt;
+  if (bottom - top > 0.6 * (lastBottom - firstTop)) return null;
+  return { text: inBand.map((line) => line.text).join(" "), xPt: left, yPt: top, wPt: right - left, hPt: bottom - top };
 }
