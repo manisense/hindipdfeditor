@@ -13,6 +13,8 @@
 
   --color-accent: #01873e;
   --color-accent-500: #12a551;
+  /* Green text on green tint: 6.4:1, where #16a34a gives 3.9:1. */
+  --color-accent-700: #166534;
   --color-accent-tint: #d6f3e3;
 
   --color-navy: #050839;

@@ -73,11 +73,11 @@ export function UseCasesSection() {
             return (
               <motion.div
                 key={item.title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ y: 16 }}
+                whileInView={{ y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
                 transition={{ duration: 0.4, delay: idx * 0.08 }}
-                className="group relative flex flex-col justify-between rounded-2xl border border-line bg-cream/30 p-6 transition-all duration-200 hover:border-brand/40 hover:bg-white hover:shadow-[var(--shadow-soft)]"
+                className="group relative flex flex-col justify-between rounded-2xl border border-line bg-cream/30 p-6 transition-[transform,background-color,border-color,box-shadow,color,opacity] duration-200 hover:border-brand/40 hover:bg-white hover:shadow-[var(--shadow-soft)]"
               >
                 <div>
                   <div className="mb-4 flex items-center justify-between">

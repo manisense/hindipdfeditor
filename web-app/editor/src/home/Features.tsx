@@ -28,12 +28,12 @@ function Card({
   return (
     <motion.a
       href={href}
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ y: 24 }}
+      whileInView={{ y: 0 }}
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-[var(--shadow-soft)]",
+        "group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-white p-7 transition-[transform,background-color,border-color,box-shadow,color,opacity] duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-[var(--shadow-soft)]",
         className,
       )}
     >
@@ -120,7 +120,7 @@ function OcrVisual() {
           <div className="inline-block rounded bg-brand-tint px-2 py-0.5 font-display text-xs font-semibold text-brand">
             हिंदी
           </div>{" "}
-          <div className="inline-block rounded bg-accent-tint px-2 py-0.5 font-display text-xs font-semibold text-accent">
+          <div className="inline-block rounded bg-accent-tint px-2 py-0.5 font-display text-xs font-semibold text-accent-700">
             English
           </div>
           <div className="h-1.5 w-2/3 rounded bg-slate-100" />
