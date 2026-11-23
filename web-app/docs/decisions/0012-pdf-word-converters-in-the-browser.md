@@ -50,7 +50,7 @@ PDF to Word rebuilds ruled tables as Word tables.
 - **Picture text:** text drawn as images is never joined across a vertical table border, so each header word lands in its own cell.
 - **Limits:**
   - Tables aligned only by spaces, without lines, are not detected.
-  - Scanned pages have no drawn lines, so their tables stay as paragraphs.
+  - Scanned pages: see the scanned-tables addendum.
   - A text line that spans two cells goes to the cell holding its centre.
 - **Checks:** gate case `WORD_TABLE_OK`. On the 31-page notice, 14 tables are rebuilt, including a two-level header and row merges.
 
@@ -63,4 +63,13 @@ PDF to Word carries pictures over.
 - **Placing:** pictures are placed in reading order by their top edge, as their own paragraph, indented to their left edge, at their size (capped to the text width). A picture inside a ruled table goes into its cell.
 - **Limits:** vector logos (drawn with paths) are not pictures, and text drawn over a picture stays as a paragraph beside it.
 - **Checks:** gate case `WORD_PICTURE_OK`. On the 31-page notice, the CISF emblem comes through at the top of page 1.
+
+## Addendum, 23 November 2026: tables on scanned pages
+
+- **Finding the lines:** a scanned page has no drawn lines to read. When every line on a page came from OCR, `rulingsFromImage` looks for table lines in a render of the page at 2 px/pt.
+  - It keeps long thin dark runs: horizontal ones at least 30 pt long, vertical ones at least 12 pt, up to 3 pt thick, with gaps up to 1.5 pt bridged.
+  - Letter strokes are shorter, or touch no other line, so `detectTables` ignores them. That includes a Devanagari headline.
+- **Reading the cells:** whole-page OCR runs a table row across its cells, so each cell is read on its own, 3 pt inside its borders. Both the Hindi and English models read every cell. Hindi wins when it found Devanagari letters (not just Devanagari digits) and is about as confident; otherwise the more confident reading wins.
+- **Block mode:** cells and text-image rows (ADR 0016) are read by their own Tesseract workers in single-block mode (PSM 6). Page layout mode missed short items such as a lone "14". Separate workers keep the mode from leaking into full-page reads running at the same time.
+- **Checks:** gate case `SCAN_TABLE_OK` (a 3×3 table on a page image, each value read into its cell). Tables without lines are still not detected.
 

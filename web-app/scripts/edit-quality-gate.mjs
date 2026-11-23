@@ -1060,6 +1060,54 @@ async function wordPictureCase(browser) {
   await page.close();
 }
 
+// A scanned table (the page is one image, no drawn lines to read): PDF to Word finds its lines in
+// the image and reads each cell on its own.
+async function scanTableCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { unzipSync, strFromU8 } = require(path.join(editorModules, "fflate"));
+  const { PDFDocument, StandardFonts } = await import(path.join(editorModules, "@cantoo/pdf-lib/es/index.js"));
+  const doc = await PDFDocument.create();
+  const sheet = doc.addPage([595, 842]);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  sheet.drawText("Vacancies by zone", { x: 60, y: 760, size: 16, font });
+  const xs = [60, 240, 380, 520];
+  const ys = [720, 690, 660, 630];
+  for (const y of ys) sheet.drawLine({ start: { x: xs[0], y }, end: { x: xs[3], y }, thickness: 1 });
+  for (const x of xs) sheet.drawLine({ start: { x, y: ys[0] }, end: { x, y: ys[3] }, thickness: 1 });
+  const values = [["Post", "North", "South"], ["Cook", "14", "9"], ["Tailor", "2", "17"]];
+  values.forEach((row, r) => row.forEach((text, c) => sheet.drawText(text, { x: xs[c] + 8, y: ys[r] - 21, size: 14, font })));
+  // Scan it: render the page and make a PDF of just that image.
+  const scale = 3;
+  const pixels = await pagePixels(await doc.save(), 0, scale);
+  const canvas = createCanvas(595 * scale, 842 * scale);
+  const imageData = canvas.getContext("2d").createImageData(595 * scale, 842 * scale);
+  imageData.data.set(pixels);
+  canvas.getContext("2d").putImageData(imageData, 0, 0);
+  const scan = await PDFDocument.create();
+  const scanPage = scan.addPage([595, 842]);
+  scanPage.drawImage(await scan.embedJpg(canvas.toBuffer("image/jpeg")), { x: 0, y: 0, width: 595, height: 842 });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gate-"));
+  const pdfPath = path.join(dir, "scan-table.pdf");
+  fs.writeFileSync(pdfPath, await scan.save());
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await page.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
+  await page.locator("input[type=file]").first().setInputFiles(pdfPath);
+  const download = page.waitForEvent("download", { timeout: 180000 });
+  await page.getByRole("button", { name: /Convert & download Word/ }).click();
+  const docx = path.join(dir, "out.docx");
+  fs.copyFileSync(await (await download).path(), docx);
+  const xml = strFromU8(unzipSync(new Uint8Array(fs.readFileSync(docx)))["word/document.xml"]);
+  const cellText = (cell) => [...cell.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((m) => m[1]).join(" ").trim();
+  const tables = xml.match(/<w:tbl>[\s\S]*?<\/w:tbl>/g) ?? [];
+  assert.equal(tables.length, 1, "one Word table from the scan");
+  const grid = (tables[0].match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) ?? []).map((row) => (row.match(/<w:tc>[\s\S]*?<\/w:tc>/g) ?? []).map(cellText));
+  assert.deepEqual(grid, values, "each scanned value read into its own cell");
+  assert.ok(xml.indexOf("Vacancies by zone") >= 0 && xml.indexOf("Vacancies by zone") < xml.indexOf("<w:tbl>"), "heading above the table");
+  console.log("SCAN_TABLE_OK scanned 3x3 table found in the image and each cell read into its own Word cell");
+  await page.close();
+}
+
 async function convertersCase(browser) {
   const fs = await import("node:fs");
   const os = await import("node:os");
@@ -1199,6 +1247,7 @@ try {
   if (wanted("editTextImageCase")) await editTextImageCase(browser);
   if (wanted("wordTableCase")) await wordTableCase(browser);
   if (wanted("wordPictureCase")) await wordPictureCase(browser);
+  if (wanted("scanTableCase")) await scanTableCase(browser);
   if (wanted("fillFormCase")) await fillFormCase(browser);
 } finally {
   await browser.close();
