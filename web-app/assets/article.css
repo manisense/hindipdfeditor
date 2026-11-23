@@ -129,16 +129,16 @@ summary {
 details p {
   margin: 16px 0 0;
 }
+.guide-cta > a:hover,
+.guide-cta > a:focus-visible {
+  background: var(--hpe-primary-hover);
+}
 .guide-cta > a {
   display: inline-flex;
   align-items: center;
   min-height: 48px;
   border-radius: 9999px;
-  background: linear-gradient(
-    110deg,
-    var(--hpe-primary),
-    var(--hpe-primary-deep)
-  );
+  background: var(--hpe-primary);
   color: white;
   padding: 12px 24px;
   text-decoration: none;
