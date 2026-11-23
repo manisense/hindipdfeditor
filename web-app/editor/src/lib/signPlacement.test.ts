@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parsePageList, presetRect } from './signPlacement';
+import { anchorFromRect, parsePageList, placementRect, presetRect } from './signPlacement';
 
 describe('parsePageList', () => {
   it('reads single pages and ranges, in order, without repeats', () => {
@@ -33,5 +33,35 @@ describe('presetRect', () => {
     const rect = presetRect({ widthPt: 200, heightPt: 300 }, 0.5, 'top-right', 400, 20);
     expect(rect.wPt).toBe(160);
     expect(rect.xPt).toBe(20);
+  });
+});
+
+describe('placementRect', () => {
+  const page = { widthPt: 600, heightPt: 800 };
+  const small = { widthPt: 300, heightPt: 400 };
+
+  it('uses the preset when the page has no adjustment', () => {
+    expect(placementRect(page, 0.5, { kind: 'preset', position: 'bottom-right' }, 150, 36)).toEqual(presetRect(page, 0.5, 'bottom-right', 150, 36));
+  });
+
+  it('puts a custom spot at the same share of every page', () => {
+    const anchor = anchorFromRect(page, { xPt: 100, yPt: 300, wPt: 200, hPt: 100 });
+    expect(anchor).toEqual({ kind: 'custom', cx: 0.333_333_333_333_333_3, cy: 0.4375 });
+    expect(placementRect(page, 0.5, anchor, 200, 36)).toEqual({ xPt: 100, yPt: 300, wPt: 200, hPt: 100 });
+    // A page half the size: the centre lands at the same share; the signature keeps its width.
+    const rect = placementRect(small, 0.5, anchor, 200, 36);
+    expect(rect.xPt + rect.wPt / 2).toBeCloseTo(100);
+    expect(rect.yPt + rect.hPt / 2).toBeCloseTo(175);
+  });
+
+  it('keeps a custom spot near the edge inside the page', () => {
+    const rect = placementRect(small, 0.5, { kind: 'custom', cx: 0.98, cy: 0.99 }, 200, 36);
+    expect(rect).toEqual({ xPt: 100, yPt: 300, wPt: 200, hPt: 100 });
+  });
+
+  it("uses a page's own adjusted box, following the signature's shape", () => {
+    const anchor = { kind: 'preset', position: 'bottom-right' } as const;
+    expect(placementRect(page, 0.4, anchor, 150, 36, { xPt: 50, yPt: 60, wPt: 100 })).toEqual({ xPt: 50, yPt: 60, wPt: 100, hPt: 40 });
+    expect(placementRect(small, 0.5, anchor, 150, 36, { xPt: 290, yPt: 390, wPt: 100 })).toEqual({ xPt: 200, yPt: 350, wPt: 100, hPt: 50 });
   });
 });

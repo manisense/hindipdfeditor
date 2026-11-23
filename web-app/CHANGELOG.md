@@ -1,5 +1,13 @@
 # Changelog
 
+## Sign PDF: custom position and per-page adjustment, 23 November 2026
+
+### Added
+- **Custom position:** with "Every page" or "Chosen pages", the new **Custom: drag on the page** option lets you drag the signature anywhere on the page and resize it from its corner, and the same spot is used on every signed page. The spot is kept as a share of the page size, so pages of other sizes get the same place; it is kept inside each page.
+- **Per-page adjustment:** a "Move on: All pages / This page only" switch above the page preview. With "This page only", dragging or resizing changes just that page, which is marked "Own position on this page". The remove button takes the signature off that page alone. "Reset this page" and "Reset all pages" undo the adjustments. Dragging with "All pages" switches the shared position to Custom.
+- In "Chosen pages" mode, a page outside the list says it won't be signed.
+- Gate case `SIGN_POSITIONS_OK`: a custom spot dragged on page 1, page 2 moved on its own and page 3 left unsigned land exactly there in the signed file. Web ADR 0011 updated.
+
 ## Content-Security-Policy, 23 November 2026
 
 ### Security
