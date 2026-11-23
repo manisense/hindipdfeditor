@@ -804,6 +804,43 @@ async function signPositionsCase(browser) {
   await page.close();
 }
 
+// A KrutiDev page with English in its own font (as real files have): PDF to Word converts only the
+// KrutiDev runs and keeps the English, numbers and email exactly.
+async function krutiDevMixedCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { unzipSync, strFromU8 } = require(path.join(editorModules, "fflate"));
+  const { PDFDict, PDFDocument, PDFName, StandardFonts } = await import(path.join(editorModules, "@cantoo/pdf-lib/es/index.js"));
+  const doc = await PDFDocument.create();
+  const sheet = doc.addPage([595, 842]);
+  const kruti = await doc.embedFont(StandardFonts.Helvetica);
+  const times = await doc.embedFont(StandardFonts.TimesRoman);
+  sheet.drawText("rFkk dsUnz ljdkj ds deZpkfj;ksa dks le; le; ij ns; lkekU; HkÙkksa lfgr", { x: 50, y: 760, size: 12, font: kruti });
+  sheet.drawText("Application No. CISF/2026/0457, Email: office@example.org", { x: 50, y: 720, size: 12, font: times });
+  // pdf-lib writes font dicts at save time: rename the first font on a reloaded copy.
+  const named = await PDFDocument.load(await doc.save({ useObjectStreams: false }));
+  for (const [, ref] of named.getPage(0).node.Resources().lookup(PDFName.of("Font"), PDFDict).entries()) {
+    const font = named.context.lookup(ref, PDFDict);
+    if (String(font.get(PDFName.of("BaseFont"))) === "/Helvetica") font.set(PDFName.of("BaseFont"), PDFName.of("KrutiDev010"));
+  }
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gate-"));
+  const pdfPath = path.join(dir, "krutidev-mixed.pdf");
+  fs.writeFileSync(pdfPath, await named.save({ useObjectStreams: false }));
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await page.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
+  await page.locator("input[type=file]").first().setInputFiles(pdfPath);
+  const download = page.waitForEvent("download", { timeout: 120000 });
+  await page.getByRole("button", { name: /Convert & download Word/ }).click();
+  const docx = path.join(dir, "out.docx");
+  fs.copyFileSync(await (await download).path(), docx);
+  const xml = strFromU8(unzipSync(new Uint8Array(fs.readFileSync(docx)))["word/document.xml"]);
+  const text = [...xml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((m) => m[1]).join("\n");
+  assert.ok(text.includes("तथा केन्द्र सरकार के कर्मचारियों को समय समय पर देय सामान्य भत्तों सहित"), "KrutiDev converted: " + text);
+  assert.ok(text.includes("Application No. CISF/2026/0457, Email: office@example.org"), "English kept: " + text);
+  console.log("KRUTIDEV_MIXED_OK KrutiDev line converted to Unicode; English line in its own font kept exactly");
+  await page.close();
+}
+
 async function convertersCase(browser) {
   const fs = await import("node:fs");
   const os = await import("node:os");
@@ -938,6 +975,7 @@ try {
   if (wanted("signCase")) await signCase(browser);
   if (wanted("signPositionsCase")) await signPositionsCase(browser);
   if (wanted("convertersCase")) await convertersCase(browser);
+  if (wanted("krutiDevMixedCase")) await krutiDevMixedCase(browser);
   if (wanted("fillFormCase")) await fillFormCase(browser);
 } finally {
   await browser.close();
