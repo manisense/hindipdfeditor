@@ -7,6 +7,7 @@ import {
   PageOrientation,
   Paragraph,
   Table,
+  TableBorders,
   TableCell,
   TableLayoutType,
   TableRow,
@@ -82,6 +83,7 @@ function wordTable(table: WordTable): Table {
   const twips = (pt: number) => Math.max(0, Math.round(pt * TWIPS_PER_PT));
   return new Table({
     layout: TableLayoutType.FIXED,
+    borders: table.borders ? undefined : TableBorders.NONE,
     width: { size: twips(table.columnWidthsPt.reduce((sum, w) => sum + w, 0)), type: WidthType.DXA },
     columnWidths: table.columnWidthsPt.map(twips),
     indent: { size: twips(table.xPt - MARGIN_PT), type: WidthType.DXA },
@@ -115,7 +117,7 @@ function wordTable(table: WordTable): Table {
 /**
  * Builds a Word (.docx) file from a PDF's text: one section per page with the page's size and
  * orientation, one paragraph per detected paragraph with its size, weight, alignment, indent and
- * the space above it, and ruled tables as Word tables (column widths, merged cells). Hindi is set in Nirmala UI (Windows' Devanagari font; Word substitutes on
+ * the space above it, and tables as Word tables (column widths, merged cells; borders only where the PDF draws them). Hindi is set in Nirmala UI (Windows' Devanagari font; Word substitutes on
  * other systems).
  */
 export async function buildWordDocument(pages: readonly WordPage[]): Promise<Blob> {

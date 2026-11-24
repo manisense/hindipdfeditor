@@ -39,6 +39,7 @@ describe('buildWordDocument', () => {
             kind: 'table',
             table: {
               xPt: 50,
+              borders: true,
               columnWidthsPt: [100, 60, 60],
               rows: [
                 { heightPt: 20, cells: [{ col: 0, colSpan: 1, rowSpan: 2, paragraphs: [cell('आरक्षक / रसोइया')] }, { col: 1, colSpan: 2, rowSpan: 1, paragraphs: [cell('सीधी')] }] },
@@ -57,6 +58,32 @@ describe('buildWordDocument', () => {
     expect(xml).toContain('<w:vMerge w:val="continue"/>');
     expect(xml).toContain('आरक्षक / रसोइया');
     expect(xml.match(/<w:tr[ >]/g)).toHaveLength(2);
+    expect(xml).toMatch(/<w:tblBorders>[\s\S]*?<w:insideV w:val="single"/);
+  });
+
+  it('writes a table aligned by space without borders', async () => {
+    const cell = (text: string) => ({ text, fontSizePt: 10, bold: false, italic: false, align: 'left' as const, spaceBeforePt: 0, indentPt: 0 });
+    const blob = await buildWordDocument([
+      {
+        widthPt: 595,
+        heightPt: 842,
+        blocks: [
+          {
+            kind: 'table',
+            table: {
+              xPt: 50,
+              borders: false,
+              columnWidthsPt: [100, 60],
+              rows: [{ heightPt: 20, cells: [{ col: 0, colSpan: 1, rowSpan: 1, paragraphs: [cell('पद')] }, { col: 1, colSpan: 1, rowSpan: 1, paragraphs: [cell('14')] }] }],
+            },
+          },
+        ],
+      },
+    ]);
+    const xml = strFromU8(unzipSync(new Uint8Array(await blob.arrayBuffer()))['word/document.xml']);
+    const borders = xml.match(/<w:tblBorders>[\s\S]*?<\/w:tblBorders>/)?.[0] ?? '';
+    expect(borders).toContain('<w:insideV w:val="none"');
+    expect(borders).not.toContain('w:val="single"');
   });
 
   it('embeds a picture at its size', async () => {

@@ -79,7 +79,7 @@ export const translations: Record<Language, Record<string, string>> = {
       "Type into a PDF form's own fields in Hindi or English, tick boxes and pick options. Hindi answers are drawn by the browser, so matras stay joined.",
     "feat.wordHeading": "PDF to Word, and Back",
     "feat.wordDesc":
-      "Turn a Hindi or English PDF into an editable .docx: text is read from the file or by OCR on your device, ruled tables become Word tables and pictures come along. Word files turn into PDFs too.",
+      "Turn a Hindi or English PDF into an editable .docx: text is read from the file or by OCR on your device, tables become Word tables and pictures come along. Word files turn into PDFs too.",
     "feat.compressHeading": "Shrink PDFs for Sarkari Portals",
     "feat.compressDesc":
       "Re-encode scanned pages with a quality slider to get under government portal upload limits (SSC, UP Police, BPSC). Lower quality means a smaller file.",
@@ -261,7 +261,7 @@ export const translations: Record<Language, Record<string, string>> = {
       "पीडीएफ फॉर्म के अपने खानों में हिंदी या अंग्रेजी में टाइप करें, बॉक्स टिक करें और विकल्प चुनें। हिंदी जवाब ब्राउज़र बनाता है, इसलिए मात्राएं जुड़ी रहती हैं।",
     "feat.wordHeading": "पीडीएफ से वर्ड, और वापस",
     "feat.wordDesc":
-      "हिंदी या अंग्रेजी पीडीएफ को एडिट होने वाली .docx फाइल बनाएं: टेक्स्ट फाइल से या आपके डिवाइस पर OCR से पढ़ा जाता है, लाइनों वाली टेबल वर्ड टेबल बनती हैं और तस्वीरें साथ आती हैं। वर्ड फाइल भी पीडीएफ में बदलें।",
+      "हिंदी या अंग्रेजी पीडीएफ को एडिट होने वाली .docx फाइल बनाएं: टेक्स्ट फाइल से या आपके डिवाइस पर OCR से पढ़ा जाता है, टेबल वर्ड टेबल बनती हैं और तस्वीरें साथ आती हैं। वर्ड फाइल भी पीडीएफ में बदलें।",
     "feat.compressHeading": "सरकारी पोर्टल के लिए पीडीएफ छोटी करें",
     "feat.compressDesc":
       "स्कैन पेज क्वालिटी स्लाइडर से दोबारा बनाएं ताकि फाइल सरकारी पोर्टल की अपलोड लिमिट (SSC, यूपी पुलिस, BPSC) में आ जाए। कम क्वालिटी यानी छोटी फाइल।",

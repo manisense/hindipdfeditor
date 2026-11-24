@@ -71,5 +71,12 @@ PDF to Word carries pictures over.
   - Letter strokes are shorter, or touch no other line, so `detectTables` ignores them. That includes a Devanagari headline.
 - **Reading the cells:** whole-page OCR runs a table row across its cells, so each cell is read on its own, 3 pt inside its borders. Both the Hindi and English models read every cell. Hindi wins when it found Devanagari letters (not just Devanagari digits) and is about as confident; otherwise the more confident reading wins.
 - **Block mode:** cells and text-image rows (ADR 0016) are read by their own Tesseract workers in single-block mode (PSM 6). Page layout mode missed short items such as a lone "14". Separate workers keep the mode from leaking into full-page reads running at the same time.
-- **Checks:** gate case `SCAN_TABLE_OK` (a 3×3 table on a page image, each value read into its cell). Tables without lines are still not detected.
+- **Checks:** gate case `SCAN_TABLE_OK` (a 3×3 table on a page image, each value read into its cell). Tables without lines: see the next addendum.
 
+## Addendum, 24 November 2026: tables without lines
+
+- **Finding them:** `detectAlignedTables` (`alignedTables.ts`) looks at the page's lines after ruled tables are found. A table is three or more rows split into two or more pieces by gaps of at least one line height, with the gaps at the same x positions in every row. A single piece that fits in one column continues the row above (a wrapped cell). Rows more than 2.5 line heights apart end the table.
+- **What is not a table:** a column whose pieces are typically longer than 40 characters (two-column page layouts, numbered paragraphs with a hanging indent), and a two-column block whose first column is only list markers (`9.1`, `(iv)`, `क)`). Missing a table is better than turning paragraphs into one: on the 31-page notice, a first version without these rules turned 19 numbered sections into tables.
+- **Writing them:** cells are never merged; column edges sit in the middle of each gap. The Word table has no borders (`TableBorders.NONE`); ruled tables keep theirs (`DetectedTable.ruled`).
+- **Rejected:** reading columns from OCR word boxes on scans. Tesseract runs a row across its cells as one line, so scans without lines stay paragraphs.
+- **Checks:** gate case `WORD_ALIGNED_TABLE_OK` (a 3×4 table drawn without lines becomes a borderless Word table, one value per cell, text above and below in order). No borderless table turned up in 8 real sample PDFs, the 31-page notice among them: 67 ruled tables found, none added by mistake. No real file with a borderless table has been tested yet.

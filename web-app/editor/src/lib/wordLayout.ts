@@ -117,6 +117,8 @@ export type WordTableCell = { col: number; colSpan: number; rowSpan: number; par
 export type WordTable = {
   /** Left edge of the table from the page's left edge, in PDF points. */
   xPt: number;
+  /** Whether the PDF draws the table's borders; a table aligned by space has none. */
+  borders: boolean;
   columnWidthsPt: number[];
   /** Rows top to bottom; a cell spanning rows appears only in its first row. */
   rows: { heightPt: number; cells: WordTableCell[] }[];
@@ -131,14 +133,14 @@ export type WordBlock =
 const centreOf = (line: OcrLine) => ({ x: line.xPt + line.wPt / 2, y: line.yPt + line.hPt / 2 });
 
 /**
- * Lays a page out as paragraphs, ruled tables and pictures in reading order: each line inside a
+ * Lays a page out as paragraphs, tables and pictures in reading order: each line inside a
  * table goes to the cell holding its centre (a cell's lines become its paragraphs, indented from
  * the cell's edge), as does a picture inside a table; lines outside tables become paragraphs, and
  * pictures sit between them by their top edge.
  *
  * @param lines Detected lines; boxes in PDF points (top-left origin).
  * @param pageWidthPt Page width, in PDF points.
- * @param tables Ruled tables on the page (see `detectTables`), boxes in PDF points.
+ * @param tables Tables on the page (see `detectTables`, `detectAlignedTables`), boxes in PDF points.
  * @param pictures Pictures cut from the page, boxes in PDF points.
  */
 export function pageBlocks(
@@ -220,6 +222,7 @@ function wordTable(table: DetectedTable, lines: readonly OcrLine[], pictures: re
   }
   return {
     xPt: table.xPt,
+    borders: table.ruled,
     columnWidthsPt: table.columns.slice(0, -1).map((x, c) => table.columns[c + 1] - x),
     rows,
   };
