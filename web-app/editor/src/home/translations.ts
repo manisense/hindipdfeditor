@@ -64,7 +64,7 @@ export const translations: Record<Language, Record<string, string>> = {
       "New Hindi text is typed in Unicode and shaped by the browser text engine, so conjuncts (क्ष, त्र, ज्ञ) and the short-i matra (कि, पि) render joined, as they do on web pages.",
     "feat.translateHeading": "Bilingual Document Translation",
     "feat.translateDesc":
-      "Translate English contracts, notices, and manuals to Hindi while preserving exact tables, fonts, and bounding boxes.",
+      "Translate Hindi to English or English to Hindi, line by line. After you approve AI processing, each translated line is placed where the original line was, and you review it before export.",
     "feat.ocrHeading": "Smart Hindi + English OCR",
     "feat.ocrDesc":
       "Detect printed Devanagari text inside scanned revenue records, admit cards, and certificates with local browser OCR.",
@@ -246,7 +246,7 @@ export const translations: Record<Language, Record<string, string>> = {
       "नया हिंदी टेक्स्ट यूनिकोड में टाइप होता है और ब्राउज़र का टेक्स्ट इंजन उसे आकार देता है, इसलिए संयुक्ताक्षर (क्ष, त्र, ज्ञ, द्ध) और छोटी-इ की मात्रा (कि, पि) वेब पेज की तरह जुड़ी हुई दिखती हैं।",
     "feat.translateHeading": "द्विभाषी दस्तावेज अनुवाद (AI)",
     "feat.translateDesc":
-      "अंग्रेजी नोटिस, कॉन्ट्रैक्ट और मैनुअल को मूल लेआउट, टेबल और बॉर्डर्स को बनाए रखते हुए तुरंत हिंदी में ट्रांसलेट करें।",
+      "हिंदी से अंग्रेजी या अंग्रेजी से हिंदी में लाइन-दर-लाइन अनुवाद करें। AI प्रोसेसिंग की अनुमति के बाद हर अनुवादित लाइन मूल लाइन की जगह पर लगती है, और एक्सपोर्ट से पहले आप उसे जाँचते हैं।",
     "feat.ocrHeading": "स्मार्ट हिंदी + अंग्रेजी ओसीआर",
     "feat.ocrDesc":
       "स्कैन किए गए राजस्व रिकॉर्ड, एडमिट कार्ड और पुराने प्रमाण पत्रों में से देवनागरी प्रिंटेड टेक्स्ट को तुरंत पहचानें और कॉपी करें।",

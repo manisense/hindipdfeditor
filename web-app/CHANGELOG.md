@@ -8,6 +8,7 @@
 - **One tool list.** `home/toolCatalog.ts` now feeds the nav menu, the phone menu, the hero and the "Work your way" chips. The nav had its own copy that left out Organize and KrutiDev; the "Work your way" chips were English on Hindi screens.
 - **Flatter sections.** Feature, use-case, step and guide cards no longer have outlines or resting shadows; surfaces are told apart by tone. Icons sit directly on the surface in their category colour (AGENTS.md), without tinted squares. "How it works" is now a heading column beside the four steps, without the 01–04 numbers. "Work your way" shows the real editor capture instead of grey bars. The footer sits on a tinted band without rules.
 - Hindi hero: the Google Play button reads "गूगल प्ले पर पाएं".
+- **Translation claim matches the code.** The feature card said translation keeps "exact tables, fonts, and bounding boxes". The tool translates line by line and places each line where the original was, in Noto Sans Devanagari, after AI consent; the card now says that.
 
 ## Design finish: one type scale, shared footer, real product shot, 23 November 2026
 
