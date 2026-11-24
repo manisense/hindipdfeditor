@@ -33,7 +33,7 @@ function Card({
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-white p-7 transition-[transform,background-color,border-color,box-shadow,color,opacity] duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-[var(--shadow-soft)]",
+        "group relative flex flex-col overflow-hidden rounded-3xl bg-white p-7 transition-colors duration-200 hover:bg-[#fdfcf8] focus-visible:outline-2 focus-visible:outline-brand",
         className,
       )}
     >
@@ -48,7 +48,7 @@ function Chips({ items }: { items: string[] }) {
       {items.map((text) => (
         <span
           key={text}
-          className="rounded-full border border-line bg-white px-3 py-1 font-display text-[13px] font-semibold text-ink"
+          className="rounded-full bg-cream px-3 py-1 font-display text-[13px] font-semibold text-ink"
         >
           {text}
         </span>
@@ -59,18 +59,15 @@ function Chips({ items }: { items: string[] }) {
 
 function Ico({ icon: Icon, tone }: { icon: LucideIcon; tone: string }) {
   return (
-    <div
-      className={cn("mb-5 grid size-12 place-items-center rounded-2xl", tone)}
-    >
-      <Icon className="size-6" strokeWidth={2} />
-    </div>
+    // AGENTS.md: icons sit directly on the surface in their category colour, no tinted squares.
+    <Icon className={cn("mb-5 size-7", tone)} strokeWidth={2} />
   );
 }
 
 function EditVisual() {
   return (
-    <div className="mt-6 rounded-2xl border border-line bg-cream p-5">
-      <div className="rounded-xl bg-white p-4 shadow-sm">
+    <div className="mt-6 rounded-2xl bg-cream p-5">
+      <div className="rounded-xl bg-white p-4">
         <div className="mb-3 font-display text-xl font-semibold text-ink">
           अनुबंध पत्र
         </div>
@@ -91,8 +88,8 @@ function EditVisual() {
 
 function TranslateVisual() {
   return (
-    <div className="mt-6 flex items-center gap-2 rounded-2xl border border-line bg-cream p-4">
-      <div className="flex-1 rounded-xl bg-white p-3 shadow-sm">
+    <div className="mt-6 flex items-center gap-2 rounded-2xl bg-cream p-4">
+      <div className="flex-1 rounded-xl bg-white p-3">
         <div className="font-display text-base font-semibold text-ink">
           नमस्ते
         </div>
@@ -101,7 +98,7 @@ function TranslateVisual() {
       <div className="grid size-7 place-items-center rounded-full bg-accent text-white">
         →
       </div>
-      <div className="flex-1 rounded-xl bg-white p-3 shadow-sm">
+      <div className="flex-1 rounded-xl bg-white p-3">
         <div className="font-display text-base font-semibold text-accent">
           Hello
         </div>
@@ -113,8 +110,8 @@ function TranslateVisual() {
 
 function OcrVisual() {
   return (
-    <div className="mt-6 rounded-2xl border border-line bg-cream p-4">
-      <div className="relative rounded-xl bg-white p-3 shadow-sm">
+    <div className="mt-6 rounded-2xl bg-cream p-4">
+      <div className="relative rounded-xl bg-white p-3">
         <div className="absolute inset-2 rounded-md border-2 border-dashed border-brand/40" />
         <div className="relative space-y-2 p-1">
           <div className="inline-block rounded bg-brand-tint px-2 py-0.5 font-display text-xs font-semibold text-brand">
@@ -132,11 +129,11 @@ function OcrVisual() {
 
 function OrganizeVisual() {
   return (
-    <div className="mt-6 flex items-end justify-center gap-2 rounded-2xl border border-line bg-cream p-5">
+    <div className="mt-6 flex items-end justify-center gap-2 rounded-2xl bg-cream p-5">
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className="h-16 w-11 rounded-md border border-line bg-white shadow-sm"
+          className="h-16 w-11 rounded-md bg-white"
           style={{
             transform: `translateY(${i === 1 ? -8 : 0}px) rotate(${(i - 1) * 5}deg)`,
           }}
@@ -152,11 +149,11 @@ function OrganizeVisual() {
 
 function SignVisual() {
   return (
-    <div className="mt-6 flex items-end justify-center gap-2 rounded-2xl border border-line bg-cream p-5">
+    <div className="mt-6 flex items-end justify-center gap-2 rounded-2xl bg-cream p-5">
       {[1, 2, 3].map((page) => (
         <div
           key={page}
-          className="relative h-20 w-14 rounded-md border border-line bg-white p-1.5 shadow-sm"
+          className="relative h-20 w-14 rounded-md bg-white p-1.5"
         >
           <div className="mb-1 h-1 rounded bg-slate-100" />
           <div className="mb-1 h-1 w-3/4 rounded bg-slate-100" />
@@ -183,14 +180,14 @@ function SignVisual() {
 
 function FormVisual() {
   return (
-    <div className="mt-6 space-y-2 rounded-2xl border border-line bg-cream p-4">
-      <div className="rounded-xl bg-white p-3 shadow-sm">
+    <div className="mt-6 space-y-2 rounded-2xl bg-cream p-4">
+      <div className="rounded-xl bg-white p-3">
         <div className="text-[13px] font-semibold text-muted">नाम</div>
         <div className="mt-1 rounded-md border border-brand/40 bg-brand-tint/40 px-2 py-1 font-display text-base font-semibold text-ink">
           कृष्ण कुमार त्रिपाठी
         </div>
       </div>
-      <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 shadow-sm">
+      <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-2">
         <span className="grid size-4 place-items-center rounded bg-brand text-white">
           <Check className="size-3" strokeWidth={3} />
         </span>
@@ -202,8 +199,8 @@ function FormVisual() {
 
 function WordVisual() {
   return (
-    <div className="mt-6 flex items-center gap-3 rounded-2xl border border-line bg-cream p-4">
-      <div className="flex-1 rounded-xl bg-white p-3 shadow-sm">
+    <div className="mt-6 flex items-center gap-3 rounded-2xl bg-cream p-4">
+      <div className="flex-1 rounded-xl bg-white p-3">
         <div className="mb-2 font-display text-[13px] font-bold text-ink">PDF</div>
         <div className="mb-1.5 font-display text-base font-semibold text-ink">
           रिक्तियां
@@ -219,7 +216,7 @@ function WordVisual() {
       <div className="grid size-7 flex-none place-items-center rounded-full bg-accent text-white">
         →
       </div>
-      <div className="flex-1 rounded-xl bg-white p-3 shadow-sm">
+      <div className="flex-1 rounded-xl bg-white p-3">
         <div className="mb-2 font-display text-[13px] font-bold text-accent">.docx</div>
         <div className="mb-1.5 font-display text-base font-semibold text-ink">
           रिक्तियां
@@ -254,7 +251,7 @@ export function Features() {
 
         <div className="grid gap-4 md:grid-cols-6">
           <Card className="md:col-span-4" href={toolHref("edit", lang)}>
-            <Ico icon={Pencil} tone="bg-brand-tint text-brand" />
+            <Ico icon={Pencil} tone="text-brand" />
             <h3 className="text-xl font-bold text-ink">
               {t("feat.editHeading")}
             </h3>
@@ -265,7 +262,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-2" href={toolHref("translate", lang)}>
-            <Ico icon={Languages} tone="bg-accent-tint text-accent" />
+            <Ico icon={Languages} tone="text-[#16A34A]" />
             <h3 className="text-xl font-bold text-ink">
               {t("feat.translateHeading")}
             </h3>
@@ -276,7 +273,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-2" href={toolHref("sign", lang)}>
-            <Ico icon={Signature} tone="bg-brand-tint text-brand" />
+            <Ico icon={Signature} tone="text-brand" />
             <h3 className="text-xl font-bold text-ink">
               {t("feat.signHeading")}
             </h3>
@@ -285,7 +282,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-2" href={toolHref("fill-form", lang)}>
-            <Ico icon={ClipboardPen} tone="bg-brand-tint text-brand" />
+            <Ico icon={ClipboardPen} tone="text-brand" />
             <h3 className="text-xl font-bold text-ink">
               {t("feat.formHeading")}
             </h3>
@@ -294,7 +291,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-2" href={toolHref("edit", lang)}>
-            <Ico icon={ScanText} tone="bg-pop-yellow-tint text-[#B58400]" />
+            <Ico icon={ScanText} tone="text-[#0D9488]" />
             <h3 className="text-xl font-bold text-ink">
               {t("feat.ocrHeading")}
             </h3>
@@ -303,7 +300,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-4" href={toolHref("pdf-to-word", lang)}>
-            <Ico icon={FileType2} tone="bg-accent-tint text-accent" />
+            <Ico icon={FileType2} tone="text-[#16A34A]" />
             <h3 className="text-xl font-bold text-ink">
               {t("feat.wordHeading")}
             </h3>
@@ -314,7 +311,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-2" href={toolHref("merge", lang)}>
-            <Ico icon={Layers} tone="bg-pop-lav text-[#5B4BD6]" />
+            <Ico icon={Layers} tone="text-[#7C3AED]" />
             <h3 className="text-xl font-bold text-ink">
               {isHindi
                 ? "पीडीएफ जोड़ें, अलग करें व क्रम बदलें"
@@ -329,7 +326,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-3" href={toolHref("compress", lang)}>
-            <Ico icon={FileArchive} tone="bg-brand-tint text-brand" />
+            <Ico icon={FileArchive} tone="text-[#F0700F]" />
             <h3 className="text-xl font-bold text-ink">
               {t("feat.compressHeading")}
             </h3>
@@ -346,7 +343,7 @@ export function Features() {
           </Card>
 
           <Card className="md:col-span-3" href={toolHref("edit", lang)}>
-            <Ico icon={ShieldCheck} tone="bg-accent-tint text-accent" />
+            <Ico icon={ShieldCheck} tone="text-[#16A34A]" />
             <h3 className="text-xl font-bold text-ink">
               {t("feat.privacyHeading")}
             </h3>

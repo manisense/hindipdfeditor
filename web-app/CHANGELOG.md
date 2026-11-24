@@ -1,5 +1,14 @@
 # Changelog
 
+## Homepage refresh: typewriter hero, grouped tools menu, flatter sections, 24 November 2026
+
+### Changed
+- **Hero.** The typewriter headline is back (it was removed on 1 October because the line width jumped while typing). The second line now has a fixed height and stays on one line, so nothing below it moves. It types whole grapheme clusters, so a conjunct or matra never shows half-typed, and it stays still under reduced motion. The English cycle no longer includes a Hindi line (one language per screen). On the right, a sample Hindi letter retypes its subject line and signs itself when each line is done. The hover sweep on "one place" returns as CSS only. Four popular tools sit under the letter, with a link to all 11.
+- **Navigation.** A plain sticky bar replaces the floating glass pill. "Tools" opens a menu listing all 11 tools in four groups (Edit & sign, Translate & convert, Merge & split, Compress) in their category colours. It opens on hover or click and closes on Esc or an outside click. The phone menu lists the same groups, then the page links and the Android app. Desktop links from 1024px; Use cases, FAQ and Android app from 1280px.
+- **One tool list.** `home/toolCatalog.ts` now feeds the nav menu, the phone menu, the hero and the "Work your way" chips. The nav had its own copy that left out Organize and KrutiDev; the "Work your way" chips were English on Hindi screens.
+- **Flatter sections.** Feature, use-case, step and guide cards no longer have outlines or resting shadows; surfaces are told apart by tone. Icons sit directly on the surface in their category colour (AGENTS.md), without tinted squares. "How it works" is now a heading column beside the four steps, without the 01–04 numbers. "Work your way" shows the real editor capture instead of grey bars. The footer sits on a tinted band without rules.
+- Hindi hero: the Google Play button reads "गूगल प्ले पर पाएं".
+
 ## Design finish: one type scale, shared footer, real product shot, 23 November 2026
 
 ### Changed
