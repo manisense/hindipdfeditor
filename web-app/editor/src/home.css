@@ -113,21 +113,6 @@
   padding-inline: 24px;
 }
 
-/* Mobile nav menu animation */
-@keyframes mobileMenuSlideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.animate-mobile-menu {
-  animation: mobileMenuSlideDown 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
 
 [id] {
   scroll-margin-top: 80px;
@@ -214,22 +199,33 @@
   transition: stroke-dashoffset 1.1s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-/* Nav tools menu */
-@keyframes menu-in {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
+/* Nav menus: kept mounted so they can fade out as well as in (180ms, the UI duration).
+   visibility waits for the fade before hiding, and takes closed menus out of the tab order. */
+.menu-panel {
+  transition:
+    opacity 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s linear 180ms;
 }
-.animate-menu-in {
-  animation: menu-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+.menu-panel[data-open="false"] {
+  opacity: 0;
+  transform: translateY(-6px);
+  visibility: hidden;
+  pointer-events: none;
+}
+.menu-panel[data-open="true"] {
+  transition-delay: 0s;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cover:hover .cover-beam,
-  .animate-menu-in,
-  .animate-mobile-menu {
+  .caret {
     animation: none;
+  }
+  .menu-panel,
+  .menu-panel[data-open="false"] {
+    transform: none;
+    transition: visibility 0s;
   }
   .signature-stroke path {
     stroke-dashoffset: 0;

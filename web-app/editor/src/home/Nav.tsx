@@ -64,6 +64,9 @@ export function Nav() {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const toolsRef = useRef<HTMLDivElement>(null);
+  const toolsButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileSheetRef = useRef<HTMLDivElement>(null);
   const hoverTimer = useRef<number | undefined>(undefined);
   const panelId = useId();
 
@@ -84,13 +87,18 @@ export function Nav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Esc closes whichever menu is open; the mobile sheet also locks page scroll.
+  // Esc closes whichever menu is open and puts focus back on the button that opened it.
   useEffect(() => {
     if (!mobileOpen && !toolsOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setMobileOpen(false);
+      if (e.key !== "Escape") return;
+      if (toolsOpen) {
         setToolsOpen(false);
+        toolsButtonRef.current?.focus();
+      }
+      if (mobileOpen) {
+        setMobileOpen(false);
+        mobileButtonRef.current?.focus();
       }
     };
     const onPointer = (e: PointerEvent) => {
@@ -100,13 +108,29 @@ export function Nav() {
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("pointerdown", onPointer);
-    if (mobileOpen) document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("pointerdown", onPointer);
-      document.body.style.overflow = "";
     };
   }, [mobileOpen, toolsOpen]);
+
+  // While the phone menu is open, the page behind it is inert (no focus, no screen
+  // reader access, no scroll) and focus moves to the first link in the menu.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const behind = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        ".home-root > main, .home-root > footer",
+      ),
+    );
+    behind.forEach((el) => (el.inert = true));
+    document.body.style.overflow = "hidden";
+    mobileSheetRef.current?.querySelector<HTMLElement>("a, button")?.focus();
+    return () => {
+      behind.forEach((el) => (el.inert = false));
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
 
   // Hover opens the menu on devices with a mouse; a short close delay lets the
   // pointer cross the gap between the button and the panel.
@@ -144,8 +168,18 @@ export function Nav() {
             className="flex h-full items-center"
             onPointerEnter={hoverOpen(true)}
             onPointerLeave={hoverOpen(false)}
+            onBlur={(e) => {
+              // Tabbing past the last tool closes the menu instead of leaving it over the page.
+              if (
+                e.relatedTarget &&
+                !e.currentTarget.contains(e.relatedTarget)
+              ) {
+                setToolsOpen(false);
+              }
+            }}
           >
             <button
+              ref={toolsButtonRef}
               type="button"
               aria-expanded={toolsOpen}
               aria-controls={panelId}
@@ -163,38 +197,38 @@ export function Nav() {
               />
             </button>
 
-            {toolsOpen && (
-              <div
-                id={panelId}
-                className="animate-menu-in absolute inset-x-4 top-full z-10 pt-1 sm:inset-x-6"
-              >
-                <div className="rounded-3xl bg-white p-5 shadow-[0_0_0_1px_rgba(9,9,11,0.06),0_24px_60px_rgba(21,23,44,0.16)]">
-                  <ToolGroups
-                    columns="grid-cols-2 lg:grid-cols-4"
-                    onPick={() => setToolsOpen(false)}
-                  />
-                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-cream px-4 py-3">
-                    <span className="inline-flex items-center gap-2 text-[13px] font-medium text-ink">
-                      <ShieldCheck
-                        className="size-4 text-accent"
-                        strokeWidth={2}
-                      />
-                      {isHindi
-                        ? `${TOOL_COUNT} टूल्स, ब्राउज़र में ही। कोई खाता नहीं।`
-                        : `${TOOL_COUNT} tools that run in your browser. No account.`}
-                    </span>
-                    <a
-                      href="#how-it-works"
-                      onClick={() => setToolsOpen(false)}
-                      className="inline-flex items-center gap-1 font-display text-[13px] font-semibold text-brand hover:text-brand-hover"
-                    >
-                      {t("nav.howItWorks")}
-                      <ArrowRight className="size-3.5" />
-                    </a>
-                  </div>
+            <div
+              id={panelId}
+              data-open={toolsOpen}
+              inert={!toolsOpen}
+              className="menu-panel absolute inset-x-4 top-full z-10 pt-1 sm:inset-x-6"
+            >
+              <div className="rounded-3xl bg-white p-5 shadow-[0_0_0_1px_rgba(9,9,11,0.06),0_24px_60px_rgba(21,23,44,0.16)]">
+                <ToolGroups
+                  columns="grid-cols-2 lg:grid-cols-4"
+                  onPick={() => setToolsOpen(false)}
+                />
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-cream px-4 py-3">
+                  <span className="inline-flex items-center gap-2 text-[13px] font-medium text-ink">
+                    <ShieldCheck
+                      className="size-4 text-accent"
+                      strokeWidth={2}
+                    />
+                    {isHindi
+                      ? `${TOOL_COUNT} टूल्स। ज़्यादातर ब्राउज़र में चलते हैं; AI सुविधाएं पहले अनुमति लेती हैं।`
+                      : `${TOOL_COUNT} tools. Most run in your browser; AI features ask first.`}
+                  </span>
+                  <a
+                    href="#how-it-works"
+                    onClick={() => setToolsOpen(false)}
+                    className="inline-flex items-center gap-1 font-display text-[13px] font-semibold text-brand hover:text-brand-hover"
+                  >
+                    {t("nav.howItWorks")}
+                    <ArrowRight className="size-3.5" />
+                  </a>
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           {links.map((l) => (
@@ -242,6 +276,7 @@ export function Nav() {
           </Btn>
 
           <button
+            ref={mobileButtonRef}
             type="button"
             onClick={() => setMobileOpen((o) => !o)}
             aria-label={
@@ -260,47 +295,46 @@ export function Nav() {
         </div>
       </div>
 
-      {mobileOpen && (
-        <div
-          id="mobile-nav-menu"
-          role="dialog"
-          aria-label={isHindi ? "नेविगेशन मेनू" : "Navigation menu"}
-          className="animate-menu-in h-[calc(100dvh-64px)] overflow-y-auto bg-white px-4 pt-2 pb-8 lg:hidden"
+      <div
+        ref={mobileSheetRef}
+        id="mobile-nav-menu"
+        data-open={mobileOpen}
+        inert={!mobileOpen}
+        className="menu-panel absolute inset-x-0 top-full h-[calc(100dvh-64px)] overflow-y-auto bg-white px-4 pt-2 pb-8 lg:hidden"
+      >
+        <ToolGroups
+          columns="grid-cols-1 min-[520px]:grid-cols-2"
+          onPick={() => setMobileOpen(false)}
+        />
+
+        <nav
+          aria-label={isHindi ? "पेज के हिस्से" : "Page sections"}
+          className="mt-6 grid grid-cols-2 gap-2 rounded-2xl bg-cream p-2"
         >
-          <ToolGroups
-            columns="grid-cols-1 min-[520px]:grid-cols-2"
-            onPick={() => setMobileOpen(false)}
-          />
+          {links.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              onClick={() => setMobileOpen(false)}
+              className="rounded-xl px-3 py-2.5 font-display text-[15px] font-semibold text-ink transition-colors hover:bg-white"
+            >
+              {l.label}
+            </a>
+          ))}
+        </nav>
 
-          <nav
-            aria-label={isHindi ? "पेज के हिस्से" : "Page sections"}
-            className="mt-6 grid grid-cols-2 gap-2 rounded-2xl bg-cream p-2"
-          >
-            {links.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                onClick={() => setMobileOpen(false)}
-                className="rounded-xl px-3 py-2.5 font-display text-[15px] font-semibold text-ink transition-colors hover:bg-white"
-              >
-                {l.label}
-              </a>
-            ))}
-          </nav>
-
-          <a
-            href={PLAY_STORE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Get Hindi PDF Editor on Google Play (opens in a new tab)"
-            className="mt-4 flex items-center gap-2 rounded-2xl bg-brand-wash px-4 py-3.5 font-display text-[15px] font-semibold text-ink"
-          >
-            <GooglePlayMark className="size-4 text-brand" />
-            {isHindi ? "एंड्रॉयड ऐप डाउनलोड करें" : "Get the Android app"}
-            <ArrowRight className="ml-auto size-4 text-brand" />
-          </a>
-        </div>
-      )}
+        <a
+          href={PLAY_STORE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Get Hindi PDF Editor on Google Play (opens in a new tab)"
+          className="mt-4 flex items-center gap-2 rounded-2xl bg-brand-wash px-4 py-3.5 font-display text-[15px] font-semibold text-ink"
+        >
+          <GooglePlayMark className="size-4 text-brand" />
+          {isHindi ? "एंड्रॉयड ऐप डाउनलोड करें" : "Get the Android app"}
+          <ArrowRight className="ml-auto size-4 text-brand" />
+        </a>
+      </div>
     </header>
   );
 }

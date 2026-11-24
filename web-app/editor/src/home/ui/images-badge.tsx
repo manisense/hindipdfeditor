@@ -22,7 +22,8 @@ export function ImagesBadge({
 }) {
   return (
     <div className={cn("flex items-center gap-3.5", className)}>
-      <div className="flex -space-x-3">
+      {/* Letter chips are decoration; the label beside them says what they stand for. */}
+      <div aria-hidden="true" className="flex -space-x-3">
         {docs.map((d, i) => (
           <motion.div
             key={i}
