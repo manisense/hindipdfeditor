@@ -1,5 +1,25 @@
 # Changelog
 
+## Homepage audit fixes: reduced motion, keyboard menus, honest copy, 24 November 2026
+
+Found by a genjutsu audit (design-audit, tells, motion-principles) plus browser checks; the design
+record genjutsu reads is now `web-app/MASTER.md`.
+
+### Fixed
+- **Reduced motion.** With the OS "reduce motion" setting on, Features, How it works, Use cases, guide cards, Work your way, the pointer box and the letter badge still slid in (a Features card measured 7.8px mid-move 80ms after scrolling in). The homepage is now wrapped in `MotionConfig reducedMotion="user"`, and the typewriter caret stops blinking.
+- **Tools menu.** Esc puts focus back on the Tools button; tabbing past the last tool closes the menu instead of leaving it over the page. Both menus stay mounted and fade out as well as in; closed menus are `inert` and hidden.
+- **Phone menu.** Focus moves to the first link when it opens, and the page behind is `inert` until it closes; Esc returns focus to the menu button.
+- **FAQ.** Each question button points to its answer (`aria-controls`, `role="region"`). Answers stay in the page HTML while closed, so crawlers read the same text as the FAQPage JSON-LD. The answer no longer animates its height.
+- **Decorative letter chips** next to the hero label are hidden from screen readers.
+- **Guide cards** on the homepage used titles and summaries from before the guides were rewritten ("Without Uploading Them", "Keep the Layout"); they now use each guide's own title and summary. Read times were guesses and are now from word counts (200 words a minute in English, 150 in Hindi).
+- **Copy.** "Loved for everyday Hindi paperwork" was an unsourced claim; it now says what the product is for. The tools menu said all tools run in the browser; it now says most do and AI features ask first. Middle-dot runs, em dashes, double arrows ("View all guides → →") and "engineered from scratch for Indic typography" are gone.
+- **Illustrations** in Features show real Hindi sample text instead of grey bars.
+
+### Changed
+- One easing and three durations on the homepage (`home/motion.ts`: 180ms UI, 400ms section entries, 600ms hero), down from six.
+- Use cases puts its heading on the left and the summary on the right, so three sections in a row no longer share the centred-heading layout.
+- The hero's "Editing this line" tag is 13px (was 11px).
+
 ## Homepage refresh: typewriter hero, grouped tools menu, flatter sections, 24 November 2026
 
 ### Changed

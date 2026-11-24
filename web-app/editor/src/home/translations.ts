@@ -13,7 +13,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "nav.switchLang": "हिन्दी",
 
     // Hero
-    "hero.badge": "Free to use · runs locally · no account",
+    "hero.badge": "Free, runs in your browser, no account needed",
     "hero.titlePre": "Hindi PDF Editor",
     "hero.title1": "Hindi PDFs.",
     "hero.title2": "हिंदी दस्तावेज़।",
@@ -58,7 +58,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "feat.eyebrow": "Everything in one place",
     "feat.title": "Built for Hindi PDFs, not English afterthoughts",
     "feat.subtitle":
-      "General-purpose PDF editors break Devanagari matras, conjuncts, and vowel placements. Hindi PDF Editor is engineered from scratch for Indic typography.",
+      "General-purpose PDF editors often break matras, conjuncts and vowel signs when you edit Hindi. Here every new Hindi word is shaped by the browser's text engine, so it reads the way it does on a web page.",
     "feat.editHeading": "Devanagari That Stays Joined",
     "feat.editDesc":
       "New Hindi text is typed in Unicode and shaped by the browser text engine, so conjuncts (क्ष, त्र, ज्ञ) and the short-i matra (कि, पि) render joined, as they do on web pages.",
@@ -115,7 +115,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "use.eyebrow": "Solutions by Document",
     "use.title": "Built for Real-World Hindi Documents",
     "use.subtitle":
-      "From government job applications to affidavits and correction requests — fill in Hindi without broken matras.",
+      "Government job applications, affidavits and correction requests. Fill them in Hindi without broken matras.",
     "use.admitCard": "Sarkari Application Forms",
     "use.admitCardDesc":
       "Fill in blank recruitment and certificate forms (BPSC, UP Police, SSC) in Unicode Hindi before you print or upload them.",
@@ -128,7 +128,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "use.academic": "Academic Papers & Worksheets",
     "use.academicDesc":
       "Build, edit, or translate CBSE and State Board Hindi question papers, assignments, and study materials.",
-    "use.openForDoc": "Open Editor for this document →",
+    "use.openForDoc": "Open the editor for this document",
 
     // Work Your Way
     "work.eyebrow": "Work your way",
@@ -137,7 +137,7 @@ export const translations: Record<Language, Record<string, string>> = {
       "Start in the browser with nothing to install, or take the same toolkit anywhere with the Android app.",
     "work.f1Title": "No install on web",
     "work.f1Desc":
-      "Open a tab and get straight to editing — nothing to download.",
+      "Open a tab and start editing. There is nothing to download.",
     "work.f2Title": "Native Android app",
     "work.f2Desc": "The full toolkit on your phone, tuned for touch.",
     "work.f3Title": "Same result, everywhere",
@@ -195,7 +195,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "nav.switchLang": "English",
 
     // Hero
-    "hero.badge": "फ्री · सीधे ब्राउज़र में · कोई खाता नहीं",
+    "hero.badge": "फ्री, सीधे ब्राउज़र में, कोई खाता नहीं",
     "hero.titlePre": "हिंदी पीडीएफ एडिटर",
     "hero.title1": "सही देवनागरी में।",
     "hero.title2": "बिना फॉन्ट टूटे।",
@@ -240,7 +240,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "feat.eyebrow": "सभी सुविधाएं एक ही स्थान पर",
     "feat.title": "खास तौर पर हिंदी (देवनागरी) के लिए तैयार",
     "feat.subtitle":
-      "साधारण पीडीएफ एडिटर हिंदी की मात्राओं, आधे अक्षरों और संयुक्ताक्षरों को तोड़ देते हैं। हिंदी पीडीएफ एडिटर को विशेष रूप से भारतीय भाषाओं के लिए डिजाइन किया गया है।",
+      "साधारण पीडीएफ एडिटर अक्सर हिंदी एडिट करते समय मात्राएं, आधे अक्षर और संयुक्ताक्षर तोड़ देते हैं। यहाँ हर नया हिंदी शब्द ब्राउज़र का टेक्स्ट इंजन बनाता है, इसलिए वह वेब पेज की तरह सही दिखता है।",
     "feat.editHeading": "जुड़ी हुई, सही देवनागरी",
     "feat.editDesc":
       "नया हिंदी टेक्स्ट यूनिकोड में टाइप होता है और ब्राउज़र का टेक्स्ट इंजन उसे आकार देता है, इसलिए संयुक्ताक्षर (क्ष, त्र, ज्ञ, द्ध) और छोटी-इ की मात्रा (कि, पि) वेब पेज की तरह जुड़ी हुई दिखती हैं।",
@@ -297,7 +297,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "use.eyebrow": "दस्तावेजों के अनुसार समाधान",
     "use.title": "वास्तविक सरकारी और कानूनी दस्तावेजों के लिए निर्मित",
     "use.subtitle":
-      "उत्तर प्रदेश, बिहार, मध्य प्रदेश और राजस्थान के सरकारी फॉर्म से लेकर कोर्ट एफिडेविट तक — पूरे भरोसे के साथ एडिट करें।",
+      "उत्तर प्रदेश, बिहार, मध्य प्रदेश और राजस्थान के सरकारी फॉर्म से लेकर कोर्ट एफिडेविट तक, हिंदी में बिना टूटी मात्राओं के भरें।",
     "use.admitCard": "सरकारी आवेदन फॉर्म",
     "use.admitCardDesc":
       "यूपी पुलिस, BPSC, SSC और रेलवे भर्ती या प्रमाण पत्र के खाली फॉर्म प्रिंट या अपलोड करने से पहले यूनिकोड हिंदी में भरें।",
@@ -310,7 +310,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "use.academic": "शैक्षणिक प्रश्न पत्र और अध्ययन सामग्री",
     "use.academicDesc":
       "शिक्षक और छात्र सीबीएसई या स्टेट बोर्ड के हिंदी प्रश्न पत्र, असाइनमेंट और नोट्स को आसानी से एडिट और ट्रांसलेट कर सकते हैं।",
-    "use.openForDoc": "इस दस्तावेज के लिए एडिटर खोलें →",
+    "use.openForDoc": "इस दस्तावेज के लिए एडिटर खोलें",
 
     // Work Your Way
     "work.eyebrow": "अपनी पसंद के अनुसार काम करें",

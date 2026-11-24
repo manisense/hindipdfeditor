@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../lib/i18n";
 import { toolHref } from "../lib/tools";
+import { ENTER, STAGGER } from "./motion";
 
 export function UseCasesSection() {
   const { lang, t, isHindi } = useLanguage();
@@ -54,17 +55,21 @@ export function UseCasesSection() {
       aria-labelledby="use-cases-heading"
     >
       <div className="section-x">
-        <div className="mx-auto mb-14 max-w-3xl text-center">
-          <div className="mb-3 font-display text-sm font-semibold uppercase tracking-[0.08em] text-brand">
-            {t("use.eyebrow")}
+        {/* Heading left, summary right: Features and Comparison above are centred, so this
+            section breaks the repeated centred-heading-over-grid layout. */}
+        <div className="mb-14 grid gap-6 md:grid-cols-[1.1fr_0.9fr] md:items-end md:gap-12">
+          <div>
+            <div className="mb-3 font-display text-sm font-semibold uppercase tracking-[0.08em] text-brand">
+              {t("use.eyebrow")}
+            </div>
+            <h2
+              id="use-cases-heading"
+              className="text-[clamp(28px,3.6vw,42px)] font-bold leading-tight text-ink"
+            >
+              {t("use.title")}
+            </h2>
           </div>
-          <h2
-            id="use-cases-heading"
-            className="text-[clamp(28px,3.6vw,42px)] font-bold leading-tight text-ink"
-          >
-            {t("use.title")}
-          </h2>
-          <p className="mt-4 text-lg text-muted">{t("use.subtitle")}</p>
+          <p className="text-lg text-ink/80 md:pb-1">{t("use.subtitle")}</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -76,7 +81,7 @@ export function UseCasesSection() {
                 initial={{ y: 16 }}
                 whileInView={{ y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.4, delay: idx * 0.08 }}
+                transition={{ ...ENTER, delay: idx * STAGGER }}
                 className="group relative flex flex-col justify-between rounded-3xl bg-[#f4f6fb] p-7 transition-colors duration-200 hover:bg-brand-wash"
               >
                 <div>

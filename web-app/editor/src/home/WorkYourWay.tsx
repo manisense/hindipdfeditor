@@ -5,6 +5,7 @@ import { GooglePlayLink } from "./ui/google-play-link";
 import { useLanguage } from "../lib/i18n";
 import { toolHref } from "../lib/tools";
 import { TOOL_GROUPS } from "./toolCatalog";
+import { ENTER } from "./motion";
 
 const SHOWN_TOOLS = new Set([
   "edit",
@@ -71,7 +72,7 @@ export function WorkYourWay() {
           initial={{ scale: 0.96 }}
           whileInView={{ scale: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={ENTER}
           className="relative overflow-hidden rounded-[28px] bg-brand-wash p-8"
         >
           {/* A real capture of the web editor retyping the subject line of a Hindi letter. */}

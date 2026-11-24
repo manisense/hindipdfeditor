@@ -1,23 +1,25 @@
-import { useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useId, useState } from "react";
+import { motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { cn } from "../lib/cn";
 import { useLanguage } from "../lib/i18n";
 import { getFaqs } from "./faqData";
+import { UI } from "./motion";
 
 function Item({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
+  const id = useId();
   return (
     <div className="border-b border-line">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-4 py-5 text-left"
+        id={`${id}-q`}
         aria-expanded={open}
+        aria-controls={`${id}-a`}
       >
-        <span className="font-display text-lg font-semibold text-ink">
-          {q}
-        </span>
+        <span className="font-display text-lg font-semibold text-ink">{q}</span>
         <span
           className={cn(
             "grid size-7 flex-none place-items-center rounded-full bg-brand-wash text-brand transition-transform duration-300",
@@ -27,21 +29,25 @@ function Item({ q, a }: { q: string; a: string }) {
           <Plus className="size-4" strokeWidth={2.5} />
         </span>
       </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <p className="pb-5 pr-10 text-base leading-relaxed text-muted">
-              {a}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* The answer stays in the HTML when closed (hidden), so the button always has a
+          target and crawlers read the same answers as the FAQPage JSON-LD. */}
+      <div
+        id={`${id}-a`}
+        role="region"
+        aria-labelledby={`${id}-q`}
+        hidden={!open}
+      >
+        <motion.p
+          // Opacity and a 4px rise only: animating height re-lays out the page every frame.
+          key={String(open)}
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={UI}
+          className="pb-5 pr-10 text-base leading-relaxed text-muted"
+        >
+          {a}
+        </motion.p>
+      </div>
     </div>
   );
 }

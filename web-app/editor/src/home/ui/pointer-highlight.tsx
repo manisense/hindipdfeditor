@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { cn } from "../../lib/cn";
+import { ENTER, HERO } from "../motion";
 
 /**
  * Aceternity-style PointerHighlight: draws an animated rectangle around the
@@ -33,7 +34,7 @@ export function PointerHighlight({
         initial={{ opacity: 0, scaleX: 0 }}
         animate={inView ? { opacity: 1, scaleX: 1 } : { opacity: 0, scaleX: 0 }}
         style={{ originX: 0 }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        transition={HERO}
       />
 
       <motion.span
@@ -46,7 +47,7 @@ export function PointerHighlight({
         animate={
           inView ? { opacity: 1, x: 0, y: 0 } : { opacity: 0, x: -8, y: -8 }
         }
-        transition={{ duration: 0.5, delay: 0.55, ease: "easeOut" }}
+        transition={{ ...ENTER, delay: 0.55 }}
       >
         <svg
           width="20"
