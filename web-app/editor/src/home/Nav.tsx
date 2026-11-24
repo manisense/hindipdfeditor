@@ -1,325 +1,306 @@
-import { useState, useEffect } from "react";
-import {
-  Globe,
-  Menu,
-  X,
-  ChevronRight,
-  FileEdit,
-  Languages,
-  Layers,
-  Split,
-  Minimize2,
-  Signature,
-  ClipboardPen,
-  FileType2,
-  FileText,
-} from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { ArrowRight, ChevronDown, Menu, ShieldCheck, X } from "lucide-react";
 import { Btn } from "./ui/button";
 import { GooglePlayMark } from "./ui/google-play-link";
 import { LOGO_BADGE, PLAY_STORE_URL } from "./links";
+import { TOOL_COUNT, TOOL_GROUPS } from "./toolCatalog";
 import { useLanguage } from "../lib/i18n";
 import { toolHref } from "../lib/tools";
 
+/** Every tool, grouped by category: the desktop menu panel and the mobile sheet both render this. */
+function ToolGroups({
+  columns,
+  onPick,
+}: {
+  columns: string;
+  onPick?: () => void;
+}) {
+  const { lang, t, isHindi } = useLanguage();
+  return (
+    <div className={`grid gap-x-6 gap-y-6 ${columns}`}>
+      {TOOL_GROUPS.map((group) => (
+        <div key={group.id} className="min-w-0">
+          <div className="mb-2 flex items-center gap-2 px-2.5 font-display text-[13px] font-bold text-ink">
+            <span
+              className="size-2 rounded-full"
+              style={{ background: group.color }}
+            />
+            {isHindi ? group.hi : group.en}
+          </div>
+          <ul className="grid gap-0.5">
+            {group.tools.map((tool) => (
+              <li key={tool.id}>
+                <a
+                  href={toolHref(tool.id, lang)}
+                  onClick={onPick}
+                  className="flex items-start gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-brand-wash focus-visible:bg-brand-wash"
+                >
+                  <tool.icon
+                    className="mt-0.5 size-[18px] flex-none"
+                    style={{ color: group.color }}
+                    strokeWidth={2}
+                  />
+                  <span className="min-w-0">
+                    <span className="block font-display text-[14px] font-semibold leading-tight text-ink">
+                      {t(tool.nameKey)}
+                    </span>
+                    <span className="mt-0.5 block text-[13px] leading-snug text-muted">
+                      {t(tool.detailKey)}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function Nav() {
   const { lang, setLang, t, isHindi } = useLanguage();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const toolsRef = useRef<HTMLDivElement>(null);
+  const hoverTimer = useRef<number | undefined>(undefined);
+  const panelId = useId();
 
   const links = [
-    { label: t("nav.features"), href: "#features" },
     { label: t("nav.howItWorks"), href: "#how-it-works" },
     { label: t("nav.compare"), href: "#compare" },
-    { label: t("nav.useCases"), href: "#use-cases" },
+    { label: t("nav.useCases"), href: "#use-cases", wideOnly: true },
     { label: t("nav.guides"), href: "/articles/" },
+    { label: "FAQ", href: "#faq", wideOnly: true },
   ];
 
-  const toolShortcuts = [
-    {
-      id: "edit" as const,
-      nameEn: "Edit Hindi PDF",
-      nameHi: "हिंदी एडिट",
-      icon: FileEdit,
-      tintFg: "#1843DD",
-      tintBg: "#E8EDFF",
-    },
-    {
-      id: "sign" as const,
-      nameEn: "Sign PDF",
-      nameHi: "हस्ताक्षर",
-      icon: Signature,
-      tintFg: "#1843DD",
-      tintBg: "#E8EDFF",
-    },
-    {
-      id: "fill-form" as const,
-      nameEn: "Fill PDF form",
-      nameHi: "फॉर्म भरें",
-      icon: ClipboardPen,
-      tintFg: "#1843DD",
-      tintBg: "#E8EDFF",
-    },
-    {
-      id: "translate" as const,
-      nameEn: "Translate PDF",
-      nameHi: "अनुवाद",
-      icon: Languages,
-      tintFg: "#16A34A",
-      tintBg: "#E6F7EC",
-    },
-    {
-      id: "merge" as const,
-      nameEn: "Merge PDF",
-      nameHi: "जोड़ें",
-      icon: Layers,
-      tintFg: "#7C3AED",
-      tintBg: "#F1EAFE",
-    },
-    {
-      id: "split" as const,
-      nameEn: "Split PDF",
-      nameHi: "अलग करें",
-      icon: Split,
-      tintFg: "#7C3AED",
-      tintBg: "#F1EAFE",
-    },
-    {
-      id: "compress" as const,
-      nameEn: "Compress PDF",
-      nameHi: "कंप्रेस करें",
-      icon: Minimize2,
-      tintFg: "#F0700F",
-      tintBg: "#FFF1E4",
-    },
-    {
-      id: "pdf-to-word" as const,
-      nameEn: "PDF to Word",
-      nameHi: "पीडीएफ से वर्ड",
-      icon: FileType2,
-      tintFg: "#16A34A",
-      tintBg: "#E6F7EC",
-    },
-    {
-      id: "word-to-pdf" as const,
-      nameEn: "Word to PDF",
-      nameHi: "वर्ड से पीडीएफ",
-      icon: FileText,
-      tintFg: "#16A34A",
-      tintBg: "#E6F7EC",
-    },
-  ];
+  const toggleLanguage = () => setLang(lang === "en" ? "hi" : "en");
 
-  const toggleLanguage = () => {
-    setLang(lang === "en" ? "hi" : "en");
-  };
-
-  // Close mobile menu on Esc key & lock body scroll
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Esc closes whichever menu is open; the mobile sheet also locks page scroll.
+  useEffect(() => {
+    if (!mobileOpen && !toolsOpen) return;
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setIsMobileMenuOpen(false);
+        setMobileOpen(false);
+        setToolsOpen(false);
       }
     };
-    if (isMobileMenuOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    const onPointer = (e: PointerEvent) => {
+      if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) {
+        setToolsOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onPointer);
+    if (mobileOpen) document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onPointer);
       document.body.style.overflow = "";
     };
-  }, [isMobileMenuOpen]);
+  }, [mobileOpen, toolsOpen]);
+
+  // Hover opens the menu on devices with a mouse; a short close delay lets the
+  // pointer cross the gap between the button and the panel.
+  const hoverOpen = (open: boolean) => (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse") return;
+    window.clearTimeout(hoverTimer.current);
+    hoverTimer.current = window.setTimeout(
+      () => setToolsOpen(open),
+      open ? 60 : 160,
+    );
+  };
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-2.5 sm:top-3 z-50 px-2.5 sm:px-4">
-      <header className="pointer-events-auto mx-auto flex h-[56px] sm:h-[62px] max-w-5xl items-center justify-between gap-2 sm:gap-4 rounded-full border border-black/[0.08] bg-white/90 pl-3.5 sm:pl-5 pr-2 sm:pr-2.5 shadow-[0_8px_30px_rgba(21,23,44,0.08)] backdrop-blur-xl backdrop-saturate-150 transition-[transform,background-color,border-color,box-shadow,color,opacity]">
-        {/* Brand */}
-        <a
-          href="#top"
-          className="flex shrink-0 items-center gap-2 sm:gap-2.5 group"
-        >
-          <img
-            src={LOGO_BADGE}
-            alt="Hindi PDF Editor logo"
-            className="size-7 sm:size-8 rounded-lg transition-transform group-hover:scale-105"
-          />
-          <span className="font-display text-[14px] min-[360px]:text-[15px] sm:text-[17px] font-bold tracking-tight text-ink whitespace-nowrap">
+    <header
+      className={`fixed inset-x-0 top-0 z-50 bg-white/95 transition-shadow duration-200 ${
+        scrolled || toolsOpen || mobileOpen
+          ? "shadow-[0_1px_0_rgba(9,9,11,0.07)]"
+          : ""
+      }`}
+    >
+      <div className="relative mx-auto flex h-16 max-w-[1200px] items-center gap-3 px-4 sm:px-6 lg:gap-8">
+        <a href="#top" className="flex shrink-0 items-center gap-2.5">
+          <img src={LOGO_BADGE} alt="" className="size-8 rounded-lg" />
+          <span className="font-display text-[16px] font-bold tracking-tight text-ink whitespace-nowrap sm:text-[17px]">
             Hindi PDF <span className="text-brand">Editor</span>
           </span>
         </a>
 
-        {/* Center Links (Desktop md+) */}
         <nav
-          className="hidden items-center gap-3.5 md:flex lg:gap-6"
           aria-label="Primary navigation"
+          className="hidden flex-1 items-center gap-1 lg:flex"
         >
+          <div
+            ref={toolsRef}
+            className="flex h-full items-center"
+            onPointerEnter={hoverOpen(true)}
+            onPointerLeave={hoverOpen(false)}
+          >
+            <button
+              type="button"
+              aria-expanded={toolsOpen}
+              aria-controls={panelId}
+              onClick={() => setToolsOpen((o) => !o)}
+              className={`inline-flex h-10 items-center gap-1 rounded-full px-3.5 font-display text-[14px] font-semibold transition-colors ${
+                toolsOpen
+                  ? "bg-brand-wash text-brand"
+                  : "text-ink hover:bg-black/[0.04]"
+              }`}
+            >
+              {isHindi ? "सभी टूल्स" : "Tools"}
+              <ChevronDown
+                className={`size-4 transition-transform ${toolsOpen ? "rotate-180" : ""}`}
+                strokeWidth={2.2}
+              />
+            </button>
+
+            {toolsOpen && (
+              <div
+                id={panelId}
+                className="animate-menu-in absolute inset-x-4 top-full z-10 pt-1 sm:inset-x-6"
+              >
+                <div className="rounded-3xl bg-white p-5 shadow-[0_0_0_1px_rgba(9,9,11,0.06),0_24px_60px_rgba(21,23,44,0.16)]">
+                  <ToolGroups
+                    columns="grid-cols-2 lg:grid-cols-4"
+                    onPick={() => setToolsOpen(false)}
+                  />
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-cream px-4 py-3">
+                    <span className="inline-flex items-center gap-2 text-[13px] font-medium text-ink">
+                      <ShieldCheck
+                        className="size-4 text-accent"
+                        strokeWidth={2}
+                      />
+                      {isHindi
+                        ? `${TOOL_COUNT} टूल्स, ब्राउज़र में ही। कोई खाता नहीं।`
+                        : `${TOOL_COUNT} tools that run in your browser. No account.`}
+                    </span>
+                    <a
+                      href="#how-it-works"
+                      onClick={() => setToolsOpen(false)}
+                      className="inline-flex items-center gap-1 font-display text-[13px] font-semibold text-brand hover:text-brand-hover"
+                    >
+                      {t("nav.howItWorks")}
+                      <ArrowRight className="size-3.5" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {links.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="text-sm lg:text-sm font-medium text-muted transition-colors hover:text-brand whitespace-nowrap"
+              className={`inline-flex h-10 items-center rounded-full px-3.5 font-display text-[14px] font-semibold text-ink/75 transition-colors whitespace-nowrap hover:bg-black/[0.04] hover:text-ink ${l.wideOnly ? "max-xl:hidden" : ""}`}
             >
               {l.label}
             </a>
           ))}
         </nav>
 
-        {/* Right Actions */}
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          {/* Language Switcher Pill */}
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           <button
             type="button"
             onClick={toggleLanguage}
-            title={isHindi ? "Switch to English" : "हिंदी भाषा में बदलें"}
             aria-label={isHindi ? "Switch to English" : "हिंदी भाषा में बदलें"}
-            className="inline-flex items-center gap-1 sm:gap-1.5 rounded-full border border-line bg-cream/70 px-2.5 sm:px-3 py-1.5 font-display text-[13px] sm:text-[13px] font-bold text-ink transition-[transform,background-color,border-color,box-shadow,color,opacity] hover:bg-white hover:border-brand/30 hover:shadow-sm"
+            className="inline-flex h-10 items-center rounded-full px-3 font-display text-[14px] font-bold text-ink transition-colors hover:bg-black/[0.04]"
           >
-            <Globe className="size-3.5 text-brand shrink-0" />
-            <span className="hidden min-[380px]:inline">
-              {isHindi ? "English" : "हिन्दी"}
-            </span>
-            <span className="min-[380px]:hidden">{isHindi ? "EN" : "HI"}</span>
+            {isHindi ? "English" : "हिन्दी"}
           </button>
 
-          {/* Google Play link — only on wide desktop xl so it never crowds 1024px */}
           <a
             href={PLAY_STORE_URL}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Get Hindi PDF Editor on Google Play (opens in a new tab)"
-            className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 font-display text-sm font-semibold text-ink transition-colors hover:bg-black/[0.04] xl:inline-flex whitespace-nowrap"
+            className="hidden h-10 items-center gap-1.5 rounded-full px-3 font-display text-[14px] font-semibold text-ink transition-colors whitespace-nowrap hover:bg-black/[0.04] xl:inline-flex"
           >
-            <GooglePlayMark className="text-brand size-3.5" />
-            <span>{t("nav.googlePlay")}</span>
+            <GooglePlayMark className="size-3.5 text-brand" />
+            {isHindi ? "एंड्रॉयड ऐप" : "Android app"}
           </a>
 
-          {/* Open Editor CTA */}
           <Btn
-            className="text-[13px] min-[380px]:text-[13px] sm:text-[14px] px-3 min-[380px]:px-4 sm:px-5 py-1.5 sm:py-2.5 shadow-sm shrink-0"
+            className="h-10 px-4 py-0 text-[14px] sm:px-5"
             href={toolHref("edit", lang)}
           >
-            <span className="hidden min-[440px]:inline">
+            <span className="hidden min-[420px]:inline">
               {t("nav.openEditor")}
             </span>
-            <span className="min-[440px]:hidden">
+            <span className="min-[420px]:hidden">
               {isHindi ? "एडिटर" : "Editor"}
             </span>
           </Btn>
 
-          {/* Mobile Hamburger Toggle Button */}
           <button
             type="button"
-            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            onClick={() => setMobileOpen((o) => !o)}
             aria-label={
-              isMobileMenuOpen
-                ? "Close navigation menu"
-                : "Open navigation menu"
+              mobileOpen ? "Close navigation menu" : "Open navigation menu"
             }
-            aria-expanded={isMobileMenuOpen}
+            aria-expanded={mobileOpen}
             aria-controls="mobile-nav-menu"
-            className="inline-flex md:hidden size-8 sm:size-9 items-center justify-center rounded-full border border-line bg-cream/70 text-ink transition-colors hover:bg-white hover:border-brand/30 hover:text-brand shrink-0"
+            className="inline-flex size-10 items-center justify-center rounded-full text-ink transition-colors hover:bg-black/[0.04] lg:hidden"
           >
-            {isMobileMenuOpen ? (
-              <X className="size-4" />
+            {mobileOpen ? (
+              <X className="size-5" />
             ) : (
-              <Menu className="size-4" />
+              <Menu className="size-5" />
             )}
           </button>
         </div>
-      </header>
+      </div>
 
-      {/* Mobile Menu Backdrop and Drawer */}
-      {isMobileMenuOpen && (
-        <>
-          <div
-            className="pointer-events-auto fixed inset-0 -z-10 bg-black/40 backdrop-blur-xs transition-opacity md:hidden"
-            onClick={() => setIsMobileMenuOpen(false)}
-            aria-hidden="true"
+      {mobileOpen && (
+        <div
+          id="mobile-nav-menu"
+          role="dialog"
+          aria-label={isHindi ? "नेविगेशन मेनू" : "Navigation menu"}
+          className="animate-menu-in h-[calc(100dvh-64px)] overflow-y-auto bg-white px-4 pt-2 pb-8 lg:hidden"
+        >
+          <ToolGroups
+            columns="grid-cols-1 min-[520px]:grid-cols-2"
+            onPick={() => setMobileOpen(false)}
           />
-          <div
-            id="mobile-nav-menu"
-            role="dialog"
-            aria-label="Navigation menu"
-            className="animate-mobile-menu pointer-events-auto mx-auto mt-2 w-full max-w-5xl max-h-[calc(100dvh-76px)] overflow-y-auto rounded-2xl sm:rounded-3xl border border-black/[0.08] bg-white/95 p-4 sm:p-5 shadow-[0_20px_50px_rgba(21,23,44,0.18)] backdrop-blur-2xl backdrop-saturate-150 transition-[transform,background-color,border-color,box-shadow,color,opacity] md:hidden"
+
+          <nav
+            aria-label={isHindi ? "पेज के हिस्से" : "Page sections"}
+            className="mt-6 grid grid-cols-2 gap-2 rounded-2xl bg-cream p-2"
           >
-            {/* Primary Navigation Links */}
-            <nav
-              className="flex flex-col gap-1 pb-3 border-b border-line"
-              aria-label="Mobile site sections"
-            >
-              {links.map((l) => (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-between rounded-xl px-3.5 py-2.5 text-[15px] font-semibold text-ink transition-colors hover:bg-brand-wash hover:text-brand"
-                >
-                  <span>{l.label}</span>
-                  <ChevronRight className="size-4 text-muted/60" />
-                </a>
-              ))}
-            </nav>
-
-            {/* Quick Tools Category Chips */}
-            <div className="pt-3 pb-3 border-b border-line">
-              <div className="px-3.5 pb-2 text-[13px] font-bold uppercase tracking-wider text-muted">
-                {isHindi ? "सभी पीडीएफ टूल्स" : "Quick PDF Tools"}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {toolShortcuts.map((tool) => (
-                  <a
-                    key={tool.id}
-                    href={toolHref(tool.id, lang)}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-2.5 rounded-xl p-2.5 text-sm font-medium text-ink transition-colors hover:bg-brand-wash"
-                  >
-                    <span
-                      className="flex size-7 items-center justify-center rounded-lg shrink-0"
-                      style={{
-                        backgroundColor: tool.tintBg,
-                        color: tool.tintFg,
-                      }}
-                    >
-                      <tool.icon className="size-3.5" />
-                    </span>
-                    <span className="truncate">
-                      {isHindi ? tool.nameHi : tool.nameEn}
-                    </span>
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Bottom Utilities */}
-            <div className="flex items-center justify-between pt-3 gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => {
-                  toggleLanguage();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="inline-flex items-center gap-2 rounded-full border border-line bg-cream/70 px-3.5 py-2 text-[13px] font-bold text-ink hover:bg-white hover:border-brand/30"
-              >
-                <Globe className="size-4 text-brand" />
-                <span>
-                  {isHindi ? "Switch to English" : "हिंदी भाषा चुनें"}
-                </span>
-              </button>
-
+            {links.map((l) => (
               <a
-                href={PLAY_STORE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Get Hindi PDF Editor on Google Play"
-                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-cream/70 px-3.5 py-2 text-[13px] font-semibold text-ink hover:bg-white hover:border-brand/30"
+                key={l.href}
+                href={l.href}
+                onClick={() => setMobileOpen(false)}
+                className="rounded-xl px-3 py-2.5 font-display text-[15px] font-semibold text-ink transition-colors hover:bg-white"
               >
-                <GooglePlayMark className="size-3.5 text-brand" />
-                <span>Google Play</span>
+                {l.label}
               </a>
-            </div>
-          </div>
-        </>
+            ))}
+          </nav>
+
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Get Hindi PDF Editor on Google Play (opens in a new tab)"
+            className="mt-4 flex items-center gap-2 rounded-2xl bg-brand-wash px-4 py-3.5 font-display text-[15px] font-semibold text-ink"
+          >
+            <GooglePlayMark className="size-4 text-brand" />
+            {isHindi ? "एंड्रॉयड ऐप डाउनलोड करें" : "Get the Android app"}
+            <ArrowRight className="ml-auto size-4 text-brand" />
+          </a>
+        </div>
       )}
-    </div>
+    </header>
   );
 }

@@ -69,7 +69,7 @@ export function ArticlesSection() {
   return (
     <section
       id="articles"
-      className="py-24 bg-cream/40 border-t border-line"
+      className="py-24 bg-cream"
       aria-labelledby="articles-heading"
     >
       <div className="section-x">
@@ -111,7 +111,7 @@ export function ArticlesSection() {
               whileInView={{ y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.4, delay: idx * 0.1 }}
-              className="group flex flex-col justify-between rounded-2xl border border-line bg-white p-6 transition-[transform,background-color,border-color,box-shadow,color,opacity] duration-200 hover:-translate-y-1 hover:border-brand/40 hover:shadow-[var(--shadow-soft)]"
+              className="group flex flex-col justify-between rounded-3xl bg-white p-7 transition-colors duration-200 hover:bg-brand-wash"
             >
               <div>
                 <div className="flex items-center justify-between gap-2 mb-4">
@@ -132,7 +132,7 @@ export function ArticlesSection() {
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-line/60 flex items-center justify-between text-sm font-bold text-brand">
+              <div className="mt-6 flex items-center justify-between text-sm font-bold text-brand">
                 <span className="inline-flex items-center gap-1.5">
                   <BookOpen className="size-4" />
                   <span>{isHindi ? "गाइड पढ़ें" : "Read Guide"}</span>

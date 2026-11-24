@@ -4,6 +4,15 @@ import { Btn } from "./ui/button";
 import { GooglePlayLink } from "./ui/google-play-link";
 import { useLanguage } from "../lib/i18n";
 import { toolHref } from "../lib/tools";
+import { TOOL_GROUPS } from "./toolCatalog";
+
+const SHOWN_TOOLS = new Set([
+  "edit",
+  "translate",
+  "merge",
+  "split",
+  "compress",
+]);
 
 export function WorkYourWay() {
   const { lang, t, isHindi } = useLanguage();
@@ -37,9 +46,10 @@ export function WorkYourWay() {
           <div className="mt-7 grid gap-4">
             {feats.map((f) => (
               <div key={f.h} className="flex gap-3.5">
-                <span className="mt-0.5 grid size-8 flex-none place-items-center rounded-[10px] bg-accent-tint text-accent">
-                  <Check className="size-4" strokeWidth={2.5} />
-                </span>
+                <Check
+                  className="mt-0.5 size-5 flex-none text-[#16A34A]"
+                  strokeWidth={2.5}
+                />
                 <div>
                   <h4 className="font-display text-base font-semibold text-ink">
                     {f.h}
@@ -62,59 +72,40 @@ export function WorkYourWay() {
           whileInView={{ scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="relative overflow-hidden rounded-[28px] border border-line p-8 shadow-[var(--shadow-soft)]"
-          style={{ background: "linear-gradient(160deg, #eef3ff, #ffffff)" }}
+          className="relative overflow-hidden rounded-[28px] bg-brand-wash p-8"
         >
-          <div className="rounded-2xl border border-line bg-white p-4 shadow-sm">
-            <div className="mb-3.5 flex gap-2">
-              <span className="size-2.5 rounded-full bg-line" />
-              <span className="size-2.5 rounded-full bg-line" />
-              <span className="size-2.5 rounded-full bg-line" />
-            </div>
-            <div className="mb-3 font-display text-2xl font-semibold text-ink">
-              अनुबंध पत्र
-            </div>
-            {["92%", "100%", "78%"].map((w, i) => (
-              <div
-                key={i}
-                className={`mb-2.5 h-2.5 rounded ${i === 0 ? "bg-brand-tint" : "bg-slate-100"}`}
-                style={{ width: w }}
-              />
-            ))}
-            <div className="mb-2.5 h-2.5 w-[88%] rounded bg-accent-tint" />
-            <div className="h-2.5 w-2/3 rounded bg-slate-100" />
-            <div className="mt-4 flex flex-wrap gap-2">
-              <a
-                href={toolHref("edit", lang)}
-                className="rounded-full bg-brand px-3 py-1.5 font-display text-[13px] font-semibold text-white"
-              >
-                Edit
-              </a>
-              <a
-                href={toolHref("translate", lang)}
-                className="rounded-full bg-accent px-3 py-1.5 font-display text-[13px] font-semibold text-white"
-              >
-                Translate
-              </a>
-              <a
-                href={toolHref("merge", lang)}
-                className="rounded-full border border-line bg-white px-3 py-1.5 font-display text-[13px] font-semibold text-ink"
-              >
-                Merge
-              </a>
-              <a
-                href={toolHref("split", lang)}
-                className="rounded-full border border-line bg-white px-3 py-1.5 font-display text-[13px] font-semibold text-ink"
-              >
-                Split
-              </a>
-              <a
-                href={toolHref("compress", lang)}
-                className="rounded-full border border-line bg-white px-3 py-1.5 font-display text-[13px] font-semibold text-ink"
-              >
-                Compress
-              </a>
-            </div>
+          {/* A real capture of the web editor retyping the subject line of a Hindi letter. */}
+          <img
+            src="/assets/product/editor-hindi-edit.webp"
+            width={1040}
+            height={373}
+            loading="lazy"
+            alt={
+              isHindi
+                ? "एडिटर में एक हिंदी प्रार्थना पत्र, विषय की लाइन बदली जा रही है"
+                : "A Hindi letter open in the editor, with its subject line being retyped"
+            }
+            className="block h-auto w-full rounded-2xl bg-white"
+          />
+          <div className="mt-5 flex flex-wrap gap-2">
+            {TOOL_GROUPS.flatMap((g) =>
+              g.tools
+                .filter((tool) => SHOWN_TOOLS.has(tool.id))
+                .map((tool) => (
+                  <a
+                    key={tool.id}
+                    href={toolHref(tool.id, lang)}
+                    className="inline-flex h-9 items-center gap-2 rounded-full bg-white px-3.5 font-display text-[13px] font-semibold text-ink transition-colors hover:text-brand"
+                  >
+                    <tool.icon
+                      className="size-4"
+                      style={{ color: g.color }}
+                      strokeWidth={2}
+                    />
+                    {t(tool.nameKey)}
+                  </a>
+                )),
+            )}
           </div>
         </motion.div>
       </div>

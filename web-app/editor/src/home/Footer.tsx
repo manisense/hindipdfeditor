@@ -126,7 +126,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="border-t border-line bg-white pb-10 pt-14">
+    <footer className="bg-[#f4f6fb] pb-10 pt-16">
       <div className="section-x">
         <div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
@@ -168,7 +168,7 @@ export function Footer() {
             </div>
           ))}
         </div>
-        <div className="mt-11 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 text-sm text-muted">
+        <div className="mt-11 flex flex-wrap items-center justify-between gap-3 pt-6 text-sm text-muted">
           <span>{t("footer.rights")}</span>
           <span>{t("footer.tagline")}</span>
         </div>

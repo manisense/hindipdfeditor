@@ -71,7 +71,7 @@ export function ComparisonSection() {
   return (
     <section
       id="compare"
-      className="py-24 bg-cream/50"
+      className="py-24 bg-cream"
       aria-labelledby="comparison-heading"
     >
       <div className="section-x">
@@ -91,7 +91,7 @@ export function ComparisonSection() {
         {/* Phones: one card per row (design-system.md, comparison table on mobile). */}
         <ul className="space-y-3 md:hidden">
           {rows.map((row) => (
-            <li key={row.feature} className="rounded-2xl border border-line bg-white p-4">
+            <li key={row.feature} className="rounded-2xl bg-white p-5">
               <h3 className="font-display text-base font-semibold text-ink">{row.feature}</h3>
               <p className="mt-3 flex gap-2 rounded-xl bg-brand-tint/60 p-3 text-sm font-semibold text-brand">
                 <CheckCircle2 className="mt-0.5 size-4 flex-none" aria-hidden />
@@ -110,7 +110,7 @@ export function ComparisonSection() {
             </li>
           ))}
         </ul>
-        <div className="hidden overflow-x-auto rounded-2xl border border-line bg-white shadow-sm md:block">
+        <div className="hidden overflow-x-auto rounded-3xl bg-white md:block">
           <table className="w-full min-w-[560px] text-left border-collapse">
             <thead>
               <tr className="border-b border-line bg-cream/70 text-sm font-bold text-ink">

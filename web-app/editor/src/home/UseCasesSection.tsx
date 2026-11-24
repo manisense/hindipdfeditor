@@ -77,25 +77,23 @@ export function UseCasesSection() {
                 whileInView={{ y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
                 transition={{ duration: 0.4, delay: idx * 0.08 }}
-                className="group relative flex flex-col justify-between rounded-2xl border border-line bg-cream/30 p-6 transition-[transform,background-color,border-color,box-shadow,color,opacity] duration-200 hover:border-brand/40 hover:bg-white hover:shadow-[var(--shadow-soft)]"
+                className="group relative flex flex-col justify-between rounded-3xl bg-[#f4f6fb] p-7 transition-colors duration-200 hover:bg-brand-wash"
               >
                 <div>
                   <div className="mb-4 flex items-center justify-between">
-                    <div className="grid size-11 place-items-center rounded-xl bg-brand-tint text-brand">
-                      <Icon className="size-5" strokeWidth={2.2} />
-                    </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 font-display text-[13px] font-semibold text-slate-700">
+                    <Icon className="size-7 text-brand" strokeWidth={2} />
+                    <span className="rounded-full bg-white px-3 py-1 font-display text-[13px] font-semibold text-slate-700">
                       {isHindi ? item.queryHi : item.queryEn}
                     </span>
                   </div>
                   <h3 className="font-display text-xl font-bold text-ink">
                     {item.title}
                   </h3>
-                  <p className="mt-3 text-base leading-relaxed text-muted">
+                  <p className="mt-3 text-base leading-relaxed text-ink/80">
                     {item.desc}
                   </p>
                 </div>
-                <div className="mt-6 pt-4 border-t border-line/60">
+                <div className="mt-6">
                   <a
                     href={item.link}
                     className="inline-flex items-center gap-1.5 font-display text-sm font-bold text-brand transition-colors hover:text-brand/80"
