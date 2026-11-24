@@ -1,5 +1,11 @@
 # Changelog
 
+## PDF to Word: tables without lines, 24 November 2026
+
+### Added
+- Tables that line their text up in columns without drawing lines become Word tables without borders, one value per cell, with wrapped cell text kept in its row (`alignedTables.ts`, web ADR 0012 addendum). Numbered paragraphs, short numbered lists and two-column page layouts stay paragraphs.
+- Gate case `WORD_ALIGNED_TABLE_OK`. Tool guide, homepage card, `tool-routes.json` and `llms*.txt` now say tables, not only ruled tables, become Word tables.
+
 ## One header on every page: guides and info pages get the homepage header, 24 November 2026
 
 ### Changed

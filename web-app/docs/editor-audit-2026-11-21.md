@@ -89,7 +89,7 @@ Nothing known is critical: no data loss, no broken tool, no silently wrong outpu
 4. **AI features untested live:** consented translation and AI OCR have not been tested end to end on production. *Owner, or ours with consent.*
 
 ### Medium
-5. **PDF to Word tables:** *done:* ruled tables become Word tables with merged cells (ADR 0012 addendum). Pictures are carried over too (ADR 0012 addendum). Tables on scanned pages are found from the page image (ADR 0012 addendum). Still open: tables without lines.
+5. **PDF to Word tables:** *done:* ruled tables become Word tables with merged cells (ADR 0012 addendum). Pictures are carried over too (ADR 0012 addendum). Tables on scanned pages are found from the page image (ADR 0012 addendum). Tables without lines on digital pages become borderless Word tables (ADR 0012 addendum, 24 November); still open: a real sample with such a table, and borderless tables on scans.
 6. **GA4 counted twice:** the site script and the Cloudflare tag gateway both send page views. *Owner.*
 7. **IndexNow:** the workflow is blocked by the GitHub billing lock; it is run by hand after each deploy. *Owner.*
 8. **Search Console:** sitemap acceptance and indexing of priority URLs are unchecked. *Owner.*
@@ -109,7 +109,6 @@ Order we work in: 1 → 2 → 5 → 10 → 9 → 14 → 12. The owner's items (3
 ## Open decisions
 
 - Plan B (shaped glyph injection) — only fully local route to searchable, vector Hindi edits.
-- Convert KrutiDev pages instead of blocking them.
 - Own glyph-removal code vs MuPDF (AGPL/commercial).
 - AGENTS.md names Android `Canvas.drawText()`; the web export already draws text through the browser canvas (html2canvas), which shapes Devanagari. Clarify the rule for web.
 
