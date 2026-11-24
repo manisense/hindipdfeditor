@@ -1,7 +1,7 @@
 /**
  * Ruled tables from a page's ruling segments: crossing horizontal and vertical lines form a
- * grid; a missing inner border merges the cells on both sides of it. Tables without rulings
- * (aligned by spaces only) are not detected.
+ * grid; a missing inner border merges the cells on both sides of it. Tables aligned by space
+ * alone are found by `detectAlignedTables`.
  */
 
 import type { Ruling } from './pdfRulings';
@@ -9,8 +9,11 @@ import type { Ruling } from './pdfRulings';
 /** One cell of a detected table; its box in pt (editor space, top-left origin). */
 export type TableCell = { row: number; col: number; rowSpan: number; colSpan: number; xPt: number; yPt: number; wPt: number; hPt: number };
 
-/** A ruled table: its column and row edges in pt (editor space), and its cells in reading order. */
-export type DetectedTable = { xPt: number; yPt: number; wPt: number; hPt: number; columns: number[]; rows: number[]; cells: TableCell[] };
+/**
+ * A table: its column and row edges in pt (editor space), its cells in reading order, and
+ * whether its borders are drawn (ruled) or it is aligned by space alone (see `alignedTables.ts`).
+ */
+export type DetectedTable = { xPt: number; yPt: number; wPt: number; hPt: number; columns: number[]; rows: number[]; cells: TableCell[]; ruled: boolean };
 
 /** Positions closer than this (pt) are one line. */
 const SNAP_PT = 2;
@@ -135,6 +138,7 @@ export function detectTables(rulings: readonly Ruling[]): DetectedTable[] {
       columns,
       rows,
       cells,
+      ruled: true,
     });
   }
   return tables.sort((a, b) => a.yPt - b.yPt);

@@ -1,3 +1,4 @@
+import { detectAlignedTables } from './alignedTables';
 import { buildWordDocument, type WordPage } from './pdfToWord';
 import { detectLegacyFonts, isConvertibleLegacyFont } from './legacyFontDetector';
 import { detectTextLines, ocrPoolSize, readAreas } from './ocr';
@@ -19,7 +20,7 @@ export type PdfToWordResult = { blob: Blob; pages: number; emptyPages: number };
  * editor reads it: the PDF's own text where it is reliable (checked against OCR for Hindi, with
  * unmapped glyphs repaired and KrutiDev converted to Unicode), OCR for scans and for legacy fonts
  * that cannot be converted. Lines become paragraphs with their size, weight and alignment, and
- * ruled tables become Word tables, and pictures (logos, photos, stamps) are placed in reading
+ * tables become Word tables (ruled ones, and ones aligned by space), and pictures (logos, photos, stamps) are placed in reading
  * order. Exact positions are not kept.
  *
  * @param onProgress Called after each page with pages done and total.
@@ -76,6 +77,8 @@ export async function convertPdfToWord(
         pageLines = await withCellText(pageIndex, lines, scanned);
       }
     }
+    // Tables without drawn lines, found from how their text lines up.
+    tables = [...tables, ...detectAlignedTables(pageLines, tables)].sort((a, b) => a.yPt - b.yPt);
     return { widthPt: page.widthPt, heightPt: page.heightPt, blocks: pageBlocks(pageLines, page.widthPt, tables, pictures) };
   };
   const lanes = Math.max(1, Math.min(total, ocrPoolSize()));
