@@ -13,6 +13,7 @@ owner approved, and says how to audit. Keep it in sync in the same commit as any
 | Homepage tokens (Tailwind `@theme`) | `editor/src/home.css` |
 | Homepage motion tokens | `editor/src/home/motion.ts` |
 | Every tool, grouped by category | `editor/src/home/toolCatalog.ts` (nav menu, phone menu, hero, chips) |
+| Header on guides and info pages | `scripts/site-header.mjs` (markup, mirrors `home/Nav.tsx`), `assets/site-nav.css`, `assets/site-nav.js`; sync with `node scripts/sync-site-headers.mjs` |
 | Copy, English and Hindi | `editor/src/home/translations.ts`, `faqData.ts` |
 
 Type: Inter for Latin (headings too; `brand-tokens.css` maps `--font-display` to it), Noto Sans
@@ -58,6 +59,9 @@ closed menus are `inert` and `visibility: hidden`.
 - Tools menu: hover or click opens; Esc closes and returns focus to the button; tabbing out closes.
 - Phone menu: focus moves to the first link; `main` and `footer` are `inert` while it is open; Esc
   returns focus to the menu button.
+- The static-page header (guides, info pages, 404) follows the same contract in plain JS. Change
+  `home/Nav.tsx` and `scripts/site-header.mjs` together; `site-header.test.mjs` fails if the tool
+  lists drift.
 - Decorative chips and beams are `aria-hidden`. Text contrast is 5.6:1 or more (computed). The
   orange `#F0700F` icon is 2.99:1 on white: allowed only beside a text label (AGENTS.md keeps it).
 
