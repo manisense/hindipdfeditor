@@ -44,96 +44,6 @@ img {
   max-width: 100%;
 }
 
-/* ——— Header ——— */
-
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  padding: 12px 12px 0;
-}
-
-/* Same floating pill as the homepage and tool pages. */
-.site-header .nav {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(18px) saturate(150%);
-  border: 1px solid rgba(21, 23, 44, 0.07);
-  border-radius: 9999px;
-  box-shadow: var(--hpe-shadow);
-  max-width: 1120px;
-  min-height: 62px;
-  padding: 0 8px 0 16px;
-}
-
-.nav {
-  align-items: center;
-  display: flex;
-  gap: 24px;
-  justify-content: space-between;
-  margin: 0 auto;
-  max-width: var(--max);
-  min-height: 64px;
-  padding: 0 24px;
-}
-
-.brand {
-  align-items: center;
-  display: inline-flex;
-  font-size: 18px;
-  font-weight: 800;
-  gap: 12px;
-  letter-spacing: -0.02em;
-  min-width: max-content;
-}
-
-.brand img {
-  border-radius: 7px;
-  height: 32px;
-  width: 32px;
-}
-
-.brand-accent {
-  color: var(--accent);
-}
-
-.nav-links {
-  align-items: center;
-  display: flex;
-  flex: 1;
-  gap: 24px;
-  justify-content: center;
-}
-
-.nav-links a {
-  color: var(--ink);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
-.nav-links a:hover,
-.nav-links a:focus-visible,
-.nav-links .active {
-  color: var(--accent);
-}
-
-.nav-actions {
-  align-items: center;
-  display: flex;
-  gap: 16px;
-}
-
-.nav-text {
-  color: var(--ink);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.nav-text:hover {
-  color: var(--accent);
-}
-
 .button {
   align-items: center;
   border: 1px solid transparent;
@@ -848,10 +758,6 @@ td {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .nav-links {
-    display: none;
-  }
-
   .footer-inner {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -874,43 +780,6 @@ td {
 }
 
 @media (max-width: 560px) {
-  .site-header {
-    padding: 8px 8px 0;
-  }
-
-  .site-header .nav {
-    border-radius: 20px;
-    padding: 0 8px 0 12px;
-  }
-
-  .nav {
-    min-height: 64px;
-    padding: 0 12px;
-    gap: 8px;
-  }
-
-  .brand {
-    gap: 8px;
-    font-size: 15px;
-  }
-
-  .brand img {
-    height: 28px;
-    width: 28px;
-  }
-
-  .brand span {
-    font-size: 15px;
-  }
-
-  .nav-actions {
-    gap: 8px;
-  }
-
-  .nav-actions .nav-support {
-    display: none;
-  }
-
   .button {
     min-height: 48px;
     padding: 8px 16px;

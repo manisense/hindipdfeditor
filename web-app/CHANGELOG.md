@@ -1,5 +1,18 @@
 # Changelog
 
+## One header on every page: guides and info pages get the homepage header, 24 November 2026
+
+### Changed
+- The 20 guides, the guides hub, About, Privacy, Terms, Support, Data safety (English and Hindi) and the 404 page now use the homepage header: brand, grouped Tools menu with all 11 tools, Guides, About, Support, language switch, Android app and Open editor. Before, they had two older headers (a pill with uppercase links, and a three-link guide bar) with no way to reach most tools.
+- One source: `scripts/site-header.mjs` renders it, `assets/site-nav.css` styles it, `assets/site-nav.js` runs it (Esc returns focus, tabbing out closes Tools, the phone menu focuses its first link and makes the page inert, reduced motion respected). Articles get it from `article-template.mjs`; info pages between `site-header` markers via `node scripts/sync-site-headers.mjs`. `scripts/site-header.test.mjs` (in `npm run test:content`) checks the tool list against the homepage catalog and `tool-routes.json`, and that every info page is current.
+- Hindi pages show Hindi labels and link tools with `?lang=hi`. Below 360px the header shows the logo without the name (kept for screen readers) so nothing scrolls sideways.
+
+### Fixed
+- About (English and Hindi) said the web editor blocks Kruti Dev pages and exports each edited page as one image. It now says what the code does: Kruti Dev and DevLys pages are converted and checked against text recognition, other legacy fonts stay blocked, unedited pages are copied unchanged and only new words are images.
+
+### Removed
+- The old `.site-header`/`.nav*` rules in `site.css` and `.guide-header` rules in `article.css`.
+
 ## Homepage audit fixes: reduced motion, keyboard menus, honest copy, 24 November 2026
 
 Found by a genjutsu audit (design-audit, tells, motion-principles) plus browser checks; the design

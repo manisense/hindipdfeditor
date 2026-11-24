@@ -34,7 +34,6 @@ h3 {
 p {
   margin: 0 0 16px;
 }
-.guide-header,
 .guide-footer {
   display: flex;
   flex-wrap: wrap;
@@ -44,50 +43,11 @@ p {
   padding: 24px 32px;
   background: var(--hpe-white);
 }
-/* Same floating pill as the homepage and tool pages. */
-.guide-header {
-  position: sticky;
-  top: 12px;
-  z-index: 20;
-  max-width: 1120px;
-  margin: 12px auto 0;
-  width: calc(100% - 24px);
-  padding: 8px 8px 8px 16px;
-  border: 1px solid rgba(21, 23, 44, 0.07);
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(18px) saturate(150%);
-  box-shadow: var(--hpe-shadow);
-}
-.guide-header nav a:last-child {
-  padding: 0 20px;
-  border-radius: 9999px;
-  background: var(--hpe-primary);
-  color: #fff;
-  font-weight: 600;
-}
-.guide-header nav a:last-child:hover,
-.guide-header nav a:last-child:focus-visible {
-  background: var(--hpe-primary-hover);
-}
-.guide-header nav,
 .guide-footer nav {
   display: flex;
   gap: 24px;
   flex-wrap: wrap;
   align-items: center;
-}
-.guide-header a {
-  text-decoration: none;
-  min-height: 48px;
-  display: inline-flex;
-  align-items: center;
-}
-.guide-brand {
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 .guide-main {
   max-width: 760px;
@@ -217,19 +177,6 @@ figcaption {
 @media (max-width: 600px) {
   .guide-footer {
     padding: 16px;
-  }
-  .guide-header {
-    top: 8px;
-    margin-top: 8px;
-    width: calc(100% - 16px);
-    border-radius: 20px;
-    padding: 8px 8px 8px 12px;
-  }
-  .guide-header nav {
-    gap: 12px;
-  }
-  .guide-header nav a:last-child {
-    padding: 0 16px;
   }
   .guide-main {
     padding: 32px 16px;
