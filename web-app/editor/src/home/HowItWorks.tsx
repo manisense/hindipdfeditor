@@ -3,6 +3,7 @@ import { UploadCloud, Edit3, Type, FileCheck } from "lucide-react";
 import { Btn } from "./ui/button";
 import { useLanguage } from "../lib/i18n";
 import { toolHref } from "../lib/tools";
+import { ENTER, STAGGER } from "./motion";
 
 export function HowItWorks() {
   const { lang, t, isHindi } = useLanguage();
@@ -68,11 +69,7 @@ export function HowItWorks() {
                 initial={{ y: 20 }}
                 whileInView={{ y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
-                transition={{
-                  duration: 0.45,
-                  delay: idx * 0.08,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
+                transition={{ ...ENTER, delay: idx * STAGGER }}
                 className="grid grid-cols-[auto_1fr] gap-x-5 rounded-3xl bg-cream px-6 py-7 sm:px-8"
               >
                 <Icon className="mt-1 size-7 text-brand" strokeWidth={2} />

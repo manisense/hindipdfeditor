@@ -1,3 +1,4 @@
+import { MotionConfig } from "motion/react";
 import { Nav } from "./Nav";
 import { Hero } from "./Hero";
 import { Features } from "./Features";
@@ -14,20 +15,24 @@ import "../home.css";
 /** Marketing home — design from hindipdfeditor landing, wired to our tools. */
 export function HomePage() {
   return (
-    <div className="home-root">
-      <Nav />
-      <main>
-        <Hero />
-        <Features />
-        <HowItWorks />
-        <ComparisonSection />
-        <UseCasesSection />
-        <ArticlesSection />
-        <WorkYourWay />
-        <FAQ />
-        <CTA />
-      </main>
-      <Footer />
-    </div>
+    // reducedMotion="user": with the OS "reduce motion" setting on, every motion/react
+    // transform is skipped and only opacity fades remain.
+    <MotionConfig reducedMotion="user">
+      <div className="home-root">
+        <Nav />
+        <main>
+          <Hero />
+          <Features />
+          <HowItWorks />
+          <ComparisonSection />
+          <UseCasesSection />
+          <ArticlesSection />
+          <WorkYourWay />
+          <FAQ />
+          <CTA />
+        </main>
+        <Footer />
+      </div>
+    </MotionConfig>
   );
 }
