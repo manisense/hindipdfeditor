@@ -926,6 +926,45 @@ async function wordTableCase(browser) {
   await page.close();
 }
 
+// A table aligned by space alone (no drawn lines) becomes a Word table without borders.
+async function wordAlignedTableCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { unzipSync, strFromU8 } = require(path.join(editorModules, "fflate"));
+  const { PDFDocument, StandardFonts } = await import(path.join(editorModules, "@cantoo/pdf-lib/es/index.js"));
+  const doc = await PDFDocument.create();
+  const sheet = doc.addPage([595, 842]);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  sheet.drawText("Vacancies by zone", { x: 60, y: 760, size: 14, font });
+  const xs = [60, 220, 340];
+  const values = [["Post", "North", "South"], ["Cook", "14", "9"], ["Tailor", "2", "17"], ["Barber", "5", "6"]];
+  values.forEach((row, r) => row.forEach((text, c) => sheet.drawText(text, { x: xs[c], y: 720 - r * 20, size: 11, font })));
+  sheet.drawText("Apply online before the last date.", { x: 60, y: 620, size: 11, font });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gate-"));
+  const pdfPath = path.join(dir, "aligned-table.pdf");
+  fs.writeFileSync(pdfPath, await doc.save());
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await page.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
+  await page.locator("input[type=file]").first().setInputFiles(pdfPath);
+  const download = page.waitForEvent("download", { timeout: 120000 });
+  await page.getByRole("button", { name: /Convert & download Word/ }).click();
+  const docx = path.join(dir, "out.docx");
+  fs.copyFileSync(await (await download).path(), docx);
+  const xml = strFromU8(unzipSync(new Uint8Array(fs.readFileSync(docx)))["word/document.xml"]);
+  const cellText = (cell) => [...cell.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((m) => m[1]).join(" ");
+  const tables = xml.match(/<w:tbl>[\s\S]*?<\/w:tbl>/g) ?? [];
+  assert.equal(tables.length, 1, "one Word table");
+  const grid = (tables[0].match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) ?? []).map((row) => (row.match(/<w:tc>[\s\S]*?<\/w:tc>/g) ?? []).map(cellText));
+  assert.deepEqual(grid, values, "each value in its own cell");
+  const borders = tables[0].match(/<w:tblBorders>[\s\S]*?<\/w:tblBorders>/)?.[0] ?? "";
+  assert.ok(borders.includes('w:val="none"') && !borders.includes('w:val="single"'), "no borders drawn");
+  const before = xml.indexOf("Vacancies by zone");
+  const after = xml.indexOf("Apply online before the last date.");
+  assert.ok(before >= 0 && before < xml.indexOf("<w:tbl>") && after > xml.indexOf("</w:tbl>"), "paragraphs above and below the table in order");
+  console.log("WORD_ALIGNED_TABLE_OK 3x4 table without lines became a borderless Word table with each value in its cell");
+  await page.close();
+}
+
 // Edit PDF: a Hindi heading drawn as an image (as Word exports text with effects) becomes an
 // editable line; replacing it cleans the image's pixels and draws the new text.
 async function editTextImageCase(browser) {
@@ -1246,6 +1285,7 @@ try {
   if (wanted("textImageCase")) await textImageCase(browser);
   if (wanted("editTextImageCase")) await editTextImageCase(browser);
   if (wanted("wordTableCase")) await wordTableCase(browser);
+  if (wanted("wordAlignedTableCase")) await wordAlignedTableCase(browser);
   if (wanted("wordPictureCase")) await wordPictureCase(browser);
   if (wanted("scanTableCase")) await scanTableCase(browser);
   if (wanted("fillFormCase")) await fillFormCase(browser);
