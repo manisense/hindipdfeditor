@@ -280,7 +280,7 @@ export const TOOL_GUIDES: Record<ToolId, ToolGuide> = {
       steps: [
         { title: "Open your PDF", body: "Select a Hindi or English PDF, typed or scanned." },
         { title: "Let it read the pages", body: "Text comes from the PDF, or from text recognition on your device for scanned pages." },
-        { title: "Download the .docx", body: "Ruled tables become Word tables and pictures come along in reading order." },
+        { title: "Download the .docx", body: "Tables become Word tables, whether the PDF draws their lines or only lines up the text, and pictures come along in reading order." },
       ],
       notes: [LOCAL_EN, "Check the Word file against the PDF: recognised text from scans can contain mistakes."],
       faqs: [
@@ -293,7 +293,7 @@ export const TOOL_GUIDES: Record<ToolId, ToolGuide> = {
       steps: [
         { title: "पीडीएफ खोलें", body: "टाइप की हुई या स्कैन की गई हिंदी या अंग्रेज़ी पीडीएफ चुनें।" },
         { title: "पेज पढ़ने दें", body: "टेक्स्ट पीडीएफ से, या स्कैन पेज के लिए आपके डिवाइस पर टेक्स्ट पहचान से आता है।" },
-        { title: ".docx डाउनलोड करें", body: "लाइनों वाली टेबल वर्ड टेबल बनती हैं और तस्वीरें पढ़ने के क्रम में आती हैं।" },
+        { title: ".docx डाउनलोड करें", body: "टेबल वर्ड टेबल बनती हैं, चाहे पीडीएफ में उनकी लाइनें बनी हों या सिर्फ टेक्स्ट कॉलम में सजा हो, और तस्वीरें पढ़ने के क्रम में आती हैं।" },
       ],
       notes: [LOCAL_HI, "वर्ड फाइल को पीडीएफ से मिलाकर देखें: स्कैन से पहचाने गए टेक्स्ट में गलतियाँ हो सकती हैं।"],
       faqs: [
