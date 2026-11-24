@@ -15,6 +15,7 @@ import { motion } from "motion/react";
 import { cn } from "../lib/cn";
 import { useLanguage } from "../lib/i18n";
 import { toolHref } from "../lib/tools";
+import { ENTER } from "./motion";
 
 function Card({
   className,
@@ -31,7 +32,7 @@ function Card({
       initial={{ y: 24 }}
       whileInView={{ y: 0 }}
       viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      transition={ENTER}
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-3xl bg-white p-7 transition-colors duration-200 hover:bg-[#fdfcf8] focus-visible:outline-2 focus-visible:outline-brand",
         className,
@@ -64,23 +65,22 @@ function Ico({ icon: Icon, tone }: { icon: LucideIcon; tone: string }) {
   );
 }
 
+// Illustrations use real Hindi sample text, never grey bars standing in for it.
 function EditVisual() {
   return (
     <div className="mt-6 rounded-2xl bg-cream p-5">
-      <div className="rounded-xl bg-white p-4">
-        <div className="mb-3 font-display text-xl font-semibold text-ink">
-          अनुबंध पत्र
-        </div>
-        <div className="mb-2 h-2.5 w-[92%] rounded bg-brand-tint" />
-        <div className="mb-2 flex items-center gap-1">
-          <div className="h-2.5 w-1/3 rounded bg-slate-100" />
-          <span className="rounded bg-brand px-2 py-0.5 font-display text-[11px] font-semibold text-white">
-            हस्ताक्षर
-          </span>
-          <div className="h-2.5 w-1/4 rounded bg-slate-100" />
-        </div>
-        <div className="mb-2 h-2.5 w-[78%] rounded bg-accent-tint" />
-        <div className="h-2.5 w-2/3 rounded bg-slate-100" />
+      <div className="rounded-xl bg-white p-4 text-[15px] leading-[1.8] text-ink">
+        <div className="mb-2 font-display text-xl font-semibold">अनुबंध पत्र</div>
+        <p>
+          यह अनुबंध श्री{" "}
+          <span className="rounded bg-brand-wash px-1 font-semibold text-brand shadow-[0_0_0_1.5px_var(--color-brand)]">
+            क्षितिज त्रिपाठी
+          </span>{" "}
+          और श्रीमती सुनीता वर्मा के बीच किया गया है।
+        </p>
+        <p className="text-muted">
+          मासिक किराया ₹18,500 प्रत्येक माह की पाँच तारीख़ तक देय होगा।
+        </p>
       </div>
     </div>
   );
@@ -88,21 +88,12 @@ function EditVisual() {
 
 function TranslateVisual() {
   return (
-    <div className="mt-6 flex items-center gap-2 rounded-2xl bg-cream p-4">
-      <div className="flex-1 rounded-xl bg-white p-3">
-        <div className="font-display text-base font-semibold text-ink">
-          नमस्ते
-        </div>
-        <div className="mt-1 h-1.5 w-3/4 rounded bg-brand-tint" />
+    <div className="mt-6 grid gap-2 rounded-2xl bg-cream p-4 text-[14px] leading-snug">
+      <div className="rounded-xl bg-white p-3 text-ink">
+        आवेदन की अंतिम तिथि 30 नवंबर है।
       </div>
-      <div className="grid size-7 place-items-center rounded-full bg-accent text-white">
-        →
-      </div>
-      <div className="flex-1 rounded-xl bg-white p-3">
-        <div className="font-display text-base font-semibold text-accent">
-          Hello
-        </div>
-        <div className="mt-1 h-1.5 w-3/4 rounded bg-accent-tint" />
+      <div className="rounded-xl bg-white p-3 font-medium text-accent-700">
+        The last date to apply is 30 November.
       </div>
     </div>
   );
@@ -111,17 +102,14 @@ function TranslateVisual() {
 function OcrVisual() {
   return (
     <div className="mt-6 rounded-2xl bg-cream p-4">
-      <div className="relative rounded-xl bg-white p-3">
-        <div className="absolute inset-2 rounded-md border-2 border-dashed border-brand/40" />
-        <div className="relative space-y-2 p-1">
-          <div className="inline-block rounded bg-brand-tint px-2 py-0.5 font-display text-xs font-semibold text-brand">
-            हिंदी
-          </div>{" "}
-          <div className="inline-block rounded bg-accent-tint px-2 py-0.5 font-display text-xs font-semibold text-accent-700">
-            English
-          </div>
-          <div className="h-1.5 w-2/3 rounded bg-slate-100" />
-        </div>
+      <div className="rounded-xl bg-white p-3 text-[14px] leading-loose text-ink">
+        <span className="rounded bg-brand-wash px-1 shadow-[0_0_0_1.5px_var(--color-brand)]">
+          प्रवेश पत्र
+        </span>{" "}
+        <span className="rounded bg-accent-tint px-1 text-accent-700 shadow-[0_0_0_1.5px_var(--color-accent)]">
+          Admit Card
+        </span>
+        <div className="mt-1 text-muted">परीक्षा केंद्र: राजकीय विद्यालय, पटना</div>
       </div>
     </div>
   );
@@ -162,7 +150,9 @@ function SignVisual() {
             viewBox="0 0 40 14"
             aria-hidden="true"
             className="absolute right-1.5 bottom-2 h-3.5 w-9 text-brand"
-            style={page === 2 ? { transform: "translate(-6px, -4px)" } : undefined}
+            style={
+              page === 2 ? { transform: "translate(-6px, -4px)" } : undefined
+            }
           >
             <path
               d="M2 10c4-7 6-7 7-2s3 4 6-2 4-3 5 1 3 3 7-1 6-2 11-1"
@@ -201,7 +191,9 @@ function WordVisual() {
   return (
     <div className="mt-6 flex items-center gap-3 rounded-2xl bg-cream p-4">
       <div className="flex-1 rounded-xl bg-white p-3">
-        <div className="mb-2 font-display text-[13px] font-bold text-ink">PDF</div>
+        <div className="mb-2 font-display text-[13px] font-bold text-ink">
+          PDF
+        </div>
         <div className="mb-1.5 font-display text-base font-semibold text-ink">
           रिक्तियां
         </div>
@@ -217,7 +209,9 @@ function WordVisual() {
         →
       </div>
       <div className="flex-1 rounded-xl bg-white p-3">
-        <div className="mb-2 font-display text-[13px] font-bold text-accent">.docx</div>
+        <div className="mb-2 font-display text-[13px] font-bold text-accent">
+          .docx
+        </div>
         <div className="mb-1.5 font-display text-base font-semibold text-ink">
           रिक्तियां
         </div>
@@ -347,9 +341,7 @@ export function Features() {
             <h3 className="text-xl font-bold text-ink">
               {t("feat.privacyHeading")}
             </h3>
-            <p className="mt-2 text-base text-muted">
-              {t("feat.privacyDesc")}
-            </p>
+            <p className="mt-2 text-base text-muted">{t("feat.privacyDesc")}</p>
             <Chips
               items={
                 isHindi

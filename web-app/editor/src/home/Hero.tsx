@@ -65,7 +65,7 @@ function LiveLetter() {
       </div>
 
       <p className="relative mb-3 text-[15px] leading-[1.75]">
-        <span className="absolute -top-7 left-0 rounded-full bg-brand px-2.5 py-1 font-display text-[11px] font-bold leading-none text-white">
+        <span className="absolute -top-7 left-0 rounded-full bg-brand px-2.5 py-1 font-display text-[13px] font-semibold leading-none text-white">
           {isHindi ? "एडिट हो रहा है" : "Editing this line"}
         </span>
         <span className="rounded bg-brand-wash px-1 py-0.5 font-semibold shadow-[0_0_0_2px_var(--color-brand)]">
@@ -195,8 +195,8 @@ export function Hero() {
               <ImagesBadge
                 label={
                   isHindi
-                    ? "दैनिक हिंदी दस्तावेजों के लिए भरोसेमंद"
-                    : "Loved for everyday Hindi paperwork"
+                    ? "हिंदी पत्र, फॉर्म और शपथ पत्र के लिए बना"
+                    : "Made for Hindi letters, forms and affidavits"
                 }
               />
               <span className="inline-flex items-center gap-2 text-sm font-medium text-muted">
