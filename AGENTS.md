@@ -2,6 +2,8 @@
 
 Read `design-system.md` and `mobile-app/hindi-pdf-editor-spec.md` first before touching any UI, web app, or mobile app code — `design-system.md` defines the unified brand design system, tokens, colors, and components, while the spec has the architecture, data models, and pipeline specs. This file governs _how_ to work, not _what_ to build. It is reloaded fresh at the start of every session — it has no memory of past sessions and will not learn new rules on its own. If a rule here needs to change permanently, edit this file directly; a verbal correction in one session will not persist to the next.
 
+For the website, `web-app/MASTER.md` is the design record genjutsu reads: the owner-approved homepage thesis, its allowed patterns, the motion tokens, the accessibility contract and how to audit. Update it in the same commit as any homepage design change.
+
 ## Strict Design System & UI/UX Non-Negotiable Rules
 
 All AI agents, subagents, and sessions must strictly and explicitly follow `design-system.md` across both `mobile-app` and `web-app`. These rules are binding, invariant, and non-negotiable:
