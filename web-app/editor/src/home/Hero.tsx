@@ -137,7 +137,14 @@ export function Hero() {
       <div className="section-x grid items-center gap-14 lg:grid-cols-[1fr_1fr] lg:gap-16">
         <div className="min-w-0">
           <Rise>
-            <h1 className="font-display text-[clamp(32px,5.6vw,68px)] font-extrabold leading-[1.04] tracking-[-0.03em] text-ink">
+            <h1
+              className={`font-display font-extrabold tracking-[-0.03em] text-ink ${
+                // Devanagari words run wider than Latin ones; this keeps "हिंदी पीडीएफ एडिटर" on one line.
+                isHindi
+                  ? "text-[clamp(30px,4.3vw,54px)] leading-[1.18]"
+                  : "text-[clamp(32px,5.6vw,68px)] leading-[1.04]"
+              }`}
+            >
               <span className="block">{t("hero.titlePre")}</span>
               <span className="block min-h-[1.04em] whitespace-nowrap text-brand">
                 <Typewriter
