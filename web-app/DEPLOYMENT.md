@@ -4,7 +4,7 @@ The production site is the existing `hindipdfeditor` Worker in account `4fa19d68
 
 ## Build and deploy
 
-Cloudflare Workers Builds can use root directory `web-app`, build command `npm run build`, and deploy command `npm run deploy` (or its managed `npx wrangler deploy`). The equivalent `web-app/editor` root uses its own `npm run build` and `npm run deploy`. Both Wrangler configurations target the same Worker and artifact. The project-local wrapper explicitly supplies a token and never falls back to global OAuth.
+The Workers Builds trigger for `main` ("Deploy default branch") uses root directory `/web-app/editor`, build command `npm run build` and deploy command `npm run deploy:ci`: `npx wrangler deploy`, then `web-app/scripts/indexnow.mjs` submits the live sitemap to IndexNow (a failed submission is logged and does not fail the deploy). Other branches run `npx wrangler versions upload`, which only uploads a preview version. The GitHub `indexnow` workflow is manual only. The equivalent `web-app/editor` root uses its own `npm run build` and `npm run deploy`. Both Wrangler configurations target the same Worker and artifact. The project-local wrapper explicitly supplies a token and never falls back to global OAuth.
 
 For local deployment from the repository root:
 
