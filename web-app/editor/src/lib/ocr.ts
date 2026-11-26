@@ -480,6 +480,7 @@ const FEW_DEVANAGARI_LINES = 8;
  *
  * @param record Called with what each check read, so the fonts can be trusted (see
  *   embeddedTextTrust.ts): `band` when the quick band check passed, `page` after a full-page read.
+ * @param allowPageOcr Asked before reading the whole page; false keeps the embedded lines.
  */
 async function verifyEmbeddedDevanagari(
   embedded: OcrLine[],
@@ -487,6 +488,7 @@ async function verifyEmbeddedDevanagari(
   pdfBytes: Uint8Array,
   convertLegacy?: boolean,
   record?: { band: (bandText: string, bandOcrText: string) => void; page: (hindiText: string) => void },
+  allowPageOcr?: () => boolean,
 ): Promise<OcrLine[]> {
   const degraded = embedded.some((line) => line.source === "embedded-degraded");
   if (!degraded && !embedded.some((line) => hasDevanagari(line.text))) {
@@ -517,6 +519,7 @@ async function verifyEmbeddedDevanagari(
         return embedded;
       }
     }
+    if (allowPageOcr?.() === false) return embedded;
     const hindiPage = await recognizePage(page.backgroundImageUri, "hin");
     record?.page(hindiPage.text);
     const embeddedText = embedded.map((line) => line.text).join(" ");
@@ -565,7 +568,7 @@ async function verifyEmbeddedDevanagari(
  */
 export async function detectTextLines(
   page: PageState,
-  options?: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean; rulings?: Ruling[]; pictures?: ImageBox[] },
+  options?: PageReadOptions,
 ): Promise<OcrLine[]> {
   return readPageLines(page, options);
 }
@@ -679,7 +682,7 @@ async function readImageRows(pageIndex: number, rows: ImageBox[], bothLanguages 
 
 async function readPageLines(
   page: PageState,
-  options: { forceOcr?: boolean; convertLegacy?: boolean; render?: PageRenderer; readTextImages?: boolean; rulings?: Ruling[]; pictures?: ImageBox[] } | undefined,
+  options: PageReadOptions | undefined,
 ): Promise<OcrLine[]> {
   const pdfBytes = getPdfBytes();
   // The page image is drawn only when OCR needs it (when the caller passes `render`).
@@ -691,17 +694,18 @@ async function readPageLines(
       const embedded = await extractEmbeddedTextLines(pdfBytes, page.pageIndex, {
         convertLegacy: options?.convertLegacy,
         devanagariTextByFont: textByFont,
-        readTextImages: options?.readTextImages ? (rows) => readImageRows(page.pageIndex, rows) : undefined,
+        readTextImages: options?.readTextImages && options.ocr !== "off" ? (rows) => readImageRows(page.pageIndex, rows) : undefined,
         rulings: options?.rulings,
         pictures: options?.pictures,
       });
       if (embedded.length > 0) {
+        if (options?.ocr === "off") return embedded;
         // Fonts whose Devanagari already matched OCR on earlier pages are not checked again on
         // every page (see embeddedTextTrust.ts). KrutiDev conversions and pages with unmapped
         // glyphs are always checked.
         const trust = fontTrustFor(pdfBytes);
         const degraded = embedded.some((line) => line.source === "embedded-degraded");
-        if (!degraded && !options?.convertLegacy && !mustVerifyPage(trust, textByFont.keys())) {
+        if (!degraded && !options?.convertLegacy && !mustVerifyPage(trust, textByFont.keys(), options?.spotCheckEvery)) {
           if (textByFont.size > 0) noteSkippedPage(trust);
           return embedded;
         }
@@ -711,7 +715,7 @@ async function readPageLines(
               band: (bandText: string, bandOcrText: string) => recordVerifiedBand(trust, textByFont, bandText, bandOcrText),
               page: (ocrText: string) => recordVerifiedPage(trust, textByFont, ocrText),
             };
-        return await verifyEmbeddedDevanagari(embedded, await withImage(), pdfBytes, options?.convertLegacy, record);
+        return await verifyEmbeddedDevanagari(embedded, await withImage(), pdfBytes, options?.convertLegacy, record, options?.allowPageOcr);
       }
     } catch (error) {
       console.warn(
@@ -721,6 +725,7 @@ async function readPageLines(
     }
   }
 
+  if (options?.ocr === "off" || options?.allowPageOcr?.() === false) return [];
   const imaged = await withImage();
   const [devanagariLines, latinLines] = await Promise.all([
     recognizeWithLanguage(imaged.backgroundImageUri, "hin"),
@@ -728,6 +733,26 @@ async function readPageLines(
   ]);
   return toOcrLines(mergeOcrLines(devanagariLines, latinLines), imaged);
 }
+
+/** How one page is read (see {@link detectTextLines}). */
+export type PageReadOptions = {
+  /** Read the page image only (pages whose PDF text is unusable). */
+  forceOcr?: boolean;
+  convertLegacy?: boolean;
+  render?: PageRenderer;
+  readTextImages?: boolean;
+  rulings?: Ruling[];
+  pictures?: ImageBox[];
+  /** `off`: the PDF's own text only, never OCR (pages without text come back empty). */
+  ocr?: "off";
+  /**
+   * Asked before a whole page is read with OCR (a scan, or text the PDF maps wrongly); false keeps
+   * the PDF's own text, or nothing for a scan. Short checks of a few lines are not asked about.
+   */
+  allowPageOcr?: () => boolean;
+  /** Check every this many pages of trusted fonts against OCR anyway (default 8). */
+  spotCheckEvery?: number;
+};
 
 /** Draws a page image for OCR, in px (see `renderPage`). */
 export type PageRenderer = () => Promise<{ backgroundImageUri: string; imagePxWidth: number; imagePxHeight: number }>;

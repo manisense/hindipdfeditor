@@ -359,3 +359,41 @@
   flex: 0 0 24px;
   accent-color: var(--brand);
 }
+
+/* Pill choices in a setting card (one per option, role="radio"). */
+.utility-tool__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.utility-tool__chip {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 13px;
+  justify-content: center;
+  min-height: 36px;
+  padding: 4px 16px;
+}
+
+.utility-tool__chip[aria-checked="true"] {
+  background: var(--brand-tint);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.utility-tool__chip:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.utility-tool__chip:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
