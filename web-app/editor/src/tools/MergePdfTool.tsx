@@ -9,19 +9,13 @@ import { DropZone } from "../components/DropZone";
 import { SelectedFileSummary } from "../components/SelectedFileSummary";
 import { ToolShell } from "../components/ToolShell";
 import { downloadPdfBytes, mergePdfFiles } from "../lib/pdfOps";
+import { moveItem } from "../lib/moveItem";
 import { getTool } from "../lib/tools";
 import { openFailureMessage, type Bilingual } from "../lib/userMessages";
 import "./UtilityTool.css";
 
 const tool = getTool("merge")!;
 
-/** Copy of `list` with the item at `from` moved to index `to`. */
-function moveItem<T>(list: readonly T[], from: number, to: number): T[] {
-  const next = [...list];
-  const [item] = next.splice(from, 1);
-  next.splice(to, 0, item);
-  return next;
-}
 
 export function MergePdfTool() {
   const tx = useTx();
