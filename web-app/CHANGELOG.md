@@ -1,5 +1,17 @@
 # Changelog
 
+## PDF to Word: choose pages, stop, skip blank pages, 26 November 2026
+
+### Added
+- Pages setting: all pages, or chosen pages ("1-500", "1, 3-5", Hindi digits too), so a long file converts in parts and files over 3,000 pages can still be converted. `parsePageList` moved to `pageList.ts`, shared with Sign PDF.
+- Stop button while converting; nothing is downloaded and the screen says so.
+
+### Fixed
+- Blank pages counted as scanned: the estimate warned about OCR that was not needed, and "Only where needed" spent its OCR budget reading empty pages. A page with no text layer is read with OCR only if it paints an image or many paths (outlined text).
+
+### Measured, not changed
+- Main-thread blocking during a 2,000-page conversion at 8x CPU throttling: longest task 0.68 s, 5 over 0.2 s in 60 s. Moving conversion to a Web Worker is not worth its cost until a real phone shows otherwise.
+
 ## Edited Hindi text no longer comes back on copy, 26 November 2026
 
 ### Fixed
