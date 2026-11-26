@@ -397,3 +397,9 @@
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
+
+.utility-tool__field-error {
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 500;
+}
