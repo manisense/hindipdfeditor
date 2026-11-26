@@ -16,6 +16,7 @@ import {
   FileImage,
   FileType2,
   Images,
+  Crop,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
@@ -68,6 +69,7 @@ const toolIcons: Record<ToolId, LucideIcon> = {
   "unicode-to-krutidev": ArrowLeftRight,
   "pdf-to-jpg": FileImage,
   "jpg-to-pdf": Images,
+  "resize-image": Crop,
 };
 
 

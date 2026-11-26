@@ -72,6 +72,15 @@
     "category": "optimize"
   },
   {
+    "id": "resize-image",
+    "path": "/tools/resize-photo-signature/",
+    "title": "Resize Photo and Signature for Forms",
+    "shortTitle": "Photo & signature",
+    "description": "Make a photo or signature the exact width and height (cm or pixels) and the KB range an online application form asks for, as a JPG. Signature paper is turned white. Processing stays on your device.",
+    "accent": "#F0700F",
+    "category": "optimize"
+  },
+  {
     "id": "pdf-to-word",
     "path": "/tools/pdf-to-word/",
     "title": "PDF to Word",

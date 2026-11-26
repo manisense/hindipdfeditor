@@ -14,7 +14,8 @@ export type ToolId =
   | "krutidev"
   | "unicode-to-krutidev"
   | "pdf-to-jpg"
-  | "jpg-to-pdf";
+  | "jpg-to-pdf"
+  | "resize-image";
 
 export type ToolMeta = {
   id: ToolId;
@@ -44,6 +45,7 @@ export const TOOL_HINDI_NAMES: Record<ToolId, string> = {
   "unicode-to-krutidev": "यूनिकोड ↔ कृतिदेव",
   "pdf-to-jpg": "पीडीएफ से JPG",
   "jpg-to-pdf": "JPG से पीडीएफ",
+  "resize-image": "फोटो और हस्ताक्षर",
 };
 
 
@@ -78,7 +80,8 @@ export function readToolIdFromLocation(): ToolId | null {
     raw === "krutidev" ||
     raw === "unicode-to-krutidev" ||
     raw === "pdf-to-jpg" ||
-    raw === "jpg-to-pdf"
+    raw === "jpg-to-pdf" ||
+    raw === "resize-image"
   ) {
     return raw;
   }

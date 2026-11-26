@@ -1,5 +1,11 @@
 # Changelog
 
+## Photo and signature resizer for forms, 27 November 2026
+
+### Added
+- `/tools/resize-photo-signature/`: makes a JPG of the width and height a form asks for (cm at a chosen dpi, written into the JPEG, or pixels) inside a KB range. It crops the edges at a chosen position or keeps the whole image with a white border, and picks the best JPEG quality under the largest size (binary search). When the range cannot be reached at that size it says which way and gives the closest file. Signature mode turns light paper white and darkens the ink. No exam presets: limits differ by notice and year, and official notices could not be checked.
+- Checked in Chrome on the production Worker: 3.5 × 4.5 cm at 200 dpi gave 276 × 354 px, 48.5 KB within 20–50 KB, 200 dpi in the file; a 2 KB limit was reported as unreachable; a signature on grey paper came out 350 × 150 px, 12.5 KB, paper pure white; Hindi screen at 360 px without overflow.
+
 ## PDF to JPG and JPG to PDF, 27 November 2026
 
 ### Added
