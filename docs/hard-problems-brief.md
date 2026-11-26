@@ -36,7 +36,8 @@ Done for a problem = its **Done when** line holds on production, with the eviden
 
 - **Why it matters:** scans, image-only PDFs and broken-font pages all depend on OCR. The research found Acrobat has no Hindi OCR at all, so this is a moat, but only if accuracy holds on real scans (stamps, low resolution, small print). The benchmark's one remaining miss is a 9 pt word.
 - **Why it is hard:** Tesseract `hin` is weak on bold, small and table text; better engines are large to ship in a browser; cloud OCR changes the privacy story.
-- **Options:** benchmark PaddleOCR PP-OCRv5 Devanagari via `onnxruntime-web` (Apache-2.0) against Tesseract on a set of real scans; preprocessing (deskew, contrast); Sarvam Vision OCR as the consented cloud upgrade (problem 8).
+- **Options:** benchmark PaddleOCR PP-OCRv5 Devanagari via `onnxruntime-web` (Apache-2.0) against Tesseract on a set of real scans; preprocessing (deskew, contrast). The fix must be our own free, in-browser path; Sarvam Document AI is only a later premium extra (problem 8), never what the free tool depends on.
+- **Progress (27 Nov 2026):** `web-app/benchmark/ocr-bench.mjs` compares the two engines. On the one sample scan at 200 dpi, raw page OCR: Tesseract 87.5 %, Paddle 94.4 % (the editor's full Tesseract pipeline gets 99.3 %). Still needs 10 real scans with ground truth.
 - **Owner decision:** none for the benchmark; a model over ~10 MB or any cloud default needs one.
 - **Done when:** a scanned set of at least 10 real pages scores higher word accuracy with the new path than Tesseract, measured with `score.mjs`-style ground truth, with load time stated.
 
@@ -44,8 +45,8 @@ Done for a problem = its **Done when** line holds on production, with the eviden
 
 - **Why it matters:** most Hindi office PDFs come from Microsoft Word (Mangal, Nirmala UI, Kokila; CID TrueType fonts). Some map glyphs to the wrong characters, so their text falls back to OCR and can misread names and numbers (audit item "Mis-mapped glyphs"). The benchmark covers only Chrome-made (Skia, Type 3) and scanned files.
 - **Why it is hard:** this machine has neither Word nor LibreOffice, and no real mis-mapped sample is in the repo.
-- **Approach:** install LibreOffice (or get Word exports from the owner) and add Word-style PDFs of `web-app/benchmark/notice.html` to the benchmark; ask the owner for a real mis-mapped file. The planned repair is voting glyph IDs against OCR across the document (`glyphRepair.ts` already does this for Skia files).
-- **Owner decision:** none to start; ask for sample files.
+- **Approach:** install LibreOffice (or get Word exports from the owner) and add Word-style PDFs of `web-app/benchmark/notice.html` to the benchmark. Real samples now exist (owner, 27 Nov 2026, kept out of git in `pdfs-for-testing/`): a Railway Recruitment Board notice made in Word 2016 with Nirmala UI (its text layer turns "विस्तृत" into "ववस्तृत" and drops spaces), and a 135-page notice whose Hindi pages (from about page 68) extract as "अनुसूिचत" and lose र्, क्ष, श्र. The planned repair is voting glyph IDs against OCR across the document (`glyphRepair.ts` already does this for Skia files).
+- **Owner decision:** none.
 - **Done when:** the benchmark has a Word-made digital file scoring 100 % in PDF to Word, and a mis-mapped sample's text is repaired from the PDF itself, not OCR.
 
 ### 4. PDF to Word layout fidelity
@@ -79,7 +80,10 @@ Done for a problem = its **Done when** line holds on production, with the eviden
 
 ### 8. AI features: Sarvam, live test, paying for them
 
-- **State:** `services/ai-api` uses Gemini only. Sarvam API access exists (tested 28 Oct 2026: translate and Doc AI OCR). Consented translation and AI OCR have never been tested end to end on production. Costs: Sarvam OCR ₹0.50/page, translate ~₹5/page.
+**Owner direction (27 Nov 2026):** Sarvam is a later **premium** extra. Never rely on it: every free tool (OCR, PDF to Word, repair of mis-mapped text) must work fully on our own in-browser code, and Sarvam may only add a paid "higher accuracy" option on top.
+
+- **State:** `services/ai-api` uses Gemini only. Sarvam API access exists (tested 28 Oct 2026: translate and Doc AI OCR).
+- **Sarvam Document AI (docs read 27 Nov 2026, https://docs.sarvam.ai/doc-ai/getting-started/overview):** async jobs at `https://api.sarvam.ai/doc-ai/v1/job/{parse|extract|split|classify}` (header `api-subscription-key`), then `GET /doc-ai/v1/job/<id>/status` and `/results`. **Parse** (₹0.50/page, 20 pages a call) returns pages → blocks with text, `layout_tag`, `reading_order`, pixel `coordinates`, `bbox_norm` and confidence; tables as HTML; boxes are per block, not per line. **Extract** (₹1/page basic, ₹2.50 advanced) takes a JSON schema and returns each field with confidence and its page and box. PDF, PNG, JPG, TIFF, DOCX, ZIP; 100 MiB; 22 Indian languages plus English. Premium uses: higher-accuracy OCR (2), better PDF to Word layout (4), auto-filling a form from a document (Extract). **Retention:** the docs disagree (8 days on the capabilities endpoint; "indefinitely" until a workspace Owner sets a data policy, which Document AI does not support yet). Set and confirm retention before any user file is sent, and say it on the consent screen. Consented translation and AI OCR have never been tested end to end on production. Costs: Sarvam OCR ₹0.50/page, translate ~₹5/page.
 - **Approach:** add Sarvam behind the existing `/v1/ocr` and `/v1/translate` with provider order as a Worker var; meter pages; run the live test with consent; then UPI passes (research suggests ₹19–99 day/week passes; prices are estimates).
 - **Owner decision:** **required** for a monthly Sarvam budget (the grant is mainly for another product, Paithra) and for a payment account and GST.
 - **Done when:** a consented Hindi PDF translates on production through Sarvam with Gemini fallback, and the cost per page is logged.

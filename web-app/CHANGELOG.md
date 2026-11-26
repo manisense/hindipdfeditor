@@ -1,5 +1,19 @@
 # Changelog
 
+## Hindi text from Word files with a broken text map, 27 November 2026
+
+### Fixed
+- Word files passed through iLovePDF (seen on Railway Recruitment Board notices) map many Hindi glyphs to the wrong letters, so the editor fell back to OCR, which misread tables and left cells empty. The editor now reads each glyph from the embedded font itself (its cmap and shaping rules) and uses that text when the file's own map contradicts the font (web ADR 0022). The file itself is never changed. PDF to Word on a contents page with a table: 64.5 % → 100 % of 141 Hindi words, twice as fast.
+- Words split after प्र, क्र and before vowel signs in Word files are kept whole.
+
+## OCR engine benchmark: Tesseract against PaddleOCR, 27 November 2026
+
+### Added
+- `web-app/benchmark/ocr-bench.mjs` compares the editor's OCR engine (tesseract.js, `hin` 4.0.0 best_int) with PaddleOCR PP-OCRv5 Devanagari (official Apache-2.0 ONNX exports, 4.8 MB detector and 7.9 MB recognizer, on onnxruntime-web 1.30.0) on scanned pages listed in `ocr-set.json`, scored with `score.mjs`. Models are fetched by `download-ocr-models.mjs`, pinned to a commit and checked by SHA-256; they are git-ignored. The Paddle pre- and post-processing is plain JS (`paddleOcr.mjs`, unit-tested), so the same code can run in the browser.
+- First result, on the one scanned sample page at 200 dpi, raw page OCR with no re-reads: Tesseract 87.5 % (126/144), Paddle 94.4 % (136/144); 300 dpi gives 87.5 % and 91.0 %. Paddle takes about twice as long per page (3.8 s against 1.9 s on an M-series Mac in Node). The editor's full pipeline, which re-reads lines and table cells with Tesseract, already gets 99.3 % on this page, so a raw-engine win does not yet show an end-to-end gain.
+- Paddle's default line padding (unclip 1.5) dropped letters: the recognizer has one character slot per 8 px of a 48 px tall crop, and a dense Hindi line has more code points than that. Padding 0.6 is used; it was tuned on this one page.
+- Not done yet (brief problem 2): the set has 1 page, not the 10 real scans the check needs, and Paddle is not wired into the editor. Shipping 12.7 MB of models needs the owner's decision.
+
 ## Installable app and sharing files into it, 27 November 2026
 
 ### Added

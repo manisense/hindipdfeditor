@@ -1,0 +1,8 @@
+[
+  {
+    "name": "notice-scanned",
+    "file": "notice-scanned.pdf",
+    "page": 1,
+    "truth": "ground-truth.txt"
+  }
+]
