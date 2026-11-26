@@ -1,5 +1,14 @@
 # Changelog
 
+## Unicode ↔ KrutiDev converter, 26 November 2026
+
+### Added
+- `/tools/unicode-to-krutidev/`: converts Hindi between Unicode (Mangal) and KrutiDev 010 in both directions, as you type or for a whole Word (.docx) file, in the browser (web ADR 0019). In a Word file, English words keep their font and only KrutiDev or DevLys text is converted back to Unicode. Characters with no KrutiDev key are kept and listed. Linked from the KrutiDev PDF page, the homepage catalog, the site header and the footer; `llms.txt` updated.
+- Checked in Chrome on the production Worker: both directions, Swap, Copy, both Word directions (output XML well-formed, fonts and sizes as expected), Hindi screen at 375 px; smoke and edit-quality gates pass.
+
+### Fixed
+- KrutiDev → Unicode read `pkS` as चै instead of चौ, and left ि before a virama in long clusters (डिस्टि्रक्ट for डिस्ट्रिक्ट). This affects the KrutiDev PDF page and Edit PDF's KrutiDev display too.
+
 ## PDF to Word continues after the tab is closed, 26 November 2026
 
 ### Added
