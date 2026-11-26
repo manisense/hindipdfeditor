@@ -42,6 +42,14 @@ export type PdfToWordOptions = {
   pages?: readonly number[];
   /** Stops the conversion between pages (it then rejects with an `AbortError`). */
   signal?: AbortSignal;
+  /**
+   * Pages finished by an earlier, interrupted run of the same job (by position in the job), and
+   * where to keep each newly finished page, so a stopped conversion can continue.
+   */
+  resume?: {
+    saved: ReadonlyMap<number, { page: WordPage; unread: boolean }>;
+    save: (slot: number, saved: { page: WordPage; unread: boolean }) => Promise<void>;
+  };
 };
 
 /**
@@ -148,7 +156,14 @@ export async function convertPdfToWord(
       while (next < total) {
         options.signal?.throwIfAborted();
         const slot = next++;
-        pages[slot] = await readPage(chosen[slot]);
+        const kept = options.resume?.saved.get(slot);
+        if (kept) {
+          pages[slot] = kept.page;
+          if (kept.unread) unread.add(chosen[slot]);
+        } else {
+          pages[slot] = await readPage(chosen[slot]);
+          await options.resume?.save(slot, { page: pages[slot], unread: unread.has(chosen[slot]) });
+        }
         done += 1;
         onProgress(done, total);
       }
