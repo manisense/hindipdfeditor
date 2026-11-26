@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   combineEmbeddedLatinWithOcr,
+  canJudgeDevanagari,
   embeddedDevanagariVerdict,
   hasDevanagari,
   isEmbeddedDevanagariCorrupted,
@@ -149,5 +150,15 @@ describe("embeddedDevanagariVerdict for converted KrutiDev text", () => {
 
   it("rejects a conversion that matches almost nothing", () => {
     expect(embeddedDevanagariVerdict(embedded, "राम श्याम सीता गीता", { converted: true })).toBe("corrupted");
+  });
+});
+
+describe("canJudgeDevanagari", () => {
+  const words = (word: string, n: number) => Array.from({ length: n }, () => word).join(" ");
+
+  it("needs enough words of both kinds for a verdict", () => {
+    expect(canJudgeDevanagari("अध्याय 12 — Chapter 12")).toBe(false);
+    expect(canJudgeDevanagari(words("किताब", 40))).toBe(false);
+    expect(canJudgeDevanagari(`${words("किताब", 15)} ${words("कमल", 15)}`)).toBe(true);
   });
 });

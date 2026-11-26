@@ -8,11 +8,13 @@
  * - a font is trusted only after its own text, gathered over at least
  *   {@link TRUST_AFTER_PAGES} pages, passes the same complex/plain comparison as a single page;
  * - a font whose text ever fails is never trusted again;
+ * - a page that passed the quick band check counts only for the fonts whose words are in the band
+ *   (see {@link recordVerifiedBand});
  * - every {@link SPOT_CHECK_EVERY}th page that would be skipped is checked anyway.
  * Pages with unmapped glyphs and KrutiDev conversions are always checked by the caller.
  */
 
-import { embeddedDevanagariVerdict } from './embeddedTextVerification';
+import { devanagariWords, embeddedDevanagariVerdict } from './embeddedTextVerification';
 
 /** Pages a font must appear on, with a passing verdict, before it is trusted. */
 export const TRUST_AFTER_PAGES = 2;
@@ -72,4 +74,29 @@ export function recordVerifiedPage(trust: FontTrust, textByFont: ReadonlyMap<str
       trust.trusted.add(font);
     }
   }
+}
+
+/**
+ * Records a page that passed the quick check of one band of its lines: each font is judged with
+ * only its own words inside the band, against OCR of the band. Fonts with no words in the band
+ * gain no evidence. Without this, a document whose bands always pass never builds trust, and every
+ * page of a long document is OCR'd.
+ *
+ * @param textByFont Embedded Devanagari text on the page, by font.
+ * @param bandText Embedded text of the band's lines.
+ * @param bandOcrText Hindi OCR text of the band.
+ */
+export function recordVerifiedBand(
+  trust: FontTrust,
+  textByFont: ReadonlyMap<string, string>,
+  bandText: string,
+  bandOcrText: string,
+): void {
+  const inBand = new Set(devanagariWords(bandText));
+  const bandByFont = new Map<string, string>();
+  for (const [font, text] of textByFont) {
+    const words = devanagariWords(text).filter((word) => inBand.has(word));
+    if (words.length > 0) bandByFont.set(font, words.join(' '));
+  }
+  recordVerifiedPage(trust, bandByFont, bandOcrText);
 }

@@ -14,6 +14,7 @@ import {
 import { aiApiClient } from "./aiApiClient";
 import { warmLanguageData } from "./ocrLanguageData";
 import {
+  canJudgeDevanagari,
   combineEmbeddedLatinWithOcr,
   hasDevanagari,
   isEmbeddedDevanagariCorrupted,
@@ -26,7 +27,14 @@ import {
 } from "./embeddedTextVerification";
 import { mergeOcrLines, mergeWordReadings, type RecognizedWord } from "./mergeOcrLines";
 import { textBandOfLine } from "./ocrLineGeometry";
-import { mustVerifyPage, newFontTrust, noteSkippedPage, recordVerifiedPage, type FontTrust } from "./embeddedTextTrust";
+import {
+  mustVerifyPage,
+  newFontTrust,
+  noteSkippedPage,
+  recordVerifiedBand,
+  recordVerifiedPage,
+  type FontTrust,
+} from "./embeddedTextTrust";
 import { currentDeviceHints, poolSizeFor } from "./ocrPoolSize";
 import { stackStrips, type PtBox as ImageBox } from "./pdfImageRects";
 import type { Ruling } from "./pdfRulings";
@@ -460,34 +468,57 @@ function sameRow(a: OcrLine, b: OcrLine): boolean {
   return v >= 0.5 * Math.min(a.hPt, b.hPt) && h > 0;
 }
 
+/** Most Devanagari lines read one by one when a page has too few words to judge; more read the page. */
+const FEW_DEVANAGARI_LINES = 8;
+
 /**
  * Checks embedded lines that contain Devanagari against Hindi OCR of the page. When the text layer
  * lost characters (`embedded-degraded`) or its ToUnicode map is corrupted, the positions of its
  * Devanagari runs are not trustworthy either, so Hindi lines come from image OCR and Latin lines
  * from the PDF (see `combineEmbeddedLatinWithOcr`); Hindi rows page OCR skipped are read one
  * rectangle at a time. If OCR fails or finds no Hindi, the embedded lines are returned unchanged.
+ *
+ * @param record Called with what each check read, so the fonts can be trusted (see
+ *   embeddedTextTrust.ts): `band` when the quick band check passed, `page` after a full-page read.
  */
 async function verifyEmbeddedDevanagari(
   embedded: OcrLine[],
   page: PageState,
   pdfBytes: Uint8Array,
   convertLegacy?: boolean,
-  onPageOcr?: (hindiText: string) => void,
+  record?: { band: (bandText: string, bandOcrText: string) => void; page: (hindiText: string) => void },
 ): Promise<OcrLine[]> {
   const degraded = embedded.some((line) => line.source === "embedded-degraded");
   if (!degraded && !embedded.some((line) => hasDevanagari(line.text))) {
     return embedded;
   }
   try {
+    // Too little Devanagari for a verdict: the page keeps its text whatever OCR reads, so only
+    // its Devanagari lines are read (as evidence for its fonts), not the whole page.
+    const devanagariLines = embedded.filter((line) => hasDevanagari(line.text));
+    if (
+      !degraded &&
+      devanagariLines.length <= FEW_DEVANAGARI_LINES &&
+      !canJudgeDevanagari(devanagariLines.map((line) => line.text).join(" "))
+    ) {
+      const texts: string[] = [];
+      for (const line of devanagariLines) texts.push(await recognizeArea(page, line));
+      record?.page(texts.join(" "));
+      return embedded;
+    }
     // A band of the page's lines is enough to judge it, and OCR of the band takes a fraction of
     // the time. Only a passing band skips the full page; anything else reads the whole page.
     const sample = degraded ? null : verificationSample(embedded);
     const converted = Boolean(convertLegacy);
-    if (sample && embeddedDevanagariVerdict(sample.text, await recognizeArea(page, sample), { converted }) === "ok") {
-      return embedded;
+    if (sample) {
+      const bandOcr = await recognizeArea(page, sample);
+      if (embeddedDevanagariVerdict(sample.text, bandOcr, { converted }) === "ok") {
+        record?.band(sample.text, bandOcr);
+        return embedded;
+      }
     }
     const hindiPage = await recognizePage(page.backgroundImageUri, "hin");
-    onPageOcr?.(hindiPage.text);
+    record?.page(hindiPage.text);
     const embeddedText = embedded.map((line) => line.text).join(" ");
     if (!degraded && !isEmbeddedDevanagariCorrupted(embeddedText, hindiPage.text, { converted })) {
       return embedded;
@@ -674,7 +705,12 @@ async function readPageLines(
           if (textByFont.size > 0) noteSkippedPage(trust);
           return embedded;
         }
-        const record = options?.convertLegacy ? undefined : (ocrText: string) => recordVerifiedPage(trust, textByFont, ocrText);
+        const record = options?.convertLegacy
+          ? undefined
+          : {
+              band: (bandText: string, bandOcrText: string) => recordVerifiedBand(trust, textByFont, bandText, bandOcrText),
+              page: (ocrText: string) => recordVerifiedPage(trust, textByFont, ocrText),
+            };
         return await verifyEmbeddedDevanagari(embedded, await withImage(), pdfBytes, options?.convertLegacy, record);
       }
     } catch (error) {

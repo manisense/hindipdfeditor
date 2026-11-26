@@ -24,11 +24,23 @@ export function hasDevanagari(text: string): boolean {
   return DEVANAGARI.test(text);
 }
 
-function devanagariWords(text: string): string[] {
+/** The Devanagari words of `text` (NFC, two letters or more), as compared with OCR. */
+export function devanagariWords(text: string): string[] {
   return text
     .normalize("NFC")
     .split(WORD_SEPARATORS)
     .filter((word) => word.length >= 2 && DEVANAGARI.test(word));
+}
+
+/**
+ * Whether `text` has enough Devanagari words of each kind (complex: with ि or a halant; plain:
+ * without) for a comparison with OCR to give a verdict. Below that, the text is kept as it is
+ * whatever OCR reads.
+ */
+export function canJudgeDevanagari(text: string): boolean {
+  const words = devanagariWords(text);
+  const complex = words.filter((word) => COMPLEX_WORD.test(word)).length;
+  return complex >= MIN_WORDS_PER_GROUP && words.length - complex >= MIN_WORDS_PER_GROUP;
 }
 
 /** What a comparison with OCR says about embedded Devanagari text. */
@@ -57,10 +69,10 @@ export function embeddedDevanagariVerdict(
   options: { converted?: boolean } = {},
 ): DevanagariVerdict {
   const ocrWords = new Set(devanagariWords(ocrText));
+  if (!canJudgeDevanagari(embeddedText)) return "unknown";
   const words = devanagariWords(embeddedText);
   const complex = words.filter((word) => COMPLEX_WORD.test(word));
   const plain = words.filter((word) => !COMPLEX_WORD.test(word));
-  if (complex.length < MIN_WORDS_PER_GROUP || plain.length < MIN_WORDS_PER_GROUP) return "unknown";
   const rate = (group: string[]) => group.filter((word) => ocrWords.has(word)).length / group.length;
   if (options.converted) return rate(words) < MIN_CONVERTED_AGREEMENT ? "corrupted" : "ok";
   const plainRate = rate(plain);
