@@ -12,8 +12,11 @@ import { getTool } from "../lib/tools";
 import "./UtilityTool.css";
 
 
-/** Largest PDF converted, in pages: each page is read (and OCR'd when needed) in the browser. */
-const MAX_PAGES = 150;
+/**
+ * Largest PDF converted, in pages: each page is read (and OCR'd when needed) in the browser.
+ * Digital pages keep only their text and pictures in memory, so long documents (2,000 pages) fit.
+ */
+const MAX_PAGES = 3000;
 
 /** Downloads a Blob under a file name. */
 function downloadBlob(blob: Blob, filename: string): void {
