@@ -197,7 +197,7 @@ export async function extractEmbeddedTextLines(
     let unmapped = unmappedGlyphs(operators.fnArray, operators.argsArray, (name) => fontNameOf(name) ?? name);
     // Glyphs of fonts repaired from their own cmap (see pdfToUnicodeRepair.ts) carry marks for ि and
     // reph, which are drawn out of reading order.
-    let itemTexts = textContent.items.map((item) => ('str' in item ? reorderDevanagariMarks(item.str) : ''));
+    let itemTexts = textContent.items.map((item) => ('str' in item ? item.str : ''));
     // Items whose glyphs moved into another item's /ActualText: that item's run covers them.
     let absorbedInto: (number | null)[] = [];
     // Pages that draw their spaces (Chrome, Google Docs) break words only where a space is drawn.
@@ -219,6 +219,8 @@ export async function extractEmbeddedTextLines(
         unmapped = unmapped.filter((_, i) => !fixed.replaced[i]);
       }
     }
+    // After /ActualText and drawn spaces are lined up with the drawn glyphs (one mark per glyph).
+    itemTexts = itemTexts.map(reorderDevanagariMarks);
     const NUL = String.fromCharCode(0);
     const nulls = itemTexts.reduce((count, text) => count + text.split(NUL).length - 1, 0);
     if (nulls > 0 && nulls === unmapped.length) {
