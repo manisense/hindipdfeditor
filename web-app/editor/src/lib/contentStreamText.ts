@@ -200,6 +200,20 @@ function hexString(bytes: number[]): string {
 }
 
 /**
+ * A `BDC` operator rewritten without the `/ActualText` entry of its property list, or null when it
+ * has none (or names its properties in the resources instead).
+ *
+ * @param operands The operator's operands: its tag, then an inline dictionary.
+ */
+function withoutActualText(content: string, operands: readonly Token[]): string | null {
+  const source = (token: Token) => content.slice(token.start, token.end);
+  const at = operands.findIndex((token) => source(token) === "/ActualText");
+  if (at < 0 || !operands[at + 1]) return null;
+  const kept = operands.filter((_, i) => i !== at && i !== at + 1);
+  return `${kept.map(source).join(" ")} BDC`;
+}
+
+/**
  * Removes glyphs whose visual centre lies inside any rectangle.
  *
  * @param content Decoded page content stream, latin1.
@@ -225,6 +239,11 @@ export function removeGlyphsInRects(
   let tlm: Matrix = IDENTITY;
   let operands: Token[] = [];
   let operandStart: number | null = null;
+  // Open marked-content sections. One whose glyphs lose any glyph also loses its /ActualText,
+  // or text extraction would still read the removed word (Chrome and Google Docs give every
+  // Hindi cluster an /ActualText).
+  type Marked = { start: number; end: number; operands: Token[]; glyphRemoved: boolean };
+  const marked: (Marked | null)[] = [];
 
   const nextLine = (dx: number, dy: number) => {
     tlm = multiply([1, 0, 0, 1, dx, dy], tlm);
@@ -370,7 +389,22 @@ export function removeGlyphsInRects(
           .filter((o) => token.value === "TJ" || o.kind === "str")
           .map((o) => (o.kind === "str" ? o.bytes : (o as { value: number }).value));
         const rewritten = show(elements);
-        if (rewritten) replacements.push({ start, end: token.end, text: prefix + rewritten });
+        if (rewritten) {
+          replacements.push({ start, end: token.end, text: prefix + rewritten });
+          for (const section of marked) if (section) section.glyphRemoved = true;
+        }
+        break;
+      }
+      case "BMC":
+        marked.push(null);
+        break;
+      case "BDC":
+        marked.push({ start, end: token.end, operands, glyphRemoved: false });
+        break;
+      case "EMC": {
+        const section = marked.pop();
+        const text = section?.glyphRemoved ? withoutActualText(content, section.operands) : null;
+        if (section && text !== null) replacements.push({ start: section.start, end: section.end, text });
         break;
       }
     }
@@ -380,7 +414,7 @@ export function removeGlyphsInRects(
 
   let output = "";
   let last = 0;
-  for (const { start, end, text } of replacements) {
+  for (const { start, end, text } of replacements.sort((a, b) => a.start - b.start)) {
     output += content.slice(last, start) + text;
     last = end;
   }

@@ -1,5 +1,10 @@
 # Changelog
 
+## Edited Hindi text no longer comes back on copy, 26 November 2026
+
+### Fixed
+- Chrome and Google Docs give every Hindi cluster an `/ActualText`. The export removed the replaced glyphs but kept that text, so copying from the edited PDF, searching it, or reading it in MuPDF-based apps still found part of the old word ("ज्ञा" after replacing ज्ञान). A marked-content section that loses a glyph now loses its `/ActualText` too; its MCID stays. Unit test on the Devanagari fixture; edit gate 23 OK.
+
 ## Long documents: 2,000-page PDF to Word and Word to PDF, 26 November 2026
 
 Measured in Chrome on a desktop with generated fixtures (scripts kept out of the repo).
