@@ -39,6 +39,5 @@ export function sharedPdfDocument(bytes: Uint8Array): Promise<pdfjs.PDFDocumentP
  * @param bytes Bytes of the opened PDF.
  */
 export function repairedFontsOf(bytes: Uint8Array): Promise<string[]> {
-  if (current?.bytes !== bytes) void sharedPdfDocument(bytes);
-  return current?.repairedFonts ?? Promise.resolve([]);
+  return current?.bytes === bytes ? current.repairedFonts : Promise.resolve([]);
 }
