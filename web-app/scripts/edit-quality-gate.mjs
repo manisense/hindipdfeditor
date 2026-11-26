@@ -1278,6 +1278,7 @@ async function planBDevanagariCase(browser) {
   const os = await import("node:os");
   const { execFileSync } = await import("node:child_process");
   const { loadImage } = require(path.join(editorModules, "@napi-rs/canvas"));
+  const { unzipSync, strFromU8 } = require(path.join(editorModules, "fflate"));
   const file = path.join(fixtures, "devanagari-fixture.pdf");
   const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
   await openPdf(page, file, 0);
@@ -1343,7 +1344,8 @@ async function planBDevanagariCase(browser) {
     );
     assert.ok(hasAddedSubset, "pdffonts shows a newly embedded CID TrueType Identity-H subset with ToUnicode:\n" + exportedFonts.join("\n"));
 
-    // 3. Render with Poppler (pdftoppm) and pdf.js at 150 DPI and compare pixel diff.
+    // 3. Render with Poppler (pdftoppm) and pdf.js at 150 DPI, check raw pdf.js getTextContent(),
+    // and compare pixel diff.
     const dpi = 150;
     const prefix = path.join(dir, "poppler");
     execFileSync("pdftoppm", ["-png", "-r", String(dpi), "-singlefile", pdfPath, prefix]);
@@ -1354,6 +1356,9 @@ async function planBDevanagariCase(browser) {
 
     const doc = await pdfjs.getDocument({ data: exported.slice(), verbosity: 0 }).promise;
     const pdfPage = await doc.getPage(1);
+    const textContent = await pdfPage.getTextContent();
+    const pdfJsRawText = textContent.items.map((item) => item.str ?? "").join(" ").replace(/\s+/g, " ");
+    const pdfJsCompact = pdfJsRawText.replace(/\s+/g, "");
     const viewport = pdfPage.getViewport({ scale: dpi / 72 });
     const jsCanvas = createCanvas(popplerImg.width, popplerImg.height);
     const jsCtx = jsCanvas.getContext("2d");
@@ -1362,6 +1367,71 @@ async function planBDevanagariCase(browser) {
     await pdfPage.render({ canvasContext: jsCtx, viewport }).promise;
     await doc.destroy();
     const jsRgba = jsCtx.getImageData(0, 0, jsCanvas.width, jsCanvas.height).data;
+
+    // 4. Raw pdf.js getTextContent() must have zero Identity/CID fallback garbage (every GID mapped
+    // in ToUnicode) and clean Devanagari for every edited word/conjunct.
+    const cidGarbage = pdfJsRawText.match(/[\u0100-\u02FF]/g);
+    assert.equal(
+      cidGarbage,
+      null,
+      "pdf.js getTextContent() has no CID-fallback characters (found " + JSON.stringify(cidGarbage) + " in " + JSON.stringify(pdfJsRawText) + ")",
+    );
+    for (const token of ["सूयर्", "धमर्", "क्षेत्र", "में", "गुरुजी", "ज्ञान", "प्रकृित", "िदया।", "िकताब", "िवद्यालय", "की", "रोशनी", "िक्षितज", "है।"]) {
+      assert.ok(
+        pdfJsCompact.includes(token),
+        "pdf.js getTextContent() maps ToUnicode for " + token + " (got: " + JSON.stringify(pdfJsRawText) + ")",
+      );
+    }
+
+    // 5. Re-read exported PDF through the editor's pdf.js + ActualText extraction path: both exact
+    // edited lines must appear in logical reading order.
+    const reopenPage = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+    try {
+      await openPdf(reopenPage, pdfPath, 0);
+      const reopenedLines = [];
+      const reopenedCount = await reopenPage.locator(".ocr-highlight-layer__box").count();
+      for (let i = 0; i < reopenedCount; i++) {
+        const box = reopenPage.locator(".ocr-highlight-layer__box").nth(i);
+        await box.scrollIntoViewIfNeeded();
+        const bb = await box.boundingBox();
+        await reopenPage.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2);
+        await reopenPage.waitForTimeout(300);
+        reopenedLines.push(await reopenPage.evaluate(() => document.activeElement.value ?? ""));
+        await reopenPage.keyboard.press("Escape");
+        await reopenPage.waitForTimeout(120);
+        await reopenPage.keyboard.press("Control+z");
+        await reopenPage.waitForTimeout(150);
+      }
+      for (const expectedLine of edits.values()) {
+        assert.ok(
+          reopenedLines.some((line) => line.replace(/\s+/g, " ").trim() === expectedLine),
+          "editor ActualText path reads exact edited line: " + expectedLine + " (got: " + JSON.stringify(reopenedLines) + ")",
+        );
+      }
+    } finally {
+      await reopenPage.close();
+    }
+
+    // 6. Editor's PDF to Word on the exported Plan B PDF must contain both exact edited lines.
+    const wordPage = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+    try {
+      await wordPage.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
+      await wordPage.locator("input[type=file]").first().setInputFiles(pdfPath);
+      const wordDownload = wordPage.waitForEvent("download", { timeout: 240000 });
+      await wordPage.getByRole("button", { name: /Convert & download Word/ }).click();
+      const docxPath = path.join(dir, "plan-b-export.docx");
+      fs.copyFileSync(await (await wordDownload).path(), docxPath);
+      const xml = strFromU8(unzipSync(new Uint8Array(fs.readFileSync(docxPath)))["word/document.xml"]);
+      const wordText = [...xml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((m) => m[1]).join("\n").replace(/\s+/g, " ");
+      for (const expectedLine of edits.values()) {
+        assert.ok(
+          wordText.includes(expectedLine),
+          "PDF to Word on Plan B export contains exact edited line: " + expectedLine + " (got: " + JSON.stringify(wordText) + ")",
+        );
+      }
+    } finally {
+      await wordPage.close();
+    }
 
     // Compare pixel diff (both raw and 1px-neighborhood structural diff, allowing FreeType vs
     // Skia 1-px edge hinting while catching any missing glyph, broken conjunct, or shifted matra).
@@ -1401,7 +1471,7 @@ async function planBDevanagariCase(browser) {
     const structuralShare = structuralDiffPx / totalPx;
     assert.ok(diffShare < 0.015, "pdf.js and Poppler render identically (raw diff " + (diffShare * 100).toFixed(3) + " %)");
     assert.ok(structuralShare < 0.001, "pdf.js and Poppler match structurally within 1px (structural diff " + (structuralShare * 100).toFixed(4) + " %)");
-    console.log("PLAN_B_DEVANAGARI_OK pdftotext matched both edited canonical lines; CID/Identity-H subset embedded; pdf.js vs Poppler raw diff", (diffShare * 100).toFixed(3), "%, structural diff", (structuralShare * 100).toFixed(4), "%");
+    console.log("PLAN_B_DEVANAGARI_OK pdftotext, pdf.js ToUnicode, editor ActualText, and PDF to Word matched both edited canonical lines; CID/Identity-H subset embedded; pdf.js vs Poppler raw diff", (diffShare * 100).toFixed(3), "%, structural diff", (structuralShare * 100).toFixed(4), "%");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
     await page.close();

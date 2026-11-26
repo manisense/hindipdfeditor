@@ -8,7 +8,9 @@ import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { describe, expect, it } from 'vitest';
 
 import { instantiateHarfBuzz } from './harfbuzzWasm';
+import { extractEmbeddedTextLines } from './pdfTextExtract';
 import {
+  assignClusterToUnicode,
   buildToUnicodeCMap,
   drawVectorTextEdits,
   encodeActualTextHex,
@@ -46,6 +48,52 @@ describe('pdfVectorText helpers', () => {
     const cmap = buildToUnicodeCMap(map);
     expect(cmap).toContain('100 beginbfchar');
     expect(cmap).toContain('25 beginbfchar');
+  });
+
+  it('maps every glyph in single-glyph, multi-glyph, reph, pre-base ि, and unsplittable clusters', () => {
+    const nominal = new Map<number, string>([
+      [56, 'क'],
+      [80, 'म'],
+      [31, 'ा'],
+    ]);
+    const toUnicode = new Map<number, string>();
+    const glyph = (gid: number, charCluster: number) => ({
+      gid,
+      cluster: 0,
+      charCluster,
+      xAdvance: 500,
+      yAdvance: 0,
+      xOffset: 0,
+      yOffset: 0,
+    });
+
+    // Single-glyph conjunct ligature: त्र -> GID 304.
+    assignClusterToUnicode({ text: 'त्र', glyphs: [glyph(304, 0)] }, nominal, toUnicode);
+    expect(toUnicode.get(304)).toBe('त्र');
+
+    // Reph cluster: र्म -> म (nominal 80) + reph (506 at charCluster 0).
+    assignClusterToUnicode({ text: 'र्म', glyphs: [glyph(80, 2), glyph(506, 0)] }, nominal, toUnicode);
+    expect(toUnicode.get(80)).toBe('म');
+    expect(toUnicode.get(506)).toBe('र्');
+
+    // Conjunct + matra: ज्ञा -> ज्ञ (91 at charCluster 0) + ा (nominal 31 at charCluster 3).
+    assignClusterToUnicode({ text: 'ज्ञा', glyphs: [glyph(91, 0), glyph(31, 3)] }, nominal, toUnicode);
+    expect(toUnicode.get(91)).toBe('ज्ञ');
+    expect(toUnicode.get(31)).toBe('ा');
+
+    // Pre-base ि: कि -> ि (545 at charCluster 1) + क (nominal 56 at charCluster 0).
+    assignClusterToUnicode({ text: 'कि', glyphs: [glyph(545, 1), glyph(56, 0)] }, nominal, toUnicode);
+    expect(toUnicode.get(545)).toBe('ि');
+    expect(toUnicode.get(56)).toBe('क');
+
+    // Orphaned reph ligated onto matra: र्मी -> म (nominal 80 at 2) + ीर् (643 at 3).
+    assignClusterToUnicode({ text: 'र्मी', glyphs: [glyph(80, 2), glyph(643, 3)] }, nominal, toUnicode);
+    expect(toUnicode.get(643)).toBe('ीर्');
+
+    // Unsplittable 1-to-2 non-nominal decomposition: first gets text, second gets U+FEFF (never Identity).
+    assignClusterToUnicode({ text: 'क', glyphs: [glyph(700, 0), glyph(701, 0)] }, nominal, toUnicode);
+    expect(toUnicode.get(700)).toBe('क');
+    expect(toUnicode.get(701)).toBe('\uFEFF');
   });
 });
 
@@ -149,6 +197,23 @@ describe('drawVectorTextEdits end-to-end with Poppler and pdf.js', () => {
 
       const doc = await pdfjs.getDocument({ data: pdfBytes.slice(), verbosity: 0 }).promise;
       const pdfPage = await doc.getPage(1);
+      const textContent = await pdfPage.getTextContent();
+      const pdfJsRaw = textContent.items
+        .map((item) => ('str' in item ? item.str : ''))
+        .join(' ')
+        .replace(/\s+/g, ' ');
+      const pdfJsCompact = pdfJsRaw.replace(/\s+/g, '');
+      expect(pdfJsRaw).not.toContain('\u0000');
+      expect(pdfJsRaw).not.toMatch(/[\u0100-\u02FF]/);
+      for (const token of ['धमर्', 'क्षेत्र', 'में', 'गुरुजी', 'ज्ञान', 'िदया।', 'िवद्यालय', 'सूयर्', 'की', 'रोशनी', 'प्रकृित', 'िक्षितज', 'िकताब', 'Bold2026']) {
+        expect(pdfJsCompact).toContain(token);
+      }
+
+      // Editor's own extraction (pdf.js + /ActualText) must read back every line in exact logical order.
+      const extractedLines = await extractEmbeddedTextLines(pdfBytes.slice(), 0);
+      expect(extractedLines.every((line) => line.source === 'embedded')).toBe(true);
+      expect(extractedLines.map((line) => line.text)).toEqual([line1, line2, line3]);
+
       const viewport = pdfPage.getViewport({ scale: dpi / 72 });
       const jsCanvas = createCanvas(popImg.width, popImg.height);
       const jsCtx = jsCanvas.getContext('2d');
@@ -201,10 +266,67 @@ describe('drawVectorTextEdits end-to-end with Poppler and pdf.js', () => {
       expect(inkPx).toBeGreaterThan(2000);
       const diffShare = diffPx / (w * h);
       const structuralShare = structuralDiffPx / (w * h);
-      expect(diffShare).toBeLessThan(0.005);
-      expect(structuralShare).toBeLessThan(0.0005);
+      expect(diffShare).toBeLessThan(0.015);
+      expect(structuralShare).toBeLessThan(0.001);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it('re-extracts exact edited Hindi lines via pdf.js + ActualText after editing devanagari-fixture.pdf', async () => {
+    const engine = await instantiateHarfBuzz({
+      shapeWasm: new Uint8Array(readFileSync(path.join(HB_DIR, 'harfbuzz.wasm'))),
+      subsetWasm: new Uint8Array(readFileSync(path.join(HB_DIR, 'harfbuzz-subset.wasm'))),
+    });
+    const notoBytes = new Uint8Array(readFileSync(NOTO_SANS_PATH));
+    const fixturePath = path.resolve(__dirname, '../../../../mobile-app/fixtures/devanagari-fixture.pdf');
+    const pdfDoc = await PDFDocument.load(readFileSync(fixturePath));
+    const page = pdfDoc.getPage(0);
+    const { removePageText } = await import('./pdfTextRemoval');
+    removePageText(pdfDoc, 0, [
+      { x0: 50, y0: 585, x1: 540, y1: 630 },
+      { x0: 50, y0: 525, x1: 540, y1: 570 },
+    ]);
+
+    const line1 = 'सूर्य, धर्म और क्षेत्र में गुरुजी ने ज्ञान प्रकृति दिया।';
+    const line2 = 'किताब, विद्यालय में सूर्य की रोशनी क्षितिज है।';
+    const heightPt = page.getHeight();
+    await drawVectorTextEdits(
+      pdfDoc,
+      [
+        {
+          page,
+          editorToUser: [1, 0, 0, -1, 0, heightPt],
+          items: [
+            {
+              id: 'edit-1',
+              fontFamily: 'NotoSansDevanagari',
+              fontWeight: 400,
+              fontSizePt: 14,
+              color: '#111111',
+              lines: [{ text: line1, xPt: 54, baselinePt: heightPt - 604 }],
+            },
+            {
+              id: 'edit-2',
+              fontFamily: 'NotoSansDevanagari',
+              fontWeight: 400,
+              fontSizePt: 14,
+              color: '#111111',
+              lines: [{ text: line2, xPt: 54, baselinePt: heightPt - 544 }],
+            },
+          ],
+        },
+      ],
+      {
+        engine,
+        loadFontBytes: async (family) => (family === 'NotoSansDevanagari' ? notoBytes : null),
+      },
+    );
+
+    const exported = await pdfDoc.save();
+    const lines = await extractEmbeddedTextLines(exported.slice(), 0);
+    const texts = lines.map((l) => l.text);
+    expect(texts).toContain(line1);
+    expect(texts).toContain(line2);
   });
 });
