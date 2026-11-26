@@ -1,6 +1,7 @@
 import {
   ArrowLeftRight,
   ClipboardPen,
+  Crop,
   FileArchive,
   FileImage,
   FileText,
@@ -153,6 +154,12 @@ export const TOOL_GROUPS: ToolGroup[] = [
         icon: FileArchive,
         nameKey: "tool.compress",
         detailKey: "tool.compressSub",
+      },
+      {
+        id: "resize-image",
+        icon: Crop,
+        nameKey: "tool.resizeImage",
+        detailKey: "tool.resizeImageSub",
       },
     ],
   },

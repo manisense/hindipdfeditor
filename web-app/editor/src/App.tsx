@@ -44,6 +44,11 @@ const ImagesToPdfTool = lazy(() =>
     default: module.ImagesToPdfTool,
   })),
 );
+const ResizeImageTool = lazy(() =>
+  import("./tools/ResizeImageTool").then((module) => ({
+    default: module.ResizeImageTool,
+  })),
+);
 const WordToPdfTool = lazy(() =>
   import("./tools/WordToPdfTool").then((module) => ({
     default: module.WordToPdfTool,
@@ -124,6 +129,8 @@ export default function App() {
             <PdfToImagesTool />
           ) : toolId === "jpg-to-pdf" ? (
             <ImagesToPdfTool />
+          ) : toolId === "resize-image" ? (
+            <ResizeImageTool />
           ) : toolId === "word-to-pdf" ? (
             <WordToPdfTool />
           ) : toolId === "sign" ? (

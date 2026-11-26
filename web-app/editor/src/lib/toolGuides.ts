@@ -409,8 +409,51 @@ export const TOOL_GUIDES: Record<ToolId, ToolGuide> = {
       ],
     },
   },
+  "resize-image": {
+    guides: ["pdf-size-kam-kaise-kare-100kb-sarkari-form", "compress-scanned-hindi-pdf-without-blur"],
+    en: {
+      heading: "How to resize a photo or signature for an online form",
+      steps: [
+        { title: "Open your photo or signature", body: "Select a JPG, PNG or WebP image: a passport-style photo, or a signature on white paper photographed with your phone." },
+        { title: "Enter the form's size and KB limits", body: "Type the width and height from the notice, in cm (with the dpi it names) or in pixels, and its smallest and largest file size in KB. Choose whether to crop the edges or keep the whole image with a white border." },
+        { title: "Resize and download", body: "Check the preview, its size in pixels and KB, then download the JPG." },
+      ],
+      notes: [
+        "Processing runs in your browser and your image stays on your device.",
+        "The tool picks the best JPG quality that fits under your largest size. If a range cannot be reached at that width and height, it says so and gives the closest file.",
+        "Signature mode turns light paper white and darkens the ink, so shadows and grey paper do not show.",
+        "There are no exam presets: limits differ by exam and year, so use the numbers printed in your own notice.",
+      ],
+      faqs: [
+        { q: "What size do SSC, UPSC or railway forms need?", a: "Each recruitment notice prints its own photo and signature size and KB limits, and they change between exams and years. Enter the numbers from your notice." },
+        { q: "My notice gives size in cm. Which dpi should I use?", a: "Use the dpi the notice names. If it names none, 200 dpi is a common choice; the tool shows the result in pixels so you can compare." },
+        { q: "Why is my file smaller than the minimum KB?", a: "Plain images compress very well. The tool already uses full quality in that case; check whether the form truly needs a minimum, or use a larger width and height if it allows." },
+        { q: "Is my photo uploaded?", a: "No. The resizing happens in your browser and the photo stays on your device." },
+      ],
+    },
+    hi: {
+      heading: "ऑनलाइन फॉर्म के लिए फोटो या हस्ताक्षर का साइज कैसे बदलें",
+      steps: [
+        { title: "फोटो या हस्ताक्षर खोलें", body: "JPG, PNG या WebP फोटो चुनें: पासपोर्ट जैसी फोटो, या फोन से खींचा सफेद कागज़ पर किया हस्ताक्षर।" },
+        { title: "फॉर्म का साइज और KB लिखें", body: "सूचना में दी चौड़ाई और ऊंचाई सेमी (उसके dpi के साथ) या पिक्सेल में लिखें, और कम से कम व ज़्यादा से ज़्यादा फाइल साइज KB में। चुनें कि किनारे काटने हैं या पूरी फोटो सफेद किनारे के साथ रखनी है।" },
+        { title: "साइज बदलें और डाउनलोड करें", body: "प्रीव्यू, उसका पिक्सेल और KB साइज देखें, फिर JPG डाउनलोड करें।" },
+      ],
+      notes: [
+        "काम आपके ब्राउज़र में होता है और फोटो आपके डिवाइस पर ही रहती है।",
+        "टूल ज़्यादा से ज़्यादा साइज के अंदर सबसे अच्छी JPG क्वालिटी चुनता है। अगर उस चौड़ाई और ऊंचाई पर KB सीमा नहीं बन सकती, तो वह बताता है और सबसे नज़दीकी फाइल देता है।",
+        "हस्ताक्षर मोड हल्के कागज़ को सफेद और स्याही को गहरा करता है, ताकि छाया और धूसर कागज़ न दिखे।",
+        "परीक्षा के तैयार साइज नहीं दिए गए हैं: सीमाएं हर परीक्षा और साल में अलग होती हैं, इसलिए अपनी सूचना में छपे नंबर इस्तेमाल करें।",
+      ],
+      faqs: [
+        { q: "SSC, UPSC या रेलवे फॉर्म को कौन-सा साइज चाहिए?", a: "हर भर्ती सूचना फोटो और हस्ताक्षर का अपना साइज और KB सीमा छापती है, और ये परीक्षा व साल के साथ बदलती हैं। अपनी सूचना के नंबर लिखें।" },
+        { q: "सूचना में साइज सेमी में है। कौन-सा dpi लूं?", a: "सूचना में लिखा dpi लें। अगर कोई न लिखा हो, तो 200 dpi आम है; टूल नतीजा पिक्सेल में भी दिखाता है ताकि आप मिला सकें।" },
+        { q: "मेरी फाइल न्यूनतम KB से छोटी क्यों है?", a: "सादी फोटो बहुत छोटी बनती है। ऐसे में टूल पहले से पूरी क्वालिटी लेता है; देखें कि फॉर्म को सच में न्यूनतम साइज चाहिए, या अनुमति हो तो बड़ी चौड़ाई और ऊंचाई लें।" },
+        { q: "क्या मेरी फोटो अपलोड होती है?", a: "नहीं। साइज आपके ब्राउज़र में बदलता है और फोटो आपके डिवाइस पर ही रहती है।" },
+      ],
+    },
+  },
   "pdf-to-jpg": {
-    guides: ["compress-scanned-hindi-pdf-without-blur", "merge-multiple-hindi-pdf-files-online"],
+    guides:["compress-scanned-hindi-pdf-without-blur", "merge-multiple-hindi-pdf-files-online"],
     en: {
       heading: "How to convert a PDF to JPG",
       steps: [

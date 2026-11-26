@@ -71,6 +71,10 @@ export function Footer() {
           href: toolHref("jpg-to-pdf", lang),
         },
         {
+          label: isHindi ? "फोटो और हस्ताक्षर का साइज" : "Resize photo & signature",
+          href: toolHref("resize-image", lang),
+        },
+        {
           label: isHindi ? "कृतिदेव से यूनिकोड" : "KrutiDev to Unicode",
           href: toolHref("krutidev", lang),
         },
