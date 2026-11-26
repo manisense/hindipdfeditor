@@ -195,10 +195,11 @@ export async function extractEmbeddedTextLines(
     let absorbedInto: (number | null)[] = [];
     // Pages that draw their spaces (Chrome, Google Docs) break words only where a space is drawn.
     let spaceAfter: boolean[] | null = null;
-    // Producers that leave glyphs unmapped (Chrome, Google Docs) often give their text as
-    // /ActualText in marked content: read it before falling back to placeholders and OCR.
+    // Producers that draw complex scripts in visual order (Plan B exports, Chrome, Google Docs)
+    // supply logical reading order in /ActualText marked spans: prefer it whenever present.
     const skia = await madeBySkia(pdfBytes);
-    if (unmapped.length > 0 || skia) {
+    const hasMarkedContent = operators.fnArray.includes(OPS.beginMarkedContentProps);
+    if (unmapped.length > 0 || skia || hasMarkedContent) {
       // Skia pages without /ActualText (Chrome's Save as PDF) still give their drawn spaces.
       const fixed = await withActualText(pdfBytes, pageIndex, operators.fnArray, operators.argsArray, itemTexts, skia);
       if (fixed && fixed.replaced.length === unmapped.length) {
@@ -309,6 +310,7 @@ export async function extractEmbeddedTextLines(
       const end = Math.max(run.xPt + run.wPt, right);
       run.xPt = Math.min(run.xPt, left);
       run.wPt = end - run.xPt;
+      run.hasEol = item.hasEOL;
     });
 
     // Table borders, in editor space: for table detection, and as walls text images are not

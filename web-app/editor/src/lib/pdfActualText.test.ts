@@ -57,14 +57,50 @@ describe('applyActualText', () => {
     expect(result?.replaced).toEqual([true]);
   });
 
-  it('keeps sections without unmapped glyphs and reports unmapped glyphs it could not replace', () => {
+  it('prefers /ActualText even when all glyphs are mapped and reports unmapped glyphs outside sections', () => {
     const glyphs = [
       { text: 'क', section: 0 },
       { text: NUL, section: null },
     ];
     const result = applyActualText([`क${NUL}`], glyphs, ['ख']);
-    expect(result?.items).toEqual([`क${NUL}`]);
+    expect(result?.items).toEqual([`ख${NUL}`]);
     expect(result?.replaced).toEqual([false]);
+  });
+
+  it('restores logical Devanagari reading order from /ActualText for mapped visual-order glyphs', () => {
+    // Visual order from ToUnicode: िकताब, प्र कृित (with synthetic pdf.js space), धमर्.
+    const glyphs = [
+      { text: 'ि', section: 0 },
+      { text: 'क', section: 0 },
+      { text: 'त', section: 0 },
+      { text: 'ा', section: 0 },
+      { text: 'ब', section: 0 },
+      { text: ' ', section: null },
+      { text: 'प्र', section: 1 },
+      { text: 'क', section: 1 },
+      { text: 'ृ', section: 1 },
+      { text: 'ि', section: 1 },
+      { text: 'त', section: 1 },
+      { text: ' ', section: null },
+      { text: 'ध', section: 2 },
+      { text: 'म', section: 2 },
+      { text: 'र्', section: 2 },
+    ];
+    const result = applyActualText(['िकताब', ' ', 'प्र', ' ', 'कृित', ' ', 'धमर्'], glyphs, ['किताब', 'प्रकृति', 'धर्म']);
+    expect(result?.items.join('')).toBe('किताब प्रकृति धर्म');
+    expect(result?.replaced).toEqual([]);
+  });
+
+  it('ignores whitespace-only /ActualText spans (such as NBSP) whose space glyph pdf.js omitted', () => {
+    const glyphs = [
+      { text: ' ', section: 0 },
+      { text: '|', section: null },
+      { text: 'ध', section: 1 },
+      { text: 'म', section: 1 },
+      { text: 'र्', section: 1 },
+    ];
+    const result = applyActualText(['|', 'धमर्'], glyphs, ['\u00a0', 'धर्म']);
+    expect(result?.items.join('')).toBe('|धर्म');
   });
 
   it('lines up ligature glyphs that pdf.js decomposed in its text', () => {

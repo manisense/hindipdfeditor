@@ -125,9 +125,11 @@ export type ActualTextResult = {
 };
 
 /**
- * Replaces the glyphs of each `/ActualText` section that has an unmapped glyph with the section's
- * text, in pdf.js's text items. Glyphs are lined up with the items' characters in order (spaces
- * pdf.js added between words are skipped); the section's text goes where its first glyph was.
+ * Replaces the glyphs of each `/ActualText` section that has text with the section's text, in
+ * pdf.js's text items (even when every glyph already has a ToUnicode entry, so Devanagari drawn
+ * in visual order extracts in exact logical reading order). Glyphs are lined up with the items'
+ * characters in order (spaces pdf.js added between words are skipped); the section's text goes
+ * where its first glyph was.
  *
  * Producers that write `/ActualText` draw every space as a glyph and draw Devanagari in visual
  * order (ि before its consonant), with jumps pdf.js reads as word gaps (शि क्षा). So when the
@@ -144,7 +146,15 @@ export function applyActualText(
   glyphs: readonly DrawnGlyph[],
   actualTexts: readonly (string | null)[],
 ): ActualTextResult | null {
-  const fixable = new Set(glyphs.filter((glyph) => glyph.section !== null && glyph.text.includes(NUL)).map((glyph) => glyph.section));
+  const fixable = new Set(
+    glyphs
+      .filter((glyph) => {
+        if (glyph.section === null || glyph.text.length === 0) return false;
+        const actual = actualTexts[glyph.section];
+        return actual !== null && (!isSpace(actual) || !isSpace(glyph.text));
+      })
+      .map((glyph) => glyph.section),
+  );
   const replaced = glyphs.filter((glyph) => glyph.text === NUL).map((glyph) => fixable.has(glyph.section));
   const chars: { char: string; item: number }[] = items.flatMap((text, item) => [...text].map((char) => ({ char, item })));
   const drop = new Set<number>();
@@ -159,12 +169,19 @@ export function applyActualText(
   for (const glyph of glyphs) {
     const section = glyph.section !== null && fixable.has(glyph.section) ? glyph.section : null;
     if (section !== previous) {
-      if (pending !== null) return null;
+      if (pending !== null && !isSpace(pending)) return null;
       pending = section === null ? null : (actualTexts[section] ?? '');
       previous = section;
     }
     for (const char of glyph.text) {
-      if (!isSpace(char)) while (at < chars.length && isSpace(chars[at].char)) at++;
+      // pdf.js strips U+FEFF from getTextContent() while keeping it on showText glyphs.
+      if (char === '\uFEFF' && chars[at]?.char !== '\uFEFF') continue;
+      if (!isSpace(char)) {
+        while (at < chars.length && isSpace(chars[at].char)) {
+          if (section !== null && pending === null) drop.add(at);
+          at++;
+        }
+      }
       // pdf.js writes compatibility characters (the ﬁ ligature) decomposed in its text.
       const expected = chars[at]?.char === char ? [char] : [...char.normalize('NFKC')];
       if (!expected.every((part, k) => chars[at + k]?.char === part)) {
@@ -184,7 +201,7 @@ export function applyActualText(
       }
     }
   }
-  if (pending !== null || chars.slice(at).some(({ char }) => !isSpace(char))) return null;
+  if ((pending !== null && !isSpace(pending)) || chars.slice(at).some(({ char }) => !isSpace(char))) return null;
   if (glyphs.some((glyph) => isSpace(glyph.text))) {
     const nearestLetter = (from: number, step: number) => {
       for (let i = from; i >= 0 && i < chars.length; i += step) if (!isSpace(chars[i].char)) return chars[i].char;
