@@ -20,6 +20,23 @@ it("keeps a real Hindi line over the English model's garbage", () => {
   expect(merged.map((l) => l.text)).toEqual(["कर्मचारी संवर्ग में नियमित"]);
 });
 
+it("keeps a doubtful Hindi line over English gibberish that is barely more confident", () => {
+  // A scanned "पत्रांक: … दिनांक: …" line: Hindi OCR reports 0, English reads Hindi as letters at 4.
+  const merged = mergeOcrLines(
+    [{ ...box, text: "पत्रांक: वि.प्र.स./२०२६/४७ दिनांक: 2/7/2026", confidence: 0 }],
+    [{ ...box, text: "Hi: fa.9.3. 2028/80 feria: 12/11/2026", confidence: 4 }],
+  );
+  expect(merged.map((l) => l.text)).toEqual(["पत्रांक: वि.प्र.स./२०२६/४७ दिनांक: 2/7/2026"]);
+});
+
+it("keeps a mixed Hindi and English line when English is sure of its English words only", () => {
+  const merged = mergeOcrLines(
+    [{ ...box, text: "नमूना दस्तावेज़ - केवल परीक्षण के लिए / Sample document", confidence: 55 }],
+    [{ ...box, text: "gn zener for eer fe Sample document", confidence: 66, sureWordShare: 0.3 }],
+  );
+  expect(merged.map((l) => l.text)).toEqual(["नमूना दस्तावेज़ - केवल परीक्षण के लिए / Sample document"]);
+});
+
 it("keeps the Devanagari line when engines report no confidence", () => {
   const merged = mergeOcrLines([{ ...box, text: "विभाग/ Department" }], [{ ...box, text: "Department" }]);
   expect(merged.map((l) => l.text)).toEqual(["विभाग/ Department"]);

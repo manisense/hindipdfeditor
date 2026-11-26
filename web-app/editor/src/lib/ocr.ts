@@ -11,6 +11,8 @@ import {
   ptSizeToImagePx,
   ptToImagePx,
 } from "./coordinateMath";
+import { cleanCellReading } from "./cellReading";
+import { eraseCellBorders } from "./rasterRulings";
 import { aiApiClient } from "./aiApiClient";
 import { warmLanguageData } from "./ocrLanguageData";
 import {
@@ -206,6 +208,9 @@ function tesseractPageWords(page: TesseractPage): RecognizedWord[] {
  * @param latinWords English-model words of the same page; when given, English words inside
  *   Hindi lines take the English reading (see `mergeWordReadings`).
  */
+/** Word confidence (0–100) counted as sure in {@link RecognizedLine.sureWordShare}. */
+const SURE_WORD_CONFIDENCE = 60;
+
 function tesseractPageToRecognized(
   page: TesseractPage,
   latinWords?: readonly RecognizedWord[],
@@ -217,6 +222,7 @@ function tesseractPageToRecognized(
     bbox: { x0: number; y0: number; x1: number; y1: number },
     confidence?: number,
     baseline?: number,
+    sureWordShare?: number,
   ) => {
     const trimmed = trimOcrBorderNoise(text.trim());
     if (trimmed.length === 0) return;
@@ -228,6 +234,7 @@ function tesseractPageToRecognized(
       height: bbox.y1 - bbox.y0,
       confidence,
       ...(baseline !== undefined ? { baseline } : {}),
+      ...(sureWordShare !== undefined ? { sureWordShare } : {}),
     });
   };
 
@@ -245,6 +252,9 @@ function tesseractPageToRecognized(
           line.confidence,
           line.baseline?.has_baseline
             ? (line.baseline.y0 + line.baseline.y1) / 2
+            : undefined,
+          line.words.length > 0
+            ? line.words.filter((word) => word.confidence >= SURE_WORD_CONFIDENCE).length / line.words.length
             : undefined,
         );
       }
@@ -648,17 +658,34 @@ async function readImageRows(pageIndex: number, rows: ImageBox[], bothLanguages 
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, crop.width, crop.height);
     context.drawImage(pageCanvas, strip.sx, strip.sy, strip.w, strip.h, margin, margin, strip.w, strip.h);
+    if (bothLanguages) {
+      // Table cells: borders at the crop's edges are read as letters (। | ० :) otherwise.
+      const cell = context.getImageData(margin, margin, strip.w, strip.h);
+      eraseCellBorders(cell.data, strip.w, strip.h, TEXT_IMAGE_PX_PER_PT);
+      context.putImageData(cell, margin, margin);
+    }
     return crop;
   });
   const read = async (language: OcrLanguage, crop: HTMLCanvasElement) => {
-    const { data } = await withWorker(language, (worker) => worker.recognize(crop), "block");
-    const text = trimOcrBorderNoise(data.text.replace(/[\u200c\u200d]/gu, "").replace(/\s+/gu, " ")).normalize("NFC").trim();
+    const { data } = await withWorker(language, (worker) => worker.recognize(crop, {}, { blocks: bothLanguages }), "block");
+    let raw = data.text;
+    let confidence = data.confidence;
+    if (bothLanguages) {
+      // Table cells: speckle in a cell's empty part reads as short, unsure words at its ends.
+      const words = (data.blocks ?? []).flatMap((block) =>
+        block.paragraphs.flatMap((paragraph) => paragraph.lines.flatMap((line) => line.words)),
+      );
+      const cleaned = cleanCellReading(words.map((word) => ({ text: word.text.trim(), confidence: word.confidence })));
+      raw = cleaned?.text ?? "";
+      confidence = cleaned?.confidence ?? 0;
+    }
+    const text = trimOcrBorderNoise(raw.replace(/[\u200c\u200d]/gu, "").replace(/\s+/gu, " ")).normalize("NFC").trim();
     // Image rows are small and their own context: full-page noise rules reject good readings of
     // them (a quoted word at 54 % confidence). Keep any reading with letters or digits.
     // Latin-only readings need more confidence: signatures and logos read as stray Latin letters.
     const minimum = hasDevanagariLetters(text) ? MIN_TEXT_IMAGE_CONFIDENCE : MIN_LATIN_TEXT_IMAGE_CONFIDENCE;
-    const readable = /[\p{L}\p{N}]/u.test(text) && data.confidence >= minimum;
-    return { text: readable ? text : "", confidence: data.confidence };
+    const readable = /[\p{L}\p{N}]/u.test(text) && confidence >= minimum;
+    return { text: readable ? text : "", confidence };
   };
   return Promise.all(
     crops.map(async (crop) => {

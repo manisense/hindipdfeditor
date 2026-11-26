@@ -11,7 +11,8 @@ import type { RecognizedLine } from './recognizedLine';
  *    model is the only one that can read Hindi, and it also reads embedded Latin well enough
  *    for a mixed line to stay one coherent unit (matching the line-granularity editing model).
  *    Exception: when both engines report confidence and an overlapping Latin-pass line is more
- *    confident, the Latin line wins. Tesseract's Hindi model invents Devanagari when it reads an
+ *    confident and itself confident (at least {@link MIN_LATIN_OVERRIDE_CONFIDENCE}, with most of
+ *    its words sure), the Latin line wins. Tesseract's Hindi model invents Devanagari when it reads an
  *    English line, with low confidence, while the English model reads it with high confidence.
  * 2. A Devanagari-pass line with NO Devanagari characters is a pure-Latin region the weaker
  *    model happened to read; it's kept only if the Latin pass found nothing overlapping it,
@@ -29,6 +30,20 @@ import type { RecognizedLine } from './recognizedLine';
  */
 
 const OVERLAP_RATIO = 0.5;
+
+/**
+ * Least confidence (0–100) an English-pass line needs to replace an overlapping Hindi line. The
+ * English model reads Devanagari as Latin gibberish at low confidence (about 1–40 in tests); a
+ * real English line reads far above this.
+ */
+const MIN_LATIN_OVERRIDE_CONFIDENCE = 60;
+
+/**
+ * Least share of sure words an English-pass line needs to replace an overlapping Hindi line. On a
+ * mixed line ("नमूना दस्तावेज़ … / Sample document") the English model is sure of the English
+ * words only, so its line-level confidence can still pass {@link MIN_LATIN_OVERRIDE_CONFIDENCE}.
+ */
+const MIN_LATIN_SURE_WORD_SHARE = 0.8;
 
 /** Matches any codepoint in the Unicode Devanagari block (U+0900-U+097F). */
 const DEVANAGARI_RE = /[\u0900-\u097f]/;
@@ -74,6 +89,8 @@ export function mergeOcrLines(
           l.confidence !== undefined &&
           latin.confidence !== undefined &&
           latin.confidence > l.confidence &&
+          latin.confidence >= MIN_LATIN_OVERRIDE_CONFIDENCE &&
+          (latin.sureWordShare ?? 1) >= MIN_LATIN_SURE_WORD_SHARE &&
           overlapOfSmaller(l, latin) > OVERLAP_RATIO,
       ),
   );
