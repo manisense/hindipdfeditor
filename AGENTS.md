@@ -83,7 +83,7 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 
 - **Public claims must match the code.** Before a feature appears in page copy, FAQs, JSON-LD or `llms*.txt`, check it in the source.
   - The web export starts from the original file. Unedited pages are copied unchanged; on edited pages replaced text is removed (deleted from the content stream, or cleaned from scans) and new words are images, so new words are not searchable. Any edit invalidates a digital signature.
-  - Legacy fonts: the web editor converts KrutiDev-family pages (KrutiDev, DevLys, or text that reads as KrutiDev keystrokes) to Unicode, checks each page against OCR and asks the user to review every line; other legacy encodings (Chanakya, Shivaji, Walkman-Chanakya, Agra, Amar) and unknown fonts stay blocked. Raster-only replacement mode is Android-only.
+  - Legacy fonts: the web editor converts KrutiDev-family pages (KrutiDev, DevLys, or text that reads as KrutiDev keystrokes) to Unicode, checks each page against OCR and asks the user to review every line; other legacy encodings (Chanakya, Shivaji, Walkman-Chanakya, Agra, Amar) and unknown fonts stay blocked. The Unicode ↔ KrutiDev converter (web ADR 0019) converts pasted text and .docx files both ways; it outputs text or .docx, never a KrutiDev PDF. Raster-only replacement mode is Android-only.
   - Compression has a quality slider, not size presets.
   - AI OCR and translation send data after consent, so the site is not "100% local".
   - Do not add "100%", "flawless" or unsourced claims about named competitors. Answer engines quote this text verbatim.

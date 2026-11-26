@@ -409,6 +409,51 @@ export const TOOL_GUIDES: Record<ToolId, ToolGuide> = {
       ],
     },
   },
+  "unicode-to-krutidev": {
+    guides: ["kruti-dev-to-unicode-hindi-pdf-editor", "fix-broken-hindi-fonts-in-pdf"],
+    en: {
+      heading: "How to convert Unicode (Mangal) to KrutiDev",
+      steps: [
+        { title: "Pick the direction", body: "Choose Unicode → KrutiDev to get KrutiDev 010 key codes, or KrutiDev → Unicode to turn KrutiDev text back into Unicode Hindi." },
+        { title: "Paste text or open a Word file", body: "Text converts as you type. A .docx file is converted whole: Hindi text changes font and English words, tables and layout stay as they are." },
+        { title: "Copy or download", body: "Copy the result into a document set in Kruti Dev 010 (or Mangal for Unicode), or download the converted Word file." },
+      ],
+      notes: [
+        "Conversion runs in your browser; your text and file stay on your device.",
+        "KrutiDev output shows as English letters until it is set in the Kruti Dev 010 font, which you need on your computer.",
+        "Characters KrutiDev has no key for are kept unchanged and listed, so you can fix them by hand.",
+        "In KrutiDev → Unicode, a Word file converts only text set in KrutiDev or DevLys fonts. Chanakya and other old fonts are not converted.",
+      ],
+      faqs: [
+        { q: "What is the difference between Mangal and KrutiDev?", a: "Mangal is a Unicode font: it stores real Hindi letters that work in search, email and every app. KrutiDev 010 draws Hindi on top of English key codes, so its text only reads as Hindi in that font. Some offices and typing tests still use KrutiDev." },
+        { q: "Why does the KrutiDev result look like English letters?", a: "That is how KrutiDev text is stored, for example भारत is Hkkjr. Paste it into Word or another program and set the font to Kruti Dev 010 to see Hindi." },
+        { q: "What happens to English words?", a: "In a Word file, English words are kept in their own font, so they still read as English. In the text box they are kept as typed, but a KrutiDev font would show them as Hindi letters, so keep them in another font." },
+        { q: "Can I convert an old .doc file?", a: "Only .docx files can be converted. Open the .doc file in Word and save it as .docx first." },
+        { q: "Can I convert a KrutiDev PDF?", a: "Yes, with KrutiDev PDF to Unicode, which turns a KrutiDev or DevLys PDF into a Word file with Unicode Hindi." },
+      ],
+    },
+    hi: {
+      heading: "यूनिकोड (मंगल) को कृतिदेव में कैसे बदलें",
+      steps: [
+        { title: "दिशा चुनें", body: "कृतिदेव 010 के कोड पाने के लिए यूनिकोड → कृतिदेव चुनें, या कृतिदेव टेक्स्ट को यूनिकोड हिंदी में बदलने के लिए कृतिदेव → यूनिकोड।" },
+        { title: "टेक्स्ट पेस्ट करें या वर्ड फाइल खोलें", body: "टेक्स्ट टाइप करते ही बदलता है। .docx फाइल पूरी बदलती है: हिंदी टेक्स्ट का फॉन्ट बदलता है और अंग्रेज़ी शब्द, टेबल और लेआउट वैसे ही रहते हैं।" },
+        { title: "कॉपी या डाउनलोड करें", body: "नतीजा कृतिदेव 010 (यूनिकोड के लिए मंगल) फॉन्ट वाले डॉक्यूमेंट में कॉपी करें, या बदली हुई वर्ड फाइल डाउनलोड करें।" },
+      ],
+      notes: [
+        "बदलाव आपके ब्राउज़र में होता है; आपका टेक्स्ट और फाइल आपके डिवाइस पर ही रहते हैं।",
+        "कृतिदेव नतीजा तब तक अंग्रेज़ी अक्षरों जैसा दिखता है जब तक उसे कृतिदेव 010 फॉन्ट में न रखें, जो आपके कंप्यूटर पर होना चाहिए।",
+        "जिन अक्षरों की कृतिदेव में कोई कुंजी नहीं है, वे बिना बदले रखे जाते हैं और उनकी सूची दिखती है, ताकि आप उन्हें हाथ से ठीक कर सकें।",
+        "कृतिदेव → यूनिकोड में वर्ड फाइल का सिर्फ कृतिदेव या देवलिस फॉन्ट वाला टेक्स्ट बदलता है। चाणक्य और दूसरे पुराने फॉन्ट नहीं बदलते।",
+      ],
+      faqs: [
+        { q: "मंगल और कृतिदेव में क्या फर्क है?", a: "मंगल यूनिकोड फॉन्ट है: यह असली हिंदी अक्षर रखता है जो खोज, ईमेल और हर ऐप में चलते हैं। कृतिदेव 010 अंग्रेज़ी कुंजियों के कोड पर हिंदी दिखाता है, इसलिए उसका टेक्स्ट सिर्फ उसी फॉन्ट में हिंदी दिखता है। कुछ दफ्तर और टाइपिंग टेस्ट अब भी कृतिदेव इस्तेमाल करते हैं।" },
+        { q: "कृतिदेव नतीजा अंग्रेज़ी अक्षरों जैसा क्यों दिखता है?", a: "कृतिदेव टेक्स्ट ऐसे ही रखा जाता है, जैसे भारत को Hkkjr। इसे वर्ड या किसी दूसरे प्रोग्राम में पेस्ट करके फॉन्ट कृतिदेव 010 करें, तो हिंदी दिखेगी।" },
+        { q: "अंग्रेज़ी शब्दों का क्या होता है?", a: "वर्ड फाइल में अंग्रेज़ी शब्द अपने फॉन्ट में रहते हैं, इसलिए अंग्रेज़ी ही पढ़े जाते हैं। टेक्स्ट बॉक्स में वे वैसे ही रहते हैं, पर कृतिदेव फॉन्ट उन्हें हिंदी अक्षरों जैसा दिखाएगा, इसलिए उन्हें दूसरे फॉन्ट में रखें।" },
+        { q: "क्या पुरानी .doc फाइल बदल सकते हैं?", a: "सिर्फ .docx फाइलें बदलती हैं। .doc फाइल को वर्ड में खोलकर पहले .docx के रूप में सेव करें।" },
+        { q: "क्या कृतिदेव पीडीएफ बदल सकते हैं?", a: "हाँ, कृतिदेव पीडीएफ से यूनिकोड टूल से, जो कृतिदेव या देवलिस पीडीएफ को यूनिकोड हिंदी वाली वर्ड फाइल में बदलता है।" },
+      ],
+    },
+  },
 };
 
 /** Guide copy for one tool in one UI language. */

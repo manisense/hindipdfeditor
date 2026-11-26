@@ -11,7 +11,8 @@ export type ToolId =
   | "pdf-to-word"
   | "word-to-pdf"
   | "organize"
-  | "krutidev";
+  | "krutidev"
+  | "unicode-to-krutidev";
 
 export type ToolMeta = {
   id: ToolId;
@@ -38,6 +39,7 @@ export const TOOL_HINDI_NAMES: Record<ToolId, string> = {
   compress: "साइज कम",
   organize: "पेज व्यवस्थित",
   krutidev: "कृतिदेव",
+  "unicode-to-krutidev": "यूनिकोड ↔ कृतिदेव",
 };
 
 
@@ -69,7 +71,8 @@ export function readToolIdFromLocation(): ToolId | null {
     raw === "compress" ||
     raw === "translate" ||
     raw === "organize" ||
-    raw === "krutidev"
+    raw === "krutidev" ||
+    raw === "unicode-to-krutidev"
   ) {
     return raw;
   }

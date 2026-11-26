@@ -6,14 +6,15 @@ import { DropZone } from "../components/DropZone";
 import { SelectedFileSummary } from "../components/SelectedFileSummary";
 import { ToolShell } from "../components/ToolShell";
 import { trackToolEvent } from "../lib/analytics";
+import { downloadBlob } from "../lib/downloadBlob";
 import { convertPdfToWord, sampleTextLayer, type OcrChoice, type TextLayerSample } from "../lib/convertPdfToWord";
-import { useTx } from "../lib/i18n";
+import { useLanguage, useTx } from "../lib/i18n";
 import { ocrPoolSize } from "../lib/ocr";
 import { ocrPageLimit, ocrSecondsPerPage } from "../lib/ocrPoolSize";
 import { parsePageList } from "../lib/pageList";
 import { clearJob, conversionKey, savedPages, savePage, startJob } from "../lib/conversionProgress";
 import { holdScreenAwake, minutesLeft } from "../lib/wakeLock";
-import { getTool } from "../lib/tools";
+import { getTool, toolHref } from "../lib/tools";
 import "./UtilityTool.css";
 
 
@@ -35,23 +36,12 @@ function pageList(pages: readonly number[]): string {
   return parts.join(", ");
 }
 
-/** Downloads a Blob under a file name. */
-function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 /** PDF to Word: reads each page's text (PDF text, repaired Hindi, or OCR) into a .docx file. */
 /** PDF to Word, also served as the KrutiDev-to-Unicode page with its own heading. */
 export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-word" | "krutidev" }) {
   const tool = getTool(toolId)!;
   const tx = useTx();
+  const { lang } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number; left: number | null } | null>(null);
@@ -174,32 +164,42 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
     >
       <div className="utility-tool">
         {!file ? (
-          <DropZone
-            sample={toolId === "pdf-to-word"}
-            accent={tool.accent}
-            title={
-              toolId === "krutidev"
-                ? tx("KrutiDev PDF to Unicode", "कृतिदेव पीडीएफ से यूनिकोड")
-                : tx("PDF to Word", "पीडीएफ से वर्ड")
-            }
-            subtitle={
-              toolId === "krutidev"
-                ? tx(
-                    "Open a PDF typed in KrutiDev or DevLys and get a Word file with Unicode Hindi you can copy, search and edit. Your file stays on this device.",
-                    "कृतिदेव या देवलिस में टाइप की गई पीडीएफ खोलें और यूनिकोड हिंदी वाली वर्ड फाइल पाएं, जिसे कॉपी, खोज और एडिट कर सकें। फाइल इसी डिवाइस पर रहती है।",
-                  )
-                : tx(
-                    "Get an editable Word file from a Hindi or English PDF, including scans. Your file stays on this device.",
-                    "हिंदी या अंग्रेज़ी पीडीएफ (स्कैन भी) से बदलने लायक वर्ड फाइल पाएं। फाइल इसी डिवाइस पर रहती है।",
-                  )
-            }
-            buttonLabel={tx("Select PDF", "पीडीएफ चुनें")}
-            onFiles={(files) => {
-              setFile(files[0]);
-              setResult(null);
-              setError(null);
-            }}
-          />
+          <>
+            <DropZone
+              sample={toolId === "pdf-to-word"}
+              accent={tool.accent}
+              title={
+                toolId === "krutidev"
+                  ? tx("KrutiDev PDF to Unicode", "कृतिदेव पीडीएफ से यूनिकोड")
+                  : tx("PDF to Word", "पीडीएफ से वर्ड")
+              }
+              subtitle={
+                toolId === "krutidev"
+                  ? tx(
+                      "Open a PDF typed in KrutiDev or DevLys and get a Word file with Unicode Hindi you can copy, search and edit. Your file stays on this device.",
+                      "कृतिदेव या देवलिस में टाइप की गई पीडीएफ खोलें और यूनिकोड हिंदी वाली वर्ड फाइल पाएं, जिसे कॉपी, खोज और एडिट कर सकें। फाइल इसी डिवाइस पर रहती है।",
+                    )
+                  : tx(
+                      "Get an editable Word file from a Hindi or English PDF, including scans. Your file stays on this device.",
+                      "हिंदी या अंग्रेज़ी पीडीएफ (स्कैन भी) से बदलने लायक वर्ड फाइल पाएं। फाइल इसी डिवाइस पर रहती है।",
+                    )
+              }
+              buttonLabel={tx("Select PDF", "पीडीएफ चुनें")}
+              onFiles={(files) => {
+                setFile(files[0]);
+                setResult(null);
+                setError(null);
+              }}
+            />
+            {toolId === "krutidev" && (
+              <p className="utility-tool__note">
+                {tx("Have KrutiDev text or a Word file, not a PDF?", "पीडीएफ नहीं, कृतिदेव टेक्स्ट या वर्ड फाइल है?")}{" "}
+                <a href={`${toolHref("unicode-to-krutidev", lang)}${lang === "hi" ? "&" : "?"}direction=krutidev-to-unicode`}>
+                  {tx("Use the text and Word converter", "टेक्स्ट और वर्ड कन्वर्टर इस्तेमाल करें")}
+                </a>
+              </p>
+            )}
+          </>
         ) : (
           <div className="utility-tool__panel">
             <SelectedFileSummary name={file.name} meta={`${(file.size / 1024 / 1024).toFixed(2)} MB`} />

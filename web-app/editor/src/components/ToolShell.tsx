@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   Check,
   Combine,
   FileArchive,
@@ -62,6 +63,7 @@ const toolIcons: Record<ToolId, LucideIcon> = {
   compress: FileArchive,
   organize: LayoutGrid,
   krutidev: Type,
+  "unicode-to-krutidev": ArrowLeftRight,
 };
 
 

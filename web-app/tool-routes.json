@@ -90,6 +90,15 @@
     "category": "convert"
   },
   {
+    "id": "unicode-to-krutidev",
+    "path": "/tools/unicode-to-krutidev/",
+    "title": "Unicode (Mangal) to KrutiDev Converter",
+    "shortTitle": "Unicode ↔ KrutiDev",
+    "description": "Convert Hindi text between Unicode (Mangal) and KrutiDev 010 in both directions, by pasting text or uploading a Word (.docx) file. English words in a Word file keep their font. Processing stays on your device.",
+    "accent": "#0D9488",
+    "category": "convert"
+  },
+  {
     "id": "word-to-pdf",
     "path": "/tools/word-to-pdf/",
     "title": "Word to PDF",

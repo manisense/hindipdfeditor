@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   ClipboardPen,
   FileArchive,
   FileText,
@@ -92,6 +93,12 @@ export const TOOL_GROUPS: ToolGroup[] = [
         icon: Type,
         nameKey: "tool.krutidev",
         detailKey: "tool.krutidevSub",
+      },
+      {
+        id: "unicode-to-krutidev",
+        icon: ArrowLeftRight,
+        nameKey: "tool.unicodeKrutidev",
+        detailKey: "tool.unicodeKrutidevSub",
       },
     ],
   },
