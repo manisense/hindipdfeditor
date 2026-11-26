@@ -53,6 +53,24 @@ describe('clusterRunsIntoLines', () => {
     expect(lines.map((line) => line.text)).toEqual(['नाम, पता शि']);
   });
 
+  it('on a page that draws its spaces, keeps a Hindi word whole across a ligature pdf.js measures too narrow', () => {
+    // Chrome's Type 3 प्र glyph has almost no width in pdf.js, which leaves a 10 pt gap before बंधन.
+    const lines = clusterRunsIntoLines(
+      [
+        run('विद्यालय प्र', 0, 50, { order: 0, hPt: 13 }),
+        run('बंधन', 60.4, 25, { order: 1, hPt: 13 }),
+        run('.', 96, 3, { order: 2, hPt: 13 }),
+      ],
+      { spacesDrawn: true },
+    );
+    expect(lines.map((line) => line.text)).toEqual(['विद्यालय प्रबंधन.']);
+  });
+
+  it('on a page that draws its spaces, still splits Hindi columns far apart', () => {
+    const lines = clusterRunsIntoLines([run('नाम', 0, 20, { order: 0 }), run('पता', 60, 20, { order: 1 })], { spacesDrawn: true });
+    expect(lines.map((line) => line.text)).toEqual(['नाम', 'पता']);
+  });
+
   it('on a page that draws its spaces, does not break Hindi words at small gaps', () => {
     const [line] = clusterRunsIntoLines([run('शि', 0, 8, { order: 0 }), run('क्षा', 12, 12, { order: 1 })], { spacesDrawn: true });
     expect(line?.text).toBe('शिक्षा');
