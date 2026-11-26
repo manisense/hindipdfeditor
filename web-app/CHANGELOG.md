@@ -1,5 +1,11 @@
 # Changelog
 
+## Hindi text from Word files with a broken text map, 27 November 2026
+
+### Fixed
+- Word files passed through iLovePDF (seen on Railway Recruitment Board notices) map many Hindi glyphs to the wrong letters, so the editor fell back to OCR, which misread tables and left cells empty. The editor now reads each glyph from the embedded font itself (its cmap and shaping rules) and uses that text when the file's own map contradicts the font (web ADR 0022). The file itself is never changed. PDF to Word on a contents page with a table: 64.5 % → 100 % of 141 Hindi words, twice as fast.
+- Words split after प्र, क्र and before vowel signs in Word files are kept whole.
+
 ## OCR engine benchmark: Tesseract against PaddleOCR, 27 November 2026
 
 ### Added
