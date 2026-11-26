@@ -33,6 +33,8 @@ const LINE_Y_TOLERANCE_RATIO = 0.55;
 const WORD_GAP_RATIO = 0.12;
 const DEVANAGARI_LETTER = /[\u0900-\u097F]/u;
 const COLUMN_GAP_RATIO = 0.75;
+/** Column gap (in line heights) after a run that ends mid-word in Hindi on a page that draws spaces. */
+const MID_WORD_COLUMN_GAP_RATIO = 3;
 
 function isPrivateUseCodePoint(codePoint: number | undefined): boolean {
   return (
@@ -195,8 +197,10 @@ export async function extractEmbeddedTextLines(
     let spaceAfter: boolean[] | null = null;
     // Producers that leave glyphs unmapped (Chrome, Google Docs) often give their text as
     // /ActualText in marked content: read it before falling back to placeholders and OCR.
-    if (unmapped.length > 0 || (operators.fnArray.includes(OPS.beginMarkedContentProps) && (await madeBySkia(pdfBytes)))) {
-      const fixed = await withActualText(pdfBytes, pageIndex, operators.fnArray, operators.argsArray, itemTexts);
+    const skia = await madeBySkia(pdfBytes);
+    if (unmapped.length > 0 || skia) {
+      // Skia pages without /ActualText (Chrome's Save as PDF) still give their drawn spaces.
+      const fixed = await withActualText(pdfBytes, pageIndex, operators.fnArray, operators.argsArray, itemTexts, skia);
       if (fixed && fixed.replaced.length === unmapped.length) {
         itemTexts = fixed.items;
         absorbedInto = fixed.into;
@@ -441,6 +445,7 @@ function madeBySkia(pdfBytes: Uint8Array): Promise<boolean> {
  * or null when the page has none or they cannot be lined up.
  *
  * @param pageIndex Zero-based page index.
+ * @param drawnSpaces Also return the page's drawn spaces when it has no `/ActualText` (Skia pages).
  */
 async function withActualText(
   pdfBytes: Uint8Array,
@@ -448,10 +453,14 @@ async function withActualText(
   fnArray: number[],
   argsArray: unknown[],
   items: string[],
+  drawnSpaces: boolean,
 ): Promise<ActualTextResult | null> {
   try {
-    const starts = markedContentStarts(await pageContents(pdfBytes, pageIndex));
-    if (!starts.some((start) => start.actualText !== null)) return null;
+    // Pages without marked content have no /ActualText: no need to parse their content stream.
+    const starts = fnArray.includes(OPS.beginMarkedContentProps)
+      ? markedContentStarts(await pageContents(pdfBytes, pageIndex))
+      : [];
+    if (!drawnSpaces && !starts.some((start) => start.actualText !== null)) return null;
     const glyphs = drawnGlyphs(fnArray, argsArray, starts, OPS);
     return glyphs ? applyActualText(items, glyphs, starts.map((start) => start.actualText)) : null;
   } catch {
@@ -471,7 +480,15 @@ function shouldInsertSpace(previous: EmbeddedTextRun, current: EmbeddedTextRun, 
   // A space can be drawn after the next run of another script, so other boundaries use the gap.
   if (spacesDrawn && DEVANAGARI_LETTER.test(previous.text.at(-1) ?? '') && DEVANAGARI_LETTER.test(current.text.at(0) ?? '')) return false;
   const gap = current.xPt - (previous.xPt + previous.wPt);
-  return gap > Math.min(previous.hPt, current.hPt) * WORD_GAP_RATIO;
+  // After Hindi with no space drawn, pdf.js can measure a ligature too narrow (Chrome's Type 3
+  // प्र), so only a gap of a whole em is a word break.
+  const ratio = midDevanagariWord(previous, spacesDrawn) ? 1 : WORD_GAP_RATIO;
+  return gap > Math.min(previous.hPt, current.hPt) * ratio;
+}
+
+/** On a page that draws its spaces, whether a run ends in Hindi with no space drawn after it. */
+function midDevanagariWord(previous: EmbeddedTextRun, spacesDrawn: boolean): boolean {
+  return spacesDrawn && !previous.trailingSpace && /[\u0900-\u097F]$/u.test(previous.text);
 }
 
 /**
@@ -555,7 +572,9 @@ export function clusterRunsIntoLines(
         Math.abs(run.baselineYPt - sample.baselineYPt) <= Math.max(1.5, 0.2 * Math.min(run.hPt, sample.hPt)));
     const horizontalGap = run.xPt - (previous.xPt + previous.wPt);
     const isSeparateColumn =
-      horizontalGap > Math.max(previous.hPt, run.hPt) * COLUMN_GAP_RATIO;
+      horizontalGap >
+      Math.max(previous.hPt, run.hPt) *
+        (midDevanagariWord(previous, Boolean(options.spacesDrawn)) ? MID_WORD_COLUMN_GAP_RATIO : COLUMN_GAP_RATIO);
     const isHorizontalBacktrack =
       run.xPt < previous.xPt - Math.min(previous.hPt, run.hPt) * 0.25;
 

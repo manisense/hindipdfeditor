@@ -1,5 +1,15 @@
 # Changelog
 
+## Fixes found by the Hindi benchmark sample, 27 November 2026
+
+A one-page sample notice (`web-app/benchmark/`, conjuncts, reph, nukta, a ruled table, English words) is now scored by `score.mjs`: the share of its 144 Hindi words a tool gets exactly right. Running PDF to Word on it found four bugs. PDF to Word on the digital copy went from 94.4 % to 100 %; on the scanned copy (0.6° turn, blur, speckle) from 80.6 % to 99.3 %.
+
+### Fixed
+- Chrome "Save as PDF" and other Skia files: words were split after conjuncts (प्र|बंधन, उच्च|तर), sometimes onto two lines, because pdf.js measures some Type 3 ligature glyphs too narrow. On pages that draw their spaces, a Hindi run with no space after it now needs a 3 em gap to start a new column and a 1 em gap for a word break. Drawn spaces are now read on every Skia page, not only pages with `/ActualText`.
+- Scanned tables on a slightly turned page were not found: a long ruling drifts across rows, and its whole drift was counted as thickness. Thickness is now measured across the line at each point. Rulings that reach the image edge are no longer dropped.
+- Scanned table cells picked up their borders and speckle as letters (। ० : का) and lost digit-only cells (10:00). Cell crops now have their borders, the borders' grey halo and faint edge lines whitened, and short unsure words at a cell's ends are dropped; the confidence is judged on the words kept.
+- English OCR replaced Hindi lines it had read as Latin gibberish whenever its confidence was higher, even at 4 against 0, or when it was sure only of a mixed line's English words. It now needs at least 60 and 80 % of its words sure.
+
 ## Guides for Mangal ↔ Kruti Dev conversion, 27 November 2026
 
 ### Added

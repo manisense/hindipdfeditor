@@ -11,6 +11,8 @@ export type RecognizedLine = {
   height: number;
   /** Engine confidence, 0–100, when the engine reports one (Tesseract does). */
   confidence?: number;
+  /** Share (0–1) of the line's words read with confidence of at least 60, when known. */
+  sureWordShare?: number;
   /** Baseline, in background-image px from the top, when the engine reports one. */
   baseline?: number;
 };
