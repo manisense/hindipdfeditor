@@ -104,6 +104,32 @@ export function readsAsHindi(text: string, isKnown: (word: string) => boolean): 
 }
 
 /**
+ * Joins Hindi words that a PDF split with a gap inside them ("आरक्ष ण", "योग्य ता"): two neighbours
+ * are joined when together they are a dictionary word and at least one of them alone is not. Words
+ * that are both real ("महत्व पूर्ण") stay apart.
+ *
+ * @param isKnown Dictionary lookup (with inflections), e.g. `HindiSpeller.isKnown`.
+ */
+export function joinSplitHindiWords(text: string, isKnown: (word: string) => boolean): string {
+  const parts = text.split(' ');
+  const out: string[] = [];
+  for (const part of parts) {
+    const previous = out[out.length - 1];
+    // Only the Devanagari letters that meet at the gap are judged: "योग्य" + "ता/पात्र" → "योग्यता".
+    const tail = /[\u0900-\u097F]+$/u.exec(previous ?? '')?.[0];
+    const head = /^[\u0900-\u097F]+/u.exec(part)?.[0];
+    if (previous !== undefined && tail && head) {
+      if (isKnown(tail + head) && (!isKnown(tail) || !isKnown(head))) {
+        out[out.length - 1] = previous + part;
+        continue;
+      }
+    }
+    out.push(part);
+  }
+  return out.join(' ');
+}
+
+/**
  * Whether embedded Devanagari text looks corrupted compared with OCR of the same page.
  * Returns false when there is too little Devanagari to judge, so plain pages keep their text.
  */

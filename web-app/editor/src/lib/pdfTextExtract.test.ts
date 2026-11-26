@@ -177,6 +177,10 @@ describe('withUnmeasuredRunsJoined', () => {
     expect(withUnmeasuredRunsJoined([{ ...run('प्र', 100, 2.2, true), trailingSpace: true }, run('माण', 100.1, 18)]).length).toBe(2);
   });
 
+  it('keeps a run that starts with a vowel sign on the line of the word before it', () => {
+    expect(clusterRunsIntoLines([run('(गैर-क्र', 295.9, 68.1), run('ीमी लेयर)', 373.2, 59.7)]).map((l) => l.text)).toEqual(['(गैर-क्रीमी लेयर)']);
+  });
+
   it('drops a space measured before a vowel sign', () => {
     expect(clusterRunsIntoLines([run('राष्ट्र', 100, 20), run('ीयता', 125, 14)])[0].text).toBe('राष्ट्रीयता');
   });

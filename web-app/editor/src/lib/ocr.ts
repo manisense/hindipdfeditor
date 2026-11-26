@@ -22,6 +22,7 @@ import {
   isEmbeddedDevanagariCorrupted,
   isLikelyOcrNoise,
   readsAsHindi,
+  joinSplitHindiWords,
   missedDevanagariRows,
   embeddedDevanagariVerdict,
   trimOcrBorderNoise,
@@ -504,6 +505,15 @@ async function verifyEmbeddedDevanagari(
   record?: { band: (bandText: string, bandOcrText: string) => void; page: (hindiText: string) => void },
   allowPageOcr?: () => boolean,
 ): Promise<OcrLine[]> {
+  // Fonts repaired from their own cmap give exact letters, but some producers leave gaps inside
+  // words; the dictionary joins those before anything is judged.
+  if ((await repairedFontsOf(pdfBytes)).length > 0) {
+    const speller = await loadHindiSpeller().catch(() => null);
+    if (speller) {
+      const isKnown = (word: string) => speller.isKnown(word);
+      embedded = embedded.map((line) => (hasDevanagari(line.text) ? { ...line, text: joinSplitHindiWords(line.text, isKnown) } : line));
+    }
+  }
   const degraded = embedded.some((line) => line.source === "embedded-degraded");
   if (!degraded && !embedded.some((line) => hasDevanagari(line.text))) {
     return embedded;

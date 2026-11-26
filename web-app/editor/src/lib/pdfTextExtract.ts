@@ -5,7 +5,7 @@ import { reorderDevanagariMarks } from './devanagariMarks';
 import { fontHintFromPdfFont } from './fontMatch';
 import { krutiDevToUnicode } from './krutiDev';
 import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
-import { sharedPdfDocument } from './sharedPdfDocument';
+import { repairedFontsOf, sharedPdfDocument } from './sharedPdfDocument';
 import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
 import { applyActualText, drawnGlyphs, markedContentStarts, type ActualTextResult } from './pdfActualText';
 import { imageRectsFromOperators, pictureBoxes, textImageRows, type PtBox } from './pdfImageRects';
@@ -34,6 +34,7 @@ export type EmbeddedTextRun = {
 
 const LINE_Y_TOLERANCE_RATIO = 0.55;
 const WORD_GAP_RATIO = 0.12;
+const DEVANAGARI_SIGN_START = /^[\u0900-\u0903\u093A-\u094F\u0951-\u0957\u0962\u0963]/u;
 const DEVANAGARI_SIGN_AFTER_SPACE = /\s+(?=[\u0900-\u0903\u093A-\u094F\u0951-\u0957\u0962\u0963])/gu;
 const DEVANAGARI_LETTER = /[\u0900-\u097F]/u;
 const COLUMN_GAP_RATIO = 0.75;
@@ -204,9 +205,12 @@ export async function extractEmbeddedTextLines(
     // Producers that leave glyphs unmapped (Chrome, Google Docs) often give their text as
     // /ActualText in marked content: read it before falling back to placeholders and OCR.
     const skia = await madeBySkia(pdfBytes);
-    if (unmapped.length > 0 || skia) {
+    // Files whose fonts were repaired from their own cmap (Word output) leave gaps inside words
+    // but draw their spaces, so like Skia pages only drawn spaces break their Hindi words.
+    const repairedFonts = (await repairedFontsOf(pdfBytes)).length > 0;
+    if (unmapped.length > 0 || skia || repairedFonts) {
       // Skia pages without /ActualText (Chrome's Save as PDF) still give their drawn spaces.
-      const fixed = await withActualText(pdfBytes, pageIndex, operators.fnArray, operators.argsArray, itemTexts, skia);
+      const fixed = await withActualText(pdfBytes, pageIndex, operators.fnArray, operators.argsArray, itemTexts, skia || repairedFonts);
       if (fixed && fixed.replaced.length === unmapped.length) {
         itemTexts = fixed.items;
         absorbedInto = fixed.into;
@@ -606,7 +610,10 @@ export function clusterRunsIntoLines(
     const isHorizontalBacktrack =
       run.xPt < previous.xPt - Math.min(previous.hPt, run.hPt) * 0.25;
 
-    if (sameBaseline && !previous.hasEol && !isSeparateColumn && !isHorizontalBacktrack) {
+    // A run that starts with a vowel sign or virama continues the word before it, however wide the
+    // gap pdf.js measured (CEN notices leave 9 pt between क्र and ीमी).
+    const continuesWord = DEVANAGARI_SIGN_START.test(run.text) && !isHorizontalBacktrack;
+    if (sameBaseline && (continuesWord || (!previous.hasEol && !isSeparateColumn && !isHorizontalBacktrack))) {
       last.push(run);
     } else {
       groups.push([run]);

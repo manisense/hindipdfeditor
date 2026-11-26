@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   readsAsHindi,
+  joinSplitHindiWords,
   combineEmbeddedLatinWithOcr,
   canJudgeDevanagari,
   embeddedDevanagariVerdict,
@@ -175,5 +176,21 @@ describe('readsAsHindi', () => {
   it('rejects mis-mapped text and text too short to judge', () => {
     expect(readsAsHindi(Array(3).fill('सभी अभभावकों को सूचत कया जाता है क वद्यालय का').join(' '), isKnown)).toBe(false);
     expect(readsAsHindi('सभी अभिभावकों को', isKnown)).toBe(false);
+  });
+});
+
+describe('joinSplitHindiWords', () => {
+  const known = new Set(['आरक्षण', 'योग्य', 'योग्यता', 'महत्व', 'पूर्ण', 'महत्वपूर्ण', 'उम्मीदवारों', 'के', 'लिए']);
+  const isKnown = (word: string) => known.has(word);
+
+  it('joins a word split by a gap when only the whole is a word', () => {
+    expect(joinSplitHindiWords('के लिए आरक्ष ण तथा', isKnown)).toBe('के लिए आरक्षण तथा');
+    expect(joinSplitHindiWords('योग्य ता/पात्र', isKnown)).toBe('योग्यता/पात्र');
+    expect(joinSplitHindiWords('उम् मीदवारों,', isKnown)).toBe('उम्मीदवारों,');
+  });
+
+  it('keeps two real words apart', () => {
+    expect(joinSplitHindiWords('महत्व पूर्ण', isKnown)).toBe('महत्व पूर्ण');
+    expect(joinSplitHindiWords('के लिए', isKnown)).toBe('के लिए');
   });
 });

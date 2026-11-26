@@ -19,7 +19,8 @@ import { fontGlyphText, PRE_BASE_MARK, REPH_MARK } from './fontGlyphText';
  * answer in its cmap and GSUB tables (see `fontGlyphText`). A correct map has no reason to name
  * another letter than the font's own cmap, so a font is repaired when the two readings disagree
  * (after NFC) on at least {@link MIN_DISAGREEMENTS} single-letter glyphs and on at least
- * {@link MIN_DISAGREEMENT_SHARE} of those both name (Word + iLovePDF: 9 of 60); fonts that agree, have no ToUnicode,
+ * {@link MIN_DISAGREEMENT_SHARE} of those both name (Word + iLovePDF: 9 of 60), or when it names
+ * a pre-base ि or reph glyph by its plain letter (text in drawing order, ligatures unmapped); fonts that agree, have no ToUnicode,
  * or cannot be read are left exactly as they are, so their text keeps its existing checks.
  *
  * Reordered glyphs (pre-base ि, reph) come out as marks; `reorderDevanagariMarks` puts them in
@@ -117,10 +118,19 @@ export function repairedToUnicode(existing: ReadonlyMap<number, string>, fromFon
     if (old.normalize('NFC') === plain.normalize('NFC')) agree++;
     else disagree++;
   }
-  if (disagree < MIN_DISAGREEMENTS || disagree / (agree + disagree) < MIN_DISAGREEMENT_SHARE) return null;
+  const misMapped = disagree >= MIN_DISAGREEMENTS && disagree / (agree + disagree) >= MIN_DISAGREEMENT_SHARE;
+  // A map that names a pre-base ि or reph glyph by its plain letter gives text in drawing order
+  // (Word's usual output): "अनुसूिचत". Such maps also tend to leave ligatures unmapped, so their
+  // letters vanish. The font's own reading fills them in and orders ि and reph.
+  const drawingOrder = [...fromFont].some(([gid, letters]) => {
+    const old = existing.get(gid)?.normalize('NFC');
+    return (letters === PRE_BASE_MARK && old === 'ि') || (letters === REPH_MARK && old === 'र्');
+  });
+  if (!misMapped && !drawingOrder) return null;
   const repaired = new Map(existing);
   for (const [gid, letters] of fromFont) {
-    if (existing.has(gid) || [...letters].some((c) => DEVANAGARI.test(c))) repaired.set(gid, letters);
+    if (![...letters].some((c) => DEVANAGARI.test(c) || c === PRE_BASE_MARK || c === REPH_MARK)) continue;
+    if (misMapped || !existing.get(gid) || letters.includes(PRE_BASE_MARK) || letters.includes(REPH_MARK)) repaired.set(gid, letters);
   }
   return repaired;
 }
