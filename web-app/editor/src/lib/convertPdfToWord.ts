@@ -2,11 +2,12 @@ import { detectAlignedTables } from './alignedTables';
 import { buildWordDocument, type WordPage } from './pdfToWord';
 import { detectLegacyFonts, isConvertibleLegacyFont } from './legacyFontDetector';
 import { detectTextLines, ocrPoolSize, readAreas } from './ocr';
-import type { PtBox } from './pdfImageRects';
+import { mayShowText, type PtBox } from './pdfImageRects';
 import { getPageCount, getPageSize, renderPage, renderPageCanvas, setPdfBytes } from './pdfToImages';
 import type { Ruling } from './pdfRulings';
 import { rulingsFromImage } from './rasterRulings';
 import { sharedPdfDocument } from './sharedPdfDocument';
+import { OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { detectTables, type DetectedTable } from './tableDetect';
 import { pageBlocks, type WordPicture } from './wordLayout';
 import type { OcrLine, PageState } from '../state/editStore';
@@ -37,6 +38,10 @@ export type PdfToWordOptions = {
   ocr: OcrChoice;
   /** Most pages read whole with OCR (see `ocrPageLimit`). */
   ocrPageLimit: number;
+  /** Zero-based pages to convert, in order; all pages when absent. */
+  pages?: readonly number[];
+  /** Stops the conversion between pages (it then rejects with an `AbortError`). */
+  signal?: AbortSignal;
 };
 
 /**
@@ -62,7 +67,9 @@ export async function convertPdfToWord(
   onProgress: (done: number, total: number) => void,
 ): Promise<PdfToWordResult> {
   setPdfBytes(bytes);
-  const total = await getPageCount();
+  const pageCount = await getPageCount();
+  const chosen = options.pages?.filter((index) => index >= 0 && index < pageCount) ?? Array.from({ length: pageCount }, (_, i) => i);
+  const total = chosen.length;
   // Fails closed: an unreadable font table means every page is read from its image.
   const warnings = await detectLegacyFonts(bytes.slice()).catch(() => null);
   // Pages are read side by side, one per OCR worker, and kept in page order.
@@ -139,8 +146,9 @@ export async function convertPdfToWord(
   await Promise.all(
     Array.from({ length: lanes }, async () => {
       while (next < total) {
-        const pageIndex = next++;
-        pages[pageIndex] = await readPage(pageIndex);
+        options.signal?.throwIfAborted();
+        const slot = next++;
+        pages[slot] = await readPage(chosen[slot]);
         done += 1;
         onProgress(done, total);
       }
@@ -234,7 +242,12 @@ async function withCellText(pageIndex: number, lines: readonly OcrLine[], tables
 }
 
 /** What a quick look at a PDF's text layer found (see {@link sampleTextLayer}). */
-export type TextLayerSample = { pages: number; sampled: number; withoutText: number };
+export type TextLayerSample = {
+  pages: number;
+  sampled: number;
+  /** Sampled pages with no text layer that show something to read (scans); blank pages are not counted. */
+  withoutText: number;
+};
 
 /**
  * Looks at up to `samples` pages spread through the PDF for selectable text, so the screen can
@@ -250,7 +263,9 @@ export async function sampleTextLayer(bytes: Uint8Array, samples = 12): Promise<
   for (const index of picks) {
     const page = await doc.getPage(index + 1);
     const content = await page.getTextContent();
-    if (!content.items.some((item) => 'str' in item && /\S/u.test(item.str))) withoutText += 1;
+    if (!content.items.some((item) => 'str' in item && /\S/u.test(item.str)) && mayShowText((await page.getOperatorList()).fnArray, OPS)) {
+      withoutText += 1;
+    }
     page.cleanup();
   }
   return { pages, sampled: picks.length, withoutText };

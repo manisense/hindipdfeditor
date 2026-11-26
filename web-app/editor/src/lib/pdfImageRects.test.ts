@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { imageRectsFromOperators, pictureBoxes, stackStrips, stripAt, textImageRows, type ImageOps } from './pdfImageRects';
+import { imageRectsFromOperators, mayShowText, pictureBoxes, stackStrips, stripAt, textImageRows, type ImageOps } from './pdfImageRects';
 
 const OPS: ImageOps = {
   save: 10,
@@ -98,3 +98,14 @@ describe('pictureBoxes', () => {
   });
 });
 
+
+describe('mayShowText', () => {
+  const ops = { paintImageXObject: 1, paintInlineImageXObject: 2, paintImageMaskXObject: 3, paintImageXObjectRepeat: 4, constructPath: 5 };
+
+  it('sends scans and outlined text to OCR, not blank or ruled pages', () => {
+    expect(mayShowText([9, 1], ops)).toBe(true);
+    expect(mayShowText(Array.from({ length: 120 }, () => 5), ops)).toBe(true);
+    expect(mayShowText([], ops)).toBe(false);
+    expect(mayShowText([5, 5, 5, 9], ops)).toBe(false);
+  });
+});

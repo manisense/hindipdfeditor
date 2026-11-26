@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { anchorFromRect, parsePageList, placementRect, presetRect } from './signPlacement';
+import { parsePageList } from './pageList';
+import { anchorFromRect, placementRect, presetRect } from './signPlacement';
 
 describe('parsePageList', () => {
   it('reads single pages and ranges, in order, without repeats', () => {

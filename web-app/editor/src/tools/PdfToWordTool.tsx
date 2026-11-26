@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AppButton } from "../components/AppButton";
 import { AppStatus } from "../components/AppStatus";
@@ -10,6 +10,7 @@ import { convertPdfToWord, sampleTextLayer, type OcrChoice, type TextLayerSample
 import { useTx } from "../lib/i18n";
 import { ocrPoolSize } from "../lib/ocr";
 import { ocrPageLimit, ocrSecondsPerPage } from "../lib/ocrPoolSize";
+import { parsePageList } from "../lib/pageList";
 import { holdScreenAwake, minutesLeft } from "../lib/wakeLock";
 import { getTool } from "../lib/tools";
 import "./UtilityTool.css";
@@ -57,11 +58,19 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
   const [result, setResult] = useState<{ filename: string; pages: number; emptyPages: number; unreadPages: number[] } | null>(null);
   const [ocr, setOcr] = useState<OcrChoice>("auto");
   const [sample, setSample] = useState<TextLayerSample | null>(null);
+  const [pageMode, setPageMode] = useState<"all" | "chosen">("all");
+  const [pageText, setPageText] = useState("1-500");
+  const [stopped, setStopped] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
   const step = result ? 3 : file ? 2 : 1;
   const pool = ocrPoolSize();
   const ocrLimit = ocrPageLimit(pool);
+  const chosen = pageMode === "chosen" && sample ? parsePageList(pageText, sample.pages) : null;
+  const chosenPages = chosen && "pages" in chosen ? chosen.pages : null;
+  const selectedCount = chosenPages?.length ?? sample?.pages ?? 0;
+  const tooMany = selectedCount > MAX_PAGES;
   // Pages the chosen setting will read with OCR, estimated from a sample of the PDF's pages.
-  const ocrNeeded = !sample || ocr === "off" ? 0 : ocr === "all" ? sample.pages : Math.round((sample.pages * sample.withoutText) / sample.sampled);
+  const ocrNeeded = !sample || ocr === "off" ? 0 : ocr === "all" ? selectedCount : Math.round((selectedCount * sample.withoutText) / sample.sampled);
   const ocrMinutes = Math.ceil((Math.min(ocrNeeded, ocrLimit) * ocrSecondsPerPage(pool)) / 60);
 
   useEffect(() => {
@@ -81,16 +90,20 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
   }, [file]);
 
   const convert = async () => {
-    if (!file || busy) return;
+    if (!file || busy || tooMany || (pageMode === "chosen" && !chosenPages)) return;
+    const controller = new AbortController();
+    abortRef.current = controller;
     setBusy(true);
     setError(null);
     setResult(null);
+    setStopped(false);
     setProgress({ done: 0, total: 0, left: null });
     const release = await holdScreenAwake();
     const started = Date.now();
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
-      const converted = await convertPdfToWord(bytes, { ocr, ocrPageLimit: ocrLimit }, (done, total) => {
+      const options = { ocr, ocrPageLimit: ocrLimit, pages: chosenPages ?? undefined, signal: controller.signal };
+      const converted = await convertPdfToWord(bytes, options, (done, total) => {
         if (total > MAX_PAGES) throw new Error("too-many-pages");
         setProgress({ done, total, left: minutesLeft(Date.now() - started, done, total) });
       });
@@ -100,14 +113,19 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
       trackToolEvent("export_success", toolId);
       setResult({ filename, pages: converted.pages, emptyPages: converted.emptyPages, unreadPages: converted.unreadPages });
     } catch (err) {
+      if (controller.signal.aborted) {
+        setStopped(true);
+        return;
+      }
       console.error("PDF to Word failed", err);
       trackToolEvent("export_failed", toolId);
       setError(
         err instanceof Error && err.message === "too-many-pages"
-          ? tx(`Up to ${MAX_PAGES} pages can be converted at a time. Split the PDF first.`, `एक बार में ${MAX_PAGES} पेज तक बदले जा सकते हैं। पहले पीडीएफ को अलग करें।`)
+          ? tx(`Up to ${MAX_PAGES} pages can be converted at a time. Choose pages below.`, `एक बार में ${MAX_PAGES} पेज तक बदले जा सकते हैं। नीचे पेज चुनें।`)
           : tx("This PDF could not be converted. It may be damaged or password-protected.", "यह पीडीएफ नहीं बदली जा सकी। हो सकता है फाइल खराब हो या पासवर्ड से सुरक्षित हो।"),
       );
     } finally {
+      abortRef.current = null;
       release();
       setBusy(false);
       setProgress(null);
@@ -164,6 +182,71 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
                 )}
               </p>
             </div>
+            <section className="utility-tool__setting-card" aria-labelledby="pages-heading">
+              <strong id="pages-heading">{tx("Pages", "पेज")}</strong>
+              <div className="utility-tool__chips" role="radiogroup" aria-labelledby="pages-heading">
+                {(
+                  [
+                    ["all", sample ? tx(`All ${sample.pages} pages`, `सभी ${sample.pages} पेज`) : tx("All pages", "सभी पेज")],
+                    ["chosen", tx("Choose pages", "पेज चुनें")],
+                  ] as ["all" | "chosen", string][]
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={pageMode === value}
+                    className="utility-tool__chip"
+                    disabled={busy}
+                    onClick={() => {
+                      setPageMode(value);
+                      setResult(null);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {pageMode === "chosen" && (
+                <label className="utility-tool__field">
+                  <span>{tx("Pages, e.g. 1-500 or 1, 3-5", "पेज, जैसे 1-500 या 1, 3-5")}</span>
+                  <input
+                    id="pdf-to-word-pages"
+                    value={pageText}
+                    inputMode="numeric"
+                    disabled={busy}
+                    onChange={(event) => {
+                      setPageText(event.target.value);
+                      setResult(null);
+                    }}
+                  />
+                  {chosen && "error" in chosen && (
+                    <small className="utility-tool__field-error" role="alert">
+                      {chosen.error === "range"
+                        ? tx(`Use pages 1 to ${sample?.pages ?? 1}.`, `1 से ${sample?.pages ?? 1} तक के पेज लिखें।`)
+                        : chosen.error === "empty"
+                          ? tx("Enter the pages to convert.", "बदलने वाले पेज लिखें।")
+                          : tx("Write pages like 1-500 or 1, 3-5.", "पेज ऐसे लिखें: 1-500 या 1, 3-5")}
+                    </small>
+                  )}
+                </label>
+              )}
+              {tooMany ? (
+                <AppStatus tone="warning" title={tx("Too many pages for one file", "एक फाइल के लिए बहुत पेज")}>
+                  {tx(
+                    `Up to ${MAX_PAGES} pages are converted at a time. Choose pages, for example 1-${MAX_PAGES}, then the rest.`,
+                    `एक बार में ${MAX_PAGES} पेज तक बदले जाते हैं। पेज चुनें, जैसे 1-${MAX_PAGES}, फिर बाकी।`,
+                  )}
+                </AppStatus>
+              ) : (
+                <p className="utility-tool__note">
+                  {tx(
+                    "Long files can be converted in parts, such as 1‑500, then 501‑1000.",
+                    "लंबी फाइल हिस्सों में बदली जा सकती है, जैसे 1‑500, फिर 501‑1000।",
+                  )}
+                </p>
+              )}
+            </section>
             <section className="utility-tool__setting-card" aria-labelledby="ocr-heading">
               <strong id="ocr-heading">{tx("Text recognition (OCR)", "टेक्स्ट पहचान (OCR)")}</strong>
               <div className="utility-tool__chips" role="radiogroup" aria-labelledby="ocr-heading">
@@ -262,15 +345,26 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
                   setFile(null);
                   setResult(null);
                   setError(null);
+                  setStopped(false);
+                  setPageMode("all");
                 }}
               />
-              <AppButton
-                title={busy ? tx("Converting…", "बदल रहे हैं…") : tx("Convert & download Word", "बदलें और वर्ड डाउनलोड करें")}
-                disabled={busy}
-                onClick={() => void convert()}
-              />
+              {busy ? (
+                <AppButton title={tx("Stop", "रोकें")} variant="secondary" onClick={() => abortRef.current?.abort()} />
+              ) : (
+                <AppButton
+                  title={tx("Convert & download Word", "बदलें और वर्ड डाउनलोड करें")}
+                  disabled={tooMany || (pageMode === "chosen" && !chosenPages)}
+                  onClick={() => void convert()}
+                />
+              )}
             </div>
           </div>
+        )}
+        {stopped && (
+          <AppStatus tone="info" title={tx("Conversion stopped", "बदलना रोका गया")}>
+            {tx("Nothing was downloaded. Change the pages or settings and convert again.", "कुछ डाउनलोड नहीं हुआ। पेज या सेटिंग बदलकर फिर से बदलें।")}
+          </AppStatus>
         )}
         {error && (
           <AppStatus tone="error" title={tx("Conversion failed", "बदलना नहीं हो सका")}>

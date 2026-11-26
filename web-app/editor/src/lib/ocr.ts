@@ -36,7 +36,9 @@ import {
   type FontTrust,
 } from "./embeddedTextTrust";
 import { currentDeviceHints, poolSizeFor } from "./ocrPoolSize";
-import { stackStrips, type PtBox as ImageBox } from "./pdfImageRects";
+import { mayShowText, stackStrips, type PtBox as ImageBox } from "./pdfImageRects";
+import { sharedPdfDocument } from "./sharedPdfDocument";
+import { OPS } from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { Ruling } from "./pdfRulings";
 import { extractEmbeddedTextLines } from "./pdfTextExtract";
 import {
@@ -725,7 +727,10 @@ async function readPageLines(
     }
   }
 
-  if (options?.ocr === "off" || options?.allowPageOcr?.() === false) return [];
+  if (options?.ocr === "off") return [];
+  // A page without text that paints no image and few paths is blank: nothing for OCR to read.
+  if (pdfBytes && !options?.forceOcr && !(await pageMayShowText(pdfBytes, page.pageIndex))) return [];
+  if (options?.allowPageOcr?.() === false) return [];
   const imaged = await withImage();
   const [devanagariLines, latinLines] = await Promise.all([
     recognizeWithLanguage(imaged.backgroundImageUri, "hin"),
@@ -756,6 +761,21 @@ export type PageReadOptions = {
 
 /** Draws a page image for OCR, in px (see `renderPage`). */
 export type PageRenderer = () => Promise<{ backgroundImageUri: string; imagePxWidth: number; imagePxHeight: number }>;
+
+/**
+ * Whether a page could show text for OCR to read (see `mayShowText`); true when its drawing
+ * cannot be read, so OCR still runs.
+ *
+ * @param pageIndex Zero-based page index.
+ */
+async function pageMayShowText(pdfBytes: Uint8Array, pageIndex: number): Promise<boolean> {
+  try {
+    const page = await (await sharedPdfDocument(pdfBytes)).getPage(pageIndex + 1);
+    return mayShowText((await page.getOperatorList()).fnArray, OPS);
+  } catch {
+    return true;
+  }
+}
 
 const fontTrusts = new WeakMap<Uint8Array, FontTrust>();
 
