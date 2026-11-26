@@ -1,6 +1,7 @@
 
 import { OPS, Util } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
+import { reorderDevanagariMarks } from './devanagariMarks';
 import { fontHintFromPdfFont } from './fontMatch';
 import { krutiDevToUnicode } from './krutiDev';
 import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
@@ -27,10 +28,13 @@ export type EmbeddedTextRun = {
   font?: FontHint;
   /** Position in drawing order (pdf.js item index). */
   order?: number;
+  /** pdf.js measured the run as zero width (a ligature glyph without a width, seen in Word files). */
+  unmeasured?: boolean;
 };
 
 const LINE_Y_TOLERANCE_RATIO = 0.55;
 const WORD_GAP_RATIO = 0.12;
+const DEVANAGARI_SIGN_AFTER_SPACE = /\s+(?=[\u0900-\u0903\u093A-\u094F\u0951-\u0957\u0962\u0963])/gu;
 const DEVANAGARI_LETTER = /[\u0900-\u097F]/u;
 const COLUMN_GAP_RATIO = 0.75;
 /** Column gap (in line heights) after a run that ends mid-word in Hindi on a page that draws spaces. */
@@ -190,7 +194,9 @@ export async function extractEmbeddedTextLines(
     // Unmapped glyphs come out as U+0000; each becomes a placeholder for its font and glyph, so it
     // can be learned and repaired. Only when they line up one to one with the drawn glyphs.
     let unmapped = unmappedGlyphs(operators.fnArray, operators.argsArray, (name) => fontNameOf(name) ?? name);
-    let itemTexts = textContent.items.map((item) => ('str' in item ? item.str : ''));
+    // Glyphs of fonts repaired from their own cmap (see pdfToUnicodeRepair.ts) carry marks for ि and
+    // reph, which are drawn out of reading order.
+    let itemTexts = textContent.items.map((item) => ('str' in item ? reorderDevanagariMarks(item.str) : ''));
     // Items whose glyphs moved into another item's /ActualText: that item's run covers them.
     let absorbedInto: (number | null)[] = [];
     // Pages that draw their spaces (Chrome, Google Docs) break words only where a space is drawn.
@@ -284,6 +290,7 @@ export async function extractEmbeddedTextLines(
         wPt,
         hPt: fontHeightPt,
         hasEol: item.hasEOL,
+        unmeasured: item.width === 0 && DEVANAGARI_LETTER.test(text),
         leadingSpace: /^\s/u.test(normalized),
         trailingSpace: /\s$/u.test(normalized) || Boolean(spaceAfter?.[itemIndex]),
         baselineYPt: baselineY,
@@ -358,7 +365,7 @@ export async function extractEmbeddedTextLines(
       });
     }
 
-    const lines = clusterRunsIntoLines(withoutRepeatedRuns(runs), { spacesDrawn: spaceAfter !== null }).map((line) => {
+    const lines = clusterRunsIntoLines(withUnmeasuredRunsJoined(withoutRepeatedRuns(runs)), { spacesDrawn: spaceAfter !== null }).map((line) => {
       const repaired = options.glyphReadings ? repairText(line.text, options.glyphReadings, isGlyphPlaceholder) : line.text;
       if (options.keepGlyphPlaceholders || !hasGlyphPlaceholder(repaired)) return { ...line, text: repaired };
       degraded = true;
@@ -472,6 +479,27 @@ async function withActualText(
 /** Adds a faux-bold stroke to a font hint when the run was painted with one. */
 function withStroke(font: FontHint, strokeEm: number): FontHint {
   return strokeEm > 0 ? { ...font, strokeEm } : font;
+}
+
+/**
+ * Joins a Hindi run that pdf.js measured as zero width (Word draws प्र as its own run, with no
+ * width) to the run drawn next on the same baseline when that run starts within an em of it:
+ * otherwise the next run seems to start inside it and line grouping splits the word (प्र|माण).
+ * Exported for tests.
+ */
+export function withUnmeasuredRunsJoined(runs: EmbeddedTextRun[]): EmbeddedTextRun[] {
+  const out: EmbeddedTextRun[] = [];
+  for (let i = 0; i < runs.length; i += 1) {
+    const run = runs[i];
+    const next = runs[i + 1];
+    const sameBaseline = next && Math.abs((next.baselineYPt ?? next.yPt) - (run.baselineYPt ?? run.yPt)) < run.hPt * 0.25;
+    if (run.unmeasured && !run.trailingSpace && next && sameBaseline && !next.leadingSpace && next.xPt >= run.xPt - 0.5 && next.xPt - run.xPt < run.hPt) {
+      runs[i + 1] = { ...next, text: run.text.trimEnd() + next.text, xPt: run.xPt, wPt: next.xPt + next.wPt - run.xPt, leadingSpace: run.leadingSpace };
+      continue;
+    }
+    out.push(run);
+  }
+  return out;
 }
 
 function shouldInsertSpace(previous: EmbeddedTextRun, current: EmbeddedTextRun, spacesDrawn: boolean): boolean {
@@ -597,7 +625,8 @@ export function clusterRunsIntoLines(
       text += `${shouldInsertSpace(ordered[index - 1], ordered[index], Boolean(options.spacesDrawn)) ? ' ' : ''}${ordered[index].text}`;
     }
     return {
-      text: text.normalize('NFC').replace(/\s+/gu, ' ').trim(),
+      // No word starts with a vowel sign, virama or nukta: a space before one is a measuring gap.
+      text: text.normalize('NFC').replace(/\s+/gu, ' ').replace(DEVANAGARI_SIGN_AFTER_SPACE, '').trim(),
       xPt,
       yPt,
       wPt: Math.max(4, right - xPt),

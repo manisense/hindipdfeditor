@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   clusterRunsIntoLines,
+  withUnmeasuredRunsJoined,
   withoutRepeatedRuns,
   isHorizontalTextTransform,
   isSafeEmbeddedText,
@@ -157,5 +158,26 @@ describe('withoutRepeatedRuns', () => {
   it('keeps the same word written in two places', () => {
     const runs = [run('the', 0, 12), run('the', 40, 12), run('the', 0, 12, { yPt: 30 })];
     expect(withoutRepeatedRuns(runs)).toHaveLength(3);
+  });
+});
+
+describe('withUnmeasuredRunsJoined', () => {
+  const run = (text: string, xPt: number, wPt: number, unmeasured = false) => ({
+    text, xPt, yPt: 10, wPt, hPt: 11, baselineYPt: 19, hasEol: false, leadingSpace: false, trailingSpace: false, unmeasured,
+  });
+
+  it('joins a zero-width Hindi run to the run drawn right after it', () => {
+    const joined = withUnmeasuredRunsJoined([run('प्र', 147.43, 2.2, true), run('माण', 147.5, 18.3)]);
+    expect(joined.map((r) => r.text)).toEqual(['प्रमाण']);
+    expect(clusterRunsIntoLines(joined)[0].text).toBe('प्रमाण');
+  });
+
+  it('keeps runs apart when the next one starts far away or a space is drawn', () => {
+    expect(withUnmeasuredRunsJoined([run('प्र', 100, 2.2, true), run('माण', 130, 18)]).length).toBe(2);
+    expect(withUnmeasuredRunsJoined([{ ...run('प्र', 100, 2.2, true), trailingSpace: true }, run('माण', 100.1, 18)]).length).toBe(2);
+  });
+
+  it('drops a space measured before a vowel sign', () => {
+    expect(clusterRunsIntoLines([run('राष्ट्र', 100, 20), run('ीयता', 125, 14)])[0].text).toBe('राष्ट्रीयता');
   });
 });
