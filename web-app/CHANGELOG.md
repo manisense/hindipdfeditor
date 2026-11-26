@@ -1,5 +1,13 @@
 # Changelog
 
+## PDF to Word continues after the tab is closed, 26 November 2026
+
+### Added
+- Each finished page of a PDF to Word conversion is kept in the browser (IndexedDB, `conversionProgress.ts`), keyed by the file and its settings. Converting the same file with the same settings again continues where it stopped (a phone closing the tab, a reload, or Stop); the screen says how many pages are kept and offers Start over. One job is kept; it is deleted when the Word file is made. Checked in Chrome: closed at 16 of 40 pages, the second run took 4.2 s and the Word file has all 40 chapters in order. Privacy pages (English and Hindi) list the kept pages.
+
+### Fixed
+- After Stop, workers finishing their current page brought back the "Converting…" status.
+
 ## PDF to Word: choose pages, stop, skip blank pages, 26 November 2026
 
 ### Added

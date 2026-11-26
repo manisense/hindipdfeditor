@@ -11,6 +11,7 @@ import { useTx } from "../lib/i18n";
 import { ocrPoolSize } from "../lib/ocr";
 import { ocrPageLimit, ocrSecondsPerPage } from "../lib/ocrPoolSize";
 import { parsePageList } from "../lib/pageList";
+import { clearJob, conversionKey, savedPages, savePage, startJob } from "../lib/conversionProgress";
 import { holdScreenAwake, minutesLeft } from "../lib/wakeLock";
 import { getTool } from "../lib/tools";
 import "./UtilityTool.css";
@@ -61,6 +62,8 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
   const [pageMode, setPageMode] = useState<"all" | "chosen">("all");
   const [pageText, setPageText] = useState("1-500");
   const [stopped, setStopped] = useState(false);
+  // Pages kept from an earlier run of this file with these settings (see conversionProgress.ts).
+  const [resumable, setResumable] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const step = result ? 3 : file ? 2 : 1;
   const pool = ocrPoolSize();
@@ -71,6 +74,7 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
   const tooMany = selectedCount > MAX_PAGES;
   // Pages the chosen setting will read with OCR, estimated from a sample of the PDF's pages.
   const ocrNeeded = !sample || ocr === "off" ? 0 : ocr === "all" ? selectedCount : Math.round((selectedCount * sample.withoutText) / sample.sampled);
+  const jobKey = file ? conversionKey(file, JSON.stringify([ocr, pageMode === "chosen" ? pageText : "all"])) : null;
   const ocrMinutes = Math.ceil((Math.min(ocrNeeded, ocrLimit) * ocrSecondsPerPage(pool)) / 60);
 
   useEffect(() => {
@@ -89,6 +93,19 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
     };
   }, [file]);
 
+  useEffect(() => {
+    if (!jobKey) return;
+    let cancelled = false;
+    savedPages(jobKey)
+      .then((saved) => {
+        if (!cancelled) setResumable(saved.size);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [jobKey, busy]);
+
   const convert = async () => {
     if (!file || busy || tooMany || (pageMode === "chosen" && !chosenPages)) return;
     const controller = new AbortController();
@@ -102,14 +119,27 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
     const started = Date.now();
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
-      const options = { ocr, ocrPageLimit: ocrLimit, pages: chosenPages ?? undefined, signal: controller.signal };
+      const key = jobKey ?? "";
+      const total = chosenPages?.length ?? sample?.pages ?? 0;
+      const saved = await savedPages(key);
+      await startJob(key, total);
+      const options = {
+        ocr,
+        ocrPageLimit: ocrLimit,
+        pages: chosenPages ?? undefined,
+        signal: controller.signal,
+        resume: { saved, save: savePage },
+      };
       const converted = await convertPdfToWord(bytes, options, (done, total) => {
+        // Workers still finishing their page after Stop must not bring the progress back.
+        if (controller.signal.aborted) return;
         if (total > MAX_PAGES) throw new Error("too-many-pages");
         setProgress({ done, total, left: minutesLeft(Date.now() - started, done, total) });
       });
       trackToolEvent("pdf_open_success", toolId);
       const filename = `${file.name.replace(/\.pdf$/i, "") || "document"}.docx`;
       downloadBlob(converted.blob, filename);
+      await clearJob();
       trackToolEvent("export_success", toolId);
       setResult({ filename, pages: converted.pages, emptyPages: converted.emptyPages, unreadPages: converted.unreadPages });
     } catch (err) {
@@ -325,6 +355,23 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
                 )
               )}
             </section>
+            {!busy && resumable > 0 && (
+              <AppStatus tone="info" title={tx("Continues where it stopped", "जहाँ रुका था वहीं से आगे")}>
+                {tx(
+                  `${resumable} pages of this file were already converted with these settings in this browser. Converting continues from there.`,
+                  `इस फाइल के ${resumable} पेज इन्हीं सेटिंग के साथ इस ब्राउज़र में पहले ही बदले जा चुके हैं। बदलना वहीं से आगे चलेगा।`,
+                )}{" "}
+                <button
+                  type="button"
+                  className="utility-tool__link"
+                  onClick={() => {
+                    void clearJob().then(() => setResumable(0));
+                  }}
+                >
+                  {tx("Start over", "शुरू से करें")}
+                </button>
+              </AppStatus>
+            )}
             {progress && (
               <AppStatus busy title={tx("Converting…", "बदल रहे हैं…")}>
                 {progress.total > 0
@@ -363,7 +410,10 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
         )}
         {stopped && (
           <AppStatus tone="info" title={tx("Conversion stopped", "बदलना रोका गया")}>
-            {tx("Nothing was downloaded. Change the pages or settings and convert again.", "कुछ डाउनलोड नहीं हुआ। पेज या सेटिंग बदलकर फिर से बदलें।")}
+            {tx(
+              "Nothing was downloaded. Convert again with the same settings to continue where it stopped.",
+              "कुछ डाउनलोड नहीं हुआ। इन्हीं सेटिंग के साथ फिर से बदलें, तो वहीं से आगे चलेगा।",
+            )}
           </AppStatus>
         )}
         {error && (

@@ -403,3 +403,20 @@
   font-size: 12px;
   font-weight: 500;
 }
+
+.utility-tool__link {
+  background: none;
+  border: 0;
+  color: var(--brand);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.utility-tool__link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
