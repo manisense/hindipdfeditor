@@ -1,5 +1,20 @@
 # Changelog
 
+## Long documents: 2,000-page PDF to Word and Word to PDF, 26 November 2026
+
+Measured in Chrome on a desktop with generated fixtures (scripts kept out of the repo).
+
+### Changed
+- PDF to Word takes up to 3,000 pages (was 150). A 2,000-page digital PDF with a Hindi heading on each page converted in 3 min 48 s, using under 100 MB of memory.
+- Word to PDF image export embeds the document's fonts once, not once per page: 100 pages took 40 s (over 7 min before), with pixel-identical output. Documents over 300 pages use Save as PDF: their image PDF would be about 0.5 MB per page held in memory, and 2,000 pages crashed the tab. Save as PDF printed a 2,000-page Word file in 16 s (10 MB, selectable Hindi text).
+
+### Fixed
+- Pages with too little Devanagari for the OCR comparison (a Hindi heading on an English page) were OCR'd whole on every page, although the result could not change what was kept: 7.5 s per page. Only their Devanagari lines are read now (0.2 s per page), still recorded as evidence for the font.
+- A page whose quick band check passed never counted towards trusting its font, so long Hindi documents with a good text map were band-checked on every page instead of being spot-checked. The band now counts for the fonts with words in it (`recordVerifiedBand`). Unit-tested; not yet measured on a real long Hindi PDF.
+
+### Known
+- Hindi PDFs printed by Chrome or Google Docs (Skia) leave ligature glyphs unmapped, so every page is read with full OCR: about 6.5 s per page, over 3 hours for 2,000 pages. Unchanged.
+
 ## PDF to Word: tables without lines, 24 November 2026
 
 ### Added
