@@ -30,6 +30,34 @@ function run(
 }
 
 describe('clusterRunsIntoLines', () => {
+  it('keeps runs of one baseline in one line when their fonts differ in height', () => {
+    const lines = clusterRunsIntoLines([
+      run('नाम', 0, 20, { yPt: 8, hPt: 14, baselineYPt: 20 }),
+      run(',', 21, 3, { yPt: 12, hPt: 9, baselineYPt: 20 }),
+    ]);
+    expect(lines.map((line) => line.text)).toEqual(['नाम,']);
+  });
+
+  it('on a page that draws its spaces, keeps Hindi in drawing order and puts other runs by position', () => {
+    // Chrome draws the Hindi runs first and the Latin comma after them; ि is drawn left of its
+    // consonant, so left-to-right would read िश.
+    const lines = clusterRunsIntoLines(
+      [
+        run('नाम', 0, 20, { order: 0 }),
+        run('पता', 26, 20, { order: 1 }),
+        run('शि', 50, 6, { order: 2, leadingSpace: true }),
+        run(',', 20, 3, { order: 3, trailingSpace: true }),
+      ],
+      { spacesDrawn: true },
+    );
+    expect(lines.map((line) => line.text)).toEqual(['नाम, पता शि']);
+  });
+
+  it('on a page that draws its spaces, does not break Hindi words at small gaps', () => {
+    const [line] = clusterRunsIntoLines([run('शि', 0, 8, { order: 0 }), run('क्षा', 12, 12, { order: 1 })], { spacesDrawn: true });
+    expect(line?.text).toBe('शिक्षा');
+  });
+
   it('joins adjacent glyph fragments without inventing spaces', () => {
     const [line] = clusterRunsIntoLines([run('fi', 0, 6), run('xed', 6, 15)]);
     expect(line?.text).toBe('fixed');

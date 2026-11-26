@@ -195,7 +195,7 @@ export async function extractEmbeddedTextLines(
     let spaceAfter: boolean[] | null = null;
     // Producers that leave glyphs unmapped (Chrome, Google Docs) often give their text as
     // /ActualText in marked content: read it before falling back to placeholders and OCR.
-    if (unmapped.length > 0 || operators.fnArray.includes(OPS.beginMarkedContentProps)) {
+    if (unmapped.length > 0 || (operators.fnArray.includes(OPS.beginMarkedContentProps) && (await madeBySkia(pdfBytes)))) {
       const fixed = await withActualText(pdfBytes, pageIndex, operators.fnArray, operators.argsArray, itemTexts);
       if (fixed && fixed.replaced.length === unmapped.length) {
         itemTexts = fixed.items;
@@ -416,6 +416,26 @@ function unmappedGlyphs(
   return glyphs;
 }
 
+const skiaDocuments = new WeakMap<Uint8Array, Promise<boolean>>();
+
+/**
+ * Whether Chrome, Google Docs or another Skia-based producer made the file. Their pages need
+ * /ActualText and drawn spaces read even without unmapped glyphs (see pdfActualText.ts); other
+ * producers' marked content (Word tags every paragraph) is left alone, so their files are never
+ * parsed a second time.
+ */
+function madeBySkia(pdfBytes: Uint8Array): Promise<boolean> {
+  let made = skiaDocuments.get(pdfBytes);
+  if (!made) {
+    made = sharedPdfDocument(pdfBytes)
+      .then((doc) => doc.getMetadata())
+      .then(({ info }) => /skia/iu.test(String((info as { Producer?: unknown }).Producer ?? '')))
+      .catch(() => false);
+    skiaDocuments.set(pdfBytes, made);
+  }
+  return made;
+}
+
 /**
  * The page's text items with `/ActualText` put in place of unmapped glyphs (see pdfActualText.ts),
  * or null when the page has none or they cannot be lined up.
@@ -452,6 +472,28 @@ function shouldInsertSpace(previous: EmbeddedTextRun, current: EmbeddedTextRun, 
   if (spacesDrawn && DEVANAGARI_LETTER.test(previous.text.at(-1) ?? '') && DEVANAGARI_LETTER.test(current.text.at(0) ?? '')) return false;
   const gap = current.xPt - (previous.xPt + previous.wPt);
   return gap > Math.min(previous.hPt, current.hPt) * WORD_GAP_RATIO;
+}
+
+/**
+ * Reading order of one line on a page that draws its spaces: Devanagari runs in drawing order
+ * (their clusters are drawn in visual order, so left to right is wrong inside words), and every
+ * other run placed among them by position (Chrome draws a line's runs font by font, so a comma
+ * in a Latin font is drawn after the Hindi around it).
+ */
+function drawnLineOrder(group: readonly EmbeddedTextRun[]): EmbeddedTextRun[] {
+  const hindi = group.filter((run) => DEVANAGARI_LETTER.test(run.text)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const others = group.filter((run) => !DEVANAGARI_LETTER.test(run.text)).sort((a, b) => a.xPt - b.xPt);
+  const ordered = [...hindi];
+  for (const run of others) {
+    const before = ordered.findIndex((placed) => placed !== run && DEVANAGARI_LETTER.test(placed.text) && placed.xPt > run.xPt);
+    if (before < 0) {
+      ordered.push(run);
+    } else {
+      // After any non-Devanagari runs already placed just before that Hindi run, to keep their order.
+      ordered.splice(before, 0, run);
+    }
+  }
+  return ordered;
 }
 
 /** Groups adjacent PDF.js text runs into trustworthy line-level boxes. */
@@ -491,7 +533,10 @@ export function clusterRunsIntoLines(
 ): EmbeddedTextRun[] {
   if (runs.length === 0) return [];
 
-  const sorted = runs.slice().sort((a, b) => a.yPt - b.yPt || a.xPt - b.xPt);
+  // By baseline where known: runs of one line in fonts of different heights (Hindi and a Latin
+  // comma) have different tops but one baseline.
+  const baselineOf = (run: EmbeddedTextRun) => run.baselineYPt ?? run.yPt + run.hPt;
+  const sorted = runs.slice().sort((a, b) => baselineOf(a) - baselineOf(b) || a.xPt - b.xPt);
   const groups: EmbeddedTextRun[][] = [];
 
   for (const run of sorted) {
@@ -504,8 +549,10 @@ export function clusterRunsIntoLines(
     const previous = last[last.length - 1];
     const yTolerance = Math.max(3, sample.hPt * LINE_Y_TOLERANCE_RATIO);
     const sameBaseline =
-      Math.abs(run.yPt + run.hPt / 2 - (sample.yPt + sample.hPt / 2)) <=
-      yTolerance;
+      Math.abs(run.yPt + run.hPt / 2 - (sample.yPt + sample.hPt / 2)) <= yTolerance ||
+      (run.baselineYPt !== undefined &&
+        sample.baselineYPt !== undefined &&
+        Math.abs(run.baselineYPt - sample.baselineYPt) <= Math.max(1.5, 0.2 * Math.min(run.hPt, sample.hPt)));
     const horizontalGap = run.xPt - (previous.xPt + previous.wPt);
     const isSeparateColumn =
       horizontalGap > Math.max(previous.hPt, run.hPt) * COLUMN_GAP_RATIO;
@@ -520,9 +567,7 @@ export function clusterRunsIntoLines(
   }
 
   return groups.map((group) => {
-    const ordered = group
-      .slice()
-      .sort((a, b) => (options.spacesDrawn ? (a.order ?? 0) - (b.order ?? 0) : a.xPt - b.xPt));
+    const ordered = options.spacesDrawn ? drawnLineOrder(group) : group.slice().sort((a, b) => a.xPt - b.xPt);
     const xPt = Math.min(...ordered.map((run) => run.xPt));
     const yPt = Math.min(...ordered.map((run) => run.yPt));
     const right = Math.max(...ordered.map((run) => run.xPt + run.wPt));
