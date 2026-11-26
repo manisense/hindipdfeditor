@@ -10,6 +10,7 @@ import { convertPdfToWord, sampleTextLayer, type OcrChoice, type TextLayerSample
 import { useTx } from "../lib/i18n";
 import { ocrPoolSize } from "../lib/ocr";
 import { ocrPageLimit, ocrSecondsPerPage } from "../lib/ocrPoolSize";
+import { holdScreenAwake, minutesLeft } from "../lib/wakeLock";
 import { getTool } from "../lib/tools";
 import "./UtilityTool.css";
 
@@ -51,7 +52,7 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
   const tx = useTx();
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number; left: number | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ filename: string; pages: number; emptyPages: number; unreadPages: number[] } | null>(null);
   const [ocr, setOcr] = useState<OcrChoice>("auto");
@@ -84,12 +85,14 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
     setBusy(true);
     setError(null);
     setResult(null);
-    setProgress({ done: 0, total: 0 });
+    setProgress({ done: 0, total: 0, left: null });
+    const release = await holdScreenAwake();
+    const started = Date.now();
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const converted = await convertPdfToWord(bytes, { ocr, ocrPageLimit: ocrLimit }, (done, total) => {
         if (total > MAX_PAGES) throw new Error("too-many-pages");
-        setProgress({ done, total });
+        setProgress({ done, total, left: minutesLeft(Date.now() - started, done, total) });
       });
       trackToolEvent("pdf_open_success", toolId);
       const filename = `${file.name.replace(/\.pdf$/i, "") || "document"}.docx`;
@@ -105,6 +108,7 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
           : tx("This PDF could not be converted. It may be damaged or password-protected.", "यह पीडीएफ नहीं बदली जा सकी। हो सकता है फाइल खराब हो या पासवर्ड से सुरक्षित हो।"),
       );
     } finally {
+      release();
       setBusy(false);
       setProgress(null);
     }
@@ -169,7 +173,10 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
                     ["off", tx("Off", "बंद")],
                     ["all", tx("Every page", "हर पेज")],
                   ] as [OcrChoice, string][]
-                ).map(([value, label]) => (
+                )
+                  // KrutiDev conversions are always checked against the page image.
+                  .filter(([value]) => toolId !== "krutidev" || value !== "off")
+                  .map(([value, label]) => (
                   <button
                     key={value}
                     type="button"
@@ -238,7 +245,10 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
             {progress && (
               <AppStatus busy title={tx("Converting…", "बदल रहे हैं…")}>
                 {progress.total > 0
-                  ? tx(`${progress.done} of ${progress.total} pages read`, `${progress.total} में से ${progress.done} पेज पढ़े गए`)
+                  ? tx(
+                      `${progress.done} of ${progress.total} pages read${progress.left ? ` · about ${progress.left} min left` : ""}. Keep this tab open.`,
+                      `${progress.total} में से ${progress.done} पेज पढ़े गए${progress.left ? ` · लगभग ${progress.left} मिनट बाकी` : ""}। यह टैब खुला रखें।`,
+                    )
                   : tx("Opening the PDF…", "पीडीएफ खुल रही है…")}
               </AppStatus>
             )}

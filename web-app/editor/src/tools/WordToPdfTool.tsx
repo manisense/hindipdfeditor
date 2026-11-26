@@ -8,6 +8,7 @@ import { ToolShell } from "../components/ToolShell";
 import { trackToolEvent } from "../lib/analytics";
 import { printWordDocument, renderWordDocument, sectionsToPdf } from "../lib/convertWordToPdf";
 import { useTx } from "../lib/i18n";
+import { holdScreenAwake } from "../lib/wakeLock";
 import { downloadPdfBytes } from "../lib/pdfOps";
 import { getTool } from "../lib/tools";
 import "./UtilityTool.css";
@@ -74,6 +75,7 @@ export function WordToPdfTool() {
     setBusy(true);
     setError(null);
     setResult(null);
+    const release = await holdScreenAwake();
     try {
       const bytes = await sectionsToPdf(sections, (done, total) => setProgress({ done, total }));
       const filename = `${file.name.replace(/\.docx$/i, "") || "document"}.pdf`;
@@ -85,6 +87,7 @@ export function WordToPdfTool() {
       trackToolEvent("export_failed", "word-to-pdf");
       setError(tx("The PDF could not be made. Try “Save as PDF (selectable text)” instead.", "पीडीएफ नहीं बन सकी। इसकी जगह “पीडीएफ सेव करें (सेलेक्ट होने वाला टेक्स्ट)” आज़माएं।"));
     } finally {
+      release();
       setBusy(false);
       setProgress(null);
     }

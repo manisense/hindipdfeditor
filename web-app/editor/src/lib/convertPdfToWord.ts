@@ -18,7 +18,10 @@ export type PdfToWordResult = {
   blob: Blob;
   pages: number;
   emptyPages: number;
-  /** Pages (1-based) that needed OCR but were not read: OCR off, or the page limit reached. */
+  /**
+   * Pages (1-based) that needed OCR but were not read (the OCR limit was reached, or OCR was off
+   * for a legacy font or Hindi the PDF does not map to Unicode).
+   */
   unreadPages: number[];
 };
 
@@ -115,6 +118,8 @@ export async function convertPdfToWord(
       rulings,
       pictures: pictureBoxes,
     });
+    // Without OCR, Hindi the PDF does not map to Unicode is missing letters: list the page.
+    if (options.ocr === 'off' && lines.some((line) => line.source === 'embedded-degraded')) unread.add(pageIndex);
     const pictures = await cutPictures(pageIndex, pictureBoxes);
     let tables = detectTables(rulings);
     let pageLines = lines;
@@ -227,7 +232,6 @@ async function withCellText(pageIndex: number, lines: readonly OcrLine[], tables
   });
   return [...lines.filter((line) => !inside(line)), ...cellLines];
 }
-
 
 /** What a quick look at a PDF's text layer found (see {@link sampleTextLayer}). */
 export type TextLayerSample = { pages: number; sampled: number; withoutText: number };
