@@ -221,3 +221,23 @@ export function pictureBoxes(images: readonly PtBox[], page: { widthPt: number; 
   }
   return pictures.sort((a, b) => a.yPt - b.yPt || a.xPt - b.xPt);
 }
+
+/**
+ * Paths a page needs before it can hold text drawn as outlines (a PDF whose fonts were converted to
+ * curves): a few lines and boxes stay below it, a page of outlined words has hundreds.
+ */
+const OUTLINED_TEXT_PATHS = 100;
+
+/**
+ * Whether a page with no text layer could still show text that OCR can read: it paints an image
+ * (a scan, a photo of text) or many paths (outlined text). A blank page, or one with only rules
+ * and boxes, has nothing to read, so it is not sent to OCR.
+ */
+export function mayShowText(fnArray: readonly number[], ops: Pick<ImageOps, 'paintImageXObject' | 'paintInlineImageXObject' | 'paintImageMaskXObject' | 'paintImageXObjectRepeat'> & { constructPath: number }): boolean {
+  let paths = 0;
+  for (const fn of fnArray) {
+    if (fn === ops.paintImageXObject || fn === ops.paintInlineImageXObject || fn === ops.paintImageMaskXObject || fn === ops.paintImageXObjectRepeat) return true;
+    if (fn === ops.constructPath && ++paths >= OUTLINED_TEXT_PATHS) return true;
+  }
+  return false;
+}
