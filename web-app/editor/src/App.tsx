@@ -29,6 +29,11 @@ const PdfToWordTool = lazy(() =>
     default: module.PdfToWordTool,
   })),
 );
+const FontConverterTool = lazy(() =>
+  import("./tools/FontConverterTool").then((module) => ({
+    default: module.FontConverterTool,
+  })),
+);
 const WordToPdfTool = lazy(() =>
   import("./tools/WordToPdfTool").then((module) => ({
     default: module.WordToPdfTool,
@@ -103,6 +108,8 @@ export default function App() {
             </ErrorBoundary>
           ) : toolId === "pdf-to-word" || toolId === "krutidev" ? (
             <PdfToWordTool toolId={toolId} />
+          ) : toolId === "unicode-to-krutidev" ? (
+            <FontConverterTool />
           ) : toolId === "word-to-pdf" ? (
             <WordToPdfTool />
           ) : toolId === "sign" ? (

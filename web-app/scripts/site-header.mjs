@@ -34,6 +34,7 @@ const ICONS = {
     '<path d="M12 22h6a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v6"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M3 16v-1.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5V16"/><path d="M6 22h2"/><path d="M7 14v8"/>',
   fileText:
     '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  arrowLeftRight: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
   type: '<path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/>',
   layers:
     '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
@@ -81,6 +82,7 @@ export const SITE_TOOL_GROUPS = [
       ["pdf-to-word", "fileType", "PDF to Word", "Text, tables and pictures", "पीडीएफ से वर्ड", "टेक्स्ट, टेबल और तस्वीरें"],
       ["word-to-pdf", "fileText", "Word to PDF", "Hindi stays joined", "वर्ड से पीडीएफ", "हिंदी जुड़ी हुई रहे"],
       ["krutidev", "type", "KrutiDev to Unicode", "Old Hindi font to Word", "कृतिदेव से यूनिकोड", "पुराने फॉन्ट से वर्ड फाइल"],
+      ["unicode-to-krutidev", "arrowLeftRight", "Unicode ↔ KrutiDev", "Mangal to Kruti Dev and back", "यूनिकोड ↔ कृतिदेव", "मंगल से कृतिदेव और वापस"],
     ],
   },
   {

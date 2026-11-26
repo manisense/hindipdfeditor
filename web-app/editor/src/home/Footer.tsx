@@ -67,6 +67,10 @@ export function Footer() {
           href: toolHref("krutidev", lang),
         },
         {
+          label: isHindi ? "यूनिकोड से कृतिदेव" : "Unicode to KrutiDev",
+          href: toolHref("unicode-to-krutidev", lang),
+        },
+        {
           label: isHindi ? "स्मार्ट OCR डिटेक्शन" : "OCR detection",
           href: toolHref("edit", lang),
         },
