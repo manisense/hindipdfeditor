@@ -6,7 +6,7 @@
 
 ### Public web entry points (1 October 2026)
 
-The companion website's marketing homepage is `/`, with a full Hindi equivalent at `/hi/`. Its public task paths are defined in `web-app/tool-routes.json`, and retired `/edit/?tool=` links retain their task intent through a query-aware Cloudflare Workers redirect. Homepage HTML is rendered at build time from the same React components used in the browser. Core web editing stays local; optional AI operations require consent. The web export starts from the original file: unedited pages are copied unchanged, replaced text is removed from the page content (or cleaned from scans), and new browser-shaped words are placed as images (web ADR 0009); these SEO/UI changes do not alter the native rendering pipeline or phase status above. See `web-app/docs/decisions/0001-root-homepage-and-static-tool-entries.md`.
+The companion website's marketing homepage is `/`, with a full Hindi equivalent at `/hi/`. Its public task paths are defined in `web-app/tool-routes.json`, and retired `/edit/?tool=` links retain their task intent through a query-aware Cloudflare Workers redirect. Homepage HTML is rendered at build time from the same React components used in the browser. Core web editing stays local; optional AI operations require consent. The web export starts from the original file: unedited pages are copied unchanged, replaced text is removed from the page content (or cleaned from scans), and new browser-shaped words are placed as images by default (web ADR 0009), with an owner-approved opt-in web-only Plan B trial (off by default, web ADR 0021) that shapes Devanagari with `harfbuzzjs` (WASM) and embeds CID/Identity-H subsets with `ToUnicode` and `/ActualText`; these web changes do not alter the native Android rendering pipeline or phase status above. See `web-app/docs/decisions/0001-root-homepage-and-static-tool-entries.md` and `web-app/docs/decisions/0021-web-plan-b-vector-devanagari-trial.md`.
 
 An Android-first React Native app that opens an existing PDF containing Hindi (Devanagari) text and lets the user edit it directly on the page — tap to add new text, or mask and replace existing text — while seeing correctly-shaped Devanagari at every step (proper conjuncts, matras, reph — never broken into disconnected pieces), and exports a real PDF file at the end.
 
@@ -105,7 +105,7 @@ Root cause: the module's own `android/build.gradle` declares an isolated `builds
 ### 4.3 Explicitly excluded
 
 - Commercial PDF SDKs (Nutrient/PSPDFKit, Apryse) — hard requirement, zero budget.
-- `harfbuzzjs` + `pdf-lib` low-level glyph placement — Phase 5 only, deferred; not part of this stack until Phases 0–4 ship and are in real use.
+- `harfbuzzjs` + `pdf-lib` low-level glyph placement — Phase 5 only on Android (deferred in `mobile-app/`); trialled separately on the web behind an off-by-default switch (web ADR 0021).
 - `@pdf-lib/fontkit` — not needed; this app never draws text with pdf-lib/`@cantoo/pdf-lib`, only inspects existing documents read-only.
 - Redux/MobX — zustand covers the state needs described in Sections 7–8.
 
@@ -469,6 +469,6 @@ Be aware of these; validate them yourself rather than assuming either outcome:
 The website is a separate React/Vite app, but its public copy describes this product, so the two must stay consistent.
 
 - **Prerendered homepage and task entries:** `/` and `/hi/` are genuine language equivalents; the shared `web-app/tool-routes.json` defines `/tools/` task pages. Initial HTML and client canonicals agree. Workers ASSETS migration preserves old `/edit/?tool=` and ADR 0010 root-level/Hindi task links. Task language toggles retain the open document and do not imply distinct translated SEO pages. `check-publish.mjs` and migration tests verify this architecture (web ADR 0005).
-- **Web export differs from the app.** The web editor keeps unedited pages and the untouched text of edited pages as original, selectable PDF content; only new words are images.
+- **Web export differs from the app.** The web editor keeps unedited pages and the untouched text of edited pages as original, selectable PDF content; by default new words are images (Plan A, web ADR 0009), with an opt-in web-only Plan B trial (off by default, web ADR 0021) that embeds HarfBuzz-shaped CID/Identity-H subsets with `ToUnicode` and `/ActualText` and falls back to Plan A.
 - **Legacy fonts differ too.** The web editor blocks editing on any legacy-font or unverifiable page. The opt-in raster-only Unicode replacement mode (Phase 4.7) exists only in the Android app. Public copy must describe each platform as it actually behaves.
 - **AI features are consent-gated on both.** Translation sends detected text, and AI OCR sends page images, to the Gemini proxy (ADR 0008) only after the user confirms.

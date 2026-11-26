@@ -56,8 +56,8 @@ All AI agents, subagents, and sessions must strictly and explicitly follow `desi
 
 ## Non-negotiable architecture rules
 
-- Never draw Devanagari text via `Canvas.drawText()`, `android.graphics.pdf.PdfDocument`, or `pdf-lib`'s string-based `drawText()`. All Devanagari rendering goes through the WebView/HTML/print pipeline described in the spec (Section 5). If a task seems to call for one of these anyway, stop and flag it instead of implementing it — this is the one rule the whole project depends on.
-- Do not switch from Plan A ("Render & Print") to Plan B (direct glyph injection) mid-build, even if it looks like a shortcut for a specific edit case. Plan B is Phase 5, deferred, and only happens as an explicit, separate decision after Phases 0–4 are working.
+- Never draw Devanagari text via `Canvas.drawText()`, `android.graphics.pdf.PdfDocument`, or `pdf-lib`'s string-based `drawText()`. In `mobile-app/`, all Devanagari rendering goes through the WebView/HTML/print pipeline described in the spec (Section 5). In `web-app/`, the default export renders browser-shaped PNGs (Plan A, web ADR 0009), and the owner-approved (27 November 2026) **web-only Plan B trial** (web ADR 0021) shapes Devanagari with `harfbuzzjs` (WASM), embeds a static `CIDFontType2` / `Identity-H` subset via `@cantoo/pdf-lib`, writes 2-byte glyph IDs (never strings), and emits `ToUnicode` + `/ActualText` behind an off-by-default switch with Plan A kept as fallback. If a task seems to call for string-based `drawText()` or mobile Plan B anyway, stop and flag it instead of implementing it.
+- Do not switch `mobile-app/` from Plan A ("Render & Print") to Plan B (direct glyph injection) mid-build, and do not flip the web Plan B trial switch on by default without an explicit owner decision. Mobile Plan B (Phase 5) remains deferred.
 - Any change to `mobile-app/src/lib/coordinateMath.ts`, `mobile-app/src/lib/htmlCompositor.ts`, or `mobile-app/src/lib/legacyFontDetector.ts` must be verified against an actual exported PDF or screenshot, not just read through — these are the modules where a subtle bug silently corrupts what the user sees without throwing an error.
 
 ## Code quality bar

@@ -22,7 +22,8 @@ import { baselineOffsetRatio, loadFontFor, measureTextWidthPt } from './fontAsse
 import { eraseInkKeepingLines } from './inkEraser';
 import { isHighlight, isWhiteout, patchesBackground, removesTextUnder } from './maskKinds';
 import { removePageText } from './pdfTextRemoval';
-import { rasteriseTextEdits } from './textRaster';
+import { measureTextEditLayouts, rasteriseMeasuredLayouts, rasteriseTextEdits } from './textRaster';
+import { isVectorTextEnabled } from './vectorTextFlag';
 import { inkColumns, nearestGap } from './wordGaps';
 import type { DocumentState, MaskEdit, PageState, TextEdit } from '../state/editStore';
 
@@ -303,6 +304,15 @@ async function backgroundPatches(page: PageState, rects: EditorRect[]): Promise<
   return Promise.all(rects.map((rect) => cleanRegion(canvas, rect, pxPerPt)));
 }
 
+export type ExportPdfOptions = {
+  /**
+   * Enables the web-only Plan B trial (HarfBuzz WASM shaping + CID/Identity-H subset embedding
+   * with ToUnicode and /ActualText). Defaults to `isVectorTextEnabled()` (off by default); any
+   * edit Plan B cannot embed cleanly falls back to the Plan A raster image path.
+   */
+  vectorText?: boolean;
+};
+
 /**
  * Exports the edited document as a new PDF built from the original file. Unedited pages are
  * copied unchanged, so their text stays selectable and searchable and their links, forms and
@@ -310,14 +320,21 @@ async function backgroundPatches(page: PageState, rects: EditorRect[]): Promise<
  * scans and wherever deletion cannot reach, cleaned from a raster patch that keeps ruled lines);
  * whiteouts delete the text under them and are filled vector rectangles; highlights are
  * multiply-blended rectangles over everything; inserted images and signatures are embedded as
- * they are (JPEG or PNG with transparency); new text is rendered by the browser, which shapes Devanagari
- * (Plan A), painted at the measured baseline and placed as a transparent image. Never overwrites the source file.
+ * they are (JPEG or PNG with transparency); new text is rendered by Plan A (browser-shaped
+ * transparent PNG) by default, or Plan B (HarfBuzz WASM + CID/Identity-H subset + ToUnicode +
+ * /ActualText) when the trial switch is enabled, keeping Plan A as fallback. Never overwrites the
+ * source file.
  *
  * @param source Full in-memory document state; positions are in PDF points.
  * @param sourcePdfBytes Bytes of the opened PDF (read, never modified).
+ * @param options Optional export flags (Plan B trial switch).
  * @returns A `Blob` of the exported PDF.
  */
-export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Array): Promise<Blob> {
+export async function exportPdf(
+  source: DocumentState,
+  sourcePdfBytes: Uint8Array,
+  options?: ExportPdfOptions,
+): Promise<Blob> {
   if (source.pages.length === 0) throw new Error('exportPdf: document has no pages');
 
   // Redraw only the words that changed; an unchanged replacement leaves its line untouched.
@@ -412,7 +429,37 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
   const textEdits = editedPages.flatMap((page) =>
     page.edits.filter((e): e is TextEdit => e.type === 'text'),
   );
-  const renderedText = await rasteriseTextEdits(textEdits);
+  const useVectorText = options?.vectorText ?? isVectorTextEnabled();
+  let vectorPlan: Awaited<ReturnType<typeof import('./pdfVectorText').prepareVectorTextPlan>> | null = null;
+  let renderedText: Map<string, import('./textRaster').RasterisedText>;
+
+  if (useVectorText && textEdits.length > 0) {
+    const layouts = await measureTextEditLayouts(textEdits);
+    try {
+      const { prepareVectorTextPlan } = await import('./pdfVectorText');
+      vectorPlan = await prepareVectorTextPlan(
+        out,
+        [...layouts.values()].map((layout) => ({
+          id: layout.edit.id,
+          fontFamily: layout.edit.fontFamily,
+          fontWeight: layout.edit.fontWeight,
+          fontStyle: layout.edit.fontStyle,
+          fontSizePt: layout.edit.fontSizePt,
+          color: layout.color,
+          scaleX: layout.edit.scaleX,
+          strokeEm: layout.edit.strokeEm,
+          lines: layout.editorLines,
+        })),
+      );
+    } catch (error) {
+      console.warn('Plan B vector text export unavailable; falling back to Plan A image path', error);
+      vectorPlan = null;
+    }
+    const fallbackLayouts = [...layouts.values()].filter((l) => !vectorPlan?.handledIds.has(l.edit.id));
+    renderedText = rasteriseMeasuredLayouts(fallbackLayouts);
+  } else {
+    renderedText = await rasteriseTextEdits(textEdits);
+  }
 
   for (const page of editedPages) {
     const pdfPage = out.getPage(page.pageIndex);
@@ -435,6 +482,10 @@ export async function exportPdf(source: DocumentState, sourcePdfBytes: Uint8Arra
     for (const edit of page.edits) {
       if (edit.type === 'image') {
         drawImageInEditorSpace(pdfPage, toUser, await embedDataUrlImage(out, edit.uri), edit);
+        continue;
+      }
+      if (edit.type === 'text' && vectorPlan?.handledIds.has(edit.id)) {
+        vectorPlan.drawEditOnPage(pdfPage, toUser, edit.id);
         continue;
       }
       const text = edit.type === 'text' ? renderedText.get(edit.id) : undefined;
