@@ -6,6 +6,7 @@ import {
   noteSkippedPage,
   recordVerifiedBand,
   recordVerifiedPage,
+  SPARSE_AFTER_PAGES,
   SPOT_CHECK_EVERY,
 } from './embeddedTextTrust';
 
@@ -87,5 +88,16 @@ describe('font trust', () => {
     recordVerifiedBand(trust, new Map([['f1', broken]]), broken, goodOcr);
     expect(mustVerifyPage(trust, ['f1'])).toBe(true);
     expect(trust.failed.has('f1')).toBe(true);
+  });
+
+  it('stops checking for a font with too little text to judge once it has been seen on a few pages', () => {
+    const trust = newFontTrust();
+    for (let i = 0; i < 2; i++) recordVerifiedPage(trust, new Map([['body', good]]), goodOcr);
+    for (let i = 0; i < SPARSE_AFTER_PAGES - 1; i++) {
+      recordVerifiedPage(trust, new Map([['heading', 'अध्याय']]), goodOcr);
+      expect(mustVerifyPage(trust, ['body', 'heading'])).toBe(true);
+    }
+    recordVerifiedPage(trust, new Map([['heading', 'अध्याय']]), goodOcr);
+    expect(mustVerifyPage(trust, ['body', 'heading'])).toBe(false);
   });
 });

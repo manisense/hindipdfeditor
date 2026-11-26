@@ -31,6 +31,7 @@ export type EmbeddedTextRun = {
 
 const LINE_Y_TOLERANCE_RATIO = 0.55;
 const WORD_GAP_RATIO = 0.12;
+const DEVANAGARI_LETTER = /[\u0900-\u097F]/u;
 const COLUMN_GAP_RATIO = 0.75;
 
 function isPrivateUseCodePoint(codePoint: number | undefined): boolean {
@@ -359,6 +360,16 @@ export async function extractEmbeddedTextLines(
       degraded = true;
       return { ...line, text: [...repaired].filter((c) => !isGlyphPlaceholder(c)).join('').replace(/\s+/gu, ' ').trim() };
     });
+    // Producers that draw spaces split one font into subsets that each hold only pieces of words
+    // (ि in one, its consonant in another), so their text is judged as a whole, by font family.
+    if (spaceAfter !== null && options.devanagariTextByFont && options.devanagariTextByFont.size > 0) {
+      const families = [...options.devanagariTextByFont.keys()].map((name) => (fontNameOf(name) ?? name).replace(/^[A-Z]{6}\+/u, ''));
+      options.devanagariTextByFont.clear();
+      options.devanagariTextByFont.set(
+        `family:${[...new Set(families)].sort().join(',')}`,
+        lines.filter((line) => /[\u0900-\u097F]/u.test(line.text)).map((line) => line.text).join(' '),
+      );
+    }
     return lines.map((line) => ({
       id: crypto.randomUUID(),
       text: line.text,
@@ -436,7 +447,9 @@ function withStroke(font: FontHint, strokeEm: number): FontHint {
 
 function shouldInsertSpace(previous: EmbeddedTextRun, current: EmbeddedTextRun, spacesDrawn: boolean): boolean {
   if (previous.trailingSpace || current.leadingSpace) return true;
-  if (spacesDrawn) return false;
+  // Inside Devanagari only drawn spaces break words: clusters drawn in visual order leave gaps.
+  // A space can be drawn after the next run of another script, so other boundaries use the gap.
+  if (spacesDrawn && DEVANAGARI_LETTER.test(previous.text.at(-1) ?? '') && DEVANAGARI_LETTER.test(current.text.at(0) ?? '')) return false;
   const gap = current.xPt - (previous.xPt + previous.wPt);
   return gap > Math.min(previous.hPt, current.hPt) * WORD_GAP_RATIO;
 }
@@ -470,7 +483,7 @@ export function withoutRepeatedRuns(runs: readonly EmbeddedTextRun[]): EmbeddedT
  *
  * @param options.spacesDrawn The page draws its spaces as glyphs (Chrome, Google Docs): a line's
  *   runs are joined in drawing order, which is reading order there (Devanagari is drawn in visual
- *   order, so left-to-right is not), and words break only at drawn spaces.
+ *   order, so left-to-right is not), and Devanagari words break only at drawn spaces.
  */
 export function clusterRunsIntoLines(
   runs: readonly EmbeddedTextRun[],
