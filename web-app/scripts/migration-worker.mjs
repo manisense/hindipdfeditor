@@ -48,6 +48,10 @@ export default {
       return Response.redirect(canonical.href, 301);
     }
     if (destination) return Response.redirect(destination.href, 301);
+    // A share that reached the network: the app's service worker was not running yet.
+    if (request.method === "POST" && requestUrl.pathname === "/share-target/") {
+      return Response.redirect(new URL("/share/?error=receive", requestUrl).href, 303);
+    }
     return env.ASSETS.fetch(request);
   },
 };

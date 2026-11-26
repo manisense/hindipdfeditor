@@ -1,5 +1,12 @@
 # Changelog
 
+## Installable app and sharing files into it, 27 November 2026
+
+### Added
+- The site is an installable web app (`manifest.webmanifest`, `sw.js`; web ADR 0020). On Android, the installed app appears in the share sheet for PDFs, images and .docx files; shared files open on `/share/`, which offers the tools that fit, and the chosen tool opens with the file loaded. Files stay in the browser's storage until a tool takes them, or an hour. The service worker caches nothing.
+- Privacy pages (English and Hindi) list the shared files kept in browser storage.
+- Checked in Chrome on the production Worker: no manifest or installability errors in a normal profile; a multipart POST to `/share-target/` reached `/share/` with ten PDF tools; Compress and Edit PDF opened the shared PDF, JPG to PDF took two shared images; the file was gone afterwards; with service workers blocked the Worker redirected to `/share/?error=receive`. The Android share sheet itself needs a real phone.
+
 ## Photo and signature resizer for forms, 27 November 2026
 
 ### Added

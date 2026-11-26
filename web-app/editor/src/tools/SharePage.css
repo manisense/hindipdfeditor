@@ -1,0 +1,70 @@
+.share-page h1 {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0;
+}
+
+.share-page__files {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.share-page__files li {
+  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  padding: 12px 16px;
+}
+
+.share-page__files span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.share-page__tools {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.share-page__tool {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px rgba(9, 9, 11, 0.06), 0 1px 2px rgba(9, 9, 11, 0.06);
+  color: var(--ink);
+  display: flex;
+  font-family: var(--font-display);
+  font-size: 14px;
+  min-height: 48px;
+  padding: 12px 16px;
+  text-decoration: none;
+}
+
+.share-page__tool::before {
+  background: var(--tool-accent);
+  border-radius: 9999px;
+  content: "";
+  flex: none;
+  height: 8px;
+  margin-right: 12px;
+  width: 8px;
+}
+
+.share-page__tool:hover {
+  border-color: var(--tool-accent);
+}
+
+.share-page__tool:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}

@@ -24,6 +24,8 @@ const STATIC_ENTRIES = [
   "sitemap.xml",
   "llms.txt",
   "llms-full.txt",
+  "manifest.webmanifest",
+  "sw.js",
   "SEO_GEO_AEO_PLAYBOOK.md",
   "_headers",
   "_redirects",
@@ -156,6 +158,18 @@ for (const tool of routes) {
   writeFileSync(path.join(directory, "index.html"), html);
 }
 
+// Where files shared to the installed app land (see sw.js): not a search page.
+{
+  const directory = path.join(distDir, "share");
+  mkdirSync(directory, { recursive: true });
+  const html = editorHtml
+    .replace(/<title>[\s\S]*?<\/title>/, "<title>Open a shared file | Hindi PDF Editor</title>")
+    .replace(/<meta\s+name="(robots|googlebot)"[\s\S]*?\/>/g, "")
+    .replace("</head>", '<meta name="robots" content="noindex" /></head>')
+    .replace(/<link[^>]*rel="alternate"[^>]*>/g, "")
+    .replace(/<link[^>]*rel="canonical"[^>]*>/, "");
+  writeFileSync(path.join(directory, "index.html"), html);
+}
 // Advanced-mode Pages worker handles only the retired landing/query URLs.
 const worker = readFileSync(
   path.join(webAppRoot, "scripts/migration-worker.mjs"),
