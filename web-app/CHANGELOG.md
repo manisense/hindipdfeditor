@@ -17,6 +17,9 @@ Measured in Chrome on a desktop with generated fixtures (scripts kept out of the
 - Hindi PDFs made by Chrome, Google Docs and other Skia tools are read from their `/ActualText` (`pdfActualText.ts`), which pdf.js drops: no OCR needed. Such pages are joined in drawing order, and Devanagari words break only at drawn spaces. A 40-page Chrome-made Hindi PDF converts in 4.6 s (0.11 s a page; 6.5 s a page with OCR before) with all 14,440 Hindi words correct. The editor reads these pages the same way.
 
 ### Fixed
+- Chrome draws a line's runs font by font, so a comma in a Latin font was drawn after the Hindi around it and ended up at the line end ("नामपता"). On such pages Hindi runs keep drawing order and other runs are placed among them by position. Runs on one baseline in fonts of different heights now stay in one line. A 2,667-page Word file printed to PDF in Chrome converts in 3 min 34 s with all 618,011 Hindi words correct.
+- Word-exported PDFs tag every paragraph as marked content; /ActualText is only read for files made by Skia producers or pages with unmapped glyphs, so other files are not parsed a second time.
+- PDF to Word and Word to PDF keep the screen on while they run (Screen Wake Lock, where the browser allows it), and PDF to Word shows the time left and asks to keep the tab open. With OCR off, pages whose Hindi the PDF does not map to Unicode are listed as not read. The KrutiDev page does not offer OCR off: its conversion is always checked against the page image.
 - Fonts with too little Devanagari to judge (headings, or Skia subset fonts that hold pieces of words) kept every page waiting for an OCR check. Skia pages are judged by font family on their whole text, and a font still too sparse to judge after 3 checked pages no longer forces checks: OCR cannot change its text.
 
 ## PDF to Word: tables without lines, 24 November 2026
