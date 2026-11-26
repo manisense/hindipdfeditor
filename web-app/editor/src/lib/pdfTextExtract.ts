@@ -6,7 +6,9 @@ import { krutiDevToUnicode } from './krutiDev';
 import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
 import { sharedPdfDocument } from './sharedPdfDocument';
 import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
+import { applyActualText, drawnGlyphs, markedContentStarts, type ActualTextResult } from './pdfActualText';
 import { imageRectsFromOperators, pictureBoxes, textImageRows, type PtBox } from './pdfImageRects';
+import { pageContents } from './pdfPageContents';
 import { rulingsFromOperators, type Ruling } from './pdfRulings';
 import { strokeEmPerItem, strokeRunsFromOperators } from './textStroke';
 import type { FontHint, OcrLine } from '../state/editStore';
@@ -23,6 +25,8 @@ export type EmbeddedTextRun = {
   /** Baseline, in PDF points from the page top. */
   baselineYPt?: number;
   font?: FontHint;
+  /** Position in drawing order (pdf.js item index). */
+  order?: number;
 };
 
 const LINE_Y_TOLERANCE_RATIO = 0.55;
@@ -182,8 +186,23 @@ export async function extractEmbeddedTextLines(
     };
     // Unmapped glyphs come out as U+0000; each becomes a placeholder for its font and glyph, so it
     // can be learned and repaired. Only when they line up one to one with the drawn glyphs.
-    const unmapped = unmappedGlyphs(operators.fnArray, operators.argsArray, (name) => fontNameOf(name) ?? name);
-    const itemTexts = textContent.items.map((item) => ('str' in item ? item.str : ''));
+    let unmapped = unmappedGlyphs(operators.fnArray, operators.argsArray, (name) => fontNameOf(name) ?? name);
+    let itemTexts = textContent.items.map((item) => ('str' in item ? item.str : ''));
+    // Items whose glyphs moved into another item's /ActualText: that item's run covers them.
+    let absorbedInto: (number | null)[] = [];
+    // Pages that draw their spaces (Chrome, Google Docs) break words only where a space is drawn.
+    let spaceAfter: boolean[] | null = null;
+    // Producers that leave glyphs unmapped (Chrome, Google Docs) often give their text as
+    // /ActualText in marked content: read it before falling back to placeholders and OCR.
+    if (unmapped.length > 0 || operators.fnArray.includes(OPS.beginMarkedContentProps)) {
+      const fixed = await withActualText(pdfBytes, pageIndex, operators.fnArray, operators.argsArray, itemTexts);
+      if (fixed && fixed.replaced.length === unmapped.length) {
+        itemTexts = fixed.items;
+        absorbedInto = fixed.into;
+        if (fixed.drawsSpaces) spaceAfter = fixed.spaceAfter;
+        unmapped = unmapped.filter((_, i) => !fixed.replaced[i]);
+      }
+    }
     const NUL = String.fromCharCode(0);
     const nulls = itemTexts.reduce((count, text) => count + text.split(NUL).length - 1, 0);
     if (nulls > 0 && nulls === unmapped.length) {
@@ -201,6 +220,7 @@ export async function extractEmbeddedTextLines(
       strokeRunsFromOperators(operators.fnArray, operators.argsArray, OPS),
     );
     const runs: EmbeddedTextRun[] = [];
+    const runOfItem = new Map<number, EmbeddedTextRun>();
     let degraded = false;
 
     const legacyFonts = new Set<string>();
@@ -251,7 +271,8 @@ export async function extractEmbeddedTextLines(
 
       if (![xPt, yPt, wPt, fontHeightPt].every(Number.isFinite)) return [];
 
-      runs.push({
+      const run: EmbeddedTextRun = {
+        order: itemIndex,
         text,
         xPt,
         yPt: Math.max(0, yPt),
@@ -259,7 +280,7 @@ export async function extractEmbeddedTextLines(
         hPt: fontHeightPt,
         hasEol: item.hasEOL,
         leadingSpace: /^\s/u.test(normalized),
-        trailingSpace: /\s$/u.test(normalized),
+        trailingSpace: /\s$/u.test(normalized) || Boolean(spaceAfter?.[itemIndex]),
         baselineYPt: baselineY,
         // Converted KrutiDev runs carry no usable style information (pdf.js guesses "serif");
         // Noto Sans is the closer look for them.
@@ -269,8 +290,21 @@ export async function extractEmbeddedTextLines(
               fontHintFromPdfFont(fontNameOf(item.fontName), style?.fontFamily, Math.abs(item.transform[2]) > 0.001),
               itemStrokes[itemIndex],
             ),
-      });
+      };
+      runs.push(run);
+      runOfItem.set(itemIndex, run);
     }
+    absorbedInto.forEach((target, itemIndex) => {
+      const run = target === null ? undefined : runOfItem.get(target);
+      const item = textContent.items[itemIndex];
+      if (!run || !item || !('str' in item)) return;
+      const [left] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
+      const right = left + textItemWidthPt(item.width * viewport.scale, run.hPt);
+      if (![left, right].every(Number.isFinite)) return;
+      const end = Math.max(run.xPt + run.wPt, right);
+      run.xPt = Math.min(run.xPt, left);
+      run.wPt = end - run.xPt;
+    });
 
     // Table borders, in editor space: for table detection, and as walls text images are not
     // joined across.
@@ -319,7 +353,7 @@ export async function extractEmbeddedTextLines(
       });
     }
 
-    const lines = clusterRunsIntoLines(withoutRepeatedRuns(runs)).map((line) => {
+    const lines = clusterRunsIntoLines(withoutRepeatedRuns(runs), { spacesDrawn: spaceAfter !== null }).map((line) => {
       const repaired = options.glyphReadings ? repairText(line.text, options.glyphReadings, isGlyphPlaceholder) : line.text;
       if (options.keepGlyphPlaceholders || !hasGlyphPlaceholder(repaired)) return { ...line, text: repaired };
       degraded = true;
@@ -371,13 +405,38 @@ function unmappedGlyphs(
   return glyphs;
 }
 
+/**
+ * The page's text items with `/ActualText` put in place of unmapped glyphs (see pdfActualText.ts),
+ * or null when the page has none or they cannot be lined up.
+ *
+ * @param pageIndex Zero-based page index.
+ */
+async function withActualText(
+  pdfBytes: Uint8Array,
+  pageIndex: number,
+  fnArray: number[],
+  argsArray: unknown[],
+  items: string[],
+): Promise<ActualTextResult | null> {
+  try {
+    const starts = markedContentStarts(await pageContents(pdfBytes, pageIndex));
+    if (!starts.some((start) => start.actualText !== null)) return null;
+    const glyphs = drawnGlyphs(fnArray, argsArray, starts, OPS);
+    return glyphs ? applyActualText(items, glyphs, starts.map((start) => start.actualText)) : null;
+  } catch {
+    // An unreadable content stream leaves the page as pdf.js read it (placeholders, then OCR).
+    return null;
+  }
+}
+
 /** Adds a faux-bold stroke to a font hint when the run was painted with one. */
 function withStroke(font: FontHint, strokeEm: number): FontHint {
   return strokeEm > 0 ? { ...font, strokeEm } : font;
 }
 
-function shouldInsertSpace(previous: EmbeddedTextRun, current: EmbeddedTextRun): boolean {
+function shouldInsertSpace(previous: EmbeddedTextRun, current: EmbeddedTextRun, spacesDrawn: boolean): boolean {
   if (previous.trailingSpace || current.leadingSpace) return true;
+  if (spacesDrawn) return false;
   const gap = current.xPt - (previous.xPt + previous.wPt);
   return gap > Math.min(previous.hPt, current.hPt) * WORD_GAP_RATIO;
 }
@@ -406,7 +465,17 @@ export function withoutRepeatedRuns(runs: readonly EmbeddedTextRun[]): EmbeddedT
   return kept;
 }
 
-export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): EmbeddedTextRun[] {
+/**
+ * Groups runs into lines (sizes in pt).
+ *
+ * @param options.spacesDrawn The page draws its spaces as glyphs (Chrome, Google Docs): a line's
+ *   runs are joined in drawing order, which is reading order there (Devanagari is drawn in visual
+ *   order, so left-to-right is not), and words break only at drawn spaces.
+ */
+export function clusterRunsIntoLines(
+  runs: readonly EmbeddedTextRun[],
+  options: { spacesDrawn?: boolean } = {},
+): EmbeddedTextRun[] {
   if (runs.length === 0) return [];
 
   const sorted = runs.slice().sort((a, b) => a.yPt - b.yPt || a.xPt - b.xPt);
@@ -438,7 +507,9 @@ export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): Embedded
   }
 
   return groups.map((group) => {
-    const ordered = group.slice().sort((a, b) => a.xPt - b.xPt);
+    const ordered = group
+      .slice()
+      .sort((a, b) => (options.spacesDrawn ? (a.order ?? 0) - (b.order ?? 0) : a.xPt - b.xPt));
     const xPt = Math.min(...ordered.map((run) => run.xPt));
     const yPt = Math.min(...ordered.map((run) => run.yPt));
     const right = Math.max(...ordered.map((run) => run.xPt + run.wPt));
@@ -446,7 +517,7 @@ export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): Embedded
     const widest = ordered.reduce((a, b) => (b.wPt > a.wPt ? b : a));
     let text = ordered[0]?.text ?? '';
     for (let index = 1; index < ordered.length; index += 1) {
-      text += `${shouldInsertSpace(ordered[index - 1], ordered[index]) ? ' ' : ''}${ordered[index].text}`;
+      text += `${shouldInsertSpace(ordered[index - 1], ordered[index], Boolean(options.spacesDrawn)) ? ' ' : ''}${ordered[index].text}`;
     }
     return {
       text: text.normalize('NFC').replace(/\s+/gu, ' ').trim(),
