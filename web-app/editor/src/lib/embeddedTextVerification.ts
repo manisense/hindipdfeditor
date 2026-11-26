@@ -80,6 +80,29 @@ export function embeddedDevanagariVerdict(
   return rate(complex) / plainRate < MIN_COMPLEX_TO_PLAIN_RATIO ? "corrupted" : "ok";
 }
 
+/** Words a dictionary check needs before it may judge a page. */
+const MIN_DICTIONARY_WORDS = 20;
+/**
+ * Share of dictionary words that text repaired from its own font must reach to be kept when OCR
+ * disagrees. Measured on 27 Nov 2026: correct Hindi 85–87 % (sample notice, RRB contents page),
+ * mis-mapped text layers 53–65 %.
+ */
+const MIN_REPAIRED_DICTIONARY_SHARE = 0.75;
+
+/**
+ * Whether text read through a ToUnicode map rebuilt from the embedded font (see
+ * pdfToUnicodeRepair.ts) reads as real Hindi: enough of its words are dictionary words. Used only
+ * for such text, when OCR of the page is too weak to confirm it (Tesseract misreads tables), and
+ * false when there are too few words to judge.
+ *
+ * @param isKnown Dictionary lookup (with inflections), e.g. `HindiSpeller.isKnown`.
+ */
+export function readsAsHindi(text: string, isKnown: (word: string) => boolean): boolean {
+  const words = devanagariWords(text);
+  if (words.length < MIN_DICTIONARY_WORDS) return false;
+  return words.filter((word) => isKnown(word)).length / words.length >= MIN_REPAIRED_DICTIONARY_SHARE;
+}
+
 /**
  * Whether embedded Devanagari text looks corrupted compared with OCR of the same page.
  * Returns false when there is too little Devanagari to judge, so plain pages keep their text.

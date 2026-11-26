@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  readsAsHindi,
   combineEmbeddedLatinWithOcr,
   canJudgeDevanagari,
   embeddedDevanagariVerdict,
@@ -160,5 +161,19 @@ describe("canJudgeDevanagari", () => {
     expect(canJudgeDevanagari("अध्याय 12 — Chapter 12")).toBe(false);
     expect(canJudgeDevanagari(words("किताब", 40))).toBe(false);
     expect(canJudgeDevanagari(`${words("किताब", 15)} ${words("कमल", 15)}`)).toBe(true);
+  });
+});
+
+describe('readsAsHindi', () => {
+  const known = new Set('सभी अभिभावकों को सूचित किया जाता है कि विद्यालय का वार्षिक कार्यक्रम'.split(' '));
+  const isKnown = (word: string) => known.has(word);
+
+  it('accepts text whose words are dictionary words', () => {
+    expect(readsAsHindi(Array(3).fill('सभी अभिभावकों को सूचित किया जाता है कि विद्यालय का').join(' '), isKnown)).toBe(true);
+  });
+
+  it('rejects mis-mapped text and text too short to judge', () => {
+    expect(readsAsHindi(Array(3).fill('सभी अभभावकों को सूचत कया जाता है क वद्यालय का').join(' '), isKnown)).toBe(false);
+    expect(readsAsHindi('सभी अभिभावकों को', isKnown)).toBe(false);
   });
 });
