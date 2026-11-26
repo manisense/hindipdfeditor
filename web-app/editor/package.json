@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "docx": "9.15.3",
     "docx-preview": "0.4.1",
+    "harfbuzzjs": "1.6.4",
     "html-to-image": "1.11.13",
     "jszip": "3.10.2",
     "lucide-react": "^1.24.0",
