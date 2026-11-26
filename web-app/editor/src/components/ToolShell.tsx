@@ -13,7 +13,9 @@ import {
   Signature,
   ClipboardPen,
   FileText,
+  FileImage,
   FileType2,
+  Images,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
@@ -64,6 +66,8 @@ const toolIcons: Record<ToolId, LucideIcon> = {
   organize: LayoutGrid,
   krutidev: Type,
   "unicode-to-krutidev": ArrowLeftRight,
+  "pdf-to-jpg": FileImage,
+  "jpg-to-pdf": Images,
 };
 
 

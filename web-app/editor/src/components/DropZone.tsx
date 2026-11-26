@@ -6,8 +6,8 @@ import { AppButton } from "./AppButton";
 import "./DropZone.css";
 
 type Props = {
-  /** Files the zone takes: PDFs (default) or Word documents (.docx). */
-  kind?: "pdf" | "docx";
+  /** Files the zone takes: PDFs (default), Word documents (.docx) or images (JPG, PNG, WebP). */
+  kind?: "pdf" | "docx" | "image";
   accept?: string;
   multiple?: boolean;
   disabled?: boolean;
@@ -34,6 +34,12 @@ function isPdf(file: File): boolean {
 
 function isDocx(file: File): boolean {
   return file.type === DOCX_TYPE || file.name.toLowerCase().endsWith(".docx");
+}
+
+const IMAGE_TYPES = "image/jpeg,image/png,image/webp";
+
+function isImage(file: File): boolean {
+  return IMAGE_TYPES.split(",").includes(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
 }
 
 export function DropZone({
@@ -74,9 +80,33 @@ export function DropZone({
     }
   };
 
-  const word = kind === "docx";
-  const accepted = word ? isDocx : isPdf;
-  const fileType = word ? tx("Word file (.docx)", "वर्ड फाइल (.docx)") : tx("PDF file (.pdf)", "पीडीएफ फाइल (.pdf)");
+  const copy = {
+    pdf: {
+      accepted: isPdf,
+      accept: "application/pdf",
+      fileType: tx("PDF file (.pdf)", "पीडीएफ फाइल (.pdf)"),
+      only: tx("Choose PDF files only", "सिर्फ पीडीएफ फाइलें चुनें"),
+      hint: multiple ? tx("or drop PDFs here", "या पीडीएफ यहाँ छोड़ें") : tx("or drop PDF here", "या पीडीएफ यहाँ छोड़ें"),
+      assurance: tx("PDF files only", "सिर्फ पीडीएफ फाइलें"),
+    },
+    docx: {
+      accepted: isDocx,
+      accept: `.docx,${DOCX_TYPE}`,
+      fileType: tx("Word file (.docx)", "वर्ड फाइल (.docx)"),
+      only: tx("Choose Word files only", "सिर्फ वर्ड फाइलें चुनें"),
+      hint: tx("or drop a Word file here", "या वर्ड फाइल यहाँ छोड़ें"),
+      assurance: tx("Word .docx files only", "सिर्फ वर्ड .docx फाइलें"),
+    },
+    image: {
+      accepted: isImage,
+      accept: IMAGE_TYPES,
+      fileType: tx("JPG, PNG or WebP image", "JPG, PNG या WebP फोटो"),
+      only: tx("Choose JPG, PNG or WebP images only", "सिर्फ JPG, PNG या WebP फोटो चुनें"),
+      hint: multiple ? tx("or drop images here", "या फोटो यहाँ छोड़ें") : tx("or drop an image here", "या फोटो यहाँ छोड़ें"),
+      assurance: tx("JPG, PNG and WebP", "JPG, PNG और WebP"),
+    },
+  }[kind];
+  const { accepted, fileType } = copy;
   const emit = (list: FileList | File[]) => {
     if (disabled) return;
     const selected = Array.from(list);
@@ -87,10 +117,7 @@ export function DropZone({
     }
     if (files.length !== selected.length) {
       setValidationMessage(
-        tx(
-          `Choose ${word ? "Word files" : "PDF files"} only. No files were opened; remove unsupported files and try again.`,
-          `सिर्फ ${word ? "वर्ड" : "पीडीएफ"} फाइलें चुनें। कोई फाइल नहीं खुली; दूसरी फाइलें हटाकर फिर कोशिश करें।`,
-        ),
+        `${copy.only}. ${tx("No files were opened; remove unsupported files and try again.", "कोई फाइल नहीं खुली; दूसरी फाइलें हटाकर फिर कोशिश करें।")}`,
       );
       return;
     }
@@ -124,7 +151,7 @@ export function DropZone({
       <input
         ref={inputRef}
         type="file"
-        accept={accept ?? (word ? `.docx,${DOCX_TYPE}` : "application/pdf")}
+        accept={accept ?? copy.accept}
         multiple={multiple}
         className="drop-zone__input"
         disabled={disabled}
@@ -155,11 +182,7 @@ export function DropZone({
         disabled={disabled}
       />
       <p className="drop-zone__hint">
-        {word
-          ? tx("or drop a Word file here", "या वर्ड फाइल यहाँ छोड़ें")
-          : multiple
-            ? tx("or drop PDFs here", "या पीडीएफ यहाँ छोड़ें")
-            : tx("or drop PDF here", "या पीडीएफ यहाँ छोड़ें")}
+        {copy.hint}
       </p>
       {sample && !compact && (
         <button
@@ -185,7 +208,7 @@ export function DropZone({
         </span>
         <span>
           <FileType2 size={14} aria-hidden="true" />{" "}
-          {word ? tx("Word .docx files only", "सिर्फ वर्ड .docx फाइलें") : tx("PDF files only", "सिर्फ पीडीएफ फाइलें")}
+          {copy.assurance}
         </span>
       </div>
       {children}

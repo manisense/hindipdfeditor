@@ -1,5 +1,13 @@
 # Changelog
 
+## PDF to JPG and JPG to PDF, 27 November 2026
+
+### Added
+- `/tools/pdf-to-jpg/`: chosen pages (or all, up to 300 at a time) as JPG or PNG at 150 or 300 dpi, drawn by pdf.js in the browser; one page downloads as an image, several as a ZIP with names in page order. Long sides are capped at 8,000 px.
+- `/tools/jpg-to-pdf/`: up to 200 JPG, PNG or WebP images into a new PDF, one per page, reordered with arrows, on A4 (turned to suit each image, scaled down to fit a 10 mm margin) or at image size (96 px per inch). JPG and PNG are embedded unchanged; WebP and phone photos with an EXIF turn are re-encoded as JPG so they come out upright. The output is parsed back before download.
+- The file picker takes images (`kind="image"`); `ChoiceChips` and `moveItem` are shared by the tools.
+- Checked in Chrome on the production Worker: order, both page sizes, EXIF orientation 6 upright, ZIP of 3 pages, single 300 dpi PNG, page range error, Hindi screens at 360 px; smoke passes.
+
 ## Fixes found by the Hindi benchmark sample, 27 November 2026
 
 A one-page sample notice (`web-app/benchmark/`, conjuncts, reph, nukta, a ruled table, English words) is now scored by `score.mjs`: the share of its 144 Hindi words a tool gets exactly right. Running PDF to Word on it found four bugs. PDF to Word on the digital copy went from 94.4 % to 100 %; on the scanned copy (0.6° turn, blur, speckle) from 80.6 % to 99.3 %.
