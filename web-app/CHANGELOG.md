@@ -13,6 +13,7 @@
 ### Fixed
 - Word files passed through iLovePDF (seen on Railway Recruitment Board notices) map many Hindi glyphs to the wrong letters, so the editor fell back to OCR, which misread tables and left cells empty. The editor now reads each glyph from the embedded font itself (its cmap and shaping rules) and uses that text when the file's own map contradicts the font (web ADR 0022). The file itself is never changed. PDF to Word on a contents page with a table: 64.5 % → 100 % of 141 Hindi words, twice as fast.
 - Words split after प्र, क्र and before vowel signs in Word files are kept whole.
+- `mobile-app/fixtures/mismapped-tounicode-fixture.pdf` (built by `web-app/scripts/make-mismapped-fixture.mjs` from our own fixture text) has a deliberately wrong ToUnicode map and no /ActualText; a unit test checks the editor reads it from the font. Ligature glyphs now take their full letters (ें was read as ं).
 
 ## OCR engine benchmark: Tesseract against PaddleOCR, 27 November 2026
 
