@@ -49,12 +49,15 @@ function readFont(bytes: Uint8Array): FontGlyphReading {
   const gsub = tables.get('GSUB');
   const edges = gsub === undefined ? [] : gsubEdges(view, gsub);
   const reph = new Set<number>();
+  // Ligatures first in every pass: a glyph reached both by a single substitution (an ं variant)
+  // and by a ligature (े + ं) takes the ligature's fuller reading. Each glyph is read once, so
+  // cycles in GSUB cannot loop.
+  edges.sort((x, y) => y.components.length - x.components.length);
   for (let changed = true; changed; ) {
     changed = false;
     for (const edge of edges) {
       if (text.has(edge.output) || !edge.components.every((c) => text.has(c))) continue;
-      const letters = edge.components.map((c) => text.get(c)).join('');
-      text.set(edge.output, letters);
+      text.set(edge.output, edge.components.map((c) => text.get(c)).join(''));
       if (edge.reph || edge.components.some((c) => reph.has(c))) reph.add(edge.output);
       changed = true;
     }
