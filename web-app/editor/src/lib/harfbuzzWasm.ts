@@ -12,11 +12,13 @@ import harfbuzzWasmUrl from 'harfbuzzjs/dist/harfbuzz.wasm?url';
 export type ShapedGlyph = {
   /** Font Glyph ID (GID). */
   gid: number;
-  /** UTF-16 code unit index in the shaped run string. */
+  /** UTF-16 code unit index in the shaped run string (Level 0 monotone grapheme cluster). */
   cluster: number;
+  /** Cluster-local UTF-16 offset within `ShapedCluster.text` (from Level 2 character clusters). */
+  charCluster: number;
   /** Horizontal advance in font design units (unitsPerEm). */
   xAdvance: number;
-  /** Vertical advance in font design units. */
+  /** Vertical advance in font design units (unitsPerEm). */
   yAdvance: number;
   /** Horizontal offset from current pen position in font design units. */
   xOffset: number;
@@ -100,6 +102,7 @@ export type HarfBuzzEngine = {
 const HB_MEMORY_MODE_WRITABLE = 2;
 const HB_DIRECTION_LTR = 4;
 const HB_BUFFER_CLUSTER_LEVEL_MONOTONE_GRAPHEMES = 0;
+const HB_BUFFER_CLUSTER_LEVEL_CHARACTERS = 2;
 const HB_SUBSET_FLAGS_RETAIN_GIDS = 0x00000002;
 
 const STRONG_LATIN_RE = /[A-Za-z0-9]/;
@@ -301,10 +304,7 @@ export class HarfBuzzShaperFont {
     }
   }
 
-  /** Shapes a single script run into monotone grapheme clusters with exact glyph positions. */
-  shapeRun(run: ScriptRun): ShapedCluster[] {
-    if (this.destroyed) throw new Error('HarfBuzzShaperFont already destroyed');
-    if (run.text.length === 0) return [];
+  private shapeRaw(run: ScriptRun, clusterLevel: number): Omit<ShapedGlyph, 'charCluster'>[] {
     const ex = this.ex;
     const buf = ex.hb_buffer_create();
     const textPtr = ex.malloc(run.text.length * 2);
@@ -318,7 +318,7 @@ export class HarfBuzzShaperFont {
       ex.hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
       ex.hb_buffer_set_script(buf, ex.hb_script_from_string(scriptPtr, run.script.length));
       ex.hb_buffer_set_language(buf, ex.hb_language_from_string(langPtr, run.language.length));
-      ex.hb_buffer_set_cluster_level(buf, HB_BUFFER_CLUSTER_LEVEL_MONOTONE_GRAPHEMES);
+      ex.hb_buffer_set_cluster_level(buf, clusterLevel);
       ex.hb_shape(this.hbFontPtr, buf, 0, 0);
 
       const length = ex.hb_buffer_get_length(buf);
@@ -328,7 +328,7 @@ export class HarfBuzzShaperFont {
       const posPtr = ex.hb_buffer_get_glyph_positions(buf, 0);
       const view = new DataView(ex.memory.buffer);
 
-      const rawGlyphs: ShapedGlyph[] = new Array(length);
+      const rawGlyphs: Omit<ShapedGlyph, 'charCluster'>[] = new Array(length);
       for (let i = 0; i < length; i++) {
         const infoBase = infosPtr + i * 20;
         const posBase = posPtr + i * 20;
@@ -341,34 +341,56 @@ export class HarfBuzzShaperFont {
           yOffset: view.getInt32(posBase + 12, true),
         };
       }
-
-      // Group contiguous glyphs sharing the same UTF-16 cluster index (monotone LTR).
-      const groups: { start: number; glyphs: ShapedGlyph[] }[] = [];
-      for (const glyph of rawGlyphs) {
-        const last = groups[groups.length - 1];
-        if (last && last.start === glyph.cluster) {
-          last.glyphs.push(glyph);
-        } else {
-          groups.push({ start: glyph.cluster, glyphs: [glyph] });
-        }
-      }
-
-      const clusters: ShapedCluster[] = [];
-      for (let i = 0; i < groups.length; i++) {
-        const start = groups[i].start;
-        const end = i + 1 < groups.length ? groups[i + 1].start : run.text.length;
-        clusters.push({
-          text: run.text.slice(start, Math.max(start, end)),
-          glyphs: groups[i].glyphs,
-        });
-      }
-      return clusters;
+      return rawGlyphs;
     } finally {
       ex.free(langPtr);
       ex.free(scriptPtr);
       ex.free(textPtr);
       ex.hb_buffer_destroy(buf);
     }
+  }
+
+  /** Shapes a single script run into monotone grapheme clusters with exact glyph positions. */
+  shapeRun(run: ScriptRun): ShapedCluster[] {
+    if (this.destroyed) throw new Error('HarfBuzzShaperFont already destroyed');
+    if (run.text.length === 0) return [];
+
+    const rawL0 = this.shapeRaw(run, HB_BUFFER_CLUSTER_LEVEL_MONOTONE_GRAPHEMES);
+    if (rawL0.length === 0) return [];
+
+    // Group contiguous glyphs sharing the same UTF-16 cluster index (monotone LTR).
+    const groups: { start: number; indices: number[] }[] = [];
+    for (let i = 0; i < rawL0.length; i++) {
+      const last = groups[groups.length - 1];
+      if (last && last.start === rawL0[i].cluster) {
+        last.indices.push(i);
+      } else {
+        groups.push({ start: rawL0[i].cluster, indices: [i] });
+      }
+    }
+
+    // For runs with multi-glyph clusters (conjunct + matra, reph, pre-base ि), also read Level 2
+    // character-level cluster indices so each glyph maps to its own characters in ToUnicode.
+    const rawL2 = groups.some((g) => g.indices.length > 1)
+      ? this.shapeRaw(run, HB_BUFFER_CLUSTER_LEVEL_CHARACTERS)
+      : null;
+    const hasMatchingL2 = rawL2 !== null && rawL2.length === rawL0.length;
+
+    const clusters: ShapedCluster[] = [];
+    for (let i = 0; i < groups.length; i++) {
+      const start = groups[i].start;
+      const end = i + 1 < groups.length ? groups[i + 1].start : run.text.length;
+      const text = run.text.slice(start, Math.max(start, end));
+      const maxOffset = Math.max(0, text.length - 1);
+      const glyphs: ShapedGlyph[] = groups[i].indices.map((idx) => {
+        const g = rawL0[idx];
+        const rawLocal = hasMatchingL2 ? rawL2[idx].cluster - start : 0;
+        const charCluster = Math.max(0, Math.min(maxOffset, rawLocal));
+        return { ...g, charCluster };
+      });
+      clusters.push({ text, glyphs });
+    }
+    return clusters;
   }
 
   /** Shapes a full line (splitting Devanagari and Latin runs automatically). */

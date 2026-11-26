@@ -418,9 +418,107 @@ type FontBucket = {
   fontBytes: Uint8Array;
   sourceMetrics: TtfMetrics;
   shaper: HarfBuzzShaperFont;
+  nominalGlyphToChar: Map<number, string>;
   usedGids: Set<number>;
   toUnicode: Map<number, string>;
 };
+
+/**
+ * Builds a reverse `GID -> Unicode` lookup from the font's nominal `cmap` for canonical NFC
+ * ASCII and Devanagari characters so base glyphs never inherit a heuristic multi-char slice.
+ */
+function buildNominalGlyphToChar(shaper: HarfBuzzShaperFont): Map<number, string> {
+  const map = new Map<number, string>();
+  const registerRange = (from: number, to: number) => {
+    for (let cp = from; cp <= to; cp++) {
+      const ch = String.fromCodePoint(cp);
+      if (ch.normalize('NFC') !== ch) continue;
+      const gid = shaper.nominalGlyph(cp);
+      if (gid > 0 && !map.has(gid)) map.set(gid, ch);
+    }
+  };
+  registerRange(0x0020, 0x007e);
+  registerRange(0x0900, 0x097f);
+  return map;
+}
+
+/**
+ * Maps every non-zero glyph GID in a shaped cluster into `toUnicode` so no drawn GID ever falls
+ * through to Identity in viewers that ignore `/ActualText` (such as pdf.js).
+ */
+export function assignClusterToUnicode(
+  cluster: ShapedCluster,
+  nominalGlyphToChar: ReadonlyMap<number, string>,
+  toUnicode: Map<number, string>,
+): void {
+  if (cluster.glyphs.length === 0) return;
+
+  if (cluster.glyphs.length === 1) {
+    const gid = cluster.glyphs[0].gid;
+    if (gid > 0 && cluster.text.length > 0 && !toUnicode.has(gid)) {
+      toUnicode.set(gid, nominalGlyphToChar.get(gid) ?? cluster.text);
+    }
+    return;
+  }
+
+  // 1. Nominal cmap glyphs always keep their exact single-character Unicode value.
+  const nonNominal: ShapedCluster['glyphs'] = [];
+  for (const glyph of cluster.glyphs) {
+    if (glyph.gid <= 0) continue;
+    const nominal = nominalGlyphToChar.get(glyph.gid);
+    if (nominal !== undefined) {
+      toUnicode.set(glyph.gid, nominal);
+    } else {
+      nonNominal.push(glyph);
+    }
+  }
+  if (nonNominal.length === 0) return;
+
+  // 2. Split remaining contextual/ligature glyphs using HarfBuzz Level 2 character clusters.
+  const uniqueStarts = [...new Set(cluster.glyphs.map((g) => g.charCluster))].sort((a, b) => a - b);
+  const sliceByStart = new Map<number, string>();
+  for (let i = 0; i < uniqueStarts.length; i++) {
+    const start = uniqueStarts[i];
+    const end = i + 1 < uniqueStarts.length ? uniqueStarts[i + 1] : cluster.text.length;
+    sliceByStart.set(start, cluster.text.slice(start, Math.max(start, end)));
+  }
+  // When a leading reph (र्) ligates onto a later matra (e.g. र्मी -> म + ीर्), preserve it on
+  // the sole ligated non-nominal glyph.
+  const leadingOrphan = uniqueStarts.length > 0 && uniqueStarts[0] > 0 ? cluster.text.slice(0, uniqueStarts[0]) : '';
+
+  const nonNominalByStart = new Map<number, ShapedCluster['glyphs']>();
+  for (const glyph of nonNominal) {
+    const group = nonNominalByStart.get(glyph.charCluster);
+    if (group) group.push(glyph);
+    else nonNominalByStart.set(glyph.charCluster, [glyph]);
+  }
+
+  for (const [start, group] of nonNominalByStart.entries()) {
+    const baseSlice = sliceByStart.get(start) || cluster.text;
+    const slice = leadingOrphan && nonNominal.length === 1 ? baseSlice + leadingOrphan : baseSlice;
+    if (group.length === 1) {
+      const gid = group[0].gid;
+      if (!toUnicode.has(gid) && slice.length > 0) toUnicode.set(gid, slice);
+      continue;
+    }
+
+    // Multiple non-nominal glyphs share one Level 2 cluster: split characters if possible,
+    // otherwise map the first to the slice and the rest to U+FEFF (stripped by pdf.js & Poppler).
+    const chars = Array.from(slice);
+    if (chars.length >= group.length) {
+      for (let k = 0; k < group.length; k++) {
+        const gid = group[k].gid;
+        const piece = k === group.length - 1 ? chars.slice(k).join('') : chars[k];
+        if (!toUnicode.has(gid) && piece.length > 0) toUnicode.set(gid, piece);
+      }
+    } else {
+      if (!toUnicode.has(group[0].gid) && slice.length > 0) toUnicode.set(group[0].gid, slice);
+      for (let k = 1; k < group.length; k++) {
+        if (!toUnicode.has(group[k].gid)) toUnicode.set(group[k].gid, '\uFEFF');
+      }
+    }
+  }
+}
 
 type PreparedEdit = {
   item: VectorTextItem;
@@ -484,12 +582,14 @@ export async function prepareVectorTextPlan(
       const bucketKey = `${item.fontFamily}@${weight}`;
       let bucket = buckets.get(bucketKey);
       if (!bucket) {
+        const shaper = new HarfBuzzShaperFont(engine, fontBytes, weight);
         bucket = {
           family: item.fontFamily,
           weight,
           fontBytes,
           sourceMetrics: parseTtfMetrics(fontBytes),
-          shaper: new HarfBuzzShaperFont(engine, fontBytes, weight),
+          shaper,
+          nominalGlyphToChar: buildNominalGlyphToChar(shaper),
           usedGids: new Set<number>([0]),
           toUnicode: new Map<number, string>(),
         };
@@ -511,25 +611,21 @@ export async function prepareVectorTextPlan(
       }
       if (hasNotdef) continue;
 
-      // Commit used GIDs and ToUnicode entries only once the entire edit shaped cleanly.
+      // Commit used GIDs and complete ToUnicode entries only once the entire edit shaped cleanly.
       for (const line of shapedLines) {
         for (const cluster of line.clusters) {
           for (const g of cluster.glyphs) bucket.usedGids.add(g.gid);
-          if (cluster.glyphs.length === 1 && cluster.text.length > 0) {
-            const gid = cluster.glyphs[0].gid;
-            if (!bucket.toUnicode.has(gid)) bucket.toUnicode.set(gid, cluster.text);
-          } else if (cluster.glyphs.length > 1) {
-            // Map nominal base characters inside multi-glyph clusters while leaving reordered /
-            // contextual glyphs unmapped so pdfActualText.ts and pdftotext honor /ActualText.
-            for (const ch of cluster.text) {
-              const cp = ch.codePointAt(0);
-              if (cp === undefined) continue;
-              const nominal = bucket.shaper.nominalGlyph(cp);
-              if (nominal > 0 && cluster.glyphs.some((g) => g.gid === nominal) && !bucket.toUnicode.has(nominal)) {
-                bucket.toUnicode.set(nominal, ch);
-              }
+          // Register nominal glyphs for any non-ASCII/non-Devanagari characters in this cluster.
+          for (const ch of cluster.text) {
+            if (ch.normalize('NFC') !== ch) continue;
+            const cp = ch.codePointAt(0);
+            if (cp === undefined) continue;
+            const nominal = bucket.shaper.nominalGlyph(cp);
+            if (nominal > 0 && !bucket.nominalGlyphToChar.has(nominal)) {
+              bucket.nominalGlyphToChar.set(nominal, ch);
             }
           }
+          assignClusterToUnicode(cluster, bucket.nominalGlyphToChar, bucket.toUnicode);
         }
       }
 
@@ -538,6 +634,15 @@ export async function prepareVectorTextPlan(
     }
 
     if (preparedById.size === 0) return emptyPlan;
+
+    // Guarantee every drawn non-zero GID has a ToUnicode entry (never fall through to Identity).
+    for (const bucket of buckets.values()) {
+      for (const gid of bucket.usedGids) {
+        if (gid > 0 && !bucket.toUnicode.has(gid)) {
+          bucket.toUnicode.set(gid, bucket.nominalGlyphToChar.get(gid) ?? '\uFEFF');
+        }
+      }
+    }
 
     // Subset + instance each used (fontFamily, weight) once per document and embed it.
     const embeddedFonts = new Map<string, { ref: PDFRef; metrics: TtfMetrics }>();
