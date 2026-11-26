@@ -33,3 +33,29 @@ export function currentDeviceHints(): DeviceHints {
     mobile: nav.userAgentData?.mobile ?? /Android|iPhone|iPad|iPod|Mobile/i.test(nav.userAgent),
   };
 }
+
+/**
+ * Most pages read whole with OCR in one conversion, by OCR worker pool size (see
+ * {@link poolSizeFor}). Each such page takes about 4 s on a laptop with 4 workers, an estimated
+ * 19 s on a mid-range phone (2 workers) and 88 s on a low-end phone (1 worker), measured for
+ * 2026-11 in web-app/CHANGELOG.md; the limits keep a conversion near 20 minutes.
+ *
+ * @param poolSize OCR workers per language on this device.
+ */
+export function ocrPageLimit(poolSize: number): number {
+  if (poolSize <= 1) return 15;
+  if (poolSize === 2) return 60;
+  return 300;
+}
+
+/**
+ * Rough time to read one whole page with OCR, in seconds, by OCR worker pool size (the
+ * measurements behind {@link ocrPageLimit}). For the estimate shown before converting.
+ *
+ * @param poolSize OCR workers per language on this device.
+ */
+export function ocrSecondsPerPage(poolSize: number): number {
+  if (poolSize <= 1) return 88;
+  if (poolSize === 2) return 19;
+  return 4;
+}

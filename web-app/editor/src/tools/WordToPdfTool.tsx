@@ -8,6 +8,7 @@ import { ToolShell } from "../components/ToolShell";
 import { trackToolEvent } from "../lib/analytics";
 import { printWordDocument, renderWordDocument, sectionsToPdf } from "../lib/convertWordToPdf";
 import { useTx } from "../lib/i18n";
+import { holdScreenAwake } from "../lib/wakeLock";
 import { downloadPdfBytes } from "../lib/pdfOps";
 import { getTool } from "../lib/tools";
 import "./UtilityTool.css";
@@ -17,6 +18,12 @@ const tool = getTool("word-to-pdf")!;
 
 /** Largest Word file accepted, in bytes. */
 const MAX_BYTES = 50 * 1024 * 1024;
+/**
+ * Longest document made into an image PDF, in pages. Each page is a ~0.5 MB picture held in
+ * memory until the file is saved: 2,000 pages crashed the tab. Longer documents use Save as PDF,
+ * which prints real text and handles them.
+ */
+const IMAGE_PDF_MAX_PAGES = 300;
 
 /**
  * Word to PDF: lays the .docx out in the page with docx-preview, shows it, and makes a PDF of
@@ -37,6 +44,7 @@ export function WordToPdfTool() {
   const txRef = useRef(tx);
   txRef.current = tx;
   const step = result ? 3 : file ? 2 : 1;
+  const tooLongForImages = sections.length > IMAGE_PDF_MAX_PAGES;
 
   useEffect(() => {
     const host = hostRef.current;
@@ -67,6 +75,7 @@ export function WordToPdfTool() {
     setBusy(true);
     setError(null);
     setResult(null);
+    const release = await holdScreenAwake();
     try {
       const bytes = await sectionsToPdf(sections, (done, total) => setProgress({ done, total }));
       const filename = `${file.name.replace(/\.docx$/i, "") || "document"}.pdf`;
@@ -78,6 +87,7 @@ export function WordToPdfTool() {
       trackToolEvent("export_failed", "word-to-pdf");
       setError(tx("The PDF could not be made. Try “Save as PDF (selectable text)” instead.", "पीडीएफ नहीं बन सकी। इसकी जगह “पीडीएफ सेव करें (सेलेक्ट होने वाला टेक्स्ट)” आज़माएं।"));
     } finally {
+      release();
       setBusy(false);
       setProgress(null);
     }
@@ -132,10 +142,15 @@ export function WordToPdfTool() {
               </p>
               <p className="utility-tool__note">
                 <b>{tx("Image PDF:", "इमेज पीडीएफ:")}</b>{" "}
-                {tx(
-                  "downloads straight away and looks exactly like the preview, but each page is a picture, so its text cannot be selected or searched.",
-                  "तुरंत डाउनलोड होती है और प्रीव्यू जैसी ही दिखती है, पर हर पेज एक तस्वीर होता है, इसलिए उसका टेक्स्ट सेलेक्ट या खोजा नहीं जा सकता।",
-                )}
+                {tooLongForImages
+                  ? tx(
+                      `for documents up to ${IMAGE_PDF_MAX_PAGES} pages. This one is longer, so use Save as PDF.`,
+                      `${IMAGE_PDF_MAX_PAGES} पेज तक के दस्तावेज़ों के लिए। यह उससे लंबा है, इसलिए पीडीएफ के रूप में सेव करें।`,
+                    )
+                  : tx(
+                      "downloads straight away and looks exactly like the preview, but each page is a picture, so its text cannot be selected or searched.",
+                      "तुरंत डाउनलोड होती है और प्रीव्यू जैसी ही दिखती है, पर हर पेज एक तस्वीर होता है, इसलिए उसका टेक्स्ट सेलेक्ट या खोजा नहीं जा सकता।",
+                    )}
               </p>
             </div>
             {printed && (
@@ -168,7 +183,7 @@ export function WordToPdfTool() {
               <AppButton
                 title={busy ? tx("Making PDF…", "पीडीएफ बन रही है…") : tx("Download image PDF", "इमेज पीडीएफ डाउनलोड करें")}
                 variant="secondary"
-                disabled={busy || rendering || sections.length === 0}
+                disabled={busy || rendering || sections.length === 0 || tooLongForImages}
                 onClick={() => void makePdf()}
               />
               <AppButton

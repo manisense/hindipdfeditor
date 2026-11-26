@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { mustVerifyPage, newFontTrust, noteSkippedPage, recordVerifiedPage, SPOT_CHECK_EVERY } from './embeddedTextTrust';
+import {
+  mustVerifyPage,
+  newFontTrust,
+  noteSkippedPage,
+  recordVerifiedBand,
+  recordVerifiedPage,
+  SPARSE_AFTER_PAGES,
+  SPOT_CHECK_EVERY,
+} from './embeddedTextTrust';
 
 // Enough words of each kind (complex: with ि or a halant; plain: without) for a verdict.
 const words = (word: string, n: number) => Array.from({ length: n }, () => word).join(' ');
@@ -55,5 +63,41 @@ describe('font trust', () => {
       noteSkippedPage(trust);
     }
     expect(mustVerifyPage(trust, ['f1'])).toBe(true);
+  });
+
+  // A page that passed the quick band check counts as a checked page for the fonts in that band.
+  it('trusts a font after it passes the band check on two pages', () => {
+    const trust = newFontTrust();
+    recordVerifiedBand(trust, new Map([['f1', good]]), good, goodOcr);
+    expect(mustVerifyPage(trust, ['f1'])).toBe(true);
+    recordVerifiedBand(trust, new Map([['f1', good]]), good, goodOcr);
+    expect(mustVerifyPage(trust, ['f1'])).toBe(false);
+  });
+
+  it('credits only fonts whose text is in the band', () => {
+    const trust = newFontTrust();
+    const other = `${words('विद्यालय', 16)} ${words('नगर', 16)}`;
+    for (let i = 0; i < 2; i++) recordVerifiedBand(trust, new Map([['f1', good], ['f2', other]]), good, goodOcr);
+    expect(mustVerifyPage(trust, ['f1'])).toBe(false);
+    expect(mustVerifyPage(trust, ['f2'])).toBe(true);
+  });
+
+  it('fails a font whose band text does not match OCR', () => {
+    const trust = newFontTrust();
+    recordVerifiedBand(trust, new Map([['f1', broken]]), broken, goodOcr);
+    recordVerifiedBand(trust, new Map([['f1', broken]]), broken, goodOcr);
+    expect(mustVerifyPage(trust, ['f1'])).toBe(true);
+    expect(trust.failed.has('f1')).toBe(true);
+  });
+
+  it('stops checking for a font with too little text to judge once it has been seen on a few pages', () => {
+    const trust = newFontTrust();
+    for (let i = 0; i < 2; i++) recordVerifiedPage(trust, new Map([['body', good]]), goodOcr);
+    for (let i = 0; i < SPARSE_AFTER_PAGES - 1; i++) {
+      recordVerifiedPage(trust, new Map([['heading', 'अध्याय']]), goodOcr);
+      expect(mustVerifyPage(trust, ['body', 'heading'])).toBe(true);
+    }
+    recordVerifiedPage(trust, new Map([['heading', 'अध्याय']]), goodOcr);
+    expect(mustVerifyPage(trust, ['body', 'heading'])).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import { PDFDocument } from '@cantoo/pdf-lib';
 import { renderAsync } from 'docx-preview';
-import { toCanvas } from 'html-to-image';
+import { getFontEmbedCSS, toCanvas } from 'html-to-image';
 
 import { ensureFontsLoaded } from './fontAsset';
 import { pageCuts } from './pageCuts';
@@ -105,9 +105,13 @@ export async function sectionsToPdf(
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   pdf.setProducer('Hindi PDF Editor');
+  // The fonts are read and embedded once for the whole document: embedding them again for every
+  // page took seconds per page, hours for a long document.
+  const fontHost = sections[0]?.parentElement;
+  const fontEmbedCSS = fontHost ? await getFontEmbedCSS(fontHost) : undefined;
   for (const [index, section] of sections.entries()) {
     const { widthPt, heightPt } = sectionPageSize(section);
-    const canvas = await toCanvas(section, { pixelRatio: CAPTURE_PIXEL_RATIO, backgroundColor: '#ffffff', cacheBust: true });
+    const canvas = await toCanvas(section, { pixelRatio: CAPTURE_PIXEL_RATIO, backgroundColor: '#ffffff', cacheBust: true, fontEmbedCSS });
     const pxPerPt = canvas.width / widthPt;
     for (const [top, bottom] of pageCuts(blankRows(canvas), Math.round(heightPt * pxPerPt))) {
       const slice = document.createElement('canvas');

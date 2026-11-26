@@ -6,6 +6,7 @@ import type { PtBox } from './pdfImageRects';
 import { getPageCount, getPageSize, renderPage, renderPageCanvas, setPdfBytes } from './pdfToImages';
 import type { Ruling } from './pdfRulings';
 import { rulingsFromImage } from './rasterRulings';
+import { sharedPdfDocument } from './sharedPdfDocument';
 import { detectTables, type DetectedTable } from './tableDetect';
 import { pageBlocks, type WordPicture } from './wordLayout';
 import type { OcrLine, PageState } from '../state/editStore';
@@ -13,7 +14,36 @@ import type { OcrLine, PageState } from '../state/editStore';
 /** Scale pages are rendered at for reading, in px per PDF point (as the editor uses). */
 const READ_PX_PER_PT = 2;
 
-export type PdfToWordResult = { blob: Blob; pages: number; emptyPages: number };
+export type PdfToWordResult = {
+  blob: Blob;
+  pages: number;
+  emptyPages: number;
+  /**
+   * Pages (1-based) that needed OCR but were not read (the OCR limit was reached, or OCR was off
+   * for a legacy font or Hindi the PDF does not map to Unicode).
+   */
+  unreadPages: number[];
+};
+
+/**
+ * When pages are read with OCR. `auto`: only pages that need it (scans, text the PDF does not map
+ * to Unicode, legacy fonts that cannot be converted). `off`: never; scanned pages come out empty.
+ * `all`: every page, for PDFs whose text copies out garbled.
+ */
+export type OcrChoice = 'auto' | 'off' | 'all';
+
+/** OCR settings for one conversion. */
+export type PdfToWordOptions = {
+  ocr: OcrChoice;
+  /** Most pages read whole with OCR (see `ocrPageLimit`). */
+  ocrPageLimit: number;
+};
+
+/**
+ * Pages of trusted Hindi fonts between OCR spot checks. The editor checks every 8th page; a long
+ * conversion checks fewer, since a font has already matched OCR on its first pages.
+ */
+const CONVERSION_SPOT_CHECK_EVERY = 64;
 
 /**
  * Converts a PDF to an editable Word file in the browser. Each page's text is read the way the
@@ -23,10 +53,12 @@ export type PdfToWordResult = { blob: Blob; pages: number; emptyPages: number };
  * tables become Word tables (ruled ones, and ones aligned by space), and pictures (logos, photos, stamps) are placed in reading
  * order. Exact positions are not kept.
  *
+ * @param options When to use OCR, and how many pages it may read.
  * @param onProgress Called after each page with pages done and total.
  */
 export async function convertPdfToWord(
   bytes: Uint8Array,
+  options: PdfToWordOptions,
   onProgress: (done: number, total: number) => void,
 ): Promise<PdfToWordResult> {
   setPdfBytes(bytes);
@@ -37,6 +69,17 @@ export async function convertPdfToWord(
   const pages: WordPage[] = new Array<WordPage>(total);
   let next = 0;
   let done = 0;
+  let ocrPages = 0;
+  const unread = new Set<number>();
+  /** Takes one page from the OCR budget, or notes the page as unread when OCR is off or spent. */
+  const allowPageOcr = (pageIndex: number) => (): boolean => {
+    if (options.ocr !== 'off' && ocrPages < options.ocrPageLimit) {
+      ocrPages += 1;
+      return true;
+    }
+    unread.add(pageIndex);
+    return false;
+  };
   const readPage = async (pageIndex: number): Promise<WordPage> => {
     const size = await getPageSize(pageIndex, READ_PX_PER_PT);
     const page: PageState = {
@@ -58,14 +101,25 @@ export async function convertPdfToWord(
     };
     const rulings: Ruling[] = [];
     const pictureBoxes: PtBox[] = [];
+    const allow = allowPageOcr(pageIndex);
+    // Text in a legacy font that cannot be converted must not be used; without OCR the page is unread.
+    if (unconvertible && !allow()) {
+      return { widthPt: page.widthPt, heightPt: page.heightPt, blocks: [] };
+    }
+    const forceOcr = unconvertible || (options.ocr === 'all' && allow());
     const lines = await detectTextLines(page, {
-      forceOcr: unconvertible,
+      forceOcr,
+      ocr: options.ocr === 'off' ? 'off' : undefined,
+      allowPageOcr: forceOcr ? undefined : allow,
+      spotCheckEvery: CONVERSION_SPOT_CHECK_EVERY,
       convertLegacy: legacy.length > 0,
       render,
       readTextImages: true,
       rulings,
       pictures: pictureBoxes,
     });
+    // Without OCR, Hindi the PDF does not map to Unicode is missing letters: list the page.
+    if (options.ocr === 'off' && lines.some((line) => line.source === 'embedded-degraded')) unread.add(pageIndex);
     const pictures = await cutPictures(pageIndex, pictureBoxes);
     let tables = detectTables(rulings);
     let pageLines = lines;
@@ -93,7 +147,12 @@ export async function convertPdfToWord(
     }),
   );
   const emptyPages = pages.filter((page) => page.blocks.length === 0).length;
-  return { blob: await buildWordDocument(pages), pages: total, emptyPages };
+  return {
+    blob: await buildWordDocument(pages),
+    pages: total,
+    emptyPages,
+    unreadPages: [...unread].sort((a, b) => a - b).map((index) => index + 1),
+  };
 }
 
 /** Render scale for pictures, in px per pt (144 dpi: sharp in Word, small files). */
@@ -174,3 +233,25 @@ async function withCellText(pageIndex: number, lines: readonly OcrLine[], tables
   return [...lines.filter((line) => !inside(line)), ...cellLines];
 }
 
+/** What a quick look at a PDF's text layer found (see {@link sampleTextLayer}). */
+export type TextLayerSample = { pages: number; sampled: number; withoutText: number };
+
+/**
+ * Looks at up to `samples` pages spread through the PDF for selectable text, so the screen can
+ * say before converting how many pages will need OCR. Reads text only, no images: a few ms a page.
+ *
+ * @param samples Most pages looked at.
+ */
+export async function sampleTextLayer(bytes: Uint8Array, samples = 12): Promise<TextLayerSample> {
+  const doc = await sharedPdfDocument(bytes);
+  const pages = doc.numPages;
+  const picks = [...new Set(Array.from({ length: Math.min(samples, pages) }, (_, i) => Math.floor((i * pages) / Math.min(samples, pages))))];
+  let withoutText = 0;
+  for (const index of picks) {
+    const page = await doc.getPage(index + 1);
+    const content = await page.getTextContent();
+    if (!content.items.some((item) => 'str' in item && /\S/u.test(item.str))) withoutText += 1;
+    page.cleanup();
+  }
+  return { pages, sampled: picks.length, withoutText };
+}

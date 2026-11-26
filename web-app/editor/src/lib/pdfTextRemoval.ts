@@ -1,14 +1,4 @@
-import {
-  decodePDFRawStream,
-  PDFArray,
-  PDFDict,
-  PDFName,
-  PDFNumber,
-  PDFRawStream,
-  PDFStream,
-  type PDFDocument,
-  type PDFPage,
-} from "@cantoo/pdf-lib";
+import { PDFArray, PDFDict, PDFName, PDFNumber, type PDFDocument } from "@cantoo/pdf-lib";
 
 import {
   removeGlyphsInRects,
@@ -16,6 +6,7 @@ import {
   type RemovalResult,
   type UserRect,
 } from "./contentStreamText";
+import { decodedContents } from "./pdfPageContents";
 
 function numberAt(array: PDFArray, index: number): number | undefined {
   const value = array.lookup(index);
@@ -86,35 +77,6 @@ export function fontMetricsOf(font: PDFDict): FontMetrics | undefined {
     codeBytes: 1,
     width: (code) => (numberAt(widths, code - firstChar) ?? missing) * widthScale,
   };
-}
-
-/** One char per byte. `TextDecoder("latin1")` is windows-1252 and would remap 0x80–0x9F. */
-function bytesToLatin1(bytes: Uint8Array): string {
-  let text = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    text += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return text;
-}
-
-function decodedContents(doc: PDFDocument, page: PDFPage): string {
-  const contents = page.node.Contents();
-  if (!contents) return "";
-  const streams =
-    contents instanceof PDFArray
-      ? contents.asArray().map((ref) => doc.context.lookup(ref))
-      : [contents];
-  return streams
-    .map((stream) => {
-      if (stream instanceof PDFRawStream) {
-        return bytesToLatin1(decodePDFRawStream(stream).decode());
-      }
-      if (stream instanceof PDFStream) {
-        return bytesToLatin1(stream.getContents());
-      }
-      return "";
-    })
-    .join("\n");
 }
 
 function latin1Bytes(text: string): Uint8Array {

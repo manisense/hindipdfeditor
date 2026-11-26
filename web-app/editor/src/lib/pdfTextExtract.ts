@@ -6,7 +6,9 @@ import { krutiDevToUnicode } from './krutiDev';
 import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
 import { sharedPdfDocument } from './sharedPdfDocument';
 import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
+import { applyActualText, drawnGlyphs, markedContentStarts, type ActualTextResult } from './pdfActualText';
 import { imageRectsFromOperators, pictureBoxes, textImageRows, type PtBox } from './pdfImageRects';
+import { pageContents } from './pdfPageContents';
 import { rulingsFromOperators, type Ruling } from './pdfRulings';
 import { strokeEmPerItem, strokeRunsFromOperators } from './textStroke';
 import type { FontHint, OcrLine } from '../state/editStore';
@@ -23,10 +25,13 @@ export type EmbeddedTextRun = {
   /** Baseline, in PDF points from the page top. */
   baselineYPt?: number;
   font?: FontHint;
+  /** Position in drawing order (pdf.js item index). */
+  order?: number;
 };
 
 const LINE_Y_TOLERANCE_RATIO = 0.55;
 const WORD_GAP_RATIO = 0.12;
+const DEVANAGARI_LETTER = /[\u0900-\u097F]/u;
 const COLUMN_GAP_RATIO = 0.75;
 
 function isPrivateUseCodePoint(codePoint: number | undefined): boolean {
@@ -182,8 +187,23 @@ export async function extractEmbeddedTextLines(
     };
     // Unmapped glyphs come out as U+0000; each becomes a placeholder for its font and glyph, so it
     // can be learned and repaired. Only when they line up one to one with the drawn glyphs.
-    const unmapped = unmappedGlyphs(operators.fnArray, operators.argsArray, (name) => fontNameOf(name) ?? name);
-    const itemTexts = textContent.items.map((item) => ('str' in item ? item.str : ''));
+    let unmapped = unmappedGlyphs(operators.fnArray, operators.argsArray, (name) => fontNameOf(name) ?? name);
+    let itemTexts = textContent.items.map((item) => ('str' in item ? item.str : ''));
+    // Items whose glyphs moved into another item's /ActualText: that item's run covers them.
+    let absorbedInto: (number | null)[] = [];
+    // Pages that draw their spaces (Chrome, Google Docs) break words only where a space is drawn.
+    let spaceAfter: boolean[] | null = null;
+    // Producers that leave glyphs unmapped (Chrome, Google Docs) often give their text as
+    // /ActualText in marked content: read it before falling back to placeholders and OCR.
+    if (unmapped.length > 0 || (operators.fnArray.includes(OPS.beginMarkedContentProps) && (await madeBySkia(pdfBytes)))) {
+      const fixed = await withActualText(pdfBytes, pageIndex, operators.fnArray, operators.argsArray, itemTexts);
+      if (fixed && fixed.replaced.length === unmapped.length) {
+        itemTexts = fixed.items;
+        absorbedInto = fixed.into;
+        if (fixed.drawsSpaces) spaceAfter = fixed.spaceAfter;
+        unmapped = unmapped.filter((_, i) => !fixed.replaced[i]);
+      }
+    }
     const NUL = String.fromCharCode(0);
     const nulls = itemTexts.reduce((count, text) => count + text.split(NUL).length - 1, 0);
     if (nulls > 0 && nulls === unmapped.length) {
@@ -201,6 +221,7 @@ export async function extractEmbeddedTextLines(
       strokeRunsFromOperators(operators.fnArray, operators.argsArray, OPS),
     );
     const runs: EmbeddedTextRun[] = [];
+    const runOfItem = new Map<number, EmbeddedTextRun>();
     let degraded = false;
 
     const legacyFonts = new Set<string>();
@@ -251,7 +272,8 @@ export async function extractEmbeddedTextLines(
 
       if (![xPt, yPt, wPt, fontHeightPt].every(Number.isFinite)) return [];
 
-      runs.push({
+      const run: EmbeddedTextRun = {
+        order: itemIndex,
         text,
         xPt,
         yPt: Math.max(0, yPt),
@@ -259,7 +281,7 @@ export async function extractEmbeddedTextLines(
         hPt: fontHeightPt,
         hasEol: item.hasEOL,
         leadingSpace: /^\s/u.test(normalized),
-        trailingSpace: /\s$/u.test(normalized),
+        trailingSpace: /\s$/u.test(normalized) || Boolean(spaceAfter?.[itemIndex]),
         baselineYPt: baselineY,
         // Converted KrutiDev runs carry no usable style information (pdf.js guesses "serif");
         // Noto Sans is the closer look for them.
@@ -269,8 +291,21 @@ export async function extractEmbeddedTextLines(
               fontHintFromPdfFont(fontNameOf(item.fontName), style?.fontFamily, Math.abs(item.transform[2]) > 0.001),
               itemStrokes[itemIndex],
             ),
-      });
+      };
+      runs.push(run);
+      runOfItem.set(itemIndex, run);
     }
+    absorbedInto.forEach((target, itemIndex) => {
+      const run = target === null ? undefined : runOfItem.get(target);
+      const item = textContent.items[itemIndex];
+      if (!run || !item || !('str' in item)) return;
+      const [left] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
+      const right = left + textItemWidthPt(item.width * viewport.scale, run.hPt);
+      if (![left, right].every(Number.isFinite)) return;
+      const end = Math.max(run.xPt + run.wPt, right);
+      run.xPt = Math.min(run.xPt, left);
+      run.wPt = end - run.xPt;
+    });
 
     // Table borders, in editor space: for table detection, and as walls text images are not
     // joined across.
@@ -319,12 +354,22 @@ export async function extractEmbeddedTextLines(
       });
     }
 
-    const lines = clusterRunsIntoLines(withoutRepeatedRuns(runs)).map((line) => {
+    const lines = clusterRunsIntoLines(withoutRepeatedRuns(runs), { spacesDrawn: spaceAfter !== null }).map((line) => {
       const repaired = options.glyphReadings ? repairText(line.text, options.glyphReadings, isGlyphPlaceholder) : line.text;
       if (options.keepGlyphPlaceholders || !hasGlyphPlaceholder(repaired)) return { ...line, text: repaired };
       degraded = true;
       return { ...line, text: [...repaired].filter((c) => !isGlyphPlaceholder(c)).join('').replace(/\s+/gu, ' ').trim() };
     });
+    // Producers that draw spaces split one font into subsets that each hold only pieces of words
+    // (ि in one, its consonant in another), so their text is judged as a whole, by font family.
+    if (spaceAfter !== null && options.devanagariTextByFont && options.devanagariTextByFont.size > 0) {
+      const families = [...options.devanagariTextByFont.keys()].map((name) => (fontNameOf(name) ?? name).replace(/^[A-Z]{6}\+/u, ''));
+      options.devanagariTextByFont.clear();
+      options.devanagariTextByFont.set(
+        `family:${[...new Set(families)].sort().join(',')}`,
+        lines.filter((line) => /[\u0900-\u097F]/u.test(line.text)).map((line) => line.text).join(' '),
+      );
+    }
     return lines.map((line) => ({
       id: crypto.randomUUID(),
       text: line.text,
@@ -371,15 +416,84 @@ function unmappedGlyphs(
   return glyphs;
 }
 
+const skiaDocuments = new WeakMap<Uint8Array, Promise<boolean>>();
+
+/**
+ * Whether Chrome, Google Docs or another Skia-based producer made the file. Their pages need
+ * /ActualText and drawn spaces read even without unmapped glyphs (see pdfActualText.ts); other
+ * producers' marked content (Word tags every paragraph) is left alone, so their files are never
+ * parsed a second time.
+ */
+function madeBySkia(pdfBytes: Uint8Array): Promise<boolean> {
+  let made = skiaDocuments.get(pdfBytes);
+  if (!made) {
+    made = sharedPdfDocument(pdfBytes)
+      .then((doc) => doc.getMetadata())
+      .then(({ info }) => /skia/iu.test(String((info as { Producer?: unknown }).Producer ?? '')))
+      .catch(() => false);
+    skiaDocuments.set(pdfBytes, made);
+  }
+  return made;
+}
+
+/**
+ * The page's text items with `/ActualText` put in place of unmapped glyphs (see pdfActualText.ts),
+ * or null when the page has none or they cannot be lined up.
+ *
+ * @param pageIndex Zero-based page index.
+ */
+async function withActualText(
+  pdfBytes: Uint8Array,
+  pageIndex: number,
+  fnArray: number[],
+  argsArray: unknown[],
+  items: string[],
+): Promise<ActualTextResult | null> {
+  try {
+    const starts = markedContentStarts(await pageContents(pdfBytes, pageIndex));
+    if (!starts.some((start) => start.actualText !== null)) return null;
+    const glyphs = drawnGlyphs(fnArray, argsArray, starts, OPS);
+    return glyphs ? applyActualText(items, glyphs, starts.map((start) => start.actualText)) : null;
+  } catch {
+    // An unreadable content stream leaves the page as pdf.js read it (placeholders, then OCR).
+    return null;
+  }
+}
+
 /** Adds a faux-bold stroke to a font hint when the run was painted with one. */
 function withStroke(font: FontHint, strokeEm: number): FontHint {
   return strokeEm > 0 ? { ...font, strokeEm } : font;
 }
 
-function shouldInsertSpace(previous: EmbeddedTextRun, current: EmbeddedTextRun): boolean {
+function shouldInsertSpace(previous: EmbeddedTextRun, current: EmbeddedTextRun, spacesDrawn: boolean): boolean {
   if (previous.trailingSpace || current.leadingSpace) return true;
+  // Inside Devanagari only drawn spaces break words: clusters drawn in visual order leave gaps.
+  // A space can be drawn after the next run of another script, so other boundaries use the gap.
+  if (spacesDrawn && DEVANAGARI_LETTER.test(previous.text.at(-1) ?? '') && DEVANAGARI_LETTER.test(current.text.at(0) ?? '')) return false;
   const gap = current.xPt - (previous.xPt + previous.wPt);
   return gap > Math.min(previous.hPt, current.hPt) * WORD_GAP_RATIO;
+}
+
+/**
+ * Reading order of one line on a page that draws its spaces: Devanagari runs in drawing order
+ * (their clusters are drawn in visual order, so left to right is wrong inside words), and every
+ * other run placed among them by position (Chrome draws a line's runs font by font, so a comma
+ * in a Latin font is drawn after the Hindi around it).
+ */
+function drawnLineOrder(group: readonly EmbeddedTextRun[]): EmbeddedTextRun[] {
+  const hindi = group.filter((run) => DEVANAGARI_LETTER.test(run.text)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const others = group.filter((run) => !DEVANAGARI_LETTER.test(run.text)).sort((a, b) => a.xPt - b.xPt);
+  const ordered = [...hindi];
+  for (const run of others) {
+    const before = ordered.findIndex((placed) => placed !== run && DEVANAGARI_LETTER.test(placed.text) && placed.xPt > run.xPt);
+    if (before < 0) {
+      ordered.push(run);
+    } else {
+      // After any non-Devanagari runs already placed just before that Hindi run, to keep their order.
+      ordered.splice(before, 0, run);
+    }
+  }
+  return ordered;
 }
 
 /** Groups adjacent PDF.js text runs into trustworthy line-level boxes. */
@@ -406,10 +520,23 @@ export function withoutRepeatedRuns(runs: readonly EmbeddedTextRun[]): EmbeddedT
   return kept;
 }
 
-export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): EmbeddedTextRun[] {
+/**
+ * Groups runs into lines (sizes in pt).
+ *
+ * @param options.spacesDrawn The page draws its spaces as glyphs (Chrome, Google Docs): a line's
+ *   runs are joined in drawing order, which is reading order there (Devanagari is drawn in visual
+ *   order, so left-to-right is not), and Devanagari words break only at drawn spaces.
+ */
+export function clusterRunsIntoLines(
+  runs: readonly EmbeddedTextRun[],
+  options: { spacesDrawn?: boolean } = {},
+): EmbeddedTextRun[] {
   if (runs.length === 0) return [];
 
-  const sorted = runs.slice().sort((a, b) => a.yPt - b.yPt || a.xPt - b.xPt);
+  // By baseline where known: runs of one line in fonts of different heights (Hindi and a Latin
+  // comma) have different tops but one baseline.
+  const baselineOf = (run: EmbeddedTextRun) => run.baselineYPt ?? run.yPt + run.hPt;
+  const sorted = runs.slice().sort((a, b) => baselineOf(a) - baselineOf(b) || a.xPt - b.xPt);
   const groups: EmbeddedTextRun[][] = [];
 
   for (const run of sorted) {
@@ -422,8 +549,10 @@ export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): Embedded
     const previous = last[last.length - 1];
     const yTolerance = Math.max(3, sample.hPt * LINE_Y_TOLERANCE_RATIO);
     const sameBaseline =
-      Math.abs(run.yPt + run.hPt / 2 - (sample.yPt + sample.hPt / 2)) <=
-      yTolerance;
+      Math.abs(run.yPt + run.hPt / 2 - (sample.yPt + sample.hPt / 2)) <= yTolerance ||
+      (run.baselineYPt !== undefined &&
+        sample.baselineYPt !== undefined &&
+        Math.abs(run.baselineYPt - sample.baselineYPt) <= Math.max(1.5, 0.2 * Math.min(run.hPt, sample.hPt)));
     const horizontalGap = run.xPt - (previous.xPt + previous.wPt);
     const isSeparateColumn =
       horizontalGap > Math.max(previous.hPt, run.hPt) * COLUMN_GAP_RATIO;
@@ -438,7 +567,7 @@ export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): Embedded
   }
 
   return groups.map((group) => {
-    const ordered = group.slice().sort((a, b) => a.xPt - b.xPt);
+    const ordered = options.spacesDrawn ? drawnLineOrder(group) : group.slice().sort((a, b) => a.xPt - b.xPt);
     const xPt = Math.min(...ordered.map((run) => run.xPt));
     const yPt = Math.min(...ordered.map((run) => run.yPt));
     const right = Math.max(...ordered.map((run) => run.xPt + run.wPt));
@@ -446,7 +575,7 @@ export function clusterRunsIntoLines(runs: readonly EmbeddedTextRun[]): Embedded
     const widest = ordered.reduce((a, b) => (b.wPt > a.wPt ? b : a));
     let text = ordered[0]?.text ?? '';
     for (let index = 1; index < ordered.length; index += 1) {
-      text += `${shouldInsertSpace(ordered[index - 1], ordered[index]) ? ' ' : ''}${ordered[index].text}`;
+      text += `${shouldInsertSpace(ordered[index - 1], ordered[index], Boolean(options.spacesDrawn)) ? ' ' : ''}${ordered[index].text}`;
     }
     return {
       text: text.normalize('NFC').replace(/\s+/gu, ' ').trim(),
