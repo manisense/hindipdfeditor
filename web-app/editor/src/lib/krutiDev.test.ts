@@ -9,6 +9,10 @@ it.each([
   ['ij ykxw dsUnzh; flfoy lsok fu;ekoyh }kjk vf/k’kkflr', 'पर लागू केन्द्रीय सिविल सेवा नियमावली द्वारा अधिशासित'],
   ['dkWye', 'कॉलम'],
   ['fu/kkZfjr', 'निर्धारित'],
+  ['pkSFkk', 'चौथा'],
+  ['pSu', 'चैन'],
+  ['fMfLVªDV', 'डिस्ट्रिक्ट'],
+  ['fLIyV', 'स्प्लिट'],
 ])('%s', (kruti, unicode) => {
   expect(krutiDevToUnicode(kruti)).toBe(unicode);
 });
