@@ -21,6 +21,7 @@ import {
   hasDevanagari,
   isEmbeddedDevanagariCorrupted,
   isLikelyOcrNoise,
+  readsAsHindi,
   missedDevanagariRows,
   embeddedDevanagariVerdict,
   trimOcrBorderNoise,
@@ -39,7 +40,8 @@ import {
 } from "./embeddedTextTrust";
 import { currentDeviceHints, poolSizeFor } from "./ocrPoolSize";
 import { mayShowText, stackStrips, type PtBox as ImageBox } from "./pdfImageRects";
-import { sharedPdfDocument } from "./sharedPdfDocument";
+import { repairedFontsOf, sharedPdfDocument } from "./sharedPdfDocument";
+import { loadHindiSpeller } from "./hindiDictionary";
 import { OPS } from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { Ruling } from "./pdfRulings";
 import { extractEmbeddedTextLines } from "./pdfTextExtract";
@@ -537,6 +539,12 @@ async function verifyEmbeddedDevanagari(
     const embeddedText = embedded.map((line) => line.text).join(" ");
     if (!degraded && !isEmbeddedDevanagariCorrupted(embeddedText, hindiPage.text, { converted })) {
       return embedded;
+    }
+    // Text repaired from its own font is kept when it reads as Hindi, though OCR of the page
+    // disagrees: Tesseract misreads tables and small print far more often than a font lies.
+    if (!degraded && !converted && (await repairedFontsOf(pdfBytes)).length > 0) {
+      const speller = await loadHindiSpeller().catch(() => null);
+      if (speller && readsAsHindi(embeddedText, (word) => speller.isKnown(word))) return embedded;
     }
     // English names, IDs and dates inside Hindi lines are read by the English model.
     const hasMixedLines = embedded.some(
