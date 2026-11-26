@@ -371,7 +371,7 @@ export const TOOL_GUIDES: Record<ToolId, ToolGuide> = {
     },
   },
   krutidev: {
-    guides: ["kruti-dev-to-unicode-hindi-pdf-editor", "fix-broken-hindi-fonts-in-pdf"],
+    guides: ["kruti-dev-to-unicode-hindi-pdf-editor", "mangal-to-kruti-dev-converter", "fix-broken-hindi-fonts-in-pdf"],
     en: {
       heading: "How to convert a KrutiDev PDF to Unicode",
       steps: [
@@ -410,7 +410,7 @@ export const TOOL_GUIDES: Record<ToolId, ToolGuide> = {
     },
   },
   "unicode-to-krutidev": {
-    guides: ["kruti-dev-to-unicode-hindi-pdf-editor", "fix-broken-hindi-fonts-in-pdf"],
+    guides: ["mangal-to-kruti-dev-converter", "kruti-dev-to-unicode-hindi-pdf-editor"],
     en: {
       heading: "How to convert Unicode (Mangal) to KrutiDev",
       steps: [

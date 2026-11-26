@@ -118,16 +118,127 @@
         "a": "Kruti Dev और DevLys पेज के लिए हाँ: वेब एडिटर उनका टेक्स्ट Unicode में बदलकर पेज की इमेज से मिलाता है। सेव करने से पहले हर लाइन पढ़ें। दूसरे पुराने फॉन्ट नहीं बदले जाते।"
       }
     ],
-    "reviewedDate": "2026-11-22",
+    "reviewedDate": "2026-11-27",
     "sample": true,
     "alternateSlug": "kruti-dev-to-unicode-hindi-pdf-editor",
     "relatedSlugs": [
-      "hindi-pdf-font-kaise-thik-kare"
+      "hindi-pdf-font-kaise-thik-kare",
+      "mangal-se-kruti-dev-kaise-badle"
     ],
     "sources": [
       {
         "label": "Unicode: Indic scripts, fonts and rendering",
         "url": "https://www.unicode.org/faq/indic.html"
+      }
+    ]
+  },
+  {
+    "slug": "mangal-se-kruti-dev-kaise-badle",
+    "title": "मंगल से कृतिदेव और कृतिदेव से मंगल: हिंदी टेक्स्ट और वर्ड फाइल कैसे बदलें",
+    "category": "फॉन्ट कन्वर्जन",
+    "language": "hi",
+    "status": "published",
+    "publishedDate": "2026-11-27",
+    "reviewedDate": "2026-11-27",
+    "metaDescription": "हिंदी को यूनिकोड (मंगल) और कृतिदेव 010 के बीच दोनों तरफ बदलें, टेक्स्ट पेस्ट करके या पूरी वर्ड फाइल से, और इस्तेमाल से पहले नतीजा जाँचें।",
+    "directAnswer": "मंगल यूनिकोड फॉन्ट है। कृतिदेव 010 पुराना फॉन्ट है, जो हिंदी को अंग्रेज़ी कुंजियों के कोड में रखता है। इसलिए सिर्फ फॉन्ट बदलने से टेक्स्ट बिगड़ जाता है; अक्षरों को ही बदलना पड़ता है। टेक्स्ट को यूनिकोड ↔ कृतिदेव कन्वर्टर में पेस्ट करें या .docx फाइल डालें। फिर नतीजे को कृतिदेव 010 (या मंगल) फॉन्ट में रखें और इस्तेमाल से पहले एक बार पढ़ लें।",
+    "sections": [
+      {
+        "heading": "सिर्फ फॉन्ट बदलना क्यों काफी नहीं",
+        "paragraphs": [
+          "यूनिकोड में भारत शब्द भ, ा, र और त अक्षरों के रूप में रखा जाता है, और कोई भी हिंदी फॉन्ट उसे दिखा सकता है। कृतिदेव 010 में यही शब्द Hkkjr रखा जाता है, यानी टाइपिस्ट की दबाई कुंजियाँ। इन कुंजियों को हिंदी की तरह सिर्फ कृतिदेव फॉन्ट दिखाता है।",
+          "वर्ड में यूनिकोड टेक्स्ट चुनकर फॉन्ट कृतिदेव कर दें, तो गलत अक्षर आते हैं। कृतिदेव टेक्स्ट का फॉन्ट मंगल कर दें, तो Hkkjr दिखता है। इसलिए अक्षरों को बदलना पड़ता है, सिर्फ फॉन्ट नहीं।"
+        ]
+      },
+      {
+        "heading": "यूनिकोड (मंगल) से कृतिदेव",
+        "paragraphs": [
+          "कृतिदेव में अक्षर उसी क्रम में टाइप होते हैं जैसे वे कागज़ पर दिखते हैं, इसलिए कन्वर्टर को कुछ अक्षरों का क्रम बदलना पड़ता है। ि की मात्रा अपने संयुक्त अक्षर से पहले टाइप होती है: हिन्दी बनता है fgUnh। रेफ (अक्षर के ऊपर लगने वाला र्) अपने अक्षर के बाद टाइप होता है: धर्म बनता है /keZ और कार्य बनता है dk;Z। क्ष, त्र, ज्ञ और श्र जैसे संयुक्ताक्षरों की अपनी कुंजियाँ हैं।",
+          "ॐ जैसे कुछ अक्षरों की कृतिदेव 010 में कोई कुंजी नहीं है। अच्छा कन्वर्टर उन्हें बिना बदले रखता है और बताता है कि वे कौन-से हैं, ताकि आप उन्हें हाथ से ठीक कर सकें। उन्हें चुपचाप हटाना नहीं चाहिए।"
+        ]
+      },
+      {
+        "heading": "कृतिदेव से यूनिकोड (कृतिदेव से मंगल)",
+        "paragraphs": [
+          "उलटी दिशा में कुंजियों के कोड फिर से असली हिंदी अक्षर बनते हैं, जो खोज, ईमेल, व्हाट्सऐप और हर फॉन्ट में चलते हैं।",
+          "यह तभी सही चलता है जब टेक्स्ट सच में कृतिदेव में हो। उसी बॉक्स में डाले गए अंग्रेज़ी शब्द भी बदल जाते हैं और बेमतलब हिंदी बन जाते हैं, इसलिए सिर्फ हिंदी पेस्ट करें। वर्ड फाइल में इस साइट का कन्वर्टर सिर्फ कृतिदेव या देवलिस फॉन्ट वाला टेक्स्ट बदलता है, बाकी को नहीं छूता। फाइल पीडीएफ हो, तो कृतिदेव पीडीएफ टूल इस्तेमाल करें, जो यूनिकोड हिंदी वाली वर्ड फाइल देता है।"
+        ]
+      },
+      {
+        "heading": "वर्ड फाइल में क्या बदलता है और क्या नहीं",
+        "paragraphs": [
+          ".docx फाइल बदलने पर हिंदी टेक्स्ट के अक्षर बदलते हैं और उसे नया फॉन्ट मिलता है। अंग्रेज़ी शब्द अलग किए जाते हैं, ताकि उनका फॉन्ट न बदले और वे अंग्रेज़ी ही पढ़े जाएं। साइज, बोल्ड और इटैलिक बने रहते हैं। टेबल, तस्वीरें और पेज का लेआउट नहीं छुए जाते।",
+          "सिर्फ .docx फाइलें बदलती हैं। पुरानी .doc फाइल को पहले वर्ड में .docx के रूप में सेव करें। बदली हुई फाइल नए डाउनलोड के रूप में मिलती है, और आपकी मूल फाइल वैसी ही रहती है।"
+        ]
+      },
+      {
+        "heading": "इस्तेमाल से पहले नतीजा जाँचें",
+        "paragraphs": [
+          "फॉन्ट लगाकर बदला हुआ टेक्स्ट एक बार पढ़ें। नाम, अंक, कम इस्तेमाल होने वाले संयुक्ताक्षर और क़, ज़, फ़ जैसे नुक्ता वाले अक्षर खास तौर पर देखें।",
+          "कृतिदेव टेक्स्ट को हिंदी में देखने के लिए, फाइल खोलने वाले कंप्यूटर पर कृतिदेव 010 फॉन्ट होना चाहिए। अगर कोई पोर्टल या टाइपिंग टेस्ट किसी खास फॉन्ट का नाम देता है, तो वही इस्तेमाल करें।"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "दिशा चुनें",
+        "desc": "कृतिदेव 010 के कोड पाने के लिए यूनिकोड → कृतिदेव चुनें, या कृतिदेव टेक्स्ट को यूनिकोड हिंदी में बदलने के लिए कृतिदेव → यूनिकोड।"
+      },
+      {
+        "title": "टेक्स्ट पेस्ट करें या .docx डालें",
+        "desc": "पेस्ट किया टेक्स्ट टाइप करते ही बदलता है। वर्ड फाइल पूरी बदलकर नई फाइल के रूप में डाउनलोड होती है।"
+      },
+      {
+        "title": "फॉन्ट लगाएं और जाँचें",
+        "desc": "कृतिदेव नतीजा कृतिदेव 010 फॉन्ट वाले डॉक्यूमेंट में, और यूनिकोड नतीजा मंगल फॉन्ट वाले डॉक्यूमेंट में पेस्ट करें, फिर एक बार पढ़ें।"
+      }
+    ],
+    "faqs": [
+      {
+        "q": "क्या Kurti Dev और Kruti Dev एक ही हैं?",
+        "a": "हाँ। \"Kurti Dev\" और \"Kurtidev\" कृतिदेव (Kruti Dev) की आम गलत स्पेलिंग हैं। कृतिदेव 010 इसका सबसे ज़्यादा इस्तेमाल होने वाला रूप है।"
+      },
+      {
+        "q": "भारत की जगह Hkkjr क्यों दिखता है?",
+        "a": "यह साधारण फॉन्ट में दिख रहा कृतिदेव टेक्स्ट है। हिंदी देखने के लिए फॉन्ट कृतिदेव 010 करें, या इसे यूनिकोड में बदलें ताकि हर फॉन्ट में सही पढ़ा जाए।"
+      },
+      {
+        "q": "क्या बदलने के लिए कृतिदेव फॉन्ट चाहिए?",
+        "a": "नहीं, कन्वर्टर फॉन्ट के बिना काम करता है। फॉन्ट सिर्फ कृतिदेव टेक्स्ट को हिंदी में देखने के लिए चाहिए।"
+      },
+      {
+        "q": "क्या कृतिदेव पीडीएफ बदल सकते हैं?",
+        "a": "हाँ, कृतिदेव पीडीएफ से यूनिकोड टूल से। यह कृतिदेव या देवलिस पीडीएफ को यूनिकोड हिंदी वाली वर्ड फाइल में बदलता है और हर पेज को टेक्स्ट पहचान से मिलाता है।"
+      },
+      {
+        "q": "क्या मेरा टेक्स्ट कहीं अपलोड होता है?",
+        "a": "नहीं। कन्वर्टर आपके ब्राउज़र में चलता है, और आपका टेक्स्ट और वर्ड फाइल आपके डिवाइस पर ही रहते हैं।"
+      }
+    ],
+    "sample": false,
+    "toolPath": "/tools/unicode-to-krutidev/?lang=hi",
+    "cta": {
+      "heading": "अपना टेक्स्ट बदलें",
+      "body": "हिंदी टेक्स्ट पेस्ट करें या वर्ड फाइल डालें और उसे यूनिकोड (मंगल) और कृतिदेव 010 के बीच बदलें। यह आपके ब्राउज़र में चलता है और फाइल आपके डिवाइस पर ही रहती है।",
+      "label": "यूनिकोड ↔ कृतिदेव कन्वर्टर खोलें"
+    },
+    "alternateSlug": "mangal-to-kruti-dev-converter",
+    "relatedSlugs": [
+      "kruti-dev-pdf-unicode-converter-hindi",
+      "hindi-pdf-font-kaise-thik-kare"
+    ],
+    "sources": [
+      {
+        "label": "Unicode: देवनागरी कोड चार्ट (U+0900–U+097F)",
+        "url": "https://www.unicode.org/charts/PDF/U0900.pdf"
+      },
+      {
+        "label": "Unicode: भारतीय लिपियाँ, फॉन्ट और रेंडरिंग",
+        "url": "https://www.unicode.org/faq/indic.html"
+      },
+      {
+        "label": "Microsoft: मंगल फॉन्ट",
+        "url": "https://learn.microsoft.com/en-us/typography/font-list/mangal"
       }
     ]
   },
@@ -462,16 +573,127 @@
         "a": "For Kruti Dev and DevLys pages, yes: the web editor converts their text to Unicode and checks it against the page image. Read each line before saving. Other legacy fonts are not converted."
       }
     ],
-    "reviewedDate": "2026-11-22",
+    "reviewedDate": "2026-11-27",
     "sample": true,
     "alternateSlug": "kruti-dev-pdf-unicode-converter-hindi",
     "relatedSlugs": [
-      "fix-broken-hindi-fonts-in-pdf"
+      "fix-broken-hindi-fonts-in-pdf",
+      "mangal-to-kruti-dev-converter"
     ],
     "sources": [
       {
         "label": "Unicode: Indic scripts, fonts and rendering",
         "url": "https://www.unicode.org/faq/indic.html"
+      }
+    ]
+  },
+  {
+    "slug": "mangal-to-kruti-dev-converter",
+    "title": "Mangal to Kruti Dev and back: convert Hindi text and Word files",
+    "category": "Typography & Fonts",
+    "language": "en",
+    "status": "published",
+    "publishedDate": "2026-11-27",
+    "reviewedDate": "2026-11-27",
+    "metaDescription": "Convert Hindi between Unicode (Mangal) and KrutiDev 010 in both directions, for pasted text or a whole Word file, and check the result before you use it.",
+    "directAnswer": "Mangal is a Unicode font. KrutiDev 010 is an older font that stores Hindi as English key codes. Changing the font alone turns the text into gibberish, so the text itself has to be converted. Paste it into a Unicode ↔ KrutiDev converter or upload a .docx file, set the result in Kruti Dev 010 (or Mangal), and read it once before you use it.",
+    "sections": [
+      {
+        "heading": "Why changing the font is not enough",
+        "paragraphs": [
+          "In Unicode, भारत is stored as the letters भ, ा, र and त, and any Hindi font can draw it. In KrutiDev 010 the same word is stored as Hkkjr: the keys a typist presses. Only the KrutiDev font draws those keys as Hindi.",
+          "Select Unicode text in Word and switch it to Kruti Dev, and you get wrong letters. Switch KrutiDev text to Mangal, and you see Hkkjr. The characters have to be converted, not just restyled."
+        ]
+      },
+      {
+        "heading": "Unicode (Mangal) to KrutiDev",
+        "paragraphs": [
+          "KrutiDev is typed in the order the letters appear on paper, so a converter has to reorder some of them. The vowel sign ि is typed before its consonant cluster: हिन्दी becomes fgUnh. The reph (र् written above a letter) is typed after its syllable: धर्म becomes /keZ and कार्य becomes dk;Z. Conjuncts such as क्ष, त्र, ज्ञ and श्र have keys of their own.",
+          "A few characters, such as ॐ, have no key in KrutiDev 010. A careful converter keeps them unchanged and tells you which ones they are, so you can deal with them by hand. It should never drop them silently."
+        ]
+      },
+      {
+        "heading": "KrutiDev to Unicode (Kruti Dev to Mangal)",
+        "paragraphs": [
+          "The reverse turns key codes back into real Hindi letters. Those letters work in search, email, WhatsApp and every font.",
+          "This only works on text that really is KrutiDev. English words pasted into the same box are converted too and come out as meaningless Hindi, so paste only the Hindi. In a Word file, the converter on this site changes only text set in a KrutiDev or DevLys font and leaves the rest alone. If the file is a PDF, use the KrutiDev PDF tool, which gives you a Word file with Unicode Hindi."
+        ]
+      },
+      {
+        "heading": "Word files: what changes and what stays",
+        "paragraphs": [
+          "When you convert a .docx file, the Hindi text gets the new font and its letters are converted. English words are split into their own runs, so they keep their font and still read as English. Size, bold and italic carry over. Tables, pictures and page layout are not touched.",
+          "Only .docx files work. Save an old .doc file as .docx in Word first. The converted file is a new download, and your original file stays as it was."
+        ]
+      },
+      {
+        "heading": "Check the result before you use it",
+        "paragraphs": [
+          "Read the converted text once, with the font set. Pay attention to names, numbers, rare conjuncts and nukta letters such as क़, ज़ and फ़.",
+          "To see KrutiDev text as Hindi, the Kruti Dev 010 font has to be installed on the computer that opens the file. If a portal or a typing test names a particular font, use that one."
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Pick the direction",
+        "desc": "Choose Unicode → KrutiDev to get KrutiDev 010 key codes, or KrutiDev → Unicode to turn KrutiDev text back into Unicode Hindi."
+      },
+      {
+        "title": "Paste text or upload a .docx",
+        "desc": "Pasted text converts as you type. A Word file is converted whole and downloaded as a new file."
+      },
+      {
+        "title": "Set the font and check",
+        "desc": "Paste KrutiDev output into a document set in Kruti Dev 010, or Unicode output into one set in Mangal, and read it once."
+      }
+    ],
+    "faqs": [
+      {
+        "q": "Is Kurti Dev the same as Kruti Dev?",
+        "a": "Yes. \"Kurti Dev\" and \"Kurtidev\" are common misspellings of Kruti Dev, the older Hindi font family. KrutiDev 010 is its most used version."
+      },
+      {
+        "q": "Why do I see Hkkjr instead of भारत?",
+        "a": "That is KrutiDev text shown in a normal font. Set it in Kruti Dev 010 to see Hindi, or convert it to Unicode so it reads correctly in any font."
+      },
+      {
+        "q": "Do I need the Kruti Dev font to convert?",
+        "a": "No. The converter works without it. You only need the font installed to see KrutiDev text as Hindi."
+      },
+      {
+        "q": "Can I convert a KrutiDev PDF?",
+        "a": "Yes, with the KrutiDev PDF to Unicode tool. It turns a KrutiDev or DevLys PDF into a Word file with Unicode Hindi and checks each page against text recognition."
+      },
+      {
+        "q": "Is my text uploaded anywhere?",
+        "a": "No. The converter runs in your browser, and your text and Word file stay on your device."
+      }
+    ],
+    "sample": false,
+    "toolPath": "/tools/unicode-to-krutidev/",
+    "cta": {
+      "heading": "Convert your text",
+      "body": "Paste Hindi text or upload a Word file and convert it between Unicode (Mangal) and KrutiDev 010. It runs in your browser and your file stays on your device.",
+      "label": "Open the Unicode ↔ KrutiDev converter"
+    },
+    "alternateSlug": "mangal-se-kruti-dev-kaise-badle",
+    "relatedSlugs": [
+      "kruti-dev-to-unicode-hindi-pdf-editor",
+      "fix-broken-hindi-fonts-in-pdf"
+    ],
+    "sources": [
+      {
+        "label": "Unicode: Devanagari code chart (U+0900–U+097F)",
+        "url": "https://www.unicode.org/charts/PDF/U0900.pdf"
+      },
+      {
+        "label": "Unicode: Indic scripts, fonts and rendering",
+        "url": "https://www.unicode.org/faq/indic.html"
+      },
+      {
+        "label": "Microsoft: Mangal font",
+        "url": "https://learn.microsoft.com/en-us/typography/font-list/mangal"
       }
     ]
   },

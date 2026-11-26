@@ -11,6 +11,7 @@ const ARTICLE_TITLES: Record<string, string> = {
   "how-to-edit-hindi-pdf": "How to edit Hindi text in a PDF",
   "fix-broken-hindi-fonts-in-pdf": "Broken Hindi fonts in PDF: diagnose before editing",
   "kruti-dev-to-unicode-hindi-pdf-editor": "Kruti Dev PDF to Unicode: conversion limits and safe editing",
+  "mangal-to-kruti-dev-converter": "Mangal to Kruti Dev and back: convert Hindi text and Word files",
   "parimarjan-plus-affidavit-pdf-guide": "Parimarjan Plus affidavit PDF: official format and preparation",
   "name-correction-application-and-affidavit-guide": "Name correction application and affidavit",
   "swapramanit-ghoshna-patra-edistrict-hindi-pdf": "स्वप्रमाणित घोषणा पत्र PDF: सही प्रारूप में अपना आवेदन भरें",
@@ -26,6 +27,7 @@ const HINDI_EQUIVALENT: Record<string, string> = {
   "how-to-edit-hindi-pdf": "hindi-pdf-kaise-edit-kare",
   "fix-broken-hindi-fonts-in-pdf": "hindi-pdf-font-kaise-thik-kare",
   "kruti-dev-to-unicode-hindi-pdf-editor": "kruti-dev-pdf-unicode-converter-hindi",
+  "mangal-to-kruti-dev-converter": "mangal-se-kruti-dev-kaise-badle",
   "parimarjan-plus-affidavit-pdf-guide": "bihar-bhumi-parimarjan-plus-shapath-patra-pdf",
   "name-correction-application-and-affidavit-guide": "sarkari-admit-card-name-correction-affidavit-hindi",
 };
@@ -34,6 +36,7 @@ const HINDI_TITLES: Record<string, string> = {
   "hindi-pdf-kaise-edit-kare": "हिंदी PDF कैसे एडिट करें: टेक्स्ट जोड़ें और कॉपी जाँचें",
   "hindi-pdf-font-kaise-thik-kare": "PDF में हिंदी फॉन्ट टूट रहे हैं? पहले कारण पहचानें",
   "kruti-dev-pdf-unicode-converter-hindi": "Kruti Dev PDF और Unicode: कन्वर्जन की सीमाएँ",
+  "mangal-se-kruti-dev-kaise-badle": "मंगल से कृतिदेव और कृतिदेव से मंगल: हिंदी टेक्स्ट और वर्ड फाइल कैसे बदलें",
   "bihar-bhumi-parimarjan-plus-shapath-patra-pdf": "परिमार्जन प्लस शपथ पत्र PDF: आधिकारिक प्रारूप और तैयारी",
   "sarkari-admit-card-name-correction-affidavit-hindi": "नाम सुधार आवेदन और शपथ पत्र: प्रवेश पत्र में त्रुटि हो तो क्या करें",
 };

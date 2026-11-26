@@ -1,5 +1,11 @@
 # Changelog
 
+## Guides for Mangal ↔ Kruti Dev conversion, 27 November 2026
+
+### Added
+- Two hand-written guides, an English/Hindi pair: `mangal-to-kruti-dev-converter` and `mangal-se-kruti-dev-kaise-badle`. They cover why changing the font is not enough, both conversion directions, what changes in a Word file, and what to check. They answer "Kurti Dev" and other misspellings, cite Unicode and Microsoft sources, and link to the converter. The two existing Kruti Dev guides link to them (reviewed date bumped). The new guides are added to the hub, `llms.txt`, the sitemap and the converter's help section.
+- Articles can set their own call-to-action text (`cta` in `seo-keyword-queue.json`); the others keep "Open PDF tool".
+
 ## Unicode ↔ KrutiDev converter, 26 November 2026
 
 ### Added
