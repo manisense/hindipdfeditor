@@ -90,6 +90,24 @@
     "category": "convert"
   },
   {
+    "id": "pdf-to-jpg",
+    "path": "/tools/pdf-to-jpg/",
+    "title": "PDF to JPG",
+    "shortTitle": "PDF to JPG",
+    "description": "Turn the pages of a Hindi or English PDF into JPG or PNG images at 150 or 300 dpi, all pages or the ones you choose. Several pages download as a ZIP. Processing stays on your device.",
+    "accent": "#16A34A",
+    "category": "convert"
+  },
+  {
+    "id": "jpg-to-pdf",
+    "path": "/tools/jpg-to-pdf/",
+    "title": "JPG to PDF",
+    "shortTitle": "JPG to PDF",
+    "description": "Put JPG, PNG or WebP images into one PDF, one per page, in the order you choose, on A4 or at image size. Phone photos are turned upright. Processing stays on your device.",
+    "accent": "#16A34A",
+    "category": "convert"
+  },
+  {
     "id": "unicode-to-krutidev",
     "path": "/tools/unicode-to-krutidev/",
     "title": "Unicode (Mangal) to KrutiDev Converter",

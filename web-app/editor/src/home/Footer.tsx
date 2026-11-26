@@ -63,6 +63,14 @@ export function Footer() {
           href: toolHref("word-to-pdf", lang),
         },
         {
+          label: isHindi ? "पीडीएफ से JPG" : "PDF to JPG",
+          href: toolHref("pdf-to-jpg", lang),
+        },
+        {
+          label: isHindi ? "JPG से पीडीएफ" : "JPG to PDF",
+          href: toolHref("jpg-to-pdf", lang),
+        },
+        {
           label: isHindi ? "कृतिदेव से यूनिकोड" : "KrutiDev to Unicode",
           href: toolHref("krutidev", lang),
         },

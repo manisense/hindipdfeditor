@@ -409,8 +409,88 @@ export const TOOL_GUIDES: Record<ToolId, ToolGuide> = {
       ],
     },
   },
+  "pdf-to-jpg": {
+    guides: ["compress-scanned-hindi-pdf-without-blur", "merge-multiple-hindi-pdf-files-online"],
+    en: {
+      heading: "How to convert a PDF to JPG",
+      steps: [
+        { title: "Open the PDF", body: "Select a Hindi or English PDF, or a scan." },
+        { title: "Choose format, quality and pages", body: "JPG gives smaller files, PNG the sharpest text. 150 dpi suits screens and WhatsApp, 300 dpi suits printing. Convert all pages or only the ones you name." },
+        { title: "Download", body: "One page downloads as an image; several download as a ZIP with one image per page, numbered in page order." },
+      ],
+      notes: [
+        LOCAL_EN,
+        "Pages are drawn exactly as the PDF shows them, so Hindi matras and conjuncts stay as they are. Text in the images is a picture and cannot be selected.",
+        "Up to 300 pages at a time; choose pages to convert a longer file in parts.",
+      ],
+      faqs: [
+        { q: "Which quality should I pick?", a: "Standard (150 dpi) for sharing on a phone or uploading to a portal, High (300 dpi) for printing or for small text you need to zoom into." },
+        { q: "JPG or PNG?", a: "JPG files are smaller. PNG keeps text edges perfectly sharp and is larger." },
+        { q: "Is my PDF uploaded?", a: "No. The pages are drawn in your browser and the file stays on your device." },
+      ],
+    },
+    hi: {
+      heading: "पीडीएफ को JPG में कैसे बदलें",
+      steps: [
+        { title: "पीडीएफ खोलें", body: "हिंदी या अंग्रेज़ी पीडीएफ, या कोई स्कैन चुनें।" },
+        { title: "फॉर्मेट, क्वालिटी और पेज चुनें", body: "JPG से फाइल छोटी बनती है, PNG से टेक्स्ट सबसे साफ। 150 dpi स्क्रीन और व्हाट्सऐप के लिए ठीक है, 300 dpi प्रिंट के लिए। सभी पेज बदलें या सिर्फ वे जो आप लिखें।" },
+        { title: "डाउनलोड करें", body: "एक पेज एक फोटो के रूप में आता है; कई पेज एक ZIP में, हर पेज की एक फोटो, पेज के क्रम में नंबर के साथ।" },
+      ],
+      notes: [
+        LOCAL_HI,
+        "पेज ठीक वैसे बनते हैं जैसे पीडीएफ में दिखते हैं, इसलिए हिंदी की मात्राएं और संयुक्ताक्षर वैसे ही रहते हैं। फोटो में टेक्स्ट तस्वीर है, उसे चुना नहीं जा सकता।",
+        "एक बार में 300 पेज तक; लंबी फाइल के लिए पेज चुनकर हिस्सों में बदलें।",
+      ],
+      faqs: [
+        { q: "कौन-सी क्वालिटी चुनें?", a: "फोन पर भेजने या पोर्टल पर अपलोड के लिए सामान्य (150 dpi), प्रिंट या छोटे अक्षर ज़ूम करके पढ़ने के लिए हाई (300 dpi)।" },
+        { q: "JPG या PNG?", a: "JPG फाइलें छोटी होती हैं। PNG में अक्षरों के किनारे पूरी तरह साफ रहते हैं और फाइल बड़ी होती है।" },
+        { q: "क्या मेरी पीडीएफ अपलोड होती है?", a: "नहीं। पेज आपके ब्राउज़र में बनते हैं और फाइल आपके डिवाइस पर ही रहती है।" },
+      ],
+    },
+  },
+  "jpg-to-pdf": {
+    guides: ["merge-multiple-hindi-pdf-files-online", "pdf-size-kam-kaise-kare-100kb-sarkari-form"],
+    en: {
+      heading: "How to convert JPG to PDF",
+      steps: [
+        { title: "Select your images", body: "Choose JPG, PNG or WebP images: photos of documents, scans or screenshots. Add more at any time." },
+        { title: "Put them in order", body: "Each image becomes one page. Move images up or down, remove any you do not need, and pick A4 or the image's own size." },
+        { title: "Download the PDF", body: "You get one new PDF with the pages in your order." },
+      ],
+      notes: [
+        LOCAL_EN,
+        "JPG and PNG images go into the PDF unchanged, with no loss of quality. WebP images and phone photos that were taken turned are re-encoded as high-quality JPG so they come out upright.",
+        "On A4, each page turns to suit its image and photos are scaled down to fit inside a 10 mm margin, never enlarged.",
+        "Up to 200 images in one PDF.",
+      ],
+      faqs: [
+        { q: "Will my phone photo come out sideways?", a: "No. The turn the phone saved with the photo is applied, so the page shows it the way your gallery does." },
+        { q: "Can I make the PDF smaller for a form?", a: "Make the PDF here, then use Compress PDF and check that the text is still readable." },
+        { q: "Are my images uploaded?", a: "No. The PDF is made in your browser and your images stay on your device." },
+      ],
+    },
+    hi: {
+      heading: "JPG को पीडीएफ में कैसे बदलें",
+      steps: [
+        { title: "फोटो चुनें", body: "JPG, PNG या WebP फोटो चुनें: दस्तावेज़ों की फोटो, स्कैन या स्क्रीनशॉट। कभी भी और जोड़ सकते हैं।" },
+        { title: "क्रम लगाएं", body: "हर फोटो एक पेज बनती है। फोटो ऊपर-नीचे करें, ज़रूरत न हो तो हटाएं, और A4 या फोटो के बराबर साइज चुनें।" },
+        { title: "पीडीएफ डाउनलोड करें", body: "आपको आपके क्रम में पेजों वाली एक नई पीडीएफ मिलती है।" },
+      ],
+      notes: [
+        LOCAL_HI,
+        "JPG और PNG फोटो बिना बदले पीडीएफ में जाती हैं, क्वालिटी कम नहीं होती। WebP फोटो और घुमाकर ली गई फोन फोटो अच्छी क्वालिटी के JPG में दोबारा बनती हैं ताकि सीधी दिखें।",
+        "A4 पर हर पेज अपनी फोटो के हिसाब से घूमता है और फोटो 10 mm किनारे के अंदर आने तक छोटी होती है, कभी बड़ी नहीं।",
+        "एक पीडीएफ में 200 फोटो तक।",
+      ],
+      faqs: [
+        { q: "क्या फोन की फोटो टेढ़ी आएगी?", a: "नहीं। फोन ने फोटो के साथ जो घुमाव सेव किया है वह लगाया जाता है, इसलिए पेज पर फोटो वैसी ही दिखती है जैसी गैलरी में।" },
+        { q: "क्या फॉर्म के लिए पीडीएफ छोटी कर सकते हैं?", a: "यहाँ पीडीएफ बनाएं, फिर साइज कम करने वाले टूल से छोटी करें और देखें कि टेक्स्ट अब भी पढ़ा जा सके।" },
+        { q: "क्या मेरी फोटो अपलोड होती हैं?", a: "नहीं। पीडीएफ आपके ब्राउज़र में बनती है और आपकी फोटो आपके डिवाइस पर ही रहती हैं।" },
+      ],
+    },
+  },
   "unicode-to-krutidev": {
-    guides: ["mangal-to-kruti-dev-converter", "kruti-dev-to-unicode-hindi-pdf-editor"],
+    guides:["mangal-to-kruti-dev-converter", "kruti-dev-to-unicode-hindi-pdf-editor"],
     en: {
       heading: "How to convert Unicode (Mangal) to KrutiDev",
       steps: [

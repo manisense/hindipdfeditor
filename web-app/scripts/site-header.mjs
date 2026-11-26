@@ -34,6 +34,10 @@ const ICONS = {
     '<path d="M12 22h6a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v6"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M3 16v-1.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5V16"/><path d="M6 22h2"/><path d="M7 14v8"/>',
   fileText:
     '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  fileImage:
+    '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><circle cx="10" cy="12" r="2"/><path d="m20 17-1.296-1.296a2.41 2.41 0 0 0-3.408 0L9 22"/>',
+  images:
+    '<path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect x="8" y="2" width="14" height="14" rx="2"/>',
   arrowLeftRight: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
   type: '<path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/>',
   layers:
@@ -81,6 +85,8 @@ export const SITE_TOOL_GROUPS = [
       ["translate", "languages", "Hindi ↔ English", "AI, after you approve", "हिंदी ↔ अंग्रेजी अनुवाद", "AI से, आपकी अनुमति के बाद"],
       ["pdf-to-word", "fileType", "PDF to Word", "Text, tables and pictures", "पीडीएफ से वर्ड", "टेक्स्ट, टेबल और तस्वीरें"],
       ["word-to-pdf", "fileText", "Word to PDF", "Hindi stays joined", "वर्ड से पीडीएफ", "हिंदी जुड़ी हुई रहे"],
+      ["pdf-to-jpg", "fileImage", "PDF to JPG", "Each page as an image", "पीडीएफ से JPG", "हर पेज एक फोटो"],
+      ["jpg-to-pdf", "images", "JPG to PDF", "Photos into one PDF", "JPG से पीडीएफ", "फोटो से एक पीडीएफ"],
       ["krutidev", "type", "KrutiDev to Unicode", "Old Hindi font to Word", "कृतिदेव से यूनिकोड", "पुराने फॉन्ट से वर्ड फाइल"],
       ["unicode-to-krutidev", "arrowLeftRight", "Unicode ↔ KrutiDev", "Mangal to Kruti Dev and back", "यूनिकोड ↔ कृतिदेव", "मंगल से कृतिदेव और वापस"],
     ],
