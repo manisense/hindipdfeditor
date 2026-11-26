@@ -1,5 +1,13 @@
 # Changelog
 
+## Opt-in Plan B vector Hindi text export (web trial), 27 November 2026
+
+### Added
+- Opt-in **Plan B** vector text export for the web editor (`vectorTextFlag.ts`, `ttfMetrics.ts`, `harfbuzzWasm.ts`, `pdfVectorText.ts`; web ADR 0021). Off by default; enable with `?planB=1` on the editor URL or `localStorage['hpe.export.vectorText'] = 'on'`.
+- Shapes edited and added Devanagari/Latin lines in `NotoSansDevanagari` and `NotoSerifDevanagari` with `harfbuzzjs@1.6.4` (MIT, WASM), subsets and instances variable fonts into static TrueType subsets with `harfbuzz-subset.wasm`, embeds them as `Type0` / `CIDFontType2` / `Identity-H` with a `ToUnicode` CMap, writes 2-byte glyph IDs via `TJ`/`Ts` (never string-based `drawText()`), and wraps multi-glyph/multi-codepoint words in `/Span << /ActualText <FEFF...> >>` for exact copy and search.
+- Keeps today's Plan A transparent-PNG export as the default and automatic fallback for WOFF2-only matched fonts (`Arimo`, `Tinos`, `Carlito`, `Caladea`, `Hind`), `.notdef` glyphs, or WASM load errors; zero HarfBuzz assets are fetched when the switch is off.
+- Checked locally against the built site (`web-app/dist`, strict CSP): all 24 edit-quality gate cases passed with `PLAN_B=1`, including `planBDevanagariCase` on `devanagari-fixture.pdf` (`pdftotext` matched both full edited canonical lines with conjuncts, pre-base `ि`, reph, and `ृ` GPOS offsets; `pdffonts` confirmed newly embedded `CID TrueType` `Identity-H` subset with `ToUnicode`; `pdf.js` vs Poppler `pdftoppm` diff 0.958 % raw / 0.0199 % structural within 1 px). Not yet verified on live Cloudflare Workers deployment.
+
 ## Hindi text from Word files with a broken text map, 27 November 2026
 
 ### Fixed

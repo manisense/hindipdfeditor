@@ -20,11 +20,12 @@ const pdfjs = await import(path.join(editorModules, "pdfjs-dist/legacy/build/pdf
 const { createCanvas } = require(path.join(editorModules, "@napi-rs/canvas"));
 
 const baseUrl = process.env.SMOKE_BASE_URL || "http://127.0.0.1:8788";
+const planB = process.env.PLAN_B === "1";
 const fixtures = path.join(here, "../../mobile-app/fixtures");
 const MAX_CHANGED_PIXELS = 0.001;
 
 async function openPdf(page, file, pageIndex) {
-  await page.goto(baseUrl + "/tools/edit-hindi-pdf/", { waitUntil: "networkidle" });
+  await page.goto(baseUrl + "/tools/edit-hindi-pdf/" + (planB ? "?planB=1" : ""), { waitUntil: "networkidle" });
   await page.locator("input[type=file]").setInputFiles(file);
   await page.getByText("Edit text — click a highlighted line").waitFor({ timeout: 120000 });
   for (let i = 0; i < pageIndex; i++) await page.getByRole("button", { name: "Next page" }).click();
@@ -560,8 +561,14 @@ async function paragraphFlowCase(browser) {
   const exported = await exportPdf(page);
   const original = new Uint8Array((await import("node:fs")).readFileSync(file));
   const text = await pageText(exported, 1);
-  assert.ok(!text.replace(/\s+/g, "").includes("documents."), "the taken line is redrawn with the paragraph, not left as text");
-  assert.ok(text.replace(/\s+/g, "").includes("EmployeeName:SeemaSharma"), "lines outside the paragraph keep their text");
+  const compact = text.replace(/\s+/g, "");
+  if (planB) {
+    assert.ok(compact.includes("andtheattachedformsafterverifyingallsupportingdocuments."), "Plan B keeps reflowed paragraph as PDF text");
+    assert.equal(compact.split("documents.").length - 1, 1, "original second line was removed before drawing the reflowed paragraph");
+  } else {
+    assert.ok(!compact.includes("documents."), "the taken line is redrawn with the paragraph, not left as text");
+  }
+  assert.ok(compact.includes("EmployeeName:SeemaSharma"), "lines outside the paragraph keep their text");
   const doc = await pdfjs.getDocument({ data: exported.slice(), verbosity: 0 }).promise;
   const viewport = (await doc.getPage(2)).getViewport({ scale: 1.5 });
   await doc.destroy();
@@ -659,8 +666,13 @@ async function findReplaceFlowCase(browser) {
   await page.getByText(/Replaced in \d+ place/).waitFor();
   const exported = await exportPdf(page);
   const text = (await pageText(exported, 1)).replace(/\s+/g, "");
-  // The grown line takes in "documents." from the next line: neither stays as PDF text.
-  assert.ok(!text.includes("documents."), "a longer replacement flows into the next line of its paragraph");
+  if (planB) {
+    assert.ok(text.includes("andtheattachedformsafterverifyingallsupportingdocuments."), "Plan B keeps find-replaced reflowed paragraph as PDF text");
+    assert.equal(text.split("documents.").length - 1, 1, "original second line was removed before drawing the reflowed paragraph");
+  } else {
+    // The grown line takes in "documents." from the next line: neither stays as PDF text.
+    assert.ok(!text.includes("documents."), "a longer replacement flows into the next line of its paragraph");
+  }
   assert.ok(text.includes("EmployeeName:SeemaSharma"), "other lines keep their text");
   console.log("FIND_REPLACE_FLOW_OK longer replacement took in the next line of its paragraph");
   await page.close();
@@ -1261,6 +1273,211 @@ async function fillFormCase(browser) {
   await page.close();
 }
 
+async function planBDevanagariCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { execFileSync } = await import("node:child_process");
+  const { loadImage } = require(path.join(editorModules, "@napi-rs/canvas"));
+  const { unzipSync, strFromU8 } = require(path.join(editorModules, "fflate"));
+  const file = path.join(fixtures, "devanagari-fixture.pdf");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await openPdf(page, file, 0);
+
+  // Edit both canonical Hindi lines so every canonical word (reph, conjuncts, pre-base ि,
+  // below/above matras) is actively rewritten by the editor rather than left untouched.
+  const edits = new Map([
+    ["धर्म और क्षेत्र", "सूर्य, धर्म और क्षेत्र में गुरुजी ने ज्ञान प्रकृति दिया।"],
+    ["विद्यालय में सूर्य", "किताब, विद्यालय में सूर्य की रोशनी क्षितिज है।"],
+  ]);
+  const targets = new Map();
+  const count = await page.locator(".ocr-highlight-layer__box").count();
+  for (let i = 0; i < count && targets.size < edits.size; i++) {
+    const box = page.locator(".ocr-highlight-layer__box").nth(i);
+    await box.scrollIntoViewIfNeeded();
+    const bb = await box.boundingBox();
+    await page.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.waitForTimeout(400);
+    const current = await page.evaluate(() => document.activeElement.value ?? "");
+    for (const key of edits.keys()) {
+      if (!targets.has(key) && current.startsWith(key)) targets.set(key, i);
+    }
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(150);
+    await page.keyboard.press("Control+z");
+    await page.waitForTimeout(200);
+  }
+  assert.equal(targets.size, edits.size, "found both canonical Devanagari lines");
+  for (const [key, index] of targets.entries()) {
+    const box = page.locator(".ocr-highlight-layer__box").nth(index);
+    await box.scrollIntoViewIfNeeded();
+    const bb = await box.boundingBox();
+    await page.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.waitForTimeout(450);
+    await page.locator("textarea:focus, input:focus").first().fill(edits.get(key));
+    await page.waitForTimeout(200);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(250);
+  }
+
+  const exported = await exportPdf(page);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "plan-b-gate-"));
+  try {
+    const pdfPath = path.join(dir, "edited-devanagari.pdf");
+    fs.writeFileSync(pdfPath, exported);
+
+    // 1. pdftotext must return exact Unicode for every edited canonical sentence and word.
+    const extracted = execFileSync("pdftotext", [pdfPath, "-"], { encoding: "utf8" });
+    const normalized = extracted.replace(/\s+/g, " ");
+    for (const expectedLine of edits.values()) {
+      assert.ok(
+        normalized.includes(expectedLine),
+        "pdftotext returns exact Unicode for edited line: " + expectedLine + " (got: " + JSON.stringify(normalized.trim()) + ")",
+      );
+    }
+
+    // 2. pdffonts must show a newly added embedded, subsetted CID TrueType Identity-H font with ToUnicode.
+    const originalFonts = execFileSync("pdffonts", [file], { encoding: "utf8" }).trim().split("\n").slice(2);
+    const exportedFonts = execFileSync("pdffonts", [pdfPath], { encoding: "utf8" }).trim().split("\n").slice(2);
+    const addedFonts = exportedFonts.slice(originalFonts.length);
+    const hasAddedSubset = addedFonts.some((line) =>
+      line.includes("CID TrueType") && line.includes("Identity-H") && /\byes\s+yes\s+yes\b/.test(line),
+    );
+    assert.ok(hasAddedSubset, "pdffonts shows a newly embedded CID TrueType Identity-H subset with ToUnicode:\n" + exportedFonts.join("\n"));
+
+    // 3. Render with Poppler (pdftoppm) and pdf.js at 150 DPI, check raw pdf.js getTextContent(),
+    // and compare pixel diff.
+    const dpi = 150;
+    const prefix = path.join(dir, "poppler");
+    execFileSync("pdftoppm", ["-png", "-r", String(dpi), "-singlefile", pdfPath, prefix]);
+    const popplerImg = await loadImage(prefix + ".png");
+    const popCanvas = createCanvas(popplerImg.width, popplerImg.height);
+    popCanvas.getContext("2d").drawImage(popplerImg, 0, 0);
+    const popRgba = popCanvas.getContext("2d").getImageData(0, 0, popplerImg.width, popplerImg.height).data;
+
+    const doc = await pdfjs.getDocument({ data: exported.slice(), verbosity: 0 }).promise;
+    const pdfPage = await doc.getPage(1);
+    const textContent = await pdfPage.getTextContent();
+    const pdfJsRawText = textContent.items.map((item) => item.str ?? "").join(" ").replace(/\s+/g, " ");
+    const pdfJsCompact = pdfJsRawText.replace(/\s+/g, "");
+    const viewport = pdfPage.getViewport({ scale: dpi / 72 });
+    const jsCanvas = createCanvas(popplerImg.width, popplerImg.height);
+    const jsCtx = jsCanvas.getContext("2d");
+    jsCtx.fillStyle = "#ffffff";
+    jsCtx.fillRect(0, 0, jsCanvas.width, jsCanvas.height);
+    await pdfPage.render({ canvasContext: jsCtx, viewport }).promise;
+    await doc.destroy();
+    const jsRgba = jsCtx.getImageData(0, 0, jsCanvas.width, jsCanvas.height).data;
+
+    // 4. Raw pdf.js getTextContent() must have zero Identity/CID fallback garbage (every GID mapped
+    // in ToUnicode) and clean Devanagari for every edited word/conjunct.
+    const cidGarbage = pdfJsRawText.match(/[\u0100-\u02FF]/g);
+    assert.equal(
+      cidGarbage,
+      null,
+      "pdf.js getTextContent() has no CID-fallback characters (found " + JSON.stringify(cidGarbage) + " in " + JSON.stringify(pdfJsRawText) + ")",
+    );
+    for (const token of ["सूयर्", "धमर्", "क्षेत्र", "में", "गुरुजी", "ज्ञान", "प्रकृित", "िदया।", "िकताब", "िवद्यालय", "की", "रोशनी", "िक्षितज", "है।"]) {
+      assert.ok(
+        pdfJsCompact.includes(token),
+        "pdf.js getTextContent() maps ToUnicode for " + token + " (got: " + JSON.stringify(pdfJsRawText) + ")",
+      );
+    }
+
+    // 5. Re-read exported PDF through the editor's pdf.js + ActualText extraction path: both exact
+    // edited lines must appear in logical reading order.
+    const reopenPage = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+    try {
+      await openPdf(reopenPage, pdfPath, 0);
+      const reopenedLines = [];
+      const reopenedCount = await reopenPage.locator(".ocr-highlight-layer__box").count();
+      for (let i = 0; i < reopenedCount; i++) {
+        const box = reopenPage.locator(".ocr-highlight-layer__box").nth(i);
+        await box.scrollIntoViewIfNeeded();
+        const bb = await box.boundingBox();
+        await reopenPage.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2);
+        await reopenPage.waitForTimeout(300);
+        reopenedLines.push(await reopenPage.evaluate(() => document.activeElement.value ?? ""));
+        await reopenPage.keyboard.press("Escape");
+        await reopenPage.waitForTimeout(120);
+        await reopenPage.keyboard.press("Control+z");
+        await reopenPage.waitForTimeout(150);
+      }
+      for (const expectedLine of edits.values()) {
+        assert.ok(
+          reopenedLines.some((line) => line.replace(/\s+/g, " ").trim() === expectedLine),
+          "editor ActualText path reads exact edited line: " + expectedLine + " (got: " + JSON.stringify(reopenedLines) + ")",
+        );
+      }
+    } finally {
+      await reopenPage.close();
+    }
+
+    // 6. Editor's PDF to Word on the exported Plan B PDF must contain both exact edited lines.
+    const wordPage = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+    try {
+      await wordPage.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
+      await wordPage.locator("input[type=file]").first().setInputFiles(pdfPath);
+      const wordDownload = wordPage.waitForEvent("download", { timeout: 240000 });
+      await wordPage.getByRole("button", { name: /Convert & download Word/ }).click();
+      const docxPath = path.join(dir, "plan-b-export.docx");
+      fs.copyFileSync(await (await wordDownload).path(), docxPath);
+      const xml = strFromU8(unzipSync(new Uint8Array(fs.readFileSync(docxPath)))["word/document.xml"]);
+      const wordText = [...xml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((m) => m[1]).join("\n").replace(/\s+/g, " ");
+      for (const expectedLine of edits.values()) {
+        assert.ok(
+          wordText.includes(expectedLine),
+          "PDF to Word on Plan B export contains exact edited line: " + expectedLine + " (got: " + JSON.stringify(wordText) + ")",
+        );
+      }
+    } finally {
+      await wordPage.close();
+    }
+
+    // Compare pixel diff (both raw and 1px-neighborhood structural diff, allowing FreeType vs
+    // Skia 1-px edge hinting while catching any missing glyph, broken conjunct, or shifted matra).
+    const w = popplerImg.width;
+    const h = popplerImg.height;
+    const isDark = (buf, x, y) => {
+      if (x < 0 || y < 0 || x >= w || y >= h) return false;
+      const idx = (y * w + x) * 4;
+      return buf[idx] + buf[idx + 1] + buf[idx + 2] < 600;
+    };
+    const hasNearDark = (buf, x, y) => {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (isDark(buf, x + dx, y + dy)) return true;
+        }
+      }
+      return false;
+    };
+    let diffPx = 0;
+    let structuralDiffPx = 0;
+    const totalPx = w * h;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        const delta = Math.abs(popRgba[i] - jsRgba[i]) + Math.abs(popRgba[i + 1] - jsRgba[i + 1]) + Math.abs(popRgba[i + 2] - jsRgba[i + 2]);
+        if (delta > 120) {
+          diffPx++;
+          const pDark = popRgba[i] + popRgba[i + 1] + popRgba[i + 2] < 600;
+          const jDark = jsRgba[i] + jsRgba[i + 1] + jsRgba[i + 2] < 600;
+          if ((pDark && !hasNearDark(jsRgba, x, y)) || (jDark && !hasNearDark(popRgba, x, y))) {
+            structuralDiffPx++;
+          }
+        }
+      }
+    }
+    const diffShare = diffPx / totalPx;
+    const structuralShare = structuralDiffPx / totalPx;
+    assert.ok(diffShare < 0.015, "pdf.js and Poppler render identically (raw diff " + (diffShare * 100).toFixed(3) + " %)");
+    assert.ok(structuralShare < 0.001, "pdf.js and Poppler match structurally within 1px (structural diff " + (structuralShare * 100).toFixed(4) + " %)");
+    console.log("PLAN_B_DEVANAGARI_OK pdftotext, pdf.js ToUnicode, editor ActualText, and PDF to Word matched both edited canonical lines; CID/Identity-H subset embedded; pdf.js vs Poppler raw diff", (diffShare * 100).toFixed(3), "%, structural diff", (structuralShare * 100).toFixed(4), "%");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    await page.close();
+  }
+}
+
 // GATE_ONLY=fillFormCase,signCase runs only the named cases.
 const only = process.env.GATE_ONLY?.split(",");
 const wanted = (name) => !only || only.includes(name);
@@ -1289,6 +1506,7 @@ try {
   if (wanted("wordPictureCase")) await wordPictureCase(browser);
   if (wanted("scanTableCase")) await scanTableCase(browser);
   if (wanted("fillFormCase")) await fillFormCase(browser);
+  if ((planB && !only) || only?.includes("planBDevanagariCase")) await planBDevanagariCase(browser);
 } finally {
   await browser.close();
 }
