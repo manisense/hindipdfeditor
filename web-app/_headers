@@ -37,3 +37,15 @@
 
 /edit/assets/apple-touch-icon.png
   Cache-Control: public, max-age=86400, must-revalidate
+
+# The service worker must update as soon as a deploy changes it.
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/share/*
+  X-Robots-Tag: noindex

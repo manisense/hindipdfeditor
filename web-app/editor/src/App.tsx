@@ -49,6 +49,11 @@ const ResizeImageTool = lazy(() =>
     default: module.ResizeImageTool,
   })),
 );
+const SharePage = lazy(() =>
+  import("./tools/SharePage").then((module) => ({
+    default: module.SharePage,
+  })),
+);
 const WordToPdfTool = lazy(() =>
   import("./tools/WordToPdfTool").then((module) => ({
     default: module.WordToPdfTool,
@@ -103,6 +108,17 @@ function useToolId(): ToolId | null {
 
 export default function App() {
   const toolId = useToolId();
+  if (window.location.pathname.replace(/\/?$/, "/") === "/share/") {
+    return (
+      <LanguageProvider>
+        <AppPopupProvider>
+          <Suspense fallback={null}>
+            <SharePage />
+          </Suspense>
+        </AppPopupProvider>
+      </LanguageProvider>
+    );
+  }
 
   return (
     <LanguageProvider>

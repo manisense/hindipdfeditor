@@ -1,7 +1,8 @@
 import { useTx } from "../lib/i18n";
-import { useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { FileType2, Files, ShieldCheck, UploadCloud } from "lucide-react";
 
+import { clearSharedFiles, readSharedFiles, SHARED_PARAM } from "../lib/sharedFiles";
 import { AppButton } from "./AppButton";
 import "./DropZone.css";
 
@@ -25,6 +26,9 @@ type Props = {
 const SAMPLE_URL = "/assets/samples/devanagari-fixture.pdf";
 
 const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+/** Shared files are taken once per page load, by the first picker that mounts. */
+let sharedTaken = false;
 
 function isPdf(file: File): boolean {
   return (
@@ -107,6 +111,22 @@ export function DropZone({
     },
   }[kind];
   const { accepted, fileType } = copy;
+  // Files shared to the installed app arrive as `?shared=1` (see sharedFiles.ts).
+  useEffect(() => {
+    if (sharedTaken || compact || disabled) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(SHARED_PARAM)) return;
+    sharedTaken = true;
+    url.searchParams.delete(SHARED_PARAM);
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    void readSharedFiles().then((files) => {
+      void clearSharedFiles();
+      if (files.length > 0) emit(files);
+    });
+    // Runs once per page load; `emit` reads the current props.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const emit = (list: FileList | File[]) => {
     if (disabled) return;
     const selected = Array.from(list);

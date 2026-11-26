@@ -1,0 +1,49 @@
+{
+  "id": "/",
+  "name": "Hindi PDF Editor",
+  "short_name": "Hindi PDF",
+  "description": "Edit, convert and sign Hindi and English PDFs on your device.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "/?source=app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FBFBFE",
+  "theme_color": "#1843DD",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    { "src": "/assets/app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "share_target": {
+    "action": "/share-target/",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "file",
+          "accept": [
+            "application/pdf",
+            ".pdf",
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".docx"
+          ]
+        }
+      ]
+    }
+  },
+  "shortcuts": [
+    { "name": "Edit Hindi PDF", "url": "/tools/edit-hindi-pdf/", "icons": [{ "src": "/assets/app-icon-192.png", "sizes": "192x192" }] },
+    { "name": "PDF to Word", "url": "/tools/pdf-to-word/", "icons": [{ "src": "/assets/app-icon-192.png", "sizes": "192x192" }] },
+    { "name": "Compress PDF", "url": "/tools/compress-pdf/", "icons": [{ "src": "/assets/app-icon-192.png", "sizes": "192x192" }] }
+  ]
+}
