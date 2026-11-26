@@ -101,14 +101,28 @@ export function drawnGlyphs(
     }
     if (fn === ops.endMarkedContent) open.pop();
     if (fn !== ops.showText) continue;
-    for (const glyph of (args?.[0] as ({ unicode?: string } | number | null)[]) ?? []) {
-      if (glyph && typeof glyph === 'object') glyphs.push({ text: glyph.unicode ?? '', section: open.at(-1) ?? null });
+    const shown = (args?.[0] as ({ unicode?: string; width?: number } | number | null)[]) ?? [];
+    for (const [k, glyph] of shown.entries()) {
+      if (!glyph || typeof glyph !== 'object') continue;
+      const text = glyph.unicode ?? '';
+      glyphs.push({ text: isCancelledSpace(text, glyph.width, shown[k + 1]) ? '' : text, section: open.at(-1) ?? null });
     }
   }
   return next === starts.length ? glyphs : null;
 }
 
 const isSpace = (char: string) => /^\s+$/u.test(char);
+
+/**
+ * A space glyph whose advance the next TJ shift takes straight back (Chrome draws a typed
+ * zero-width joiner, as in उम्‍मीदवार, as a space and then moves left by its width): no word break.
+ *
+ * @param width The glyph's advance, in thousandths of an em (pdf.js glyph width).
+ * @param shift The TJ number after it, in thousandths of an em (positive moves left).
+ */
+function isCancelledSpace(text: string, width: number | undefined, shift: unknown): boolean {
+  return isSpace(text) && typeof shift === 'number' && width !== undefined && width > 0 && Math.abs(shift - width) <= width * 0.15;
+}
 const DEVANAGARI = /[\u0900-\u097F]/u;
 
 /** Text items with `/ActualText` applied (see {@link applyActualText}). */
