@@ -25,7 +25,7 @@ describe('repairedToUnicode', () => {
   const font = new Map<number, string>([[1, 'क'], [2, 'ख'], [3, 'ग'], [4, 'घ'], [5, PRE_BASE_MARK], [6, 'a'], [7, 'क्ष']]);
 
   it('leaves a map that agrees with the font (Unicode normalisation and ligatures aside)', () => {
-    const existing = new Map<number, string>([[1, 'क'], [2, 'ख'], [3, 'ग'], [4, 'घ'], [5, 'ि'], [7, 'क्‍ष']]);
+    const existing = new Map<number, string>([[1, 'क'], [2, 'ख'], [3, 'ग'], [4, 'घ'], [7, 'क्‍ष']]);
     expect(repairedToUnicode(existing, font)).toBeNull();
   });
 
@@ -38,8 +38,18 @@ describe('repairedToUnicode', () => {
     expect(repaired?.get(9)).toBe('x');
   });
 
+  it('repairs a map in drawing order: fills unmapped ligatures, marks ि, keeps agreeing entries', () => {
+    const existing = new Map<number, string>([[1, 'क'], [2, 'ख'], [5, 'ि'], [6, 'b']]);
+    const repaired = repairedToUnicode(existing, font);
+    expect(repaired?.get(5)).toBe(PRE_BASE_MARK);
+    expect(repaired?.get(7)).toBe('क्ष');
+    expect(repaired?.get(6)).toBe('b');
+    expect(repaired?.get(2)).toBe('ख');
+  });
+
   it('needs at least three disagreements', () => {
-    const existing = new Map<number, string>([[1, 'क'], [2, 'ि'], [3, 'व']]);
-    expect(repairedToUnicode(existing, font)).toBeNull();
+    const existing = new Map<number, string>([[1, 'क'], [2, 'ि'], [3, 'व'], [5, 'व']]);
+    expect(repairedToUnicode(new Map([[1, 'क'], [2, 'ि'], [3, 'व']]), font)).toBeNull();
+    expect(repairedToUnicode(existing, font)).not.toBeNull();
   });
 });
