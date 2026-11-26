@@ -12,8 +12,12 @@ Measured in Chrome on a desktop with generated fixtures (scripts kept out of the
 - Pages with too little Devanagari for the OCR comparison (a Hindi heading on an English page) were OCR'd whole on every page, although the result could not change what was kept: 7.5 s per page. Only their Devanagari lines are read now (0.2 s per page), still recorded as evidence for the font.
 - A page whose quick band check passed never counted towards trusting its font, so long Hindi documents with a good text map were band-checked on every page instead of being spot-checked. The band now counts for the fonts with words in it (`recordVerifiedBand`). Unit-tested; not yet measured on a real long Hindi PDF.
 
-### Known
-- Hindi PDFs printed by Chrome or Google Docs (Skia) leave ligature glyphs unmapped, so every page is read with full OCR: about 6.5 s per page, over 3 hours for 2,000 pages. Unchanged.
+### Added
+- PDF to Word has a Text recognition (OCR) setting: Only where needed (default), Off, or Every page. Each choice says what it does; the screen samples up to 12 pages and says how many look scanned and how long OCR will take on this device. OCR reads at most 300 pages per file on a computer, 60 on a mid-range phone and 15 on a low-end phone (by OCR worker count; measured 4 s, est. 19 s and est. 88 s a page), so a conversion stays near 20 minutes. Pages beyond the limit, and pages in a legacy font that cannot be converted when OCR is off, are listed as not read. Long conversions spot-check trusted Hindi fonts every 64 pages (the editor keeps 8).
+- Hindi PDFs made by Chrome, Google Docs and other Skia tools are read from their `/ActualText` (`pdfActualText.ts`), which pdf.js drops: no OCR needed. Such pages are joined in drawing order, and Devanagari words break only at drawn spaces. A 40-page Chrome-made Hindi PDF converts in 4.6 s (0.11 s a page; 6.5 s a page with OCR before) with all 14,440 Hindi words correct. The editor reads these pages the same way.
+
+### Fixed
+- Fonts with too little Devanagari to judge (headings, or Skia subset fonts that hold pieces of words) kept every page waiting for an OCR check. Skia pages are judged by font family on their whole text, and a font still too sparse to judge after 3 checked pages no longer forces checks: OCR cannot change its text.
 
 ## PDF to Word: tables without lines, 24 November 2026
 
