@@ -1,5 +1,10 @@
 # Changelog
 
+## Gazette of India: 82 % → 99 % of Hindi words, 28 November 2026
+
+### Fixed
+- Gazette of India PDFs (iTextSharp, Arial Unicode MS subsets without GSUB) name ि variants and conjuncts by unrelated letters (हहंदी, दकसी, उि, भती). Single-letter entries the font cannot vouch for, in a map shown to be wrong, are now learned from OCR once per document, and a line whose repair OCR cannot confirm takes OCR of its own area (or its repaired text) instead of being left to page OCR, which lost whole lines. Gazette notice page 1: 82.1 % → 99.4 % of 168 hand-checked Hindi words, reading order 80 → 100 %; two other Gazette notices read 10–17 % more dictionary words per page; benchmarks and the whole RRB and CEN files unchanged. Web ADR 0022 amended.
+
 ## Corrupted Hindi pages: catch exotic-script mixing, glued tokens, and failed-font short pages in OCR verification, 27 November 2026
 
 ### Fixed

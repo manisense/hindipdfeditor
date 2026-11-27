@@ -119,6 +119,24 @@ export function ocrConfirmsRepair(
     .every((word) => compact.includes(repairText(word, readings, isPlaceholder).normalize('NFC')));
 }
 
+/**
+ * The text kept for a line whose row OCR could not confirm: OCR of the line's own area when it was
+ * read (page OCR merges or misses rows of dense text, which would lose the line), else the line's
+ * repaired PDF text without the glyphs left unknown. Null only when nothing is left.
+ *
+ * @param repaired The line's PDF text with learned glyphs put back (placeholders may remain).
+ * @param ownOcr OCR of the line's own area, when it was read.
+ */
+export function unresolvedLineText(
+  repaired: string,
+  ownOcr: string | undefined,
+  isPlaceholder: (char: string) => boolean,
+): { text: string; fromOcr: boolean } | null {
+  if (ownOcr?.trim()) return { text: ownOcr.trim(), fromOcr: true };
+  const text = [...repaired].filter((char) => !isPlaceholder(char)).join('').replace(/\s+/gu, ' ').trim();
+  return text ? { text, fromOcr: false } : null;
+}
+
 /** Known syllables taken on each side of a glyph to find it in the OCR line. */
 const CONTEXT_SYLLABLES = 2;
 /** Fewest known characters around a glyph for its context to be trusted. */

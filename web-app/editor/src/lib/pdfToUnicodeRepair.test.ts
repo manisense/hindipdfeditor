@@ -40,6 +40,19 @@ describe('baseFontName', () => {
 });
 
 describe('repairedToUnicode', () => {
+  it('makes single-letter entries the font cannot vouch for unknown, in a map shown to be wrong', () => {
+    // Gazette of India subsets: no GSUB, a cmap for 4 glyphs; glyphs 8 and 9 (ि variants) are
+    // named "द" and "ह" by the map, glyph 10 (a conjunct) "क्ष". Glyphs 1–4 prove the map wrong.
+    const font = new Map<number, string>([[1, 'क'], [2, 'ख'], [3, 'ग'], [4, 'घ']]);
+    const existing = new Map<number, string>([[1, 'ख'], [2, 'ग'], [3, 'घ'], [4, 'क'], [8, 'द'], [9, 'ह'], [10, 'क्ष'], [11, 'a']]);
+    const repaired = repairedToUnicode(existing, font)!;
+    expect([8, 9].map((gid) => repaired.get(gid))).toEqual([String.fromCharCode(0), String.fromCharCode(0)]);
+    expect(repaired.get(10)).toBe('क्ष');
+    expect(repaired.get(11)).toBe('a');
+    // A map the font agrees with is left alone, unknown glyphs included.
+    expect(repairedToUnicode(new Map([[1, 'क'], [2, 'ख'], [3, 'ग'], [4, 'घ'], [8, 'द']]), font)).toBeNull();
+  });
+
   const font = new Map<number, string>([[1, 'क'], [2, 'ख'], [3, 'ग'], [4, 'घ'], [5, PRE_BASE_MARK], [6, 'a'], [7, 'क्ष']]);
 
   it('leaves a map that agrees with the font (Unicode normalisation and ligatures aside)', () => {

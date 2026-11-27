@@ -215,6 +215,17 @@ export function repairedToUnicode(
       if (old && DEVANAGARI_VOWEL_OR_NASAL_SIGNS.test(old)) repaired.set(gid, REPH_MARK + old);
     }
   }
+  // In a map shown to name wrong letters, a single-letter entry the font cannot vouch for (a
+  // subset with no GSUB and a partial cmap: Gazette of India, iTextSharp) is likely wrong too, as
+  // its ि variants and conjuncts are named by unrelated letters (हहंदी, दकसी, उि). It is made
+  // unknown (U+0000), so glyph repair learns it from OCR once per document (glyphRepair.ts).
+  if (misMapped) {
+    for (const [gid, text] of existing) {
+      if (!fromFont.has(gid) && [...text].length === 1 && DEVANAGARI.test(text) && repaired.get(gid) === text) {
+        repaired.set(gid, String.fromCharCode(0));
+      }
+    }
+  }
   return repaired;
 }
 
