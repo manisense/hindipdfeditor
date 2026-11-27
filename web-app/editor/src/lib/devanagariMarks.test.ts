@@ -22,6 +22,13 @@ describe('reorderDevanagariMarks', () => {
     expect(reorderDevanagariMarks('सामान्य निर्देश')).toBe('सामान्य निर्देश');
   });
 
+  it('can keep a mark with nothing to move past for a later pass', () => {
+    const first = reorderDevanagariMarks(`उ${I}ल्ल${I}`, { keepUnresolved: true });
+    expect(first).toBe(`उल्लि${I}`);
+    expect(reorderDevanagariMarks(first + 'खत')).toBe('उल्लिखित');
+    expect(reorderDevanagariMarks(first + ' खत')).toBe('उल्लिखित');
+  });
+
   it('turns a mark with nothing to move past into its letters', () => {
     expect(reorderDevanagariMarks(`${I}`)).toBe('ि');
     expect(reorderDevanagariMarks(`${R}क`)).toBe('र्क');

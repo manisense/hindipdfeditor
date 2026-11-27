@@ -6,6 +6,7 @@ let current: {
   bytes: Uint8Array;
   document: Promise<pdfjs.PDFDocumentProxy>;
   repairedFonts: Promise<string[]>;
+  drawingOrderFonts: Promise<string[]>;
 } | null = null;
 
 /**
@@ -27,6 +28,7 @@ export function sharedPdfDocument(bytes: Uint8Array): Promise<pdfjs.PDFDocumentP
       pdfjs.getDocument(pdfjsDocumentParams(readable === bytes ? bytes.slice() : readable)).promise,
     ),
     repairedFonts: repair.then(({ repairedFonts }) => repairedFonts),
+    drawingOrderFonts: repair.then(({ drawingOrderFonts }) => drawingOrderFonts),
   };
   void previous?.document.then((doc) => doc.destroy()).catch(() => undefined);
   return current.document;
@@ -40,4 +42,14 @@ export function sharedPdfDocument(bytes: Uint8Array): Promise<pdfjs.PDFDocumentP
  */
 export function repairedFontsOf(bytes: Uint8Array): Promise<string[]> {
   return current?.bytes === bytes ? current.repairedFonts : Promise.resolve([]);
+}
+
+/**
+ * Repaired fonts of the opened file whose map was only in drawing order (Chrome output merged by
+ * other tools): their pages draw their spaces, which are then their only Hindi word breaks.
+ *
+ * @param bytes Bytes of the opened PDF.
+ */
+export function drawingOrderFontsOf(bytes: Uint8Array): Promise<string[]> {
+  return current?.bytes === bytes ? current.drawingOrderFonts : Promise.resolve([]);
 }

@@ -1,11 +1,12 @@
 
 import { OPS, Util } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
-import { reorderDevanagariMarks } from './devanagariMarks';
+import { isDevanagariMark, reorderDevanagariMarks } from './devanagariMarks';
+import { PRE_BASE_MARK } from './fontGlyphText';
 import { fontHintFromPdfFont } from './fontMatch';
 import { krutiDevToUnicode } from './krutiDev';
 import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
-import { sharedPdfDocument } from './sharedPdfDocument';
+import { drawingOrderFontsOf, sharedPdfDocument } from './sharedPdfDocument';
 import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
 import { applyActualText, drawnGlyphs, markedContentStarts, type ActualTextResult } from './pdfActualText';
 import { imageRectsFromOperators, pictureBoxes, textImageRows, type PtBox } from './pdfImageRects';
@@ -34,6 +35,7 @@ export type EmbeddedTextRun = {
 
 const LINE_Y_TOLERANCE_RATIO = 0.55;
 const WORD_GAP_RATIO = 0.12;
+const DEVANAGARI_SIGN_START = /^[\u0900-\u0903\u093A-\u094F\u0951-\u0957\u0962\u0963]/u;
 const DEVANAGARI_SIGN_AFTER_SPACE = /\s+(?=[\u0900-\u0903\u093A-\u094F\u0951-\u0957\u0962\u0963])/gu;
 const DEVANAGARI_LETTER = /[\u0900-\u097F]/u;
 const COLUMN_GAP_RATIO = 0.75;
@@ -76,8 +78,9 @@ export function sanitizeEmbeddedText(text: string): SanitizedEmbeddedText {
   let removedPrivateUseCodePoints = 0;
   for (const character of text) {
     const codePoint = character.codePointAt(0);
-    if (isGlyphPlaceholder(character)) {
-      // Stands in for an unmapped glyph until it is repaired (see glyphRepair.ts).
+    if (isGlyphPlaceholder(character) || isDevanagariMark(character)) {
+      // Stands in for an unmapped glyph until it is repaired (see glyphRepair.ts), or for a ि or
+      // reph that the line's text puts in reading order (see devanagariMarks.ts).
       sanitized += character;
     } else if (isUnsafeExtractedCodePoint(codePoint)) {
       removedCodePoints += 1;
@@ -196,7 +199,7 @@ export async function extractEmbeddedTextLines(
     let unmapped = unmappedGlyphs(operators.fnArray, operators.argsArray, (name) => fontNameOf(name) ?? name);
     // Glyphs of fonts repaired from their own cmap (see pdfToUnicodeRepair.ts) carry marks for ि and
     // reph, which are drawn out of reading order.
-    let itemTexts = textContent.items.map((item) => ('str' in item ? reorderDevanagariMarks(item.str) : ''));
+    let itemTexts = textContent.items.map((item) => ('str' in item ? item.str : ''));
     // Items whose glyphs moved into another item's /ActualText: that item's run covers them.
     let absorbedInto: (number | null)[] = [];
     // Pages that draw their spaces (Chrome, Google Docs) break words only where a space is drawn.
@@ -205,9 +208,12 @@ export async function extractEmbeddedTextLines(
     // supply logical reading order in /ActualText marked spans: prefer it whenever present.
     const skia = await madeBySkia(pdfBytes);
     const hasMarkedContent = operators.fnArray.includes(OPS.beginMarkedContentProps);
-    if (unmapped.length > 0 || skia || hasMarkedContent) {
+    // Chrome output merged by other tools (no Skia producer left) shows as a map in drawing order:
+    // it leaves gaps inside words but draws its spaces, so only drawn spaces break its Hindi words.
+    const repairedFonts = (await drawingOrderFontsOf(pdfBytes)).length > 0;
+    if (unmapped.length > 0 || skia || hasMarkedContent || repairedFonts) {
       // Skia pages without /ActualText (Chrome's Save as PDF) still give their drawn spaces.
-      const fixed = await withActualText(pdfBytes, pageIndex, operators.fnArray, operators.argsArray, itemTexts, skia);
+      const fixed = await withActualText(pdfBytes, pageIndex, operators.fnArray, operators.argsArray, itemTexts, skia || repairedFonts);
       if (fixed && fixed.replaced.length === unmapped.length) {
         itemTexts = fixed.items;
         absorbedInto = fixed.into;
@@ -215,6 +221,8 @@ export async function extractEmbeddedTextLines(
         unmapped = unmapped.filter((_, i) => !fixed.replaced[i]);
       }
     }
+    // After /ActualText and drawn spaces are lined up with the drawn glyphs (one mark per glyph).
+    itemTexts = itemTexts.map((text) => reorderDevanagariMarks(text, { keepUnresolved: true }));
     const NUL = String.fromCharCode(0);
     const nulls = itemTexts.reduce((count, text) => count + text.split(NUL).length - 1, 0);
     if (nulls > 0 && nulls === unmapped.length) {
@@ -506,6 +514,8 @@ export function withUnmeasuredRunsJoined(runs: EmbeddedTextRun[]): EmbeddedTextR
 
 function shouldInsertSpace(previous: EmbeddedTextRun, current: EmbeddedTextRun, spacesDrawn: boolean): boolean {
   if (previous.trailingSpace || current.leadingSpace) return true;
+  // A run that ends in a pre-base ि mark ends mid-word: the cluster it belongs to comes next.
+  if (previous.text.endsWith(PRE_BASE_MARK)) return false;
   // Inside Devanagari only drawn spaces break words: clusters drawn in visual order leave gaps.
   // A space can be drawn after the next run of another script, so other boundaries use the gap.
   if (spacesDrawn && DEVANAGARI_LETTER.test(previous.text.at(-1) ?? '') && DEVANAGARI_LETTER.test(current.text.at(0) ?? '')) return false;
@@ -608,7 +618,10 @@ export function clusterRunsIntoLines(
     const isHorizontalBacktrack =
       run.xPt < previous.xPt - Math.min(previous.hPt, run.hPt) * 0.25;
 
-    if (sameBaseline && !previous.hasEol && !isSeparateColumn && !isHorizontalBacktrack) {
+    // A run that starts with a vowel sign or virama, or follows a pre-base ि mark, continues the
+    // word before it, however wide the gap pdf.js measured (CEN notices: 9 pt between क्र and ीमी).
+    const continuesWord = (DEVANAGARI_SIGN_START.test(run.text) || previous.text.endsWith(PRE_BASE_MARK)) && !isHorizontalBacktrack;
+    if (sameBaseline && (continuesWord || (!previous.hasEol && !isSeparateColumn && !isHorizontalBacktrack))) {
       last.push(run);
     } else {
       groups.push([run]);
@@ -628,7 +641,7 @@ export function clusterRunsIntoLines(
     }
     return {
       // No word starts with a vowel sign, virama or nukta: a space before one is a measuring gap.
-      text: text.normalize('NFC').replace(/\s+/gu, ' ').replace(DEVANAGARI_SIGN_AFTER_SPACE, '').trim(),
+      text: reorderDevanagariMarks(text).normalize('NFC').replace(/\s+/gu, ' ').replace(DEVANAGARI_SIGN_AFTER_SPACE, '').trim(),
       xPt,
       yPt,
       wPt: Math.max(4, right - xPt),

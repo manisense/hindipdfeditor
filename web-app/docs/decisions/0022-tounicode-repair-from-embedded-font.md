@@ -20,6 +20,15 @@ Real Railway Recruitment Board notices made in Word with Nirmala UI and passed t
 ## Evidence
 PDF to Word on RRB notice page 2 (141 Hindi words): 64.5 % → 100 %, 6.0 s → 2.9 s. Sample notice: digital 100 %, scanned 99.3 % (unchanged). Repair check: 156 ms on a 135-page file it leaves alone, 424 ms on the 38-page file it repairs. Editor tests 469/469, edit-quality gate 23/23, browser smoke `BROWSER_ERRORS []`.
 
+## Amendment, 27 November 2026: maps in drawing order
+The 135-page CEN 08/2024 notice (Chrome output merged by PDFsam, so its Producer no longer says Skia) maps letters correctly but in drawing order (pre-base ि named "ि", reph "र्") and leaves conjuncts unmapped, so letters vanished and the editor fell back to OCR (17 s a page, whole phrases missed). Now:
+- A map that names a pre-base ि or reph glyph by its plain letter is also repaired: missing entries come from the font, ि and reph get marks; agreeing entries are kept (`inDrawingOrder`).
+- Such documents draw their spaces and leave gaps inside words, so, as on Skia pages, only drawn spaces break their Hindi words. A drawn space that the next TJ shift takes straight back (Chrome's typed zero-width joiner, विभिन्‍न) is not a break.
+- Marks are resolved after /ActualText alignment, and again at line level when a word is split across pdf.js items (उ ि ल्ल | ि खत); a run ending in a pre-base mark continues on the same line with no space; a run starting with a vowel sign or virama stays on the line of the word before it.
+- Ligature glyphs take their full letters before single substitutions.
+
+Evidence: CEN p70, 160 hand-checked Hindi words (items 2–3 and the note before them): OCR path 88.8 %, font path **100 %**; the page reads 621 Hindi words instead of 492, in 1.8 s instead of 17.2 s. RRB p2 100 %, sample notice 100 % / 99.3 % unchanged; gate 23/23, Plan B case, smoke clean.
+
 ## Open
 - The 135-page CEN 08/2024 notice is broken differently (not repaired by this rule); investigate next.
 - The RRB page is not in the repo (third-party file); a self-made mis-mapped fixture should be added to the gate.
