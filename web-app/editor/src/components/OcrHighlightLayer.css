@@ -23,3 +23,10 @@
   border-color: color-mix(in srgb, var(--brand) 72%, transparent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 10%, transparent);
 }
+
+.ocr-highlight-layer__box--active,
+.ocr-highlight-layer__box--active:hover {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  border: 2px solid var(--brand);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent);
+}

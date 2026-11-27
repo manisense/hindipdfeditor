@@ -1,7 +1,8 @@
+import { PDFName } from '@cantoo/pdf-lib';
 import { describe, expect, it } from 'vitest';
 
 import { PRE_BASE_MARK } from './fontGlyphText';
-import { buildToUnicode, parseToUnicode, repairedToUnicode } from './pdfToUnicodeRepair';
+import { baseFontName, buildToUnicode, parseToUnicode, repairedToUnicode } from './pdfToUnicodeRepair';
 
 describe('ToUnicode maps', () => {
   it('parses bfchar, bfrange and array bfrange entries', () => {
@@ -18,6 +19,13 @@ describe('ToUnicode maps', () => {
   it('round-trips through buildToUnicode, including multi-letter targets', () => {
     const map = new Map([[0x10, 'क्ष'], [0x2a, 'a']]);
     expect(parseToUnicode(buildToUnicode(map))).toEqual(map);
+  });
+});
+
+describe('baseFontName', () => {
+  it('decodes escaped characters, as pdf.js names the font', () => {
+    expect(baseFontName(PDFName.of('ABCDEE+Nirmala UI,Bold'))).toBe('ABCDEE+Nirmala UI,Bold');
+    expect(baseFontName(undefined)).toBe('');
   });
 });
 

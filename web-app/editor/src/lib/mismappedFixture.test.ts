@@ -25,6 +25,15 @@ describe('mis-mapped ToUnicode fixture', () => {
     expect(repair.drawingOrderFonts).toEqual([]);
   });
 
+  it('marks the lines read through the repaired font', async () => {
+    const lines = await extractEmbeddedTextLines(fixture, 0);
+    // The two edited lines use the repaired fonts; the fixture's other lines keep their own fonts.
+    const edited = lines.filter((line) => expected.some((part) => line.text.includes(part)));
+    expect(edited.length).toBe(2);
+    expect(edited.every((line) => line.repaired === true)).toBe(true);
+    expect(lines.filter((line) => !edited.includes(line)).some((line) => line.repaired)).toBe(false);
+  }, 30000);
+
   it('reads the edited lines exactly', async () => {
     const text = (await extractEmbeddedTextLines(fixture, 0)).map((line) => line.text).join('\n');
     for (const part of expected) expect(text).toContain(part);

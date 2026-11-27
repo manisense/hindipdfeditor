@@ -12,6 +12,7 @@ import {
   Languages,
   Plus,
   RotateCcw,
+  ScanText,
   Sparkles,
   Type,
   Redo2,
@@ -35,7 +36,9 @@ import { SignaturePad, type DrawnSignature } from "../components/SignaturePad";
 import { FindReplacePanel } from "../components/FindReplacePanel";
 import { LegacyFontWarning } from "../components/LegacyFontWarning";
 import { MaskOverlay, type DrawnMaskRect } from "../components/MaskOverlay";
+import { LineCheckPanel } from "../components/LineCheckPanel";
 import { OcrHighlightLayer } from "../components/OcrHighlightLayer";
+import { linesToCheck } from "../lib/linesToCheck";
 import { PdfPageViewer } from "../components/PdfPageViewer";
 import { ToolShell } from "../components/ToolShell";
 import { TurnstileWidget } from "../components/TurnstileWidget";
@@ -403,6 +406,25 @@ export function EditPdfTool({ toolId = "edit" }: { toolId?: "edit" | "organize" 
     page?.edits.find(
       (e): e is TextEdit => e.type === "text" && e.id === focusedEditId,
     ) ?? null;
+
+  // Lines whose text did not come straight from the PDF's own text (OCR, repaired fonts), to step
+  // through with LineCheckPanel; null when not checking.
+  const [checkIndex, setCheckIndex] = useState<number | null>(null);
+  const checks = useMemo(() => {
+    if (!page) return [];
+    const textEditIds = new Set(page.edits.filter((e) => e.type === "text").map((e) => e.id));
+    const edited = new Set<string>();
+    for (const [editId, pairing] of editPairingsRef.current) {
+      if (!textEditIds.has(editId)) continue;
+      for (const line of [pairing.ocrLine, ...(pairing.absorbed ?? [])]) if (line) edited.add(line.id);
+    }
+    return linesToCheck(linesOutsideWhiteouts(page.ocrLines, page.edits), edited);
+  }, [page]);
+  useEffect(() => setCheckIndex(null), [currentPageIndex]);
+  // Text read through fonts whose map was rebuilt from the font itself (web ADR 0022).
+  const fontReadPage = Boolean(page?.ocrLines.some((line) => line.repaired && line.source === "embedded"));
+  const checking = checkIndex === null ? null : (checks[Math.min(checkIndex, checks.length - 1)] ?? null);
+  const checkingIndex = checking ? checks.indexOf(checking) : -1;
 
   const currentPageLegacyFontNames = useMemo(
     () => [
@@ -1791,6 +1813,29 @@ export function EditPdfTool({ toolId = "edit" }: { toolId?: "edit" | "organize" 
               />
             </div>
             <p className="app__hint">{hintText}</p>
+            {fontReadPage && !focusedEditId && !editingBlocked && (
+              <p className="app__source-note">
+                {tx(
+                  "This PDF's text map is wrong on this page, so its Hindi was read from the fonts themselves.",
+                  "इस पेज पर पीडीएफ का टेक्स्ट मैप गलत है, इसलिए हिंदी सीधे फ़ॉन्ट से पढ़ी गई।",
+                )}
+              </p>
+            )}
+            {checks.length > 0 && !checking && !focusedEditId && !editingBlocked && ocrStatusByPage[currentPageIndex] === "done" && (
+              <div className="app__check-chip">
+                <AppButton
+                  title={
+                    checks.length === 1
+                      ? tx("1 line to check", "1 पंक्ति जाँचें")
+                      : tx(`${checks.length} lines to check`, `${checks.length} पंक्तियाँ जाँचें`)
+                  }
+                  icon={<ScanText size={15} aria-hidden="true" className="app__check-chip-icon" />}
+                  small
+                  variant="secondary"
+                  onClick={() => setCheckIndex(0)}
+                />
+              </div>
+            )}
           </section>
 
           {ocrUnavailable && (
@@ -1880,6 +1925,20 @@ export function EditPdfTool({ toolId = "edit" }: { toolId?: "edit" | "organize" 
             />
           )}
 
+          {checking && !focusedEdit && (
+            <LineCheckPanel
+              item={checking}
+              index={checkingIndex}
+              total={checks.length}
+              onNext={() => setCheckIndex((checkingIndex + 1) % checks.length)}
+              onEdit={() => {
+                const { line } = checking;
+                void handleTap(line.xPt + line.wPt / 2, line.yPt + line.hPt / 2);
+              }}
+              onDone={() => setCheckIndex(null)}
+            />
+          )}
+
           <section
             className="app__page-card"
             onPointerDownCapture={(event) => {
@@ -1915,6 +1974,7 @@ export function EditPdfTool({ toolId = "edit" }: { toolId?: "edit" | "organize" 
                       !focusedEditId &&
                       ocrStatus === "done"
                     }
+                    activeLineId={checking && !focusedEdit ? checking.line.id : undefined}
                   />
                   <MaskOverlay
                     masks={page.edits.filter(

@@ -47,6 +47,7 @@ On the Word page the ToUnicode map is wrong (pre-base ि glyph → "व", थ �
 - Score structure, not only words: extend `score.mjs` with reading-order and cell-placement checks.
 
 ### 7. Trust you can see
+- **Status (27 Nov 2026):** first part shipped in the web editor ("N lines to check": OCR and unconfirmed lines, step through with Next / Edit / Done; font-repaired pages carry a one-line note). Not yet: per-line confidence, side-by-side page crops.
 - Every line gets a provenance tag: read from the PDF, repaired from the font, or OCR (and with what confidence). The review notice shows only the lines that need eyes, side by side with the page image. This turns "AI guessed" into "checked against the file", which matters to users of official documents.
 
 ## Suggested order
