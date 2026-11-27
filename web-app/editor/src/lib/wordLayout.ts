@@ -1,4 +1,5 @@
 import type { DetectedTable } from './tableDetect';
+import { xyCutRegions, type LayoutBox } from './xyCut';
 import type { OcrLine } from '../state/editStore';
 
 /** A paragraph for the Word document, with its look taken from the PDF lines it came from. */
@@ -132,11 +133,17 @@ export type WordBlock =
 
 const centreOf = (line: OcrLine) => ({ x: line.xPt + line.wPt / 2, y: line.yPt + line.hPt / 2 });
 
+type PageItem =
+  | (LayoutBox & { kind: 'line'; line: OcrLine })
+  | (LayoutBox & { kind: 'table'; table: DetectedTable })
+  | (LayoutBox & { kind: 'picture'; picture: WordPicture });
+
 /**
  * Lays a page out as paragraphs, tables and pictures in reading order: each line inside a
  * table goes to the cell holding its centre (a cell's lines become its paragraphs, indented from
- * the cell's edge), as does a picture inside a table; lines outside tables become paragraphs, and
- * pictures sit between them by their top edge.
+ * the cell's edge), as does a picture inside a table; on digital pages, recursive XY-cut splits
+ * multi-column regions around detected tables so columns read column by column; pictures and
+ * tables sit between paragraphs by their top edge.
  *
  * @param lines Detected lines; boxes in PDF points (top-left origin).
  * @param pageWidthPt Page width, in PDF points.
@@ -164,35 +171,74 @@ export function pageBlocks(
     if (table) pictureTable.set(picture, table);
   }
   const flow = textLines.filter((line) => !inTable.has(line));
-  // Tables and free pictures anchor the page; paragraphs fill the space between them.
-  const anchors = [
-    ...tables.map((table) => ({ yPt: table.yPt, bottomPt: table.yPt + table.hPt, table })),
-    ...pictures.filter((p) => !pictureTable.has(p)).map((picture) => ({ yPt: picture.yPt, bottomPt: picture.yPt + picture.hPt, picture })),
-  ].sort((a, b) => a.yPt - b.yPt);
+  const freePictures = pictures.filter((p) => !pictureTable.has(p));
+
+  const layoutItems: PageItem[] = [
+    ...flow.map((line) => ({ kind: 'line' as const, line, xPt: line.xPt, yPt: line.yPt, wPt: line.wPt, hPt: line.hPt, isLine: true, isContent: true })),
+    ...tables.map((table) => ({ kind: 'table' as const, table, xPt: table.xPt, yPt: table.yPt, wPt: table.wPt, hPt: table.hPt, isLine: false, isContent: true })),
+    ...freePictures.map((picture) => ({ kind: 'picture' as const, picture, xPt: picture.xPt, yPt: picture.yPt, wPt: picture.wPt, hPt: picture.hPt, isLine: false, isContent: false })),
+  ];
+
+  // Run XY-cut column detection on digital pages (leave pure-OCR scanned pages in single flow).
+  const isDigital = textLines.length > 0 && !textLines.every((line) => line.source === 'ocr');
+  const regions = isDigital
+    ? xyCutRegions(layoutItems, pageWidthPt)
+    : [{ items: layoutItems, columnar: false }];
+
   const blocks: WordBlock[] = [];
-  let top = -Infinity;
-  const paragraphsBetween = (bottom: number) => {
-    const chunk = flow.filter((line) => centreOf(line).y >= top && centreOf(line).y < bottom);
-    for (const paragraph of paragraphsFromLines(chunk, pageWidthPt, margin)) blocks.push({ kind: 'paragraph', paragraph });
-  };
-  for (const anchor of anchors) {
-    paragraphsBetween(anchor.yPt);
-    if ('table' in anchor && anchor.table) {
-      const table = anchor.table;
-      blocks.push({
-        kind: 'table',
-        table: wordTable(
-          table,
-          textLines.filter((line) => inTable.get(line) === table),
-          pictures.filter((p) => pictureTable.get(p) === table),
-        ),
-      });
-    } else if ('picture' in anchor && anchor.picture) {
-      blocks.push({ kind: 'picture', picture: anchor.picture, indentPt: Math.max(0, Math.round(anchor.picture.xPt - margin)) });
+  for (const region of regions) {
+    const regionLines: OcrLine[] = [];
+    const regionTables: DetectedTable[] = [];
+    const regionPictures: WordPicture[] = [];
+    for (const item of region.items) {
+      if (item.kind === 'line') regionLines.push(item.line);
+      else if (item.kind === 'table') regionTables.push(item.table);
+      else regionPictures.push(item.picture);
     }
-    top = Math.max(top, anchor.bottomPt);
+
+    const colMargin =
+      region.columnar && regionLines.length > 0
+        ? Math.min(...regionLines.map((line) => line.xPt))
+        : margin;
+    const colWidth =
+      region.columnar && regionLines.length > 0
+        ? Math.max(1, Math.max(...regionLines.map((line) => line.xPt + line.wPt)) - colMargin)
+        : pageWidthPt;
+
+    // Tables and free pictures anchor the region; paragraphs fill the space between them.
+    const anchors = [
+      ...regionTables.map((table) => ({ yPt: table.yPt, bottomPt: table.yPt + table.hPt, table })),
+      ...regionPictures.map((picture) => ({ yPt: picture.yPt, bottomPt: picture.yPt + picture.hPt, picture })),
+    ].sort((a, b) => a.yPt - b.yPt);
+
+    let top = -Infinity;
+    const paragraphsBetween = (bottom: number) => {
+      const chunk = regionLines.filter((line) => centreOf(line).y >= top && centreOf(line).y < bottom);
+      if (chunk.length === 0) return;
+      const prepared = region.columnar ? chunk.map((line) => ({ ...line, xPt: line.xPt - colMargin })) : chunk;
+      const paragraphs = paragraphsFromLines(prepared, colWidth, region.columnar ? 0 : margin);
+      for (const paragraph of paragraphs) blocks.push({ kind: 'paragraph', paragraph });
+    };
+
+    for (const anchor of anchors) {
+      paragraphsBetween(anchor.yPt);
+      if ('table' in anchor && anchor.table) {
+        const table = anchor.table;
+        blocks.push({
+          kind: 'table',
+          table: wordTable(
+            table,
+            textLines.filter((line) => inTable.get(line) === table),
+            pictures.filter((p) => pictureTable.get(p) === table),
+          ),
+        });
+      } else if ('picture' in anchor && anchor.picture) {
+        blocks.push({ kind: 'picture', picture: anchor.picture, indentPt: Math.max(0, Math.round(anchor.picture.xPt - colMargin)) });
+      }
+      top = Math.max(top, anchor.bottomPt);
+    }
+    paragraphsBetween(Infinity);
   }
-  paragraphsBetween(Infinity);
   return blocks;
 }
 
