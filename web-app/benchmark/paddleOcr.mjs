@@ -209,16 +209,104 @@ export function readCharacterDict(ymlFile) {
 }
 
 /**
+ * CTC prefix beam search with a word bonus: keeps the `beam` best readings of a line (summing the
+ * probability of every alignment that yields each), and adds `bonus` (log space) whenever a
+ * reading completes a word `isKnown` accepts. Unknown words get no penalty, since a word list
+ * never holds every name and formal word. `scores` are per-step class probabilities (softmax);
+ * only the `topK` likeliest classes of a step are tried.
+ */
+export function ctcBeamDecode(
+  scores,
+  steps,
+  classes,
+  characters,
+  { isKnown, beam = 8, topK = 6, bonus = 1.5 } = {},
+) {
+  const NEG = -Infinity;
+  const logAdd = (a, b) =>
+    a === NEG
+      ? b
+      : b === NEG
+        ? a
+        : Math.max(a, b) + Math.log1p(Math.exp(-Math.abs(a - b)));
+  const space = characters.length; // Paddle's trailing space class index is characters.length (char " ")
+  const wordBonus = (text) => {
+    const word = text.split(" ").at(-1);
+    return word && /[\u0900-\u097F]/u.test(word) && isKnown?.(word) ? bonus : 0;
+  };
+  // prefix → { b: log P(ending in blank), nb: log P(ending in a character), lm }
+  let beams = new Map([["", { b: 0, nb: NEG, lm: 0 }]]);
+  for (let t = 0; t < steps; t++) {
+    const row = scores.subarray(t * classes, (t + 1) * classes);
+    const top = [...row.keys()].sort((a, c) => row[c] - row[a]).slice(0, topK);
+    const next = new Map();
+    const get = (prefix, lm) => {
+      let entry = next.get(prefix);
+      if (!entry) next.set(prefix, (entry = { b: NEG, nb: NEG, lm }));
+      return entry;
+    };
+    for (const [prefix, { b, nb, lm }] of beams) {
+      const total = logAdd(b, nb);
+      for (const c of top) {
+        const p = Math.log(Math.max(row[c], 1e-30));
+        if (c === 0) {
+          const e = get(prefix, lm);
+          e.b = logAdd(e.b, total + p);
+          continue;
+        }
+        const char = characters[c - 1] ?? "";
+        const last = prefix.at(-1);
+        if (char === last) {
+          const same = get(prefix, lm);
+          same.nb = logAdd(same.nb, nb + p);
+          const extended = get(prefix + char, lm);
+          extended.nb = logAdd(extended.nb, b + p);
+          continue;
+        }
+        const lmNext = c === space ? lm + wordBonus(prefix) : lm;
+        const e = get(prefix + char, lmNext);
+        e.nb = logAdd(e.nb, total + p);
+      }
+    }
+    beams = new Map(
+      [...next]
+        .sort(
+          (x, y) =>
+            logAdd(y[1].b, y[1].nb) +
+            y[1].lm -
+            (logAdd(x[1].b, x[1].nb) + x[1].lm),
+        )
+        .slice(0, beam),
+    );
+  }
+  let best = "";
+  let bestScore = NEG;
+  for (const [prefix, { b, nb, lm }] of beams) {
+    const score = logAdd(b, nb) + lm + wordBonus(prefix);
+    if (score > bestScore) [best, bestScore] = [prefix, score];
+  }
+  return best;
+}
+
+/**
  * Loads the detector and recognizer. `ort` is the onnxruntime-web module.
  *
  * @returns `recognizePage(image)` → lines in reading order, each { text, box } in image pixels.
  */
 export async function createPaddleOcr(
   ort,
-  { detModel, recModel, recYml, detOptions = {} },
+  { detModel, recModel, recYml, detOptions = {}, isKnown },
 ) {
-  const det = await ort.InferenceSession.create(readFileSync(detModel));
-  const rec = await ort.InferenceSession.create(readFileSync(recModel));
+  // Severity 3: errors only (the exported graphs carry unused initializers that warn on load).
+  const options = { logSeverityLevel: 3 };
+  const det = await ort.InferenceSession.create(
+    readFileSync(detModel),
+    options,
+  );
+  const rec = await ort.InferenceSession.create(
+    readFileSync(recModel),
+    options,
+  );
   const characters = readCharacterDict(recYml);
 
   async function detect(image) {
@@ -274,7 +362,11 @@ export async function createPaddleOcr(
       throw new Error(
         `recognizer has ${classes} classes, dictionary ${characters.length + 1}`,
       );
-    return ctcDecode(tensor.data, steps, classes, characters).trim();
+    return (
+      isKnown
+        ? ctcBeamDecode(tensor.data, steps, classes, characters, { isKnown })
+        : ctcDecode(tensor.data, steps, classes, characters)
+    ).trim();
   }
 
   return async function recognizePage(image) {

@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+  ctcBeamDecode,
   ctcDecode,
   dbBoxes,
   detInputSize,
@@ -55,4 +56,24 @@ test("readCharacterDict reads the recognizer's YAML list and appends the space c
   assert.equal(characters[6], "'");
   assert.ok(characters.includes("क"));
   assert.equal(characters.at(-1), " ");
+});
+
+test("ctcBeamDecode prefers a dictionary word when the greedy reading is a close miss", () => {
+  // classes: 0 blank, 1 क, 2 म, 3 ल, 4 space; steps read "क" then an ambiguous म/ल
+  const characters = ["क", "म", "ल", " "];
+  const rows = [
+    [0.05, 0.9, 0.02, 0.02, 0.01],
+    [0.9, 0.04, 0.03, 0.02, 0.01],
+    [0.04, 0.02, 0.45, 0.48, 0.01],
+  ];
+  const scores = Float32Array.from(rows.flat());
+  assert.equal(ctcDecode(scores, 3, 5, characters), "कल");
+  assert.equal(
+    ctcBeamDecode(scores, 3, 5, characters, { isKnown: (w) => w === "कम" }),
+    "कम",
+  );
+  assert.equal(
+    ctcBeamDecode(scores, 3, 5, characters, { isKnown: () => false }),
+    "कल",
+  );
 });

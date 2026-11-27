@@ -72,6 +72,21 @@ const tesseractLoad = await timed(() =>
     gzip: true,
   }),
 );
+// The editor's Hindi word list (spell check), for Paddle's lexicon-weighted decoding.
+const lexicon = new Set(
+  readFileSync(
+    path.join(here, "../editor/public/dict/hi-words.txt"),
+    "utf8",
+  ).split("\n"),
+);
+const paddleLexiconLoad = await timed(() =>
+  createPaddleOcr(ort, {
+    detModel: path.join(here, ".models/det.onnx"),
+    recModel: path.join(here, ".models/rec.onnx"),
+    recYml: path.join(here, ".models/rec.yml"),
+    isKnown: (word) => lexicon.has(word),
+  }),
+);
 const paddleLoad = await timed(() =>
   createPaddleOcr(ort, {
     detModel: path.join(here, ".models/det.onnx"),
@@ -86,40 +101,58 @@ for (const page of pages) {
   const tess = await timed(
     async () => (await tesseractLoad.value.recognize(page.png)).data.text,
   );
+  const ppm = readPpm(page.ppm);
   const paddle = await timed(async () =>
-    (await paddleLoad.value(readPpm(page.ppm))).map((l) => l.text).join("\n"),
+    (await paddleLoad.value(ppm)).map((l) => l.text).join("\n"),
   );
+  const lexical = await timed(async () =>
+    (await paddleLexiconLoad.value(ppm)).map((l) => l.text).join("\n"),
+  );
+  const outputs = {
+    Tesseract: tess,
+    Paddle: paddle,
+    "Paddle + lexicon": lexical,
+  };
   if (outDir) {
     mkdirSync(outDir, { recursive: true });
-    writeFileSync(path.join(outDir, `${page.name}.tesseract.txt`), tess.value);
-    writeFileSync(path.join(outDir, `${page.name}.paddle.txt`), paddle.value);
+    for (const [engine, out] of Object.entries(outputs)) {
+      writeFileSync(
+        path.join(
+          outDir,
+          `${page.name}.${engine.replace(/\W+/g, "-").toLowerCase()}.txt`,
+        ),
+        out.value,
+      );
+    }
   }
-  rows.push({ name: page.name, truth, tess, paddle });
+  rows.push({ name: page.name, truth, outputs });
 }
 await tesseractLoad.value.terminate();
 
 const pct = (s) =>
   `${(100 * s.recall).toFixed(1)} % (${s.correct}/${s.total}, ${s.extra} extra)`;
-const totals = {
-  tesseract: { correct: 0, total: 0 },
-  paddle: { correct: 0, total: 0 },
-};
+const totals = {};
 console.log(`OCR benchmark, ${pages.length} page(s) at ${dpi} dpi`);
 console.log(
-  `Model load: Tesseract ${tesseractLoad.ms.toFixed(0)} ms, Paddle ${paddleLoad.ms.toFixed(0)} ms`,
+  `Model load: Tesseract ${tesseractLoad.ms.toFixed(0)} ms, Paddle ${paddleLoad.ms.toFixed(0)} ms, with lexicon ${paddleLexiconLoad.ms.toFixed(0)} ms`,
 );
 for (const row of rows) {
-  const t = score(row.tess.value, row.truth);
-  const p = score(row.paddle.value, row.truth);
-  totals.tesseract.correct += t.correct;
-  totals.tesseract.total += t.total;
-  totals.paddle.correct += p.correct;
-  totals.paddle.total += p.total;
-  console.log(`${row.name}`);
-  console.log(`  Tesseract ${pct(t)}  ${row.tess.ms.toFixed(0)} ms`);
-  console.log(`  Paddle    ${pct(p)}  ${row.paddle.ms.toFixed(0)} ms`);
+  console.log(row.name);
+  for (const [engine, out] of Object.entries(row.outputs)) {
+    const result = score(out.value, row.truth);
+    totals[engine] ??= { correct: 0, total: 0 };
+    totals[engine].correct += result.correct;
+    totals[engine].total += result.total;
+    console.log(
+      `  ${engine.padEnd(17)} ${pct(result)}  ${out.ms.toFixed(0)} ms`,
+    );
+  }
 }
-const share = (s) => ((100 * s.correct) / s.total).toFixed(1);
 console.log(
-  `All pages: Tesseract ${share(totals.tesseract)} %, Paddle ${share(totals.paddle)} %`,
+  `All pages: ${Object.entries(totals)
+    .map(
+      ([engine, t]) =>
+        `${engine} ${((100 * t.correct) / t.total).toFixed(1)} %`,
+    )
+    .join(", ")}`,
 );

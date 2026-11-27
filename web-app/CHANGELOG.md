@@ -1,5 +1,10 @@
 # Changelog
 
+## OCR benchmark: dictionary-weighted decoding, 27 November 2026
+
+### Added
+- `web-app/benchmark/paddleOcr.mjs` gains `ctcBeamDecode`: CTC prefix beam search (8 readings, 6 likeliest classes a step) that adds a bonus when a reading completes a word from the editor's Hindi word list, with no penalty for unknown words. `ocr-bench.mjs` now reports Tesseract, Paddle and Paddle + lexicon. On three pages (the sample scan, and renders of the RRB contents page and part of a CEN 08/2024 page; the last two are digital pages, not scans): Tesseract 69.7 %, Paddle 84.0 %, Paddle + lexicon 86.7 % of Hindi words; the lexicon helped on every page (+2.1, +4.3, +1.9 points) at about 1.3× the decoding time. Tesseract stays best on the clean CEN render (99.4 %), so per-line voting between engines is the next step. Benchmark only; the editor still uses Tesseract.
+
 ## Hindi from Chrome PDFs merged by other tools, 27 November 2026
 
 ### Fixed
