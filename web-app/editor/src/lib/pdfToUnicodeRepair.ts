@@ -37,6 +37,8 @@ export type ToUnicodeRepair = {
   bytes: Uint8Array;
   /** Base font names whose ToUnicode was replaced. */
   repairedFonts: string[];
+  /** Those whose map was only in drawing order, not naming wrong letters (see `inDrawingOrder`). */
+  drawingOrderFonts: string[];
 };
 
 /** Reads a ToUnicode CMap's bfchar and bfrange entries: character code → text. */
@@ -102,6 +104,19 @@ function streamBytes(stream: unknown): Uint8Array | null {
 }
 
 /**
+ * Whether a map names a pre-base ि or reph glyph by its plain letter, so it gives text in drawing
+ * order ("अनुसूिचत"). Such maps also tend to leave ligatures unmapped, so their letters vanish;
+ * the font's own reading fills them in and orders ि and reph. Seen on Chrome output merged by
+ * PDFsam (CEN 08/2024), which also leaves gaps inside words and draws its spaces.
+ */
+export function inDrawingOrder(existing: ReadonlyMap<number, string>, fromFont: ReadonlyMap<number, string>): boolean {
+  return [...fromFont].some(([gid, letters]) => {
+    const old = existing.get(gid)?.normalize('NFC');
+    return (letters === PRE_BASE_MARK && old === 'ि') || (letters === REPH_MARK && old === 'र्');
+  });
+}
+
+/**
  * The repaired ToUnicode for a Type0 / CIDFontType2 / Identity font, or null when it needs none.
  * Exported for tests.
  */
@@ -119,14 +134,7 @@ export function repairedToUnicode(existing: ReadonlyMap<number, string>, fromFon
     else disagree++;
   }
   const misMapped = disagree >= MIN_DISAGREEMENTS && disagree / (agree + disagree) >= MIN_DISAGREEMENT_SHARE;
-  // A map that names a pre-base ि or reph glyph by its plain letter gives text in drawing order
-  // (Word's usual output): "अनुसूिचत". Such maps also tend to leave ligatures unmapped, so their
-  // letters vanish. The font's own reading fills them in and orders ि and reph.
-  const drawingOrder = [...fromFont].some(([gid, letters]) => {
-    const old = existing.get(gid)?.normalize('NFC');
-    return (letters === PRE_BASE_MARK && old === 'ि') || (letters === REPH_MARK && old === 'र्');
-  });
-  if (!misMapped && !drawingOrder) return null;
+  if (!misMapped && !inDrawingOrder(existing, fromFont)) return null;
   const repaired = new Map(existing);
   for (const [gid, letters] of fromFont) {
     if (![...letters].some((c) => DEVANAGARI.test(c) || c === PRE_BASE_MARK || c === REPH_MARK)) continue;
@@ -145,6 +153,7 @@ export async function repairMisMappedToUnicode(bytes: Uint8Array): Promise<ToUni
   try {
     const doc = await PDFDocument.load(bytes, { ignoreEncryption: false, updateMetadata: false });
     const repairedFonts: string[] = [];
+    const drawingOrderFonts: string[] = [];
     for (const [, object] of doc.context.enumerateIndirectObjects()) {
       if (!(object instanceof PDFDict) || object.get(PDFName.of('Subtype')) !== PDFName.of('Type0')) continue;
       if (object.get(PDFName.of('Encoding')) !== PDFName.of('Identity-H')) continue;
@@ -158,15 +167,19 @@ export async function repairMisMappedToUnicode(bytes: Uint8Array): Promise<ToUni
       const toUnicode = streamBytes(object.lookup(PDFName.of('ToUnicode')));
       if (!fontFile || !toUnicode) continue;
       const existing = parseToUnicode(new TextDecoder('latin1').decode(toUnicode));
-      const repaired = repairedToUnicode(existing, fontGlyphText(fontFile).text);
+      const fromFont = fontGlyphText(fontFile).text;
+      const repaired = repairedToUnicode(existing, fromFont);
       if (!repaired) continue;
       const ref: PDFRef = doc.context.register(doc.context.flateStream(buildToUnicode(repaired)));
       object.set(PDFName.of('ToUnicode'), ref);
-      repairedFonts.push(String(object.get(PDFName.of('BaseFont')) ?? '').replace(/^\//u, ''));
+      const name = String(object.get(PDFName.of('BaseFont')) ?? '').replace(/^\//u, '');
+      repairedFonts.push(name);
+      // Re-judged here: a map can both name wrong letters and keep ि in drawing order.
+      if ([...repaired].every(([gid, letters]) => existing.get(gid) === letters || !existing.has(gid) || /[\uE0F0\uE0F1]/u.test(letters))) drawingOrderFonts.push(name);
     }
-    if (repairedFonts.length === 0) return { bytes, repairedFonts };
-    return { bytes: await doc.save({ updateFieldAppearances: false }), repairedFonts };
+    if (repairedFonts.length === 0) return { bytes, repairedFonts, drawingOrderFonts };
+    return { bytes: await doc.save({ updateFieldAppearances: false }), repairedFonts, drawingOrderFonts };
   } catch {
-    return { bytes, repairedFonts: [] };
+    return { bytes, repairedFonts: [], drawingOrderFonts: [] };
   }
 }

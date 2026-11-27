@@ -181,6 +181,10 @@ describe('withUnmeasuredRunsJoined', () => {
     expect(clusterRunsIntoLines([run('(गैर-क्र', 295.9, 68.1), run('ीमी लेयर)', 373.2, 59.7)]).map((l) => l.text)).toEqual(['(गैर-क्रीमी लेयर)']);
   });
 
+  it('keeps the run after a pre-base ि mark on the same line, without a space', () => {
+    expect(clusterRunsIntoLines([run('में उल्लि\uE0F1', 100, 40), run('खत आरआरबी', 160, 50)]).map((l) => l.text)).toEqual(['में उल्लिखित आरआरबी']);
+  });
+
   it('drops a space measured before a vowel sign', () => {
     expect(clusterRunsIntoLines([run('राष्ट्र', 100, 20), run('ीयता', 125, 14)])[0].text).toBe('राष्ट्रीयता');
   });

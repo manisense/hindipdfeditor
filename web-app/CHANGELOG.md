@@ -1,5 +1,10 @@
 # Changelog
 
+## Hindi from Chrome PDFs merged by other tools, 27 November 2026
+
+### Fixed
+- PDFs printed from Chrome and then merged (PDFsam and similar tools drop the "Skia" producer) gave Hindi in drawing order with conjuncts missing, so the editor read them with OCR: 17 s a page and whole phrases lost. The text is now read from the embedded font and put in reading order (web ADR 0022 amendment). On a Railway CEN 08/2024 notice page: 160 hand-checked words 88.8 % → 100 %, 621 Hindi words read instead of 492, 1.8 s instead of 17.2 s.
+
 ## Opt-in Plan B vector Hindi text export (web trial), 27 November 2026
 
 ### Added

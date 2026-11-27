@@ -19,7 +19,10 @@ const expected = ['सूर्य, धर्म और क्षेत्र', 
 
 describe('mis-mapped ToUnicode fixture', () => {
   it('is repaired from the embedded font', async () => {
-    expect((await repairMisMappedToUnicode(fixture)).repairedFonts.length).toBeGreaterThan(0);
+    const repair = await repairMisMappedToUnicode(fixture);
+    expect(repair.repairedFonts.length).toBeGreaterThan(0);
+    // Wrong letters, not only drawing order: its pages keep the usual word-gap rules.
+    expect(repair.drawingOrderFonts).toEqual([]);
   });
 
   it('reads the edited lines exactly', async () => {
