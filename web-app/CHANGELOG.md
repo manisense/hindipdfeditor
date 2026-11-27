@@ -1,5 +1,10 @@
 # Changelog
 
+## Text extraction: ि stays outside conjuncts split across text items, 27 November 2026
+
+### Fixed
+- When a pdf.js text item ended inside a conjunct after a pre-base ि (व्य ि क् | तयों, drawing-order fonts, web ADR 0022), the first reordering pass, which runs on each item, put ि after the half form alone and gave व्यकि्तयों. A cluster cut off after a virama or nukta is now left for the pass over the whole line. A full-document scan of CEN 08/2024 (135 pages) found 25 such words on 24 lines (व्यक्तियों, रिक्तियों, सिक्किम, नियुक्ति, मस्तिष्क); all are now right, and no other line changed. RRB 01/2026 (38 pages) is unchanged; CEN p70 620/620, RRB p2 100 %, sample notice 100 % / 99.3 %.
+
 ## Text extraction: ligatures that start a line stay on it, 27 November 2026
 
 ### Fixed

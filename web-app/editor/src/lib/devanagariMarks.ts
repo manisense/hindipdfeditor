@@ -7,7 +7,8 @@ const CLUSTER = `(?:${CONSONANT}़?्)*${CONSONANT}़?`;
 const SIGNS = '[ा-ौॎॏॕ-ॗऀ-ः]*';
 
 // A pre-base ि always belongs to the cluster after it, so a measured gap between them is no space.
-const preBase = new RegExp(`${PRE_BASE_MARK}\\s*(${CLUSTER})`, 'gu');
+// A cluster cut off after a virama or nukta (a text item ending inside a conjunct) is not matched.
+const preBase = new RegExp(`${PRE_BASE_MARK}\\s*(${CLUSTER})(?![़्])`, 'gu');
 const reph = new RegExp(`(${CLUSTER}${SIGNS})${REPH_MARK}`, 'gu');
 
 /**
