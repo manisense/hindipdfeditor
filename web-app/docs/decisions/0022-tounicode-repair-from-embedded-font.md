@@ -32,3 +32,7 @@ Evidence: CEN p70, 160 hand-checked Hindi words (items 2–3 and the note before
 ## Open
 - The 135-page CEN 08/2024 notice is broken differently (not repaired by this rule); investigate next.
 - The RRB page is not in the repo (third-party file); a self-made mis-mapped fixture should be added to the gate.
+
+## Amendment, 27 November 2026: text drawn as empty boxes
+
+Word sets Hindi in a font without Devanagari (Courier New, Gulim) when the chosen font lacks it; the PDF then draws glyph 0, the font's empty box, and its ToUnicode names that glyph "अ" or "क" (RRB 01/2026 pages 4, 21–22, 25, 30, 32–35). The file does not hold that text, so it cannot be repaired, and OCR reads boxes no better. In the same read-only copy, a Type0 Identity font whose map names code 0 as a letter has that entry replaced by a private-use mark that extraction drops, so boxes no longer read as "अअअअ". Pages that use such a font are kept as candidates and confirmed from their text (the mark appears); PDF to Word lists them and asks the user for the original file. Rejected: OCR of those pages (it reads the boxes as random letters) and guessing the text.

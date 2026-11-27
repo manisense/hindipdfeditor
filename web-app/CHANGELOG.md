@@ -1,5 +1,10 @@
 # Changelog
 
+## PDF to Word: empty boxes are reported, not read as letters, 27 November 2026
+
+### Fixed
+- Some Word PDFs draw Hindi with a font that has no Devanagari, so the page shows empty boxes (the font's glyph 0) while the text map names each box "अ" or "क"; PDF to Word wrote "अअअअ…" for them. Such boxes are now left out of the text, and PDF to Word says which pages show boxes and that the text is not in the file (ask the sender for the original). RRB 01/2026: pages 4, 21–22, 25, 30, 32–35 reported, no "अअअ"/"ककक" left; CEN 08/2024 (135 pages) nothing reported. Benchmarks unchanged (CEN p70 620/620, RRB p2 100 %, sample notice 100 % / 99.3 %). Web ADR 0022 amended.
+
 ## Text extraction: ि stays outside conjuncts split across text items, 27 November 2026
 
 ### Fixed
