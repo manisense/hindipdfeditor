@@ -107,12 +107,12 @@ export function removePageText(
     }
     return cache.get(name);
   };
-  const { content, removedPerRect, unresolvedRects } = removeGlyphsInRects(
+  const { content, removedPerRect, removedFontsPerRect, unresolvedRects } = removeGlyphsInRects(
     decodedContents(doc, page),
     fontFor,
     rects,
   );
   const stream = doc.context.flateStream(latin1Bytes(`q\n${content}\nQ\n`));
   page.node.set(PDFName.of("Contents"), doc.context.register(stream));
-  return { removedPerRect, unresolvedRects };
+  return { removedPerRect, removedFontsPerRect, unresolvedRects };
 }

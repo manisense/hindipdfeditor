@@ -28,6 +28,8 @@ export type RemovalResult = {
   content: string;
   /** Glyphs removed per rectangle, same order as the input rectangles. */
   removedPerRect: number[];
+  /** Font resource names of glyphs removed inside each rectangle, mapped to removed glyph counts. */
+  removedFontsPerRect: Map<string, number>[];
   /** Rectangles that a text run touched but could not be resolved (unknown font or widths). */
   unresolvedRects: Set<number>;
 };
@@ -227,6 +229,7 @@ export function removeGlyphsInRects(
 ): RemovalResult {
   const tokens = tokenize(content);
   const removedPerRect = rects.map(() => 0);
+  const removedFontsPerRect = rects.map(() => new Map<string, number>());
   const unresolvedRects = new Set<number>();
   const replacements: { start: number; end: number; text: string }[] = [];
 
@@ -297,6 +300,10 @@ export function removeGlyphsInRects(
           flushKept();
           pendingShift -= (advance / (ts.size * ts.hScale || 1)) * 1000;
           removedPerRect[hit] += 1;
+          if (ts.font) {
+            const counts = removedFontsPerRect[hit];
+            counts.set(ts.font, (counts.get(ts.font) ?? 0) + 1);
+          }
           removedAny = true;
         } else {
           flushShift();
@@ -419,5 +426,5 @@ export function removeGlyphsInRects(
     last = end;
   }
   output += content.slice(last);
-  return { content: output, removedPerRect, unresolvedRects };
+  return { content: output, removedPerRect, removedFontsPerRect, unresolvedRects };
 }

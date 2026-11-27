@@ -34,6 +34,17 @@ describe("removeGlyphsInRects", () => {
     // In user space the text starts at x=100, y=700, and each glyph is 20 pt wide.
     const result = removeGlyphsInRects(content, fonts, [{ x0: 100, y0: 695, x1: 119, y1: 720 }]);
     expect(result.content).toBe("q 2 0 0 2 0 0 cm BT /F2 10 Tf 50 350 Td [-1000 <0042>] TJ ET Q");
+    expect([...result.removedFontsPerRect[0].entries()]).toEqual([["F2", 1]]);
+  });
+
+  it("records removed font resource names and counts per rectangle", () => {
+    const content = "BT /F1 10 Tf 1 0 0 1 100 700 Tm (AB) Tj /F2 10 Tf <004100420043> Tj ET";
+    const result = removeGlyphsInRects(content, fonts, [{ x0: 99, y0: 695, x1: 145, y1: 712 }]);
+    expect(result.removedPerRect).toEqual([5]);
+    expect([...result.removedFontsPerRect[0].entries()]).toEqual([
+      ["F1", 2],
+      ["F2", 3],
+    ]);
   });
 
   it("restores the font after Q and reports runs with unknown fonts", () => {
