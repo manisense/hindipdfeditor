@@ -1,5 +1,12 @@
 # Changelog
 
+## Word 2021 detached `िं` and split `ां`/`ाँ`: replace non-space Devanagari filler CIDs mapped to space, 28 November 2026
+
+### Fixed
+- Microsoft Word 2021 PDFs with stream `CIDToGIDMap` Devanagari subsets (`BCDGEE+Mangal`, `BCDIEE+Mangal-Bold`, e.g. Allahabad High Court orders) map the middle Devanagari glyph of 3-glyph nasal/visarga clusters (`स` in `सिंह` = `[ि→"स"][स→" "][ं→"िं"]`, `च` in `चिंता`, `क` in `किंतु`, `ा` in `दिनांक`/`शशांक`/`प्रशांत`/`जाँच`, `ी` in `नहीं`) to ASCII space (`U+0020`). In pdf.js, that fake space advanced the cursor without updating `prevTransform`, flushing GPOS-shifted zero-width `िं` past the next consonant (`सिंह` → `स ह … अन्यिं` / `स हिं`) and inserting spaces inside `ां`/`ाँ` words (`दिनां क`).
+- `pdfToUnicodeRepair.ts` (`repairedSpaceFillerToUnicode`) now replaces `U+0020` entries in stream-mapped `CIDFontType2` fonts with an in-memory private-use placeholder (`CLUSTER_FILLER_MARK`, `\uE0F3`) only when the glyph ID is proven Devanagari by the embedded font's cmap or by a Devanagari sibling CID sharing that glyph ID (while keeping glyph 0, real space glyphs, and empty-cmap fonts such as Tesseract's `GlyphLessFont` untouched). `pdfTextExtract.ts` drops `CLUSTER_FILLER_MARK` cleanly without marking the page degraded, and restores whitespace-bounded width on filler runs under-measured by GPOS-left-shifted zero-width marks (`किंतु`).
+- Measured on `corpus2/29_court_ahc.pdf` pages 1–6 (checked against rendered page images): `सिंह`/`िं` words read correctly 0/3 → 3/3 (13/13 across all 55 pages, up from 5/13), plus 18/18 split `ां`/`ाँ` words on pages 1–6 fixed; all regression corpus files, benchmarks, and fixtures stay word-for-word identical.
+
 ## Gazette of India: 82 % → 99 % of Hindi words, 28 November 2026
 
 ### Fixed

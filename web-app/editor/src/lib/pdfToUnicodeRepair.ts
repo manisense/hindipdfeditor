@@ -35,6 +35,16 @@ import { fontGlyphText, PRE_BASE_MARK, REPH_MARK } from './fontGlyphText';
  */
 export const MISSING_GLYPH_MARK = '\uE0F2';
 
+/**
+ * Stands for a non-space Devanagari glyph whose ToUnicode was mapped to ASCII space (U+0020) as a
+ * cluster filler by Microsoft Word 2021 (e.g. `स` in `सिंह` = `[ि→"स"][स→" "][ं→"िं"]` or `ा` in
+ * `दिनांक` = `[ा→" "][ं→"ां"]`). Keeping a non-whitespace private-use code point lets pdf.js
+ * advance the run's width and `prevTransform` across the glyph instead of emitting a fake space and
+ * flushing the following GPOS-shifted zero-width combining mark into a separate, mis-sorted run;
+ * `sanitizeEmbeddedText` drops it cleanly.
+ */
+export const CLUSTER_FILLER_MARK = '\uE0F3';
+
 const MIN_DISAGREEMENTS = 3;
 const MIN_DISAGREEMENT_SHARE = 0.05;
 const DEVANAGARI = /[ऀ-ॿ]/u;
@@ -250,6 +260,49 @@ function isDrawingOrderOnly(existing: ReadonlyMap<number, string>, repaired: Rea
 }
 
 /**
+ * Replaces fake ASCII-space ToUnicode entries on non-space Devanagari glyphs in a stream-mapped
+ * CIDFontType2 font (Microsoft Word 2021 cluster fillers) with {@link CLUSTER_FILLER_MARK}, or
+ * returns null when none qualify.
+ *
+ * Fails closed: requires a readable embedded font cmap (`fromFont.size > 0`, excluding dummy
+ * OCR fonts such as Tesseract's `GlyphLessFont` where every CID maps to glyph 1), never touches
+ * glyph 0 or any glyph mapped to whitespace in the font, and only replaces a `" "` entry when its
+ * glyph ID is proven Devanagari by the font's own cmap or by a sibling CID sharing the exact same
+ * glyph ID (when the font also has a proven space glyph in its cmap). Exported for tests.
+ */
+export function repairedSpaceFillerToUnicode(
+  existing: ReadonlyMap<number, string>,
+  gidOfCid: (cid: number) => number,
+  fromFont: ReadonlyMap<number, string>,
+): Map<number, string> | null {
+  if (fromFont.size === 0) return null;
+  const spaceGids = new Set<number>();
+  for (const [gid, letters] of fromFont) {
+    if (/^\s+$/u.test(letters)) spaceGids.add(gid);
+  }
+  const devanagariGids = new Set<number>();
+  for (const [cid, text] of existing) {
+    if (!DEVANAGARI.test(text)) continue;
+    const gid = gidOfCid(cid);
+    if (gid > 0) devanagariGids.add(gid);
+  }
+  let repaired: Map<number, string> | null = null;
+  for (const [cid, text] of existing) {
+    if (text !== ' ') continue;
+    const gid = gidOfCid(cid);
+    if (gid <= 0 || spaceGids.has(gid)) continue;
+    const fontLetters = fromFont.get(gid);
+    const provenDevanagari =
+      (fontLetters !== undefined && DEVANAGARI.test(fontLetters)) ||
+      (spaceGids.size > 0 && devanagariGids.has(gid));
+    if (!provenDevanagari) continue;
+    repaired ??= new Map(existing);
+    repaired.set(cid, CLUSTER_FILLER_MARK);
+  }
+  return repaired;
+}
+
+/**
  * Returns bytes whose mis-mapped Devanagari ToUnicode maps are rebuilt from the embedded fonts,
  * or the input unchanged. Never throws: any failure returns the input.
  *
@@ -283,12 +336,30 @@ export async function repairMisMappedToUnicode(bytes: Uint8Array): Promise<ToUni
       const cid = descendants instanceof PDFArray ? descendants.lookup(0) : undefined;
       if (!(cid instanceof PDFDict) || cid.get(PDFName.of('Subtype')) !== PDFName.of('CIDFontType2')) continue;
       const cidToGid = cid.get(PDFName.of('CIDToGIDMap'));
-      if (cidToGid !== undefined && cidToGid !== PDFName.of('Identity')) continue;
       const descriptor = cid.lookup(PDFName.of('FontDescriptor'));
       const fontFile = descriptor instanceof PDFDict ? streamBytes(descriptor.lookup(PDFName.of('FontFile2'))) : null;
       const toUnicode = streamBytes(object.lookup(PDFName.of('ToUnicode')));
       if (!toUnicode) continue;
       const existing = parseToUnicode(new TextDecoder('latin1').decode(toUnicode));
+
+      if (cidToGid !== undefined && cidToGid !== PDFName.of('Identity')) {
+        // Stream CIDToGIDMap (e.g. Microsoft Word 2021): ToUnicode is cluster-swapped per CID and
+        // GSUB is typically stripped from FontFile2, so do not rebuild from cmap/GSUB — only
+        // replace fake ASCII-space filler CIDs on non-space Devanagari glyphs.
+        const mapBytes = streamBytes(cid.lookup(PDFName.of('CIDToGIDMap')));
+        if (!mapBytes || !fontFile) continue;
+        const reading = fontGlyphText(fontFile);
+        const gidOfCid = (code: number) =>
+          code >= 0 && code * 2 + 1 < mapBytes.length ? (mapBytes[code * 2] << 8) | mapBytes[code * 2 + 1] : -1;
+        const fillerFixed = repairedSpaceFillerToUnicode(existing, gidOfCid, reading.text);
+        if (fillerFixed) {
+          const ref: PDFRef = doc.context.register(doc.context.flateStream(buildToUnicode(fillerFixed)));
+          object.set(PDFName.of('ToUnicode'), ref);
+          changed = true;
+        }
+        continue;
+      }
+
       // With Identity CIDToGIDMap, code 0 is glyph 0: a letter mapped to it is drawn as a box.
       // A letter, not U+0000 or another control code (NIC eOffice maps glyph 0 to U+0000).
       const missing = /\p{L}/u.test(existing.get(0) ?? '');

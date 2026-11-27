@@ -10,6 +10,7 @@ import {
   textItemWidthPt,
   type EmbeddedTextRun,
 } from './pdfTextExtract';
+import { CLUSTER_FILLER_MARK } from './pdfToUnicodeRepair';
 
 function run(
   text: string,
@@ -145,6 +146,12 @@ describe('embedded text safety and geometry', () => {
       text: ' pruninglabs.com',
       removedCodePoints: 1,
       removedPrivateUseCodePoints: 1,
+    });
+    expect(isSafeEmbeddedText(`स${CLUSTER_FILLER_MARK}िंह`)).toBe(true);
+    expect(sanitizeEmbeddedText(`स${CLUSTER_FILLER_MARK}िंह`)).toEqual({
+      text: 'सिंह',
+      removedCodePoints: 0,
+      removedPrivateUseCodePoints: 0,
     });
   });
 });

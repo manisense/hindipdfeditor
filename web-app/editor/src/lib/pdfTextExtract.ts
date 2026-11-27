@@ -6,6 +6,7 @@ import { PRE_BASE_MARK } from './fontGlyphText';
 import { fontHintFromPdfFont } from './fontMatch';
 import { krutiDevToUnicode } from './krutiDev';
 import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
+import { CLUSTER_FILLER_MARK } from './pdfToUnicodeRepair';
 import { drawingOrderFontsOf, repairedFontsOf, sharedPdfDocument } from './sharedPdfDocument';
 import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
 import { applyActualText, drawnGlyphs, markedContentStarts, type ActualTextResult } from './pdfActualText';
@@ -81,6 +82,11 @@ export function sanitizeEmbeddedText(text: string): SanitizedEmbeddedText {
   let removedPrivateUseCodePoints = 0;
   for (const character of text) {
     const codePoint = character.codePointAt(0);
+    if (character === CLUSTER_FILLER_MARK) {
+      // Cluster-filler placeholder injected in-memory for Word 2021 non-space glyphs mapped to
+      // U+0020 (see pdfToUnicodeRepair.ts); drops cleanly with no degradation.
+      continue;
+    }
     if (isGlyphPlaceholder(character) || isDevanagariMark(character)) {
       // Stands in for an unmapped glyph until it is repaired (see glyphRepair.ts), or for a ि or
       // reph that the line's text puts in reading order (see devanagariMarks.ts).
@@ -296,9 +302,23 @@ export async function extractEmbeddedTextLines(
       // viewport they are already PDF-point sizes; multiplying by the font transform again
       // creates the 10–15x-wide boxes this editor previously displayed.
       const fontHeightPt = Math.max(4, item.height * viewport.scale);
-      const wPt = textItemWidthPt(item.width * viewport.scale, fontHeightPt);
+      let wPt = textItemWidthPt(item.width * viewport.scale, fontHeightPt);
       const [xPt, baselineY] = viewport.convertToViewportPoint(pdfX, pdfY);
       const yPt = baselineY - fontHeightPt * ascentRatio(style ?? {});
+      // When a Word 2021 filler run contains a zero-width combining mark positioned left of its
+      // base's right edge (e.g. ं over क in किंतु), pdf.js subtracts that negative TD from
+      // item.width without moving prevTransform; the following whitespace item starts at the true
+      // right edge (prevTransform), so use it when it lies slightly past xPt + wPt.
+      if (str.includes(CLUSTER_FILLER_MARK)) {
+        const nextItem = textContent.items[itemIndex + 1];
+        if (nextItem && 'str' in nextItem && nextItem.str.trim().length === 0) {
+          const [nextX, nextBaselineY] = viewport.convertToViewportPoint(nextItem.transform[4], nextItem.transform[5]);
+          const delta = nextX - (xPt + wPt);
+          if (Math.abs(nextBaselineY - baselineY) <= fontHeightPt * 0.25 && delta > 0 && delta <= fontHeightPt * 0.5) {
+            wPt = nextX - xPt;
+          }
+        }
+      }
 
       if (![xPt, yPt, wPt, fontHeightPt].every(Number.isFinite)) return [];
 
