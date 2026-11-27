@@ -1,5 +1,10 @@
 # Changelog
 
+## OCR benchmark: per-line vote between engines, 27 November 2026
+
+### Added
+- `web-app/benchmark/rover.mjs`: for each line PaddleOCR (with lexicon decoding) finds, the Tesseract words inside the same box form a second reading, and the reading with more words from the editor's Hindi word list wins (a tie keeps Paddle); Tesseract lines outside every Paddle box are kept. `ocr-bench.mjs` reports it as "Vote (per line)". Same three pages: sample scan 98.6 % (best single engine 96.5 %), RRB render 70.2 % (68.8 %), CEN render 98.1 % (Tesseract 99.4 %); all pages 89.4 % vs 86.7 %, with no more extra words than either engine. It costs both engines' time. Benchmark only; the editor still uses Tesseract.
+
 ## OCR benchmark: dictionary-weighted decoding, 27 November 2026
 
 ### Added
