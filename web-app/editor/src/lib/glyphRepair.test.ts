@@ -27,6 +27,13 @@ describe('repairText', () => {
     expect(repairText(`सूय${REPH} की`, map, isUnknown)).toBe('सूर्य की');
   });
 
+  it('puts a pre-base ि before the anusvara, candrabindu or visarga of its syllable', () => {
+    // Gazette of India PDFs: हिंदी is drawn ि ह ं द ी.
+    expect(repairText(`${I}हंदी`, map, isUnknown)).toBe('हिंदी');
+    expect(repairText(`${I}सँ`, map, isUnknown)).toBe('सिँ');
+    expect(repairText(`अ${I}धक`, map, isUnknown)).toBe('अधिक');
+  });
+
   it('puts a pre-base ि after its consonant and conjuncts in place', () => {
     expect(repairText(`${I}व${DYA}ालय`, map, isUnknown)).toBe('विद्यालय');
   });

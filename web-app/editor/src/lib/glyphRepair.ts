@@ -90,7 +90,9 @@ function repairWord(
   // Apply from the end, so earlier offsets stay valid.
   for (const { offset, reading } of moved.reverse()) {
     const target = syllableStart(rebuilt, syllablesBefore(rebuilt, offset) + reading.shift);
-    const at = reading.shift > 0 ? Math.max(target, offset) : Math.min(target, offset);
+    let at = reading.shift > 0 ? Math.max(target, offset) : Math.min(target, offset);
+    // A vowel sign moved forward goes after the consonants, before ं ँ ः that end the syllable.
+    if (reading.shift > 0) while (at > offset && /[ँंः]/u.test(rebuilt[at - 1])) at -= 1;
     rebuilt = rebuilt.slice(0, at) + reading.text + rebuilt.slice(at);
   }
   return rebuilt;
