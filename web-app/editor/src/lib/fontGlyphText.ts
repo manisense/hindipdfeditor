@@ -1,10 +1,10 @@
 /**
  * What each glyph of a TrueType/OpenType font stands for, read from the font program itself:
- * its cmap gives single letters, and its GSUB rules (single and ligature substitutions, also
- * behind extension lookups) give the letters of half forms, conjuncts, reph and matra
- * combinations, composed until nothing new is learned. A PDF's ToUnicode map can be wrong while
- * the embedded font is intact (Word + iLovePDF files map the pre-base ि glyph to "व"), so this is
- * a second, independent reading of the same glyphs.
+ * its cmap gives single letters, and its GSUB rules (single, ligature, chaining contextual `pres`
+ * and extension lookups) give the letters of half forms, conjuncts, reph and matra combinations,
+ * composed until nothing new is learned. A PDF's ToUnicode map can be wrong while the embedded font
+ * is intact (Word + iLovePDF files map the pre-base ि glyph to "व"), so this is a second,
+ * independent reading of the same glyphs.
  *
  * Glyphs whose Devanagari letters are drawn out of reading order get markers instead of letters:
  * {@link PRE_BASE_MARK} for ि (drawn before the consonant it follows) and {@link REPH_MARK} for a
@@ -19,13 +19,22 @@ export const REPH_MARK = '';
 export type FontGlyphReading = {
   /** Glyph id → letters (with marks for reordered glyphs). */
   text: Map<number, string>;
+  /**
+   * Glyphs formed by a GSUB ligature containing a reph glyph whose other component (e.g. ो) was
+   * stripped from the subset font's cmap, so `text` has no full reading for them.
+   */
+  rephLigatures?: Set<number>;
 };
 
 const REPH = 'र्';
 const RAKAR = '्र';
 const VIRAMA = '्';
 const RA = 'र';
+const RRA = 'ऱ';
 const I_MATRA = 'ि';
+const DEVANAGARI = /[\u0900-\u097F]/u;
+/** Fewest distinct `pres` contextual variants proving an unmapped glyph is the pre-base ि. */
+const MIN_PRES_I_VARIANTS = 3;
 
 /** Reads `bytes` as an sfnt font; a font it cannot read gives an empty map (fails closed). */
 export function fontGlyphText(bytes: Uint8Array): FontGlyphReading {
@@ -37,6 +46,7 @@ export function fontGlyphText(bytes: Uint8Array): FontGlyphReading {
 }
 
 type Edge = { output: number; components: number[]; reph: boolean; blwf: boolean };
+type PresContextual = { input: number; outputs: Set<number>; lookaheads: Set<number> };
 
 function readFont(bytes: Uint8Array): FontGlyphReading {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -50,7 +60,24 @@ function readFont(bytes: Uint8Array): FontGlyphReading {
     if (known === undefined || codePoint < (known.codePointAt(0) ?? 0)) text.set(gid, String.fromCodePoint(codePoint));
   }
   const gsub = tables.get('GSUB');
-  const edges = gsub === undefined ? [] : gsubEdges(view, gsub);
+  const { edges, presContextual } = gsub === undefined ? { edges: [], presContextual: [] } : readGsub(view, gsub);
+
+  // Word's subsetter drops base ि from cmap when headings only draw its width-matched contextual
+  // variants (Mangal-Bold), leaving GSUB intact. Only pre-base ि has ≥3 contextual single
+  // substitutions before Devanagari glyphs in `pres` type-6 lookups.
+  for (const rule of presContextual) {
+    if (text.has(rule.input) || rule.outputs.size < MIN_PRES_I_VARIANTS) continue;
+    const hasDevanagariLookahead = [...rule.lookaheads].some((gid) => DEVANAGARI.test(text.get(gid) ?? ''));
+    if (hasDevanagariLookahead) text.set(rule.input, I_MATRA);
+  }
+  // Likewise, a subset that only draws half forms or reph ligatures can drop virama from cmap;
+  // in OpenType Devanagari, `rphf` only ligates [र/ऱ, ्] -> reph.
+  for (const edge of edges) {
+    if (!edge.reph || edge.components.length !== 2) continue;
+    const [first, second] = edge.components;
+    if ((text.get(first) === RA || text.get(first) === RRA) && !text.has(second)) text.set(second, VIRAMA);
+  }
+
   const reph = new Set<number>();
   const rakar = new Set<number>();
   // Ligatures first in every pass: a glyph reached both by a single substitution (an ं variant)
@@ -77,11 +104,25 @@ function readFont(bytes: Uint8Array): FontGlyphReading {
       changed = true;
     }
   }
+  // Track reph-carrying ligatures whose other component (e.g. standalone ो) was stripped from cmap.
+  const rephCarriers = new Set<number>(reph);
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const edge of edges) {
+      if (edge.components.length < 2 || rephCarriers.has(edge.output)) continue;
+      if (edge.components.some((c) => rephCarriers.has(c))) {
+        rephCarriers.add(edge.output);
+        changed = true;
+      }
+    }
+  }
+  const rephLigatures = new Set<number>([...rephCarriers].filter((gid) => !text.has(gid)));
+
   for (const [gid, letters] of text) {
     if (reph.has(gid) && letters.includes(REPH)) text.set(gid, REPH_MARK + letters.replace(REPH, ''));
     else if (letters === I_MATRA) text.set(gid, PRE_BASE_MARK);
   }
-  return { text };
+  return { text, rephLigatures };
 }
 
 function tableDirectory(view: DataView): Map<string, number> {
@@ -181,16 +222,25 @@ function featureLookups(view: DataView, gsub: number, tag: string): Set<number> 
   return lookups;
 }
 
-/** Every single (type 1) and ligature (type 4) substitution, as output ← components. */
-function gsubEdges(view: DataView, gsub: number): Edge[] {
+/**
+ * Every single (type 1) and ligature (type 4) substitution as output ← components, plus single-glyph
+ * chaining contextual (type 6 format 3) rules inside `pres` lookups that select contextual variants.
+ */
+function readGsub(view: DataView, gsub: number): { edges: Edge[]; presContextual: PresContextual[] } {
   const rephLookups = featureLookups(view, gsub, 'rphf');
   const blwfLookups = featureLookups(view, gsub, 'blwf');
+  const presLookups = featureLookups(view, gsub, 'pres');
   const lookupList = gsub + view.getUint16(gsub + 8);
+  const lookupCount = view.getUint16(lookupList);
   const edges: Edge[] = [];
-  for (let l = 0; l < view.getUint16(lookupList); l++) {
+  const singleByLookup = new Map<number, Map<number, number>>();
+  const type6Subs: number[] = [];
+
+  for (let l = 0; l < lookupCount; l++) {
     const lookup = lookupList + view.getUint16(lookupList + 2 + l * 2);
     const reph = rephLookups.has(l);
     const blwf = blwfLookups.has(l);
+    const isPres = presLookups.has(l);
     const lookupType = view.getUint16(lookup);
     for (let s = 0; s < view.getUint16(lookup + 4); s++) {
       let sub = lookup + view.getUint16(lookup + 6 + s * 2);
@@ -199,18 +249,84 @@ function gsubEdges(view: DataView, gsub: number): Edge[] {
         type = view.getUint16(sub + 2);
         sub += view.getUint32(sub + 4);
       }
-      if (type === 1) singleEdges(view, sub, reph, blwf, edges);
+      if (type === 1) singleEdges(view, sub, l, reph, blwf, edges, singleByLookup);
       if (type === 4) ligatureEdges(view, sub, reph, blwf, edges);
+      if (type === 6 && isPres) type6Subs.push(sub);
     }
   }
-  return edges;
+
+  const byInput = new Map<number, PresContextual>();
+  for (const sub of type6Subs) {
+    readPresType6Subtable(view, sub, singleByLookup, byInput);
+  }
+  return { edges, presContextual: [...byInput.values()] };
 }
 
-function singleEdges(view: DataView, sub: number, reph: boolean, blwf: boolean, edges: Edge[]): void {
+function readPresType6Subtable(
+  view: DataView,
+  sub: number,
+  singleByLookup: ReadonlyMap<number, ReadonlyMap<number, number>>,
+  byInput: Map<number, PresContextual>,
+): void {
+  // Format 3 (coverage-based chaining contextual substitution) is used by Mangal, Nirmala UI and Noto
+  // for pre-base ि width-matching before lookahead consonants.
+  if (view.getUint16(sub) !== 3) return;
+  let pos = sub + 2;
+  const backtrackCount = view.getUint16(pos);
+  pos += 2 + backtrackCount * 2;
+  const inputCount = view.getUint16(pos);
+  pos += 2;
+  if (backtrackCount !== 0 || inputCount !== 1) return;
+  const inputGlyphs = coverage(view, sub + view.getUint16(pos));
+  pos += 2;
+  if (inputGlyphs.length !== 1) return;
+  const input = inputGlyphs[0];
+  const lookaheadCount = view.getUint16(pos);
+  pos += 2;
+  if (lookaheadCount < 1) return;
+  const lookaheadGlyphs: number[] = [];
+  for (let i = 0; i < lookaheadCount; i++) {
+    lookaheadGlyphs.push(...coverage(view, sub + view.getUint16(pos)));
+    pos += 2;
+  }
+  const seqCount = view.getUint16(pos);
+  pos += 2;
+  for (let i = 0; i < seqCount; i++) {
+    const sequenceIndex = view.getUint16(pos);
+    const lookupIndex = view.getUint16(pos + 2);
+    pos += 4;
+    if (sequenceIndex !== 0) continue;
+    const output = singleByLookup.get(lookupIndex)?.get(input);
+    if (output === undefined) continue;
+    let entry = byInput.get(input);
+    if (!entry) {
+      entry = { input, outputs: new Set(), lookaheads: new Set() };
+      byInput.set(input, entry);
+    }
+    entry.outputs.add(output);
+    for (const g of lookaheadGlyphs) entry.lookaheads.add(g);
+  }
+}
+
+function singleEdges(
+  view: DataView,
+  sub: number,
+  lookupIndex: number,
+  reph: boolean,
+  blwf: boolean,
+  edges: Edge[],
+  singleByLookup: Map<number, Map<number, number>>,
+): void {
   const format = view.getUint16(sub);
   const covered = coverage(view, sub + view.getUint16(sub + 2));
+  let map = singleByLookup.get(lookupIndex);
+  if (!map) {
+    map = new Map();
+    singleByLookup.set(lookupIndex, map);
+  }
   covered.forEach((glyph, i) => {
     const output = format === 1 ? (glyph + view.getInt16(sub + 4)) & 0xffff : view.getUint16(sub + 6 + i * 2);
+    map.set(glyph, output);
     edges.push({ output, components: [glyph], reph, blwf });
   });
 }

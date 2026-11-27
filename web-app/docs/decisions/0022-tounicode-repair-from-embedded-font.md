@@ -49,5 +49,12 @@ Pdftools SDK exports (corpus file `c10.pdf`) embed Hindi in a simple `/TrueType`
 - `markedContentStarts` left `#XX` PDF Name escapes undecoded (`Normal#20#28Web#29`), whereas pdf.js's `Lexer.getName` decodes them (`Normal (Web)`), so `drawnGlyphs` aborted on tag mismatch and dropped all `/ActualText` spans on the page. Now `markedContentStarts` decodes `#XX` escapes to match pdf.js.
 - When a real drawn space glyph outside `/ActualText` was dropped by pdf.js from `getTextContent()` (deduplicated against a preceding `0x0A` matra byte), `applyActualText` silently skipped it and lost the word break (`के सभी → केसभी`). Now omitted drawn spaces are recorded and emitted as `spaceAfter` (across items) or an inline space (within an item).
 
+## Amendment, 27 November 2026: small bold heading subsets and GSUB lookup type 6
+
+Word exports with Mangal body text and small Mangal-Bold heading subsets (e.g. UP payscale GO, Supreme Court of India orders) repaired the body font but left the bold subset unrepaired: headings drew only width-matched contextual `ि` variants (`pres` GSUB lookup type 6, format 3) and half/reph ligatures, so Word's subsetter omitted base `ि` (U+093F), virama (`्`), and standalone `ो` from the subset font's `cmap` while leaving GSUB intact. That left the bold subset with only 1–2 single-letter disagreements (below the 3-glyph threshold), so headings read `ववत्त`, `ददनांकः`, `ससवर्वल`, `अधिकाररता`. Now:
+- `fontGlyphText.ts` reads GSUB lookup type 6 (format 3) inside `pres` lookups: an unmapped single input glyph with ≥3 distinct contextual single-substitution variants before Devanagari lookahead glyphs is seeded as `ि` (`PRE_BASE_MARK`), so all its contextual variants are resolved. Likewise, an `rphf` `[र/ऱ, virama]` ligature seeds an omitted virama, and reph-carrying ligatures whose base vowel sign was omitted from `cmap` are reported in `rephLigatures` so repairing `व` (`र्व → व`) preserves the reph on `ो+reph` (`सर्वोच्च`).
+- `pdfToUnicodeRepair.ts` repairs a font when its map names any font-proven `PRE_BASE_MARK` or `REPH_MARK` glyph as a Devanagari consonant (`misMapsMarkAsConsonant`, excluding `REPH_MARK → "र्"` drawing order), or in a second pass when a sibling font of the same family (`fontFamilyKey`) was already repaired as mis-mapped and the subset has at least one disagreement. Sibling subsets whose map is right (zero disagreements, such as `FORKWM+Mangal-Regular` in `c3` and `ABCDEE+Mangal` in `c11`) remain untouched.
+
+
 
 

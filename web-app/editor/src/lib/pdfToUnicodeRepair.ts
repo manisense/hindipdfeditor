@@ -38,6 +38,8 @@ export const MISSING_GLYPH_MARK = '\uE0F2';
 const MIN_DISAGREEMENTS = 3;
 const MIN_DISAGREEMENT_SHARE = 0.05;
 const DEVANAGARI = /[ऀ-ॿ]/u;
+const DEVANAGARI_CONSONANT = /[\u0915-\u0939\u0958-\u095F\u0978-\u097F]/u;
+const DEVANAGARI_VOWEL_OR_NASAL_SIGNS = /^[\u0901-\u0903\u093E-\u094C\u0955-\u0957]+$/u;
 const RAKAR = '्र';
 const REPH = 'र्';
 const BFCHAR_BLOCK = 100;
@@ -147,10 +149,35 @@ export function hasBackwardsRakar(existing: ReadonlyMap<number, string>, fromFon
 }
 
 /**
+ * Whether a map names a font-proven pre-base ि or reph glyph as a Devanagari consonant
+ * (e.g. Mangal-Bold mapping contextual ि variants to "द" or "व", turning दिनांक into ददनांक).
+ * A reph mapped to "र्" is drawing order (see {@link inDrawingOrder}), not a consonant mis-mapping.
+ */
+export function misMapsMarkAsConsonant(existing: ReadonlyMap<number, string>, fromFont: ReadonlyMap<number, string>): boolean {
+  return [...fromFont].some(([gid, letters]) => {
+    const old = existing.get(gid)?.normalize('NFC');
+    if (old === undefined || !DEVANAGARI_CONSONANT.test(old)) return false;
+    if (letters === PRE_BASE_MARK) return true;
+    return letters === REPH_MARK && old !== REPH;
+  });
+}
+
+export type RepairOptions = {
+  /** A sibling font of the same family in this document was already repaired as mis-mapped. */
+  siblingRepaired?: boolean;
+  /** Glyphs proven by GSUB to carry a reph whose base vowel sign was stripped from cmap. */
+  rephLigatures?: ReadonlySet<number>;
+};
+
+/**
  * The repaired ToUnicode for a Type0 / CIDFontType2 / Identity font, or null when it needs none.
  * Exported for tests.
  */
-export function repairedToUnicode(existing: ReadonlyMap<number, string>, fromFont: ReadonlyMap<number, string>): Map<number, string> | null {
+export function repairedToUnicode(
+  existing: ReadonlyMap<number, string>,
+  fromFont: ReadonlyMap<number, string>,
+  options: RepairOptions = {},
+): Map<number, string> | null {
   let agree = 0;
   let disagree = 0;
   for (const [gid, letters] of fromFont) {
@@ -163,7 +190,10 @@ export function repairedToUnicode(existing: ReadonlyMap<number, string>, fromFon
     if (old.normalize('NFC') === plain.normalize('NFC')) agree++;
     else disagree++;
   }
-  const misMapped = disagree >= MIN_DISAGREEMENTS && disagree / (agree + disagree) >= MIN_DISAGREEMENT_SHARE;
+  const misMapped =
+    (disagree >= MIN_DISAGREEMENTS && disagree / (agree + disagree) >= MIN_DISAGREEMENT_SHARE) ||
+    (Boolean(options.siblingRepaired) && disagree >= 1) ||
+    misMapsMarkAsConsonant(existing, fromFont);
   if (!misMapped && !inDrawingOrder(existing, fromFont) && !hasBackwardsRakar(existing, fromFont)) return null;
   const repaired = new Map(existing);
   for (const [gid, letters] of fromFont) {
@@ -178,12 +208,34 @@ export function repairedToUnicode(existing: ReadonlyMap<number, string>, fromFon
       repaired.set(gid, letters);
     }
   }
+  if (misMapped && options.rephLigatures) {
+    for (const gid of options.rephLigatures) {
+      if (fromFont.has(gid)) continue;
+      const old = existing.get(gid)?.normalize('NFC');
+      if (old && DEVANAGARI_VOWEL_OR_NASAL_SIGNS.test(old)) repaired.set(gid, REPH_MARK + old);
+    }
+  }
   return repaired;
 }
 
 /** A font's BaseFont as pdf.js names it: `#20` and other escapes decoded, no leading slash. */
 export function baseFontName(value: unknown): string {
   return value instanceof PDFName ? value.decodeText() : '';
+}
+
+/** Normalises a PDF BaseFont name to its family key (subset prefix and weight/style stripped). */
+export function fontFamilyKey(baseName: string): string {
+  const withoutSubset = baseName.replace(/^[A-Z]{6}\+/u, '');
+  const beforeComma = withoutSubset.split(',')[0] ?? withoutSubset;
+  const withoutStyle = beforeComma.replace(
+    /(?:[-_\s]+(?:bold|italic|oblique|regular|roman|medium|light|semibold|demibold|extrabold|black|heavy|thin|w\d+))+$/iu,
+    '',
+  );
+  return withoutStyle.replace(/[\s_-]+/gu, '').toLowerCase();
+}
+
+function isDrawingOrderOnly(existing: ReadonlyMap<number, string>, repaired: ReadonlyMap<number, string>): boolean {
+  return [...repaired].every(([gid, letters]) => existing.get(gid) === letters || !existing.has(gid) || /[\uE0F0\uE0F1]/u.test(letters));
 }
 
 /**
@@ -199,6 +251,20 @@ export async function repairMisMappedToUnicode(bytes: Uint8Array): Promise<ToUni
     const drawingOrderFonts: string[] = [];
     const missingGlyphFonts = new Set<PDFDict>();
     let changed = false;
+
+    type Candidate = {
+      object: PDFDict;
+      name: string;
+      family: string;
+      existing: Map<number, string>;
+      fromFont: Map<number, string> | null;
+      rephLigatures: Set<number> | undefined;
+      missing: boolean;
+      repaired: Map<number, string> | null;
+    };
+    const candidates: Candidate[] = [];
+    const repairedMisMappedFamilies = new Set<string>();
+
     for (const [, object] of doc.context.enumerateIndirectObjects()) {
       if (!(object instanceof PDFDict) || object.get(PDFName.of('Subtype')) !== PDFName.of('Type0')) continue;
       if (object.get(PDFName.of('Encoding')) !== PDFName.of('Identity-H')) continue;
@@ -215,20 +281,53 @@ export async function repairMisMappedToUnicode(bytes: Uint8Array): Promise<ToUni
       // With Identity CIDToGIDMap, code 0 is glyph 0: a letter mapped to it is drawn as a box.
       // A letter, not U+0000 or another control code (NIC eOffice maps glyph 0 to U+0000).
       const missing = /\p{L}/u.test(existing.get(0) ?? '');
-      const repaired = (fontFile ? repairedToUnicode(existing, fontGlyphText(fontFile).text) : null) ?? (missing ? new Map(existing) : null);
+      const reading = fontFile ? fontGlyphText(fontFile) : null;
+      const repaired = reading ? repairedToUnicode(existing, reading.text, { rephLigatures: reading.rephLigatures }) : null;
+      const name = baseFontName(object.get(PDFName.of('BaseFont')));
+      const family = fontFamilyKey(name);
+      if (repaired && family && !isDrawingOrderOnly(existing, repaired)) {
+        repairedMisMappedFamilies.add(family);
+      }
+      candidates.push({
+        object,
+        name,
+        family,
+        existing,
+        fromFont: reading?.text ?? null,
+        rephLigatures: reading?.rephLigatures,
+        missing,
+        repaired,
+      });
+    }
+
+    // Second pass: small heading subsets of an already-repaired mis-mapped family (e.g. Mangal-Bold
+    // alongside Mangal) need only a single disagreement to be repaired; right-mapped siblings (0
+    // disagreements) stay untouched.
+    for (const candidate of candidates) {
+      if (!candidate.repaired && candidate.fromFont && candidate.family && repairedMisMappedFamilies.has(candidate.family)) {
+        candidate.repaired = repairedToUnicode(candidate.existing, candidate.fromFont, {
+          siblingRepaired: true,
+          rephLigatures: candidate.rephLigatures,
+        });
+      }
+      const repaired = candidate.repaired ?? (candidate.missing ? new Map(candidate.existing) : null);
       if (!repaired) continue;
-      if (missing) {
+      if (candidate.missing) {
         repaired.set(0, MISSING_GLYPH_MARK);
-        missingGlyphFonts.add(object);
+        missingGlyphFonts.add(candidate.object);
       }
       const ref: PDFRef = doc.context.register(doc.context.flateStream(buildToUnicode(repaired)));
-      object.set(PDFName.of('ToUnicode'), ref);
+      candidate.object.set(PDFName.of('ToUnicode'), ref);
       changed = true;
-      if (repaired.size === existing.size && [...existing].every(([code, text]) => code === 0 || repaired.get(code) === text)) continue;
-      const name = baseFontName(object.get(PDFName.of('BaseFont')));
-      repairedFonts.push(name);
+      if (
+        repaired.size === candidate.existing.size &&
+        [...candidate.existing].every(([code, text]) => code === 0 || repaired.get(code) === text)
+      ) {
+        continue;
+      }
+      repairedFonts.push(candidate.name);
       // Re-judged here: a map can both name wrong letters and keep ि in drawing order.
-      if ([...repaired].every(([gid, letters]) => existing.get(gid) === letters || !existing.has(gid) || /[\uE0F0\uE0F1]/u.test(letters))) drawingOrderFonts.push(name);
+      if (isDrawingOrderOnly(candidate.existing, repaired)) drawingOrderFonts.push(candidate.name);
     }
     const missingGlyphPages = doc.getPages().flatMap((page, index) => (usesFont(page.node.Resources(), missingGlyphFonts, 0) ? [index] : []));
     if (!changed) return { bytes, repairedFonts, drawingOrderFonts, missingGlyphPages };

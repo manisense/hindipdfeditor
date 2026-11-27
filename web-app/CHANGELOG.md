@@ -1,5 +1,12 @@
 # Changelog
 
+## Bold heading subsets: repair small mis-mapped subsets and read GSUB type 6 `ि` variants, 27 November 2026
+
+### Fixed
+- Small Devanagari heading subsets (such as `Mangal-Bold` / `Mangal,Bold` alongside a repaired `Mangal` body font) previously escaped ADR 0022 ToUnicode repair because Word's subsetter omits unused base `ि` and virama from `cmap` while keeping GSUB intact, leaving only 1–2 visible single-letter disagreements (below the 3-glyph threshold). Headings therefore read `ववत्त`, `ददनांकः`, `ससवर्वल`, `अधिकाररता`.
+- `fontGlyphText.ts` now reads GSUB lookup type 6 (format 3 chaining contextual `pres`) rules to identify unmapped base `ि` glyphs with ≥ 3 contextual variants before Devanagari lookaheads, infers omitted virama from Devanagari `rphf` ligatures, and tracks reph-carrying `abvs` ligatures whose base vowel sign was stripped from `cmap` (preserving `सर्वोच्च` when `व` is repaired from `र्व`).
+- `pdfToUnicodeRepair.ts` now repairs a font when its ToUnicode names a font-proven pre-base `ि` or reph glyph as a Devanagari consonant (`misMapsMarkAsConsonant`), or in a second pass when a sibling font of the same family (`fontFamilyKey`) was repaired as mis-mapped and the subset has ≥ 1 disagreement, while leaving right-mapped sibling subsets (0 disagreements) untouched.
+
 ## Scanned Hindi PDFs: ignore junk invisible English OCR layers, 27 November 2026
 
 ### Fixed
