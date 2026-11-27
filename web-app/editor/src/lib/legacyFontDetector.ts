@@ -29,7 +29,13 @@ const LEGACY_FONT_NAME_PREFIXES = [
   "Walkman-Chanakya",
   "Agra",
   "Amar",
+  // Shree-Lipi (an SBI recruitment ad made in Illustrator: SHREE-DEV7-0714E). Blocked, not decoded.
+  "ShreeDev",
+  "ShreeLipi",
 ];
+
+/** A font name compared without case, spaces, hyphens or underscores ("Kruti Dev 010"). */
+const compactName = (name: string) => name.replace(SUBSET_TAG_PATTERN, "").replace(/[\s_-]+/gu, "").toLowerCase();
 
 /** PDF font subsetting prepends a 6-uppercase-letter tag + `+`, e.g. `ABCDEF+KrutiDev010`. */
 const SUBSET_TAG_PATTERN = /^[A-Z]{6}\+/;
@@ -39,11 +45,8 @@ const SUBSET_TAG_PATTERN = /^[A-Z]{6}\+/;
  * legacy Devanagari font name patterns.
  */
 export function isLegacyDevanagariFontName(fontName: string): boolean {
-  const withoutSubsetTag = fontName.replace(SUBSET_TAG_PATTERN, "");
-  const normalized = withoutSubsetTag.toLowerCase();
-  return LEGACY_FONT_NAME_PREFIXES.some((prefix) =>
-    normalized.startsWith(prefix.toLowerCase()),
-  );
+  const normalized = compactName(fontName);
+  return LEGACY_FONT_NAME_PREFIXES.some((prefix) => normalized.startsWith(compactName(prefix)));
 }
 
 /** Reads a font dict's true PostScript name, checking every place a viewer would look. */
@@ -114,7 +117,7 @@ export const LEGACY_TEXT_ENCODING_LABEL = "Kruti Dev-style text encoding";
 export function isConvertibleLegacyFont(fontName: string): boolean {
   return (
     fontName === LEGACY_TEXT_ENCODING_LABEL ||
-    /^(krutidev|devlys)/i.test(fontName.replace(SUBSET_TAG_PATTERN, ""))
+    /^(krutidev|devlys)/.test(compactName(fontName))
   );
 }
 
