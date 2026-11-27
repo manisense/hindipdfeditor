@@ -1275,6 +1275,41 @@ async function scanTableCase(browser) {
   await page.close();
 }
 
+// A scanned Hindi notice carrying an invisible (3 Tr) English-only OCR junk layer: PDF to Word
+// must ignore the junk layer, read the page with Hindi+English OCR, and recover the notice's Hindi.
+async function invisibleEnglishOcrCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { readOutput, score } = await import(path.join(here, "../benchmark/score.mjs"));
+  const pdfPath = path.join(fixtures, "invisible-english-ocr-fixture.pdf");
+  const truthText = fs.readFileSync(path.join(here, "../benchmark/ground-truth.txt"), "utf8");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gate-"));
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  try {
+    await page.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
+    await page.locator("input[type=file]").first().setInputFiles(pdfPath);
+    // A locator, not waitForFunction: the site's CSP forbids evaluating code in the page.
+    await page.locator(".utility-tool__note", { hasText: /1 of 1 pages look scanned/ }).waitFor({ timeout: 15000 });
+    const download = page.waitForEvent("download", { timeout: 180000 });
+    await page.getByRole("button", { name: /Convert & download Word/ }).click();
+    const docx = path.join(dir, "out.docx");
+    fs.copyFileSync(await (await download).path(), docx);
+    const bodyText = await readOutput(docx);
+    const wordScore = score(bodyText, truthText);
+    assert.ok(
+      wordScore.recall >= 0.9,
+      `expected >=90% Hindi recall on scanned notice with invisible English OCR junk, got ${wordScore.correct}/${wordScore.total} (${(wordScore.recall * 100).toFixed(1)}%)`,
+    );
+    assert.ok(!bodyText.includes("6Rqlull") && !bodyText.includes("tluNeII;T"), "invisible English-OCR junk must not appear in output");
+    console.log(
+      `INVISIBLE_OCR_OK ignored invisible English-OCR junk layer and recovered ${wordScore.correct}/${wordScore.total} Hindi words (${(wordScore.recall * 100).toFixed(1)}% recall)`,
+    );
+  } finally {
+    await page.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 async function convertersCase(browser) {
   const fs = await import("node:fs");
   const os = await import("node:os");
@@ -1923,6 +1958,7 @@ try {
   if (wanted("wordStructureCase")) await wordStructureCase(browser);
   if (wanted("wordPictureCase")) await wordPictureCase(browser);
   if (wanted("scanTableCase")) await scanTableCase(browser);
+  if (wanted("invisibleEnglishOcrCase")) await invisibleEnglishOcrCase(browser);
   if (wanted("fillFormCase")) await fillFormCase(browser);
   if ((planB && !only) || only?.includes("planBDevanagariCase")) await planBDevanagariCase(browser);
   if ((planB && !only) || only?.includes("planBOwnFontCase")) await planBOwnFontCase(browser);

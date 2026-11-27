@@ -1,5 +1,11 @@
 # Changelog
 
+## Scanned Hindi PDFs: ignore junk invisible English OCR layers, 27 November 2026
+
+### Fixed
+- Scanned Hindi PDFs produced by office scanners and mobile apps (OmniPage, Canon MFPs, HP Smart Document Scan, Adobe Scan) often carry an invisible (`3 Tr`) English-only OCR layer containing gibberish such as `6Rqlull *164)14)` or `tluNeII;T 1!lf6'R`. Both the editor and PDF to Word previously trusted that text layer and never ran Hindi OCR. A conservative per-page detector (`invisibleOcrLayer.ts`, web ADR 0024) now identifies pages whose text is drawn only in render mode 3 over an image covering at least 60 % of the page and scores as English-OCR junk (< 50 % plausible English word tokens, ≥ 12 scored words, no Devanagari), ignores that junk layer so the page is read with Hindi+English OCR, and counts it as needing OCR in `sampleTextLayer`. Real English invisible OCR layers (such as `16_uk_ucc` p2) and Devanagari text layers are kept untouched.
+- Added fixture generator `web-app/scripts/make-invisible-ocr-fixture.mjs`, `mobile-app/fixtures/invisible-english-ocr-fixture.pdf`, unit tests (`invisibleOcrLayer.test.ts`), and `invisibleEnglishOcrCase` to the default edit-quality gate (0/144 → 143/144 Hindi words, 99.3 % recall). Corpus page-1 Hindi words recovered: `03_uppsc_cal` 0 → 202, `11_rj_doit` 0 → 296, `19_hr_1` 0 → 37, `22_cg_mahatari` 0 → 173, `28_dist_gbnagar` 0 → 133, `16_uk_ucc` p1 0 → 146; `notice-digital.pdf` (100.0 %) and `notice-scanned.pdf` (99.3 %) unchanged.
+
 ## KrutiDev: half-ध and reph before conjuncts, 27 November 2026
 
 ### Fixed

@@ -75,3 +75,11 @@ A two-page AcroForm. Page 1 has one-line text fields (one with a tooltip name), 
 ```bash
 node web-app/scripts/make-form-fixture.mjs
 ```
+
+## invisible-english-ocr-fixture.pdf
+
+Copies `web-app/benchmark/notice-scanned.pdf` (our scanned Hindi notice) and adds an invisible (`3 Tr`) Helvetica text layer of English-OCR-style junk over its full-page scan image, reproducing what office MFPs and mobile scanners produce when their OCR language defaults to English on a Hindi scan. Used by `invisibleOcrLayer.test.ts` and the default edit-quality gate (`invisibleEnglishOcrCase`) to verify that junk invisible OCR layers are ignored and read with Hindi+English OCR. Regenerate (deterministic) with:
+
+```bash
+node web-app/scripts/make-invisible-ocr-fixture.mjs
+```
