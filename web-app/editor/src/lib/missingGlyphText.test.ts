@@ -13,7 +13,7 @@ import { repairMisMappedToUnicode } from './pdfToUnicodeRepair';
  * whose ToUnicode names it "अ", as Word does when it sets Hindi in a font without Devanagari.
  * Page 2 has the same font but draws only its space glyph; page 3 is ordinary text.
  */
-async function boxesPdf(): Promise<Uint8Array> {
+async function boxesPdf(glyphZero = '0905'): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const ctx = doc.context;
   const toUnicode = ctx.register(
@@ -23,7 +23,7 @@ async function boxesPdf(): Promise<Uint8Array> {
         '/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def',
         '/CMapName /Adobe-Identity-UCS def /CMapType 2 def',
         '1 begincodespacerange <0000> <FFFF> endcodespacerange',
-        '2 beginbfchar <0000> <0905> <0003> <0020> endbfchar',
+        `2 beginbfchar <0000> <${glyphZero}> <0003> <0020> endbfchar`,
         'endcmap CMapName currentdict /CMap defineresource pop end end',
       ].join('\n'),
     ),
@@ -75,6 +75,11 @@ describe('text drawn with a missing glyph', () => {
     // Pages that use the font; whether they draw its box is judged from their text.
     expect(repair.missingGlyphPages).toEqual([0, 1]);
     expect(repair.repairedFonts).toEqual([]);
+  });
+
+  it('is not reported when glyph 0 is mapped to no letter (U+0000, NIC eOffice)', async () => {
+    const repair = await repairMisMappedToUnicode(await boxesPdf('0000'));
+    expect(repair.missingGlyphPages).toEqual([]);
   });
 
   it('is reported only for pages that draw the box', async () => {

@@ -213,7 +213,8 @@ export async function repairMisMappedToUnicode(bytes: Uint8Array): Promise<ToUni
       if (!toUnicode) continue;
       const existing = parseToUnicode(new TextDecoder('latin1').decode(toUnicode));
       // With Identity CIDToGIDMap, code 0 is glyph 0: a letter mapped to it is drawn as a box.
-      const missing = /\S/u.test(existing.get(0) ?? '');
+      // A letter, not U+0000 or another control code (NIC eOffice maps glyph 0 to U+0000).
+      const missing = /\p{L}/u.test(existing.get(0) ?? '');
       const repaired = (fontFile ? repairedToUnicode(existing, fontGlyphText(fontFile).text) : null) ?? (missing ? new Map(existing) : null);
       if (!repaired) continue;
       if (missing) {

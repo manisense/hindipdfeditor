@@ -1,5 +1,10 @@
 # Changelog
 
+## PDF to Word: no empty-box warning for glyph 0 mapped to U+0000, 27 November 2026
+
+### Fixed
+- The empty-box check (PR #100) counted any non-blank text for glyph 0, so a font that maps glyph 0 to U+0000 (NIC eOffice files merged with iLovePDF) was reported as drawing boxes on a page that renders fine. Glyph 0 now counts only when it is mapped to a letter. Found by Neon's corpus survey; RRB 01/2026 still reports its real box pages (4, 21–22, 25, 30, 32–35).
+
 ## Glyph repair: OCR joiners no longer block confirmation, 27 November 2026
 
 ### Fixed
