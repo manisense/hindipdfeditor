@@ -17,6 +17,8 @@ const SAME_ROW = 0.35;
 const MIN_ROWS = 3;
 /** A column whose pieces are typically longer than this many characters holds running text. */
 const PROSE_CHARS = 40;
+/** Columns whose lines each average at least this many words are running prose, not a table. */
+const MULTI_COLUMN_PROSE_WORDS = 4;
 /** A list marker: 9.1, 12-, (iv), क), a. (Latin or Devanagari digits and letters). */
 const LIST_MARKER = /^[([]?(?:[0-9०-९]+(?:\.[0-9०-९]+)*|[ivxlcdmIVXLCDM]+|[a-zA-Z]|[\u0915-\u0939])[.)\]:-]*$/u;
 /** Space kept around the table's text, in pt. */
@@ -70,7 +72,16 @@ function tableFrom(group: readonly Row[][]): DetectedTable | null {
   if (spans.length < 2) return null;
   const pieces = spans.map(([from, to]) => all.flatMap((row) => row.lines).filter((line) => line.xPt >= from && line.xPt < to));
   // Running text in a column is a page layout or numbered paragraphs, not a table.
+  const wordCount = (line: OcrLine) => line.text.trim().split(/\s+/u).length;
   if (pieces.some((column) => median(column.map((line) => line.text.trim().length)) > PROSE_CHARS)) return null;
+  if (pieces.every((column) => median(column.map(wordCount)) >= MULTI_COLUMN_PROSE_WORDS)) return null;
+  if (
+    spans.length === 2 &&
+    pieces.some((column) => column.some((line) => line.text.trim().length > PROSE_CHARS)) &&
+    pieces.every((column) => median(column.map(wordCount)) >= 3)
+  ) {
+    return null;
+  }
   // Two columns led by list markers are a list.
   if (spans.length === 2 && pieces[0].every((line) => line.text.trim().split(/\s+/u).every((word) => LIST_MARKER.test(word)))) return null;
 

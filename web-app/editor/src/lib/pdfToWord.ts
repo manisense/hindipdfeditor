@@ -1,9 +1,12 @@
 import {
   AlignmentType,
   Document,
+  Footer,
+  Header,
   HeightRule,
   ImageRun,
   Packer,
+  PageNumber,
   PageOrientation,
   Paragraph,
   Table,
@@ -15,6 +18,7 @@ import {
   WidthType,
 } from 'docx';
 
+import type { RunningLine } from './runningHeaders';
 import type { WordBlock, WordParagraph, WordPicture, WordTable } from './wordLayout';
 
 /** One PDF page's text for the Word document. */
@@ -24,6 +28,12 @@ export type WordPage = {
   heightPt: number;
   /** Paragraphs and tables in reading order. */
   blocks: WordBlock[];
+};
+
+/** Optional document-wide running headers and footers emitted once on the first Word section. */
+export type WordDocumentOptions = {
+  header?: readonly RunningLine[];
+  footer?: readonly RunningLine[];
 };
 
 /** Twentieths of a point (twips), Word's page-layout unit. */
@@ -114,16 +124,54 @@ function wordTable(table: WordTable): Table {
   });
 }
 
+function wordRunningParagraph(line: RunningLine): Paragraph {
+  const alignment =
+    line.align === 'center'
+      ? AlignmentType.CENTER
+      : line.align === 'right'
+        ? AlignmentType.RIGHT
+        : AlignmentType.LEFT;
+  const runStyle = {
+    bold: line.bold,
+    boldComplexScript: line.bold,
+    italics: line.italic,
+    italicsComplexScript: line.italic,
+    size: line.fontSizePt * 2,
+    sizeComplexScript: line.fontSizePt * 2,
+    font: { ascii: LATIN_FONT, hAnsi: LATIN_FONT, cs: HINDI_FONT, eastAsia: LATIN_FONT },
+  };
+  return new Paragraph({
+    alignment,
+    spacing: { before: 0, after: 0 },
+    children: line.runs.map((run) =>
+      run.kind === 'pageNumber'
+        ? new TextRun({ ...runStyle, children: [PageNumber.CURRENT] })
+        : new TextRun({ ...runStyle, text: run.text }),
+    ),
+  });
+}
+
 /**
  * Builds a Word (.docx) file from a PDF's text: one section per page with the page's size and
  * orientation, one paragraph per detected paragraph with its size, weight, alignment, indent and
  * the space above it, and tables as Word tables (column widths, merged cells; borders only where the PDF draws them). Hindi is set in Nirmala UI (Windows' Devanagari font; Word substitutes on
  * other systems).
  */
-export async function buildWordDocument(pages: readonly WordPage[]): Promise<Blob> {
+export async function buildWordDocument(
+  pages: readonly WordPage[],
+  options?: WordDocumentOptions,
+): Promise<Blob> {
+  const defaultHeader =
+    options?.header && options.header.length > 0
+      ? { default: new Header({ children: options.header.map(wordRunningParagraph) }) }
+      : undefined;
+  const defaultFooter =
+    options?.footer && options.footer.length > 0
+      ? { default: new Footer({ children: options.footer.map(wordRunningParagraph) }) }
+      : undefined;
   const document = new Document({
     creator: 'Hindi PDF Editor',
-    sections: pages.map((page) => ({
+    sections: pages.map((page, index) => ({
       properties: {
         page: {
           size: {
@@ -139,6 +187,8 @@ export async function buildWordDocument(pages: readonly WordPage[]): Promise<Blo
           },
         },
       },
+      ...(index === 0 && defaultHeader ? { headers: defaultHeader } : {}),
+      ...(index === 0 && defaultFooter ? { footers: defaultFooter } : {}),
       children:
         page.blocks.length > 0
           ? page.blocks.map((block) =>

@@ -87,6 +87,26 @@ describe('detectAlignedTables', () => {
     expect(detectAlignedTables(lines, [])).toEqual([]);
   });
 
+  it('ignores narrow two-column prose under 40 characters per line', () => {
+    const left = 'Archive teams inspect each page now';
+    const right = 'Columns stay separate in reading order';
+    const lines = [0, 1, 2, 3].flatMap((i) => [line(left, 50, 100 + i * 15, 220), line(right, 320, 100 + i * 15, 220)]);
+    expect(detectAlignedTables(lines, [])).toEqual([]);
+  });
+
+  it('ignores a short two-column section with headings and wrapped Hindi prose', () => {
+    const lines = [
+      line('7. Summary of Findings', 50, 128, 150),
+      line('8. Hindi Verification Sample', 320, 128, 180),
+      line('All participating divisions completed the', 50, 148, 215),
+      line('धर्म और क्षेत्र में गुरुजी ने ज्ञान दिया। विद्यालय में सूर्य की', 320, 148, 220),
+      line('structural audit on schedule and', 50, 163, 210),
+      line('रोशनी आती है।', 320, 163, 75),
+      line('confirmed that tabular figures remain', 50, 178, 210),
+    ];
+    expect(detectAlignedTables(lines, [])).toEqual([]);
+  });
+
   it('ignores numbered paragraphs with a hanging indent', () => {
     const text = 'अभ्यर्थियों को ऑनलाइन आवेदन पत्र में सभी विवरण सही भरने होंगे';
     const lines = ['9.1', '9.2', '9.3', '9.4'].flatMap((n, i) => [line(n, 60, 100 + i * 20), line(text, 100, 100 + i * 20, 400)]);

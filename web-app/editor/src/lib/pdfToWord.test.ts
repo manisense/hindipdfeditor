@@ -103,5 +103,52 @@ describe('buildWordDocument', () => {
     expect(xml).toContain('cx="1828800"');
     expect(xml).toContain('cy="914400"');
   });
+
+  it('writes running header and footer once in header/footer XML without repeating them in the body', async () => {
+    const para = (text: string) => ({
+      kind: 'paragraph' as const,
+      paragraph: { text, fontSizePt: 11, bold: false, italic: false, align: 'left' as const, spaceBeforePt: 0, indentPt: 0 },
+    });
+    const blob = await buildWordDocument(
+      [
+        { widthPt: 595, heightPt: 842, blocks: [para('Page one body')] },
+        { widthPt: 595, heightPt: 842, blocks: [para('Page two body')] },
+        { widthPt: 595, heightPt: 842, blocks: [para('Page three body')] },
+      ],
+      {
+        header: [
+          {
+            runs: [{ kind: 'text', text: 'Quarterly Bulletin 2026' }],
+            fontSizePt: 9,
+            bold: false,
+            italic: false,
+            align: 'left',
+          },
+        ],
+        footer: [
+          {
+            runs: [
+              { kind: 'text', text: 'Page ' },
+              { kind: 'pageNumber' },
+              { kind: 'text', text: ' of 3' },
+            ],
+            fontSizePt: 9,
+            bold: false,
+            italic: false,
+            align: 'center',
+          },
+        ],
+      },
+    );
+    const files = unzipSync(new Uint8Array(await blob.arrayBuffer()));
+    const docXml = strFromU8(files['word/document.xml']);
+    const headerXml = strFromU8(files['word/header1.xml']);
+    const footerXml = strFromU8(files['word/footer1.xml']);
+    expect(docXml).not.toContain('Quarterly Bulletin 2026');
+    expect(docXml).not.toContain('of 3');
+    expect(headerXml).toContain('Quarterly Bulletin 2026');
+    expect(footerXml).toContain('PAGE');
+    expect(footerXml).toContain('of 3');
+  });
 });
 

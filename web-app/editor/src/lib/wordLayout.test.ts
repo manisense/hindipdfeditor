@@ -109,5 +109,46 @@ describe('pageBlocks', () => {
     const grid = blocks[1].kind === 'table' ? blocks[1].table : null;
     expect(grid?.rows[0].cells[0].pictures).toHaveLength(1);
   });
+
+  it('reads two-column digital pages column by column around a full-width table', () => {
+    const colTable: DetectedTable = {
+      xPt: 50,
+      yPt: 300,
+      wPt: 495,
+      hPt: 40,
+      columns: [50, 295, 545],
+      rows: [300, 340],
+      cells: [
+        { row: 0, col: 0, rowSpan: 1, colSpan: 1, xPt: 50, yPt: 300, wPt: 245, hPt: 40 },
+        { row: 0, col: 1, rowSpan: 1, colSpan: 1, xPt: 295, yPt: 300, wPt: 250, hPt: 40 },
+      ],
+      ruled: true,
+    };
+    const blocks = pageBlocks(
+      [
+        line('Full Width Title', 50, 60, 480, 18, true),
+        line('Left column first line', 50, 120, 220),
+        line('Right column first line', 320, 120, 220),
+        line('Left column second line', 50, 136, 210),
+        line('Right column second line', 320, 136, 210),
+        line('Cell A', 60, 312, 80),
+        line('Cell B', 305, 312, 80),
+        line('Closing note below table', 50, 380, 300),
+      ],
+      595,
+      [colTable],
+    );
+    expect(blocks.map((b) => b.kind)).toEqual(['paragraph', 'paragraph', 'paragraph', 'table', 'paragraph']);
+    const texts = blocks.filter((b) => b.kind === 'paragraph').map((b) => b.paragraph.text);
+    expect(texts).toEqual([
+      'Full Width Title',
+      'Left column first line Left column second line',
+      'Right column first line Right column second line',
+      'Closing note below table',
+    ]);
+    // Right column paragraphs reset their indent relative to the right column edge.
+    const rightPara = blocks[2].kind === 'paragraph' ? blocks[2].paragraph : null;
+    expect(rightPara?.indentPt).toBe(0);
+  });
 });
 
