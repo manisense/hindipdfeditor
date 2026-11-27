@@ -119,6 +119,20 @@ export function ocrConfirmsRepair(
     .every((word) => compact.includes(repairText(word, readings, isPlaceholder).normalize('NFC')));
 }
 
+const NUMBER = /[0-9०-९]+/gu;
+
+/**
+ * OCR text with its numbers replaced, in order, by the PDF's own: a broken text map garbles
+ * Devanagari letters, not digits, while OCR misreads them (161 as 6, 1947 as 947). Only when both
+ * hold the same count of numbers, so each is matched to its own.
+ */
+function withPdfNumbers(ocr: string, pdf: string): string {
+  const own = pdf.match(NUMBER) ?? [];
+  if ((ocr.match(NUMBER) ?? []).length !== own.length) return ocr;
+  let i = 0;
+  return ocr.replace(NUMBER, () => own[i++]);
+}
+
 /**
  * The text kept for a line whose row OCR could not confirm: OCR of the line's own area when it was
  * read (page OCR merges or misses rows of dense text, which would lose the line), else the line's
@@ -132,7 +146,7 @@ export function unresolvedLineText(
   ownOcr: string | undefined,
   isPlaceholder: (char: string) => boolean,
 ): { text: string; fromOcr: boolean } | null {
-  if (ownOcr?.trim()) return { text: ownOcr.trim(), fromOcr: true };
+  if (ownOcr?.trim()) return { text: withPdfNumbers(ownOcr.trim(), repaired), fromOcr: true };
   const text = [...repaired].filter((char) => !isPlaceholder(char)).join('').replace(/\s+/gu, ' ').trim();
   return text ? { text, fromOcr: false } : null;
 }

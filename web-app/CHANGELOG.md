@@ -1,5 +1,10 @@
 # Changelog
 
+## Gazette of India: dates and numbers kept from the PDF, 28 November 2026
+
+### Fixed
+- Lines re-read with OCR because their repaired letters could not be confirmed (PR #127) took OCR's numbers too, and OCR misread them (सं. 55 for 155, फाल्गुन 8, 947 for 18, 1947, सा.का.नि. 6 for 161). A broken text map garbles Devanagari letters, not digits, so such a line now keeps the PDF's own numbers, matched in order when both hold the same count. Gazette notice page 1: all dates and notification numbers right; Hindi words unchanged at 99.4 %.
+
 ## Word 2021 detached `िं` and split `ां`/`ाँ`: replace non-space Devanagari filler CIDs mapped to space, 28 November 2026
 
 ### Fixed
