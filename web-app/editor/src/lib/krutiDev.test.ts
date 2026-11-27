@@ -48,3 +48,7 @@ it.each([
 ])('survey: %s', (kruti, unicode) => {
   expect(krutiDevToUnicode(kruti)).toBe(unicode);
 });
+
+it('reads £ as ि with a reph around the next letter (Income Tax form, Shiva font: विनिर्दिष्ट)', () => {
+  expect(krutiDevToUnicode('fofu£n"V')).toBe('विनिर्दिष्ट');
+});

@@ -208,3 +208,17 @@ export async function detectLegacyFonts(
 
   return warnings.sort((a, b) => a.page - b.page);
 }
+
+/**
+ * Fonts read as KrutiDev-style text on a page, with their sibling styles: a family judged from
+ * its text in one style (Shiva-Medium) is the same encoding in its others (Shiva-Medium-Italic),
+ * which may hold too few words to be judged on their own (an Income Tax form's italic notes).
+ *
+ * @param legacy Font names judged legacy on the page.
+ * @param all Every font name on the page.
+ */
+export function legacyFontSiblings(legacy: readonly string[], all: readonly string[]): Set<string> {
+  const family = (name: string) => name.replace(SUBSET_TAG_PATTERN, "").split(/[-,]/u)[0].toLowerCase();
+  const families = new Set(legacy.map(family));
+  return new Set(all.filter((name) => legacy.includes(name) || families.has(family(name))));
+}
