@@ -156,6 +156,22 @@ describe('applyActualText', () => {
     expect(sameItem?.items).toEqual(['के सभी']);
   });
 
+  it('keeps a drawn space pdf.js omitted after a half form out of the text (a typed joiner, CEN 08/2024)', () => {
+    // Chrome draws a typed joiner inside उम्‍मीदवार as a space glyph that pdf.js leaves out of its
+    // text; a space left out right after a half form (virama) is not a word break.
+    const glyphs = [
+      { text: 'उ', section: null },
+      { text: 'म्', section: null },
+      { text: ' ', section: null },
+      { text: 'मी', section: null },
+    ];
+    expect(applyActualText(['उम्मी'], glyphs, [])?.items).toEqual(['उम्मी']);
+    expect(applyActualText(['उम्', 'मी'], glyphs, [])?.spaceAfter).toEqual([false, false]);
+    // After a full letter it is a word break (Pdftools: और केंद्रीय).
+    const word = [{ text: 'और', section: null }, { text: ' ', section: null }, { text: 'के', section: null }];
+    expect(applyActualText(['और', 'के'], word, [])?.spaceAfter).toEqual([true, false]);
+  });
+
   it('gives up when the glyphs do not match the items', () => {
     expect(applyActualText(['abc'], [{ text: 'x', section: 0 }, { text: NUL, section: 0 }], ['y'])).toBeNull();
   });

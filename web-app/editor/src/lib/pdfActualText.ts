@@ -187,8 +187,12 @@ export function applyActualText(
   let previous: number | null = null;
   // The section's text, until the first character of its glyphs is found.
   let pending: string | null = null;
+  // Text of the glyph drawn before the current one.
+  let before = '';
   for (const glyph of glyphs) {
     const section = glyph.section !== null && fixable.has(glyph.section) ? glyph.section : null;
+    const previousGlyph = before;
+    before = glyph.text;
     if (section !== previous) {
       if (pending !== null && !isSpace(pending)) return null;
       pending = section === null ? null : (actualTexts[section] ?? '');
@@ -207,7 +211,10 @@ export function applyActualText(
       const expected = chars[at]?.char === char ? [char] : [...char.normalize('NFKC')];
       if (!expected.every((part, k) => chars[at + k]?.char === part)) {
         if (isSpace(char)) {
-          if (section === null && at > 0) omittedSpaceAfter.add(at - 1);
+          // A drawn space pdf.js left out of its text is a word break (Pdftools: after a word, a
+          // danda or a matra drawn as '\n'), except right after a half form: there it is a typed
+          // joiner inside the word (Chrome draws उम्‍मीदवार's joiner as a space).
+          if (section === null && at > 0 && !previousGlyph.endsWith('्')) omittedSpaceAfter.add(at - 1);
           continue;
         }
         return null;
