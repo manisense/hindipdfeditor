@@ -116,8 +116,9 @@ export function joinSplitHindiWords(text: string, isKnown: (word: string) => boo
   for (const part of parts) {
     const previous = out[out.length - 1];
     // Only the Devanagari letters that meet at the gap are judged: "योग्य" + "ता/पात्र" → "योग्यता".
-    const tail = /[\u0900-\u097F]+$/u.exec(previous ?? '')?.[0];
-    const head = /^[\u0900-\u097F]+/u.exec(part)?.[0];
+    // Danda and digits are not letters: "अपेक्षित" + "है।" is judged as "अपेक्षितहै".
+    const tail = /[\u0900-\u0963\u0971-\u097F]+$/u.exec(previous ?? '')?.[0];
+    const head = /^[\u0900-\u0963\u0971-\u097F]+/u.exec(part)?.[0];
     if (previous !== undefined && tail && head) {
       if (isKnown(tail + head) && (!isKnown(tail) || !isKnown(head))) {
         out[out.length - 1] = previous + part;

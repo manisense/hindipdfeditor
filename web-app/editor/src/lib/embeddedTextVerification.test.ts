@@ -193,4 +193,11 @@ describe('joinSplitHindiWords', () => {
     expect(joinSplitHindiWords('महत्व पूर्ण', isKnown)).toBe('महत्व पूर्ण');
     expect(joinSplitHindiWords('के लिए', isKnown)).toBe('के लिए');
   });
+
+  it('judges letters only, not a danda or digits after them', () => {
+    // Like HindiSpeller, accept what is not a Devanagari word (so "अपेक्षितहै।" would pass).
+    const speller = (word: string) => known.has(word) || /[^\u0900-\u0963\u0971-\u097F]/u.test(word);
+    expect(joinSplitHindiWords('करना अपेक्षित है। उम्मीदवार', speller)).toBe('करना अपेक्षित है। उम्मीदवार');
+    expect(joinSplitHindiWords('आरक्ष ण।', speller)).toBe('आरक्षण।');
+  });
 });
