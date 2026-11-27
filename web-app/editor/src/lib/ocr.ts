@@ -50,6 +50,7 @@ import {
   hasGlyphPlaceholder,
   isGlyphPlaceholder,
   learnDocumentGlyphs,
+  ocrConfirmsRepair,
   ocrLineFor,
   pairLinesWithOcr,
   repairText,
@@ -414,13 +415,8 @@ async function repairedEmbeddedLines(
   const lines = withGlyphs.map((line) => ({ ...line, text: repairText(line.text, readings, isGlyphPlaceholder) }));
   // A repaired word must also be in OCR of its line: a reading learned from one misread word
   // must not put a wrong letter into the text.
-  const confirmed = (line: OcrLine, drawn: string) => {
-    const ocr = ocrFor(line)?.text.normalize("NFC").replace(/\s+/gu, "") ?? "";
-    return drawn
-      .split(/\s+/u)
-      .filter((word) => hasGlyphPlaceholder(word))
-      .every((word) => ocr.includes(repairText(word, readings, isGlyphPlaceholder)));
-  };
+  const confirmed = (line: OcrLine, drawn: string) =>
+    ocrConfirmsRepair(drawn, ocrFor(line)?.text ?? "", readings, isGlyphPlaceholder);
   // A row with any line left unrepaired or unconfirmed is read by OCR as a whole: OCR does not
   // split rows the way the text layer does, so keeping part of the row would lose the rest.
   const unresolved = lines.filter(

@@ -1,5 +1,10 @@
 # Changelog
 
+## Glyph repair: OCR joiners no longer block confirmation, 27 November 2026
+
+### Fixed
+- A word repaired from OCR (`glyphRepair.ts`) is kept only when OCR of its line contains it; Tesseract writes words such as दिल्‍ली with a zero-width joiner the PDF does not have, so correct repairs were rejected and their rows re-read by OCR. The check (`ocrConfirmsRepair`) now ignores zero-width joiners and spaces on the OCR side. Benchmarks unchanged; part of the Gazette of India work (see `docs/autonomous-log.md`).
+
 ## Devanagari PDF extraction: corpus mapping fixes, 27 November 2026
 
 ### Fixed
