@@ -271,7 +271,7 @@ export class HarfBuzzShaperFont {
   public readonly upem: number;
   private destroyed = false;
 
-  constructor(engine: HarfBuzzEngine, fontBytes: Uint8Array, weight: number) {
+  constructor(engine: HarfBuzzEngine, fontBytes: Uint8Array, weight?: number) {
     const ex = engine.shape;
     this.ex = ex;
     this.fontPtr = ex.malloc(fontBytes.byteLength);
@@ -282,13 +282,15 @@ export class HarfBuzzShaperFont {
     this.hbFontPtr = ex.hb_font_create(this.facePtr);
     ex.hb_font_set_scale(this.hbFontPtr, this.upem, this.upem);
 
-    // Apply wght variation (no-op for static fonts without a wght axis).
-    const varPtr = ex.malloc(8);
-    const view = new DataView(ex.memory.buffer);
-    view.setUint32(varPtr, hbTag('wght'), true);
-    view.setFloat32(varPtr + 4, weight, true);
-    ex.hb_font_set_variations(this.hbFontPtr, varPtr, 1);
-    ex.free(varPtr);
+    if (weight !== undefined) {
+      // Apply wght variation (no-op for static fonts without a wght axis).
+      const varPtr = ex.malloc(8);
+      const view = new DataView(ex.memory.buffer);
+      view.setUint32(varPtr, hbTag('wght'), true);
+      view.setFloat32(varPtr + 4, weight, true);
+      ex.hb_font_set_variations(this.hbFontPtr, varPtr, 1);
+      ex.free(varPtr);
+    }
   }
 
   /** Looks up the nominal GID for a single Unicode code point, or 0 if absent. */

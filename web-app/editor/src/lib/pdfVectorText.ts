@@ -44,6 +44,12 @@ import {
   type ShapedCluster,
   subsetAndInstanceFont,
 } from './harfbuzzWasm';
+import {
+  type EmbeddedFontCandidate,
+  evaluateOwnFontWithShaper,
+  inspectOwnFontProgram,
+  type OwnFontProgramInfo,
+} from './ownFont';
 import { parseTtfMetrics, type TtfMetrics } from './ttfMetrics';
 
 /** Positioned single line of text in editor space (PDF points, top-left origin). */
@@ -63,6 +69,12 @@ export type VectorTextItem = {
   color: string;
   scaleX?: number;
   strokeEm?: number;
+  /**
+   * Candidate embedded TrueType/OpenType fonts from the original PDF run this edit replaces,
+   * ordered by removed glyph count descending. When eligible, the edit is typeset in that
+   * embedded font (reusing its `FontFile2` stream) instead of bundled Noto.
+   */
+  ownFontCandidates?: readonly EmbeddedFontCandidate[];
   lines: PositionedLine[];
 };
 
@@ -254,41 +266,33 @@ function makeSubsetTag(seed: string, usedGids: ReadonlySet<number>): string {
   return tag;
 }
 
-function embedCidFontSubset(
+function embedType0CidFont(
   pdfDoc: PDFDocument,
-  family: string,
-  weight: number,
-  subsetBytes: Uint8Array,
-  subsetMetrics: TtfMetrics,
+  baseFontName: string,
+  fontFileRef: PDFRef,
+  metrics: TtfMetrics,
   usedGids: ReadonlySet<number>,
   toUnicode: ReadonlyMap<number, string>,
+  weight: number,
 ): PDFRef {
   const context = pdfDoc.context;
-  const scale = 1000 / subsetMetrics.unitsPerEm;
-  const cleanFamily = family.replace(/[^A-Za-z0-9_-]/g, '') || 'Devanagari';
-  const tag = makeSubsetTag(`${cleanFamily}-${weight}`, usedGids);
-  const baseFontName = `${tag}+${cleanFamily}-W${weight}`;
-
-  const fontFileStream = context.flateStream(subsetBytes, {
-    Length1: subsetBytes.byteLength,
-  });
-  const fontFileRef = context.register(fontFileStream);
+  const scale = 1000 / metrics.unitsPerEm;
 
   const fontDescriptor = context.obj({
     Type: 'FontDescriptor',
     FontName: PDFName.of(baseFontName),
     Flags: 4,
     FontBBox: [
-      Math.round(subsetMetrics.xMin * scale),
-      Math.round(subsetMetrics.yMin * scale),
-      Math.round(subsetMetrics.xMax * scale),
-      Math.round(subsetMetrics.yMax * scale),
+      Math.round(metrics.xMin * scale),
+      Math.round(metrics.yMin * scale),
+      Math.round(metrics.xMax * scale),
+      Math.round(metrics.yMax * scale),
     ],
-    ItalicAngle: subsetMetrics.italicAngle,
-    Ascent: Math.round(subsetMetrics.ascender * scale),
-    Descent: Math.round(subsetMetrics.descender * scale),
-    CapHeight: Math.round(subsetMetrics.capHeight * scale),
-    XHeight: Math.round(subsetMetrics.xHeight * scale),
+    ItalicAngle: metrics.italicAngle,
+    Ascent: Math.round(metrics.ascender * scale),
+    Descent: Math.round(metrics.descender * scale),
+    CapHeight: Math.round(metrics.capHeight * scale),
+    XHeight: Math.round(metrics.xHeight * scale),
     StemV: weight >= 600 ? 120 : 80,
     FontFile2: fontFileRef,
   });
@@ -304,7 +308,7 @@ function embedCidFontSubset(
       Supplement: 0,
     },
     FontDescriptor: fontDescriptorRef,
-    W: buildWidthsArray(pdfDoc, usedGids, subsetMetrics),
+    W: buildWidthsArray(pdfDoc, usedGids, metrics),
     CIDToGIDMap: 'Identity',
   });
   const cidFontRef = context.register(cidFontDict);
@@ -322,6 +326,59 @@ function embedCidFontSubset(
     ToUnicode: toUnicodeRef,
   });
   return context.register(type0Dict);
+}
+
+function embedCidFontSubset(
+  pdfDoc: PDFDocument,
+  family: string,
+  weight: number,
+  subsetBytes: Uint8Array,
+  subsetMetrics: TtfMetrics,
+  usedGids: ReadonlySet<number>,
+  toUnicode: ReadonlyMap<number, string>,
+): PDFRef {
+  const context = pdfDoc.context;
+  const cleanFamily = family.replace(/[^A-Za-z0-9_-]/g, '') || 'Devanagari';
+  const tag = makeSubsetTag(`${cleanFamily}-${weight}`, usedGids);
+  const baseFontName = `${tag}+${cleanFamily}-W${weight}`;
+
+  const fontFileStream = context.flateStream(subsetBytes, {
+    Length1: subsetBytes.byteLength,
+  });
+  const fontFileRef = context.register(fontFileStream);
+
+  return embedType0CidFont(
+    pdfDoc,
+    baseFontName,
+    fontFileRef,
+    subsetMetrics,
+    usedGids,
+    toUnicode,
+    weight,
+  );
+}
+
+function embedOwnCidFont(
+  pdfDoc: PDFDocument,
+  origBaseFontName: string,
+  reusedFontFileRef: PDFRef,
+  metrics: TtfMetrics,
+  usedGids: ReadonlySet<number>,
+  toUnicode: ReadonlyMap<number, string>,
+  weight: number,
+): PDFRef {
+  const cleanName = origBaseFontName.replace(/[^A-Za-z0-9_-]/g, '') || 'EmbeddedDevanagari';
+  const tag = makeSubsetTag(`own:${reusedFontFileRef.toString()}:${cleanName}`, usedGids);
+  const baseFontName = `${tag}+${cleanName}`;
+  return embedType0CidFont(
+    pdfDoc,
+    baseFontName,
+    reusedFontFileRef,
+    metrics,
+    usedGids,
+    toUnicode,
+    weight,
+  );
 }
 
 function roundPdfNum(n: number): number {
@@ -520,11 +577,50 @@ export function assignClusterToUnicode(
   }
 }
 
+type OwnFontSession =
+  | {
+      ok: true;
+      baseFontName: string;
+      fontFileRef: PDFRef;
+      info: Extract<OwnFontProgramInfo, { ok: true }>;
+      shaper: HarfBuzzShaperFont;
+      nominalGlyphToChar: Map<number, string>;
+      usedGids: Set<number>;
+      toUnicode: Map<number, string>;
+      weight: number;
+    }
+  | { ok: false };
+
 type PreparedEdit = {
   item: VectorTextItem;
   bucketKey: string;
   lines: { xPt: number; baselinePt: number; clusters: ShapedCluster[] }[];
 };
+
+function commitShapedLines(
+  shaper: HarfBuzzShaperFont,
+  nominalGlyphToChar: Map<number, string>,
+  usedGids: Set<number>,
+  toUnicode: Map<number, string>,
+  shapedLines: readonly { xPt: number; baselinePt: number; clusters: ShapedCluster[] }[],
+): void {
+  for (const line of shapedLines) {
+    for (const cluster of line.clusters) {
+      for (const g of cluster.glyphs) usedGids.add(g.gid);
+      // Register nominal glyphs for any non-ASCII/non-Devanagari characters in this cluster.
+      for (const ch of cluster.text) {
+        if (ch.normalize('NFC') !== ch) continue;
+        const cp = ch.codePointAt(0);
+        if (cp === undefined) continue;
+        const nominal = shaper.nominalGlyph(cp);
+        if (nominal > 0 && !nominalGlyphToChar.has(nominal)) {
+          nominalGlyphToChar.set(nominal, ch);
+        }
+      }
+      assignClusterToUnicode(cluster, nominalGlyphToChar, toUnicode);
+    }
+  }
+}
 
 export type VectorTextPlan = {
   /** IDs of text edits shaped and embedded for Plan B vector drawing. */
@@ -534,11 +630,13 @@ export type VectorTextPlan = {
 };
 
 /**
- * Shapes supported text edits, embeds one static CID/Identity-H subset font per `(fontFamily, weight)`,
- * and returns a plan that draws each handled edit on its page at its exact z-order position.
+ * Shapes supported text edits, reusing the document's own embedded TrueType/OpenType font when a
+ * replaced run's font passes all eligibility checks (GSUB `deva`/`dev2`, allowed OS/2 `fsType`,
+ * HarfBuzz shapes every glyph with no `.notdef` and real `glyf`/`loca` outlines), or otherwise
+ * embedding one static CID/Identity-H subset per `(fontFamily, weight)` from the bundled font.
  *
- * Any edit whose font family lacks a bundled TrueType binary or produces a `.notdef` (GID 0) glyph
- * is omitted from `handledIds` so the caller cleanly falls back to the Plan A raster path.
+ * Any edit that cannot be embedded cleanly is omitted from `handledIds` so the caller falls back
+ * to the Plan A raster path.
  */
 export async function prepareVectorTextPlan(
   pdfDoc: PDFDocument,
@@ -555,87 +653,164 @@ export async function prepareVectorTextPlan(
   if (items.length === 0) return emptyPlan;
 
   const loadFont = deps.loadFontBytes ?? defaultLoadFontBytes;
-  const candidateFamilies = new Set(
-    items.map((item) => item.fontFamily).filter((fam) => (deps.loadFontBytes ? true : hasBundledTrueTypeFont(fam))),
+  const hasAnyOwnCandidate = items.some((item) => (item.ownFontCandidates?.length ?? 0) > 0);
+  const hasAnyBundledCandidate = items.some((item) =>
+    deps.loadFontBytes ? true : hasBundledTrueTypeFont(item.fontFamily),
   );
-  if (candidateFamilies.size === 0) return emptyPlan;
-
-  const fontDataByFamily = new Map<string, Uint8Array>();
-  await Promise.all(
-    [...candidateFamilies].map(async (family) => {
-      const bytes = await loadFont(family);
-      if (bytes && bytes.byteLength > 0) fontDataByFamily.set(family, bytes);
-    }),
-  );
-  if (fontDataByFamily.size === 0) return emptyPlan;
+  if (!hasAnyOwnCandidate && !hasAnyBundledCandidate) return emptyPlan;
 
   const engine = deps.engine ?? (await loadHarfBuzzEngine());
+  const ownSessions = new Map<string, OwnFontSession>();
   const buckets = new Map<string, FontBucket>();
   const preparedById = new Map<string, PreparedEdit>();
+  const fallbackItems: VectorTextItem[] = [];
+
+  const getOwnSession = (candidate: EmbeddedFontCandidate, weight: number): OwnFontSession => {
+    const refKey = candidate.fontFileRef.toString();
+    const cached = ownSessions.get(refKey);
+    if (cached) return cached;
+
+    const info = inspectOwnFontProgram(candidate.fontBytes);
+    if (!info.ok) {
+      const failed: OwnFontSession = { ok: false };
+      ownSessions.set(refKey, failed);
+      return failed;
+    }
+
+    let shaper: HarfBuzzShaperFont;
+    try {
+      // Shape at native coordinates so advances match the reused FontFile2 stream's hmtx/glyf.
+      shaper = new HarfBuzzShaperFont(engine, candidate.fontBytes);
+    } catch {
+      const failed: OwnFontSession = { ok: false };
+      ownSessions.set(refKey, failed);
+      return failed;
+    }
+
+    const session: OwnFontSession = {
+      ok: true,
+      baseFontName: candidate.baseFontName,
+      fontFileRef: candidate.fontFileRef,
+      info,
+      shaper,
+      nominalGlyphToChar: buildNominalGlyphToChar(shaper),
+      usedGids: new Set<number>([0]),
+      toUnicode: new Map<number, string>(),
+      weight,
+    };
+    ownSessions.set(refKey, session);
+    return session;
+  };
 
   try {
+    // 1. Try the document's own embedded font first for each replacement edit.
     for (const item of items) {
-      const fontBytes = fontDataByFamily.get(item.fontFamily);
-      if (!fontBytes || item.lines.length === 0) continue;
+      if (item.lines.length === 0) continue;
+      let matchedOwn = false;
+      if (item.ownFontCandidates && item.ownFontCandidates.length > 0) {
+        const weight = cssWeight(item.fontWeight);
+        for (const candidate of item.ownFontCandidates) {
+          const session = getOwnSession(candidate, weight);
+          if (!session.ok) continue;
+          const decision = evaluateOwnFontWithShaper(session.info, session.shaper, item.lines);
+          if (!decision.useOwnFont) continue;
 
-      const weight = cssWeight(item.fontWeight);
-      const bucketKey = `${item.fontFamily}@${weight}`;
-      let bucket = buckets.get(bucketKey);
-      if (!bucket) {
-        const shaper = new HarfBuzzShaperFont(engine, fontBytes, weight);
-        bucket = {
-          family: item.fontFamily,
-          weight,
-          fontBytes,
-          sourceMetrics: parseTtfMetrics(fontBytes),
-          shaper,
-          nominalGlyphToChar: buildNominalGlyphToChar(shaper),
-          usedGids: new Set<number>([0]),
-          toUnicode: new Map<number, string>(),
-        };
-        buckets.set(bucketKey, bucket);
-      }
-
-      const shapedLines: { xPt: number; baselinePt: number; clusters: ShapedCluster[] }[] = [];
-      let hasNotdef = false;
-      for (const line of item.lines) {
-        const clusters = bucket.shaper.shapeLine(line.text);
-        for (const cluster of clusters) {
-          if (cluster.glyphs.some((g) => g.gid === 0)) {
-            hasNotdef = true;
-            break;
-          }
+          commitShapedLines(
+            session.shaper,
+            session.nominalGlyphToChar,
+            session.usedGids,
+            session.toUnicode,
+            decision.lines,
+          );
+          const bucketKey = `own:${candidate.fontFileRef.toString()}`;
+          preparedById.set(item.id, { item, bucketKey, lines: decision.lines });
+          handledIds.add(item.id);
+          matchedOwn = true;
+          break;
         }
-        if (hasNotdef) break;
-        shapedLines.push({ xPt: line.xPt, baselinePt: line.baselinePt, clusters });
       }
-      if (hasNotdef) continue;
+      if (!matchedOwn) {
+        fallbackItems.push(item);
+      }
+    }
 
-      // Commit used GIDs and complete ToUnicode entries only once the entire edit shaped cleanly.
-      for (const line of shapedLines) {
-        for (const cluster of line.clusters) {
-          for (const g of cluster.glyphs) bucket.usedGids.add(g.gid);
-          // Register nominal glyphs for any non-ASCII/non-Devanagari characters in this cluster.
-          for (const ch of cluster.text) {
-            if (ch.normalize('NFC') !== ch) continue;
-            const cp = ch.codePointAt(0);
-            if (cp === undefined) continue;
-            const nominal = bucket.shaper.nominalGlyph(cp);
-            if (nominal > 0 && !bucket.nominalGlyphToChar.has(nominal)) {
-              bucket.nominalGlyphToChar.set(nominal, ch);
+    // 2. Fall back to bundled Noto Plan B lazily only for edits not handled by an own-font.
+    if (fallbackItems.length > 0) {
+      const candidateFamilies = new Set(
+        fallbackItems
+          .map((item) => item.fontFamily)
+          .filter((fam) => (deps.loadFontBytes ? true : hasBundledTrueTypeFont(fam))),
+      );
+      const fontDataByFamily = new Map<string, Uint8Array>();
+      if (candidateFamilies.size > 0) {
+        await Promise.all(
+          [...candidateFamilies].map(async (family) => {
+            const bytes = await loadFont(family);
+            if (bytes && bytes.byteLength > 0) fontDataByFamily.set(family, bytes);
+          }),
+        );
+      }
+
+      for (const item of fallbackItems) {
+        const fontBytes = fontDataByFamily.get(item.fontFamily);
+        if (!fontBytes || item.lines.length === 0) continue;
+
+        const weight = cssWeight(item.fontWeight);
+        const bucketKey = `${item.fontFamily}@${weight}`;
+        let bucket = buckets.get(bucketKey);
+        if (!bucket) {
+          const shaper = new HarfBuzzShaperFont(engine, fontBytes, weight);
+          bucket = {
+            family: item.fontFamily,
+            weight,
+            fontBytes,
+            sourceMetrics: parseTtfMetrics(fontBytes),
+            shaper,
+            nominalGlyphToChar: buildNominalGlyphToChar(shaper),
+            usedGids: new Set<number>([0]),
+            toUnicode: new Map<number, string>(),
+          };
+          buckets.set(bucketKey, bucket);
+        }
+
+        const shapedLines: { xPt: number; baselinePt: number; clusters: ShapedCluster[] }[] = [];
+        let hasNotdef = false;
+        for (const line of item.lines) {
+          const clusters = bucket.shaper.shapeLine(line.text);
+          for (const cluster of clusters) {
+            if (cluster.glyphs.some((g) => g.gid === 0)) {
+              hasNotdef = true;
+              break;
             }
           }
-          assignClusterToUnicode(cluster, bucket.nominalGlyphToChar, bucket.toUnicode);
+          if (hasNotdef) break;
+          shapedLines.push({ xPt: line.xPt, baselinePt: line.baselinePt, clusters });
         }
-      }
+        if (hasNotdef) continue;
 
-      preparedById.set(item.id, { item, bucketKey, lines: shapedLines });
-      handledIds.add(item.id);
+        commitShapedLines(
+          bucket.shaper,
+          bucket.nominalGlyphToChar,
+          bucket.usedGids,
+          bucket.toUnicode,
+          shapedLines,
+        );
+        preparedById.set(item.id, { item, bucketKey, lines: shapedLines });
+        handledIds.add(item.id);
+      }
     }
 
     if (preparedById.size === 0) return emptyPlan;
 
     // Guarantee every drawn non-zero GID has a ToUnicode entry (never fall through to Identity).
+    for (const session of ownSessions.values()) {
+      if (!session.ok) continue;
+      for (const gid of session.usedGids) {
+        if (gid > 0 && !session.toUnicode.has(gid)) {
+          session.toUnicode.set(gid, session.nominalGlyphToChar.get(gid) ?? '\uFEFF');
+        }
+      }
+    }
     for (const bucket of buckets.values()) {
       for (const gid of bucket.usedGids) {
         if (gid > 0 && !bucket.toUnicode.has(gid)) {
@@ -644,8 +819,24 @@ export async function prepareVectorTextPlan(
       }
     }
 
-    // Subset + instance each used (fontFamily, weight) once per document and embed it.
-    const embeddedFonts = new Map<string, { ref: PDFRef; metrics: TtfMetrics }>();
+    const embeddedFonts = new Map<string, { ref: PDFRef; metrics: TtfMetrics; prefix: string }>();
+
+    // Embed each used own-font as a new Type0 dict reusing the original FontFile2 PDFRef.
+    for (const [refKey, session] of ownSessions.entries()) {
+      if (!session.ok || session.usedGids.size <= 1) continue;
+      const ref = embedOwnCidFont(
+        pdfDoc,
+        session.baseFontName,
+        session.fontFileRef,
+        session.info.metrics,
+        session.usedGids,
+        session.toUnicode,
+        session.weight,
+      );
+      embeddedFonts.set(`own:${refKey}`, { ref, metrics: session.info.metrics, prefix: 'HpeOwn' });
+    }
+
+    // Subset + instance each used bundled (fontFamily, weight) once per document and embed it.
     for (const [key, bucket] of buckets.entries()) {
       if (bucket.usedGids.size <= 1) continue;
       const subsetBytes = subsetAndInstanceFont(
@@ -665,7 +856,7 @@ export async function prepareVectorTextPlan(
         bucket.usedGids,
         bucket.toUnicode,
       );
-      embeddedFonts.set(key, { ref, metrics: subsetMetrics });
+      embeddedFonts.set(key, { ref, metrics: subsetMetrics, prefix: 'HpeVec' });
     }
 
     const fontNamesPerPage = new WeakMap<PDFPage, Map<string, PDFName>>();
@@ -683,7 +874,7 @@ export async function prepareVectorTextPlan(
       }
       let fontName = pageFonts.get(edit.bucketKey);
       if (!fontName) {
-        fontName = page.node.newFontDictionary('HpeVec', embedded.ref);
+        fontName = page.node.newFontDictionary(embedded.prefix, embedded.ref);
         pageFonts.set(edit.bucketKey, fontName);
       }
 
@@ -751,6 +942,9 @@ export async function prepareVectorTextPlan(
 
     return { handledIds, drawEditOnPage };
   } finally {
+    for (const session of ownSessions.values()) {
+      if (session.ok) session.shaper.destroy();
+    }
     for (const bucket of buckets.values()) {
       bucket.shaper.destroy();
     }
