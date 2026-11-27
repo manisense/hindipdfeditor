@@ -22,6 +22,9 @@ export type FontGlyphReading = {
 };
 
 const REPH = 'र्';
+const RAKAR = '्र';
+const VIRAMA = '्';
+const RA = 'र';
 const I_MATRA = 'ि';
 
 /** Reads `bytes` as an sfnt font; a font it cannot read gives an empty map (fails closed). */
@@ -33,7 +36,7 @@ export function fontGlyphText(bytes: Uint8Array): FontGlyphReading {
   }
 }
 
-type Edge = { output: number; components: number[]; reph: boolean };
+type Edge = { output: number; components: number[]; reph: boolean; blwf: boolean };
 
 function readFont(bytes: Uint8Array): FontGlyphReading {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -49,6 +52,7 @@ function readFont(bytes: Uint8Array): FontGlyphReading {
   const gsub = tables.get('GSUB');
   const edges = gsub === undefined ? [] : gsubEdges(view, gsub);
   const reph = new Set<number>();
+  const rakar = new Set<number>();
   // Ligatures first in every pass: a glyph reached both by a single substitution (an ं variant)
   // and by a ligature (े + ं) takes the ligature's fuller reading. Each glyph is read once, so
   // cycles in GSUB cannot loop.
@@ -57,7 +61,18 @@ function readFont(bytes: Uint8Array): FontGlyphReading {
     changed = false;
     for (const edge of edges) {
       if (text.has(edge.output) || !edge.components.every((c) => text.has(c))) continue;
-      text.set(edge.output, edge.components.map((c) => text.get(c)).join(''));
+      let joined = '';
+      for (const component of edge.components) {
+        const part = text.get(component)!;
+        // OpenType deva v1 vatu builds half-consonant + rakar (प्र्) from [half(प्), blwf(्र)].
+        joined += rakar.has(component) && joined.endsWith(VIRAMA) ? `${RA}${VIRAMA}` : part;
+      }
+      // OpenType deva v1 defines below-base rakar (blwf) on [र, ्], though logically it is ्र.
+      if (edge.blwf && (joined === REPH || joined === RAKAR)) {
+        joined = RAKAR;
+        rakar.add(edge.output);
+      }
+      text.set(edge.output, joined);
       if (edge.reph || edge.components.some((c) => reph.has(c))) reph.add(edge.output);
       changed = true;
     }
@@ -169,11 +184,13 @@ function featureLookups(view: DataView, gsub: number, tag: string): Set<number> 
 /** Every single (type 1) and ligature (type 4) substitution, as output ← components. */
 function gsubEdges(view: DataView, gsub: number): Edge[] {
   const rephLookups = featureLookups(view, gsub, 'rphf');
+  const blwfLookups = featureLookups(view, gsub, 'blwf');
   const lookupList = gsub + view.getUint16(gsub + 8);
   const edges: Edge[] = [];
   for (let l = 0; l < view.getUint16(lookupList); l++) {
     const lookup = lookupList + view.getUint16(lookupList + 2 + l * 2);
     const reph = rephLookups.has(l);
+    const blwf = blwfLookups.has(l);
     const lookupType = view.getUint16(lookup);
     for (let s = 0; s < view.getUint16(lookup + 4); s++) {
       let sub = lookup + view.getUint16(lookup + 6 + s * 2);
@@ -182,23 +199,23 @@ function gsubEdges(view: DataView, gsub: number): Edge[] {
         type = view.getUint16(sub + 2);
         sub += view.getUint32(sub + 4);
       }
-      if (type === 1) singleEdges(view, sub, reph, edges);
-      if (type === 4) ligatureEdges(view, sub, reph, edges);
+      if (type === 1) singleEdges(view, sub, reph, blwf, edges);
+      if (type === 4) ligatureEdges(view, sub, reph, blwf, edges);
     }
   }
   return edges;
 }
 
-function singleEdges(view: DataView, sub: number, reph: boolean, edges: Edge[]): void {
+function singleEdges(view: DataView, sub: number, reph: boolean, blwf: boolean, edges: Edge[]): void {
   const format = view.getUint16(sub);
   const covered = coverage(view, sub + view.getUint16(sub + 2));
   covered.forEach((glyph, i) => {
     const output = format === 1 ? (glyph + view.getInt16(sub + 4)) & 0xffff : view.getUint16(sub + 6 + i * 2);
-    edges.push({ output, components: [glyph], reph });
+    edges.push({ output, components: [glyph], reph, blwf });
   });
 }
 
-function ligatureEdges(view: DataView, sub: number, reph: boolean, edges: Edge[]): void {
+function ligatureEdges(view: DataView, sub: number, reph: boolean, blwf: boolean, edges: Edge[]): void {
   const covered = coverage(view, sub + view.getUint16(sub + 2));
   covered.forEach((first, i) => {
     const set = sub + view.getUint16(sub + 6 + i * 2);
@@ -206,7 +223,7 @@ function ligatureEdges(view: DataView, sub: number, reph: boolean, edges: Edge[]
       const ligature = set + view.getUint16(set + 2 + k * 2);
       const components = [first];
       for (let c = 1; c < view.getUint16(ligature + 2); c++) components.push(view.getUint16(ligature + 4 + (c - 1) * 2));
-      edges.push({ output: view.getUint16(ligature), components, reph });
+      edges.push({ output: view.getUint16(ligature), components, reph, blwf });
     }
   });
 }
