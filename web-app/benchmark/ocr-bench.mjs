@@ -1,5 +1,6 @@
 // Compares OCR engines on scanned Hindi pages: Tesseract `hin` (the engine and model the editor
-// ships today) against PaddleOCR PP-OCRv5 Devanagari (onnxruntime-web). Scores each page with
+// ships today) against PaddleOCR PP-OCRv5 Devanagari (onnxruntime-web), with and without
+// lexicon-weighted decoding, and a per-line vote between the two engines (rover.mjs). Scores each page with
 // score.mjs (share of ground-truth Hindi words exactly right) and reports model load time and
 // per-page time.
 //
@@ -16,6 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createPaddleOcr, readPpm } from "./paddleOcr.mjs";
+import { voteLines } from "./rover.mjs";
 import { score } from "./score.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -98,20 +100,32 @@ const paddleLoad = await timed(() =>
 const rows = [];
 for (const page of pages) {
   const truth = readFileSync(path.resolve(setDir, page.truth), "utf8");
-  const tess = await timed(
-    async () => (await tesseractLoad.value.recognize(page.png)).data.text,
+  const tessResult = await timed(async () =>
+    (await tesseractLoad.value.recognize(page.png, {}, { blocks: true })).data,
+  );
+  const tess = { value: tessResult.value.text, ms: tessResult.ms };
+  const tessWords = (tessResult.value.blocks ?? []).flatMap((b) =>
+    b.paragraphs.flatMap((p) => p.lines.flatMap((l) => l.words)),
   );
   const ppm = readPpm(page.ppm);
   const paddle = await timed(async () =>
     (await paddleLoad.value(ppm)).map((l) => l.text).join("\n"),
   );
-  const lexical = await timed(async () =>
-    (await paddleLexiconLoad.value(ppm)).map((l) => l.text).join("\n"),
-  );
+  const lexicalLines = await timed(() => paddleLexiconLoad.value(ppm));
+  const lexical = {
+    value: lexicalLines.value.map((l) => l.text).join("\n"),
+    ms: lexicalLines.ms,
+  };
+  const voted = voteLines(lexicalLines.value, tessWords, (w) => lexicon.has(w));
+  const vote = {
+    value: voted.map((l) => l.text).join("\n"),
+    ms: tess.ms + lexical.ms,
+  };
   const outputs = {
     Tesseract: tess,
     Paddle: paddle,
     "Paddle + lexicon": lexical,
+    "Vote (per line)": vote,
   };
   if (outDir) {
     mkdirSync(outDir, { recursive: true });
