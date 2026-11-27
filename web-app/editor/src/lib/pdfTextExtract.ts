@@ -10,6 +10,7 @@ import { drawingOrderFontsOf, repairedFontsOf, sharedPdfDocument } from './share
 import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
 import { applyActualText, drawnGlyphs, markedContentStarts, type ActualTextResult } from './pdfActualText';
 import { imageRectsFromOperators, pictureBoxes, textImageRows, type PtBox } from './pdfImageRects';
+import { isJunkInvisibleOcrPage } from './invisibleOcrLayer';
 import { pageContents } from './pdfPageContents';
 import { rulingsFromOperators, type Ruling } from './pdfRulings';
 import { strokeEmPerItem, strokeRunsFromOperators } from './textStroke';
@@ -189,6 +190,12 @@ export async function extractEmbeddedTextLines(
     // Font names (Times-Bold, Cambria,BoldItalic, Hind…) are only available once the page's
     // operators have been parsed.
     const operators = await page.getOperatorList();
+    // Scanners and mobile apps often embed an invisible (3 Tr) English-only OCR layer over a Hindi
+    // scan. Ignore junk layers so the editor and PDF to Word read the scan with Hindi+English OCR.
+    const rawPageText = textContent.items.map((item) => ('str' in item ? item.str : '')).join(' ');
+    if (isJunkInvisibleOcrPage(operators.fnArray, operators.argsArray, rawPageText, viewport, OPS)) {
+      return [];
+    }
     const fontNameOf = (fontName: string): string | undefined => {
       try {
         return (page.commonObjs.get(fontName) as { name?: string } | undefined)?.name;

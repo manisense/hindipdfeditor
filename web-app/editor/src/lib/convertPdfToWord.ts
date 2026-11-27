@@ -1,5 +1,6 @@
 import { detectAlignedTables } from './alignedTables';
 import { buildWordDocument, type WordDocumentOptions, type WordPage } from './pdfToWord';
+import { isEnglishOcrJunk, isInvisibleTextOverScanImage } from './invisibleOcrLayer';
 import { detectLegacyFonts, isConvertibleLegacyFont } from './legacyFontDetector';
 import { detectTextLines, ocrPoolSize, readAreas } from './ocr';
 import { mayShowText, type PtBox } from './pdfImageRects';
@@ -335,8 +336,17 @@ export async function sampleTextLayer(bytes: Uint8Array, samples = 12): Promise<
   for (const index of picks) {
     const page = await doc.getPage(index + 1);
     const content = await page.getTextContent();
-    if (!content.items.some((item) => 'str' in item && /\S/u.test(item.str)) && mayShowText((await page.getOperatorList()).fnArray, OPS)) {
-      withoutText += 1;
+    const hasText = content.items.some((item) => 'str' in item && /\S/u.test(item.str));
+    if (!hasText) {
+      if (mayShowText((await page.getOperatorList()).fnArray, OPS)) withoutText += 1;
+    } else {
+      const text = content.items.map((item) => ('str' in item ? item.str : '')).join(' ');
+      if (isEnglishOcrJunk(text)) {
+        const operators = await page.getOperatorList();
+        if (isInvisibleTextOverScanImage(operators.fnArray, operators.argsArray, page.getViewport({ scale: 1 }), OPS)) {
+          withoutText += 1;
+        }
+      }
     }
     page.cleanup();
   }
