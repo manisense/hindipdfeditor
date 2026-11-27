@@ -24,8 +24,16 @@ import { fontGlyphText, PRE_BASE_MARK, REPH_MARK } from './fontGlyphText';
  * or cannot be read are left exactly as they are, so their text keeps its existing checks.
  *
  * Reordered glyphs (pre-base ि, reph) come out as marks; `reorderDevanagariMarks` puts them in
- * reading order.
+ * reading order. A map that names glyph 0, the font's empty box, as a letter has that entry
+ * replaced by {@link MISSING_GLYPH_MARK}, so boxes never read as letters.
  */
+
+/**
+ * Stands for text drawn with a font's missing glyph (glyph 0), which shows as an empty box. A
+ * private-use character, so text extraction drops it without judging the page unreadable (OCR
+ * cannot read a box either).
+ */
+export const MISSING_GLYPH_MARK = '\uE0F2';
 
 const MIN_DISAGREEMENTS = 3;
 const MIN_DISAGREEMENT_SHARE = 0.05;
@@ -39,6 +47,13 @@ export type ToUnicodeRepair = {
   repairedFonts: string[];
   /** Those whose map was only in drawing order, not naming wrong letters (see `inDrawingOrder`). */
   drawingOrderFonts: string[];
+  /**
+   * Pages (0-based) that use a font whose ToUnicode names its missing glyph (glyph 0) as a letter:
+   * Word does this when it sets Hindi in a font without Devanagari, so the page shows empty boxes
+   * and that text cannot be recovered from the file. A page may use the font without drawing the
+   * box; its text then has no {@link MISSING_GLYPH_MARK}.
+   */
+  missingGlyphPages: number[];
 };
 
 /** Reads a ToUnicode CMap's bfchar and bfrange entries: character code → text. */
@@ -154,6 +169,8 @@ export async function repairMisMappedToUnicode(bytes: Uint8Array): Promise<ToUni
     const doc = await PDFDocument.load(bytes, { ignoreEncryption: false, updateMetadata: false });
     const repairedFonts: string[] = [];
     const drawingOrderFonts: string[] = [];
+    const missingGlyphFonts = new Set<PDFDict>();
+    let changed = false;
     for (const [, object] of doc.context.enumerateIndirectObjects()) {
       if (!(object instanceof PDFDict) || object.get(PDFName.of('Subtype')) !== PDFName.of('Type0')) continue;
       if (object.get(PDFName.of('Encoding')) !== PDFName.of('Identity-H')) continue;
@@ -165,21 +182,44 @@ export async function repairMisMappedToUnicode(bytes: Uint8Array): Promise<ToUni
       const descriptor = cid.lookup(PDFName.of('FontDescriptor'));
       const fontFile = descriptor instanceof PDFDict ? streamBytes(descriptor.lookup(PDFName.of('FontFile2'))) : null;
       const toUnicode = streamBytes(object.lookup(PDFName.of('ToUnicode')));
-      if (!fontFile || !toUnicode) continue;
+      if (!toUnicode) continue;
       const existing = parseToUnicode(new TextDecoder('latin1').decode(toUnicode));
-      const fromFont = fontGlyphText(fontFile).text;
-      const repaired = repairedToUnicode(existing, fromFont);
+      // With Identity CIDToGIDMap, code 0 is glyph 0: a letter mapped to it is drawn as a box.
+      const missing = /\S/u.test(existing.get(0) ?? '');
+      const repaired = (fontFile ? repairedToUnicode(existing, fontGlyphText(fontFile).text) : null) ?? (missing ? new Map(existing) : null);
       if (!repaired) continue;
+      if (missing) {
+        repaired.set(0, MISSING_GLYPH_MARK);
+        missingGlyphFonts.add(object);
+      }
       const ref: PDFRef = doc.context.register(doc.context.flateStream(buildToUnicode(repaired)));
       object.set(PDFName.of('ToUnicode'), ref);
+      changed = true;
+      if (repaired.size === existing.size && [...existing].every(([code, text]) => code === 0 || repaired.get(code) === text)) continue;
       const name = String(object.get(PDFName.of('BaseFont')) ?? '').replace(/^\//u, '');
       repairedFonts.push(name);
       // Re-judged here: a map can both name wrong letters and keep ि in drawing order.
       if ([...repaired].every(([gid, letters]) => existing.get(gid) === letters || !existing.has(gid) || /[\uE0F0\uE0F1]/u.test(letters))) drawingOrderFonts.push(name);
     }
-    if (repairedFonts.length === 0) return { bytes, repairedFonts, drawingOrderFonts };
-    return { bytes: await doc.save({ updateFieldAppearances: false }), repairedFonts, drawingOrderFonts };
+    const missingGlyphPages = doc.getPages().flatMap((page, index) => (usesFont(page.node.Resources(), missingGlyphFonts, 0) ? [index] : []));
+    if (!changed) return { bytes, repairedFonts, drawingOrderFonts, missingGlyphPages };
+    return { bytes: await doc.save({ updateFieldAppearances: false }), repairedFonts, drawingOrderFonts, missingGlyphPages };
   } catch {
-    return { bytes, repairedFonts: [], drawingOrderFonts: [] };
+    return { bytes, repairedFonts: [], drawingOrderFonts: [], missingGlyphPages: [] };
   }
+}
+
+/** Whether a resource dictionary, or a form XObject in it (two levels deep), uses one of `fonts`. */
+function usesFont(resources: PDFDict | undefined, fonts: ReadonlySet<PDFDict>, depth: number): boolean {
+  if (!resources || fonts.size === 0) return false;
+  const fontDict = resources.lookup(PDFName.of('Font'));
+  if (fontDict instanceof PDFDict && fontDict.keys().some((key) => fonts.has(fontDict.lookup(key) as PDFDict))) return true;
+  const xObjects = resources.lookup(PDFName.of('XObject'));
+  if (depth >= 2 || !(xObjects instanceof PDFDict)) return false;
+  return xObjects.keys().some((key) => {
+    const xObject = xObjects.lookup(key);
+    const dict = xObject instanceof PDFStream ? xObject.dict : null;
+    const inner = dict?.lookup(PDFName.of('Resources'));
+    return inner instanceof PDFDict && usesFont(inner, fonts, depth + 1);
+  });
 }

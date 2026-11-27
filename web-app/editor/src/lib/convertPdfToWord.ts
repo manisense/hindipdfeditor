@@ -6,7 +6,7 @@ import { mayShowText, type PtBox } from './pdfImageRects';
 import { getPageCount, getPageSize, renderPage, renderPageCanvas, setPdfBytes } from './pdfToImages';
 import type { Ruling } from './pdfRulings';
 import { rulingsFromImage } from './rasterRulings';
-import { sharedPdfDocument } from './sharedPdfDocument';
+import { missingGlyphPagesOf, sharedPdfDocument } from './sharedPdfDocument';
 import { OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { detectTables, type DetectedTable } from './tableDetect';
 import { pageBlocks, type WordPicture } from './wordLayout';
@@ -24,6 +24,11 @@ export type PdfToWordResult = {
    * for a legacy font or Hindi the PDF does not map to Unicode).
    */
   unreadPages: number[];
+  /**
+   * Pages (1-based) whose PDF draws some text as empty boxes (a font without those letters), so
+   * that text is not in the file and is left out.
+   */
+  missingGlyphPages: number[];
 };
 
 /**
@@ -170,11 +175,13 @@ export async function convertPdfToWord(
     }),
   );
   const emptyPages = pages.filter((page) => page.blocks.length === 0).length;
+  const missingGlyph = new Set(await missingGlyphPagesOf(bytes));
   return {
     blob: await buildWordDocument(pages),
     pages: total,
     emptyPages,
     unreadPages: [...unread].sort((a, b) => a - b).map((index) => index + 1),
+    missingGlyphPages: chosen.filter((index) => missingGlyph.has(index)).map((index) => index + 1),
   };
 }
 

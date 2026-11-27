@@ -46,7 +46,7 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number; left: number | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ filename: string; pages: number; emptyPages: number; unreadPages: number[] } | null>(null);
+  const [result, setResult] = useState<{ filename: string; pages: number; emptyPages: number; unreadPages: number[]; missingGlyphPages: number[] } | null>(null);
   const [ocr, setOcr] = useState<OcrChoice>("auto");
   const [sample, setSample] = useState<TextLayerSample | null>(null);
   const [pageMode, setPageMode] = useState<"all" | "chosen">("all");
@@ -131,7 +131,7 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
       downloadBlob(converted.blob, filename);
       await clearJob();
       trackToolEvent("export_success", toolId);
-      setResult({ filename, pages: converted.pages, emptyPages: converted.emptyPages, unreadPages: converted.unreadPages });
+      setResult({ filename, pages: converted.pages, emptyPages: converted.emptyPages, unreadPages: converted.unreadPages, missingGlyphPages: converted.missingGlyphPages });
     } catch (err) {
       if (controller.signal.aborted) {
         setStopped(true);
@@ -432,6 +432,14 @@ export function PdfToWordTool({ toolId = "pdf-to-word" }: { toolId?: "pdf-to-wor
                 `Not read (they need OCR): pages ${pageList(result.unreadPages)}.`,
                 `नहीं पढ़े गए (इन्हें OCR चाहिए): पेज ${pageList(result.unreadPages)}।`,
               )}`}
+          </AppStatus>
+        )}
+        {result && result.missingGlyphPages.length > 0 && (
+          <AppStatus tone="warning" title={tx("Some text is missing from the PDF itself", "कुछ टेक्स्ट पीडीएफ में ही नहीं है")}>
+            {tx(
+              `On ${result.missingGlyphPages.length === 1 ? "page" : "pages"} ${pageList(result.missingGlyphPages)} the PDF shows empty boxes instead of some letters: it was made with a font that does not have them, so the text is not in the file and was left out. Ask the sender for the original Word file or a new PDF.`,
+              `पेज ${pageList(result.missingGlyphPages)} पर पीडीएफ कुछ अक्षरों की जगह खाली डिब्बे दिखाती है: इसे ऐसे फ़ॉन्ट से बनाया गया था जिसमें वे अक्षर नहीं हैं, इसलिए वह टेक्स्ट फाइल में है ही नहीं और छोड़ दिया गया। भेजने वाले से मूल वर्ड फाइल या नई पीडीएफ माँगें।`,
+            )}
           </AppStatus>
         )}
       </div>
