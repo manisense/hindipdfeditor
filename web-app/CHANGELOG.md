@@ -1,5 +1,10 @@
 # Changelog
 
+## Glyph repair: ि before the anusvara, 27 November 2026
+
+### Fixed
+- A pre-base ि learned from OCR (`glyphRepair.ts`) was put at the start of the next syllable, after a ं ँ or ः that ends its own, so हिंदी (drawn ि ह ं द ी) came out हंिदी. It now goes after the consonants and before those signs. First of several fixes found on Gazette of India PDFs (see `docs/autonomous-log.md`); benchmarks unchanged (CEN p70 620/620, RRB p2 141/141, notice 100 % / 99.3 %, Gazette page 81.0 %).
+
 ## Plan B trial: typeset Hindi edits in the document's own embedded font, 27 November 2026
 
 ### Added
