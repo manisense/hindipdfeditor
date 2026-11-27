@@ -1,5 +1,10 @@
 # Changelog
 
+## Text extraction: ligatures that start a line stay on it, 27 November 2026
+
+### Fixed
+- pdf.js treats any glyph whose text holds a combining sign (a ligature read from the font, such as प्र) as a zero-width mark and skips its line-break check, so when such a glyph starts a line it is left at the end of the line above ("भर्ती प्र" / "क्रिया"). `drawnGlyphs` now notes the first glyph drawn after the text matrix moves to another line (more than half the font size), and `applyActualText` moves such a glyph, with what follows it in that item, to the start of the next item. CEN 08/2024 page 70: 619 → **620 / 620** Hindi words, no extra words (a line wrongly split after उपलब्ध is also whole again). RRB p2, the sample notice (digital and scan) are unchanged.
+
 ## PDF to Word: no false joins before a danda, 27 November 2026
 
 ### Fixed
