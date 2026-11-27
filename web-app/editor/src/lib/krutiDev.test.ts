@@ -32,3 +32,19 @@ it('reads the quote style from the whole text when given it', () => {
   expect(krutiDevToUnicode('ifjHkk’kk,a', 'izns”k ifjHkk’kk,a')).toBe('परिभाषाएं');
   expect(krutiDevToUnicode('vf/k’kkflr', 'vf/k’kkflr')).toBe('अधिशासित');
 });
+
+// From the 2026 corpus survey (Uttarakhand UCC notification, MP notice), checked on the page images.
+it.each([
+  // è is the half form ध्, like `/`.
+  ['vfèklwpuk', 'अधिसूचना'],
+  ['mÙkjkfèkdkj', 'उत्तराधिकार'],
+  // A reph after a conjunct goes before the whole conjunct.
+  ['lkeF;Z', 'सामर्थ्य'],
+  ['e/;Z', 'मर्ध्य'],
+  // Rephs that were already right stay right.
+  ['dk;Z', 'कार्य'],
+  ['dhfrZ', 'कीर्ति'],
+  ['oxhZdj.k', 'वर्गीकरण'],
+])('survey: %s', (kruti, unicode) => {
+  expect(krutiDevToUnicode(kruti)).toBe(unicode);
+});
