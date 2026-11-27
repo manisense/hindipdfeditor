@@ -1,5 +1,10 @@
 # Changelog
 
+## PDF to Word: no false joins before a danda, 27 November 2026
+
+### Fixed
+- Joining Hindi words split by a gap (repaired fonts, web ADR 0022) judged the letters at the gap together with a following danda, so "अपेक्षित है।" was tested as "अपेक्षितहै।", which the spell checker does not judge, and became one word. Danda and Devanagari digits no longer count as letters there. CEN 08/2024 page 70, all 620 Hindi words (ground truth outside git, built from where the font path and Tesseract agree, disagreements checked on the page image): 615 → 619. RRB p2, the sample notice (digital and scan) and the checked part of p70 are unchanged.
+
 ## OCR benchmark: per-line vote between engines, 27 November 2026
 
 ### Added
