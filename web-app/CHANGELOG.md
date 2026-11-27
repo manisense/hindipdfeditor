@@ -1,5 +1,12 @@
 # Changelog
 
+## Corrupted Hindi pages: catch exotic-script mixing, glued tokens, and failed-font short pages in OCR verification, 27 November 2026
+
+### Fixed
+- Devanagari text layers mixed with letters from unrelated Unicode blocks (`U+1B80–U+1CFF` and other non-Devanagari/non-Latin scripts, such as `पिरिश᳥`, `पिरपᮢ`, `अᲦूबर`, `देखᱶ` in `37_bank_rbi`) now count as corrupted in `embeddedDevanagariVerdict` (`hasMixedUnrelatedScript`) even on short pages, so they trigger Hindi OCR instead of returning `"unknown"`.
+- Pages whose embedded Hindi is glued into a few very long tokens without spaces (such as `30_court_hcraj` p4, 8 tokens up to 55 characters) are now detected (`hasGluedDevanagariWords`) and bypass the `FEW_DEVANAGARI_LINES` early return and font-trust skip in `ocr.ts` so they are read with Hindi OCR.
+- Short pages whose font already failed verification on earlier pages (`hasFailedFont` in `embeddedTextTrust.ts`) also bypass the `FEW_DEVANAGARI_LINES` early return and fall back to OCR when fewer than half of their words agree with OCR.
+
 ## Bold heading subsets: repair small mis-mapped subsets and read GSUB type 6 `ि` variants, 27 November 2026
 
 ### Fixed

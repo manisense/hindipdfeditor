@@ -12,12 +12,28 @@
 import type { OcrLine } from "../state/editStore";
 
 const DEVANAGARI = /[\u0900-\u097F]/u;
+/** Devanagari letters and signs (excluding digits and dandas) for token script-mixing checks. */
+const DEVANAGARI_LETTER = /[\u0900-\u0963\u0971-\u097F]/u;
+/**
+ * Unicode blocks U+1B80–U+1CFF (Sundanese, Batak, Lepcha, Ol Chiki, Cyrillic Ext-C, Georgian Ext,
+ * Vedic Ext) where broken PDFMaker/Distiller ArialUnicodeMS maps drop Devanagari presentation
+ * glyph IDs (e.g. `पिरिश᳥`, `पिरपᮢ`, `अᲦूबर`, `देखᱶ`).
+ */
+const EXOTIC_GLYPH_ID_BLOCKS = /[\u1B80-\u1CFF]/u;
+const UNICODE_LETTER = /\p{L}/u;
+const ALLOWED_MIXED_LETTER = /[\p{Script=Devanagari}\p{Script=Latin}\p{Script=Greek}]/u;
 const WORD_SEPARATORS = /[\s,.;:!?।॥|()[\]{}"'“”‘’/\\-]+/u;
 const COMPLEX_WORD = /[\u093F\u094D\u0901\u0902]|(.)\1/u;
 /** Below this complex/plain agreement ratio the embedded text is treated as corrupted. */
 const MIN_COMPLEX_TO_PLAIN_RATIO = 0.7;
 /** Fewer words than this in either group is too little evidence to judge. */
 const MIN_WORDS_PER_GROUP = 15;
+/** Single Devanagari token length (code points) above which words are glued without spaces. */
+const GLUED_WORD_MIN_LENGTH = 25;
+/** Minimum share of Devanagari word characters carried by glued tokens to flag a page. */
+const MIN_GLUED_CHAR_SHARE = 0.35;
+/** Minimum word agreement on a short page whose font already failed on an earlier page. */
+const MIN_FAILED_FONT_AGREEMENT = 0.5;
 
 /** True when `text` contains any Devanagari code point. */
 export function hasDevanagari(text: string): boolean {
@@ -30,6 +46,45 @@ export function devanagariWords(text: string): string[] {
     .normalize("NFC")
     .split(WORD_SEPARATORS)
     .filter((word) => word.length >= 2 && DEVANAGARI.test(word));
+}
+
+/**
+ * True when any token mixes Devanagari letters with characters from unrelated Unicode blocks
+ * (such as U+1B80–U+1CFF or non-Devanagari/non-Latin scripts), indicating broken ToUnicode
+ * mappings like `पिरिश᳥` or `पिरपᮢ`. Works even on short pages.
+ */
+export function hasMixedUnrelatedScript(text: string): boolean {
+  for (const token of text.normalize("NFC").split(WORD_SEPARATORS)) {
+    if (!DEVANAGARI_LETTER.test(token)) continue;
+    if (EXOTIC_GLYPH_ID_BLOCKS.test(token)) return true;
+    for (const ch of token) {
+      if (UNICODE_LETTER.test(ch) && !ALLOWED_MIXED_LETTER.test(ch)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * True when a page's Devanagari text is glued into a few very long tokens (missing word spaces,
+ * e.g. 38–55 char lines) so that normal word-count verification would see too few words to judge.
+ */
+export function hasGluedDevanagariWords(text: string): boolean {
+  const words = devanagariWords(text);
+  if (words.length === 0) return false;
+  const glued = words.filter((word) => word.length >= GLUED_WORD_MIN_LENGTH);
+  if (glued.length === 0) return false;
+  const totalChars = words.reduce((sum, word) => sum + word.length, 0);
+  const gluedChars = glued.reduce((sum, word) => sum + word.length, 0);
+  if (gluedChars / totalChars < MIN_GLUED_CHAR_SHARE) return false;
+  return glued.length >= 2 || (words.length <= 4 && gluedChars >= 30);
+}
+
+/**
+ * True when embedded Devanagari shows corruption on its own (mixed unrelated scripts or glued
+ * multi-word tokens), even on pages too short for complex/plain OCR comparison.
+ */
+export function hasIntrinsicDevanagariCorruption(text: string): boolean {
+  return hasMixedUnrelatedScript(text) || hasGluedDevanagariWords(text);
 }
 
 /**
@@ -58,18 +113,31 @@ const MIN_CONVERTED_AGREEMENT = 0.4;
  * little Devanagari to judge.
  *
  * Text from the PDF's own Unicode map is judged by how complex words agree compared with plain
- * ones, which is how a broken map shows (see the top of this file). Text converted from KrutiDev
- * with the pinned map (`converted`) is judged by overall agreement instead: a conversion is wrong
- * everywhere or nowhere. On such pages OCR misreads complex words in small text far more than
- * plain ones, which made right conversions look broken.
+ * ones, which is how a broken map shows (see the top of this file). Intrinsic corruption (mixed
+ * unrelated scripts like U+1B80–U+1CFF or glued multi-word tokens) is judged corrupted even on
+ * short pages, as is a short page in a font that already failed on an earlier page (`fontFailed`)
+ * when its words disagree with OCR. Text converted from KrutiDev with the pinned map (`converted`)
+ * is judged by overall agreement instead: a conversion is wrong everywhere or nowhere. On such
+ * pages OCR misreads complex words in small text far more than plain ones, which made right
+ * conversions look broken.
  */
 export function embeddedDevanagariVerdict(
   embeddedText: string,
   ocrText: string,
-  options: { converted?: boolean } = {},
+  options: { converted?: boolean; fontFailed?: boolean } = {},
 ): DevanagariVerdict {
+  if (!options.converted && hasIntrinsicDevanagariCorruption(embeddedText)) return "corrupted";
   const ocrWords = new Set(devanagariWords(ocrText));
-  if (!canJudgeDevanagari(embeddedText)) return "unknown";
+  if (!canJudgeDevanagari(embeddedText)) {
+    if (options.fontFailed && !options.converted) {
+      const words = devanagariWords(embeddedText);
+      if (words.length > 0 && ocrWords.size > 0) {
+        const agreement = words.filter((word) => ocrWords.has(word)).length / words.length;
+        return agreement < MIN_FAILED_FONT_AGREEMENT ? "corrupted" : "ok";
+      }
+    }
+    return "unknown";
+  }
   const words = devanagariWords(embeddedText);
   const complex = words.filter((word) => COMPLEX_WORD.test(word));
   const plain = words.filter((word) => !COMPLEX_WORD.test(word));
@@ -137,7 +205,7 @@ export function joinSplitHindiWords(text: string, isKnown: (word: string) => boo
 export function isEmbeddedDevanagariCorrupted(
   embeddedText: string,
   ocrText: string,
-  options: { converted?: boolean } = {},
+  options: { converted?: boolean; fontFailed?: boolean } = {},
 ): boolean {
   return embeddedDevanagariVerdict(embeddedText, ocrText, options) === "corrupted";
 }

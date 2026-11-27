@@ -55,6 +55,13 @@ Word exports with Mangal body text and small Mangal-Bold heading subsets (e.g. U
 - `fontGlyphText.ts` reads GSUB lookup type 6 (format 3) inside `pres` lookups: an unmapped single input glyph with ≥3 distinct contextual single-substitution variants before Devanagari lookahead glyphs is seeded as `ि` (`PRE_BASE_MARK`), so all its contextual variants are resolved. Likewise, an `rphf` `[र/ऱ, virama]` ligature seeds an omitted virama, and reph-carrying ligatures whose base vowel sign was omitted from `cmap` are reported in `rephLigatures` so repairing `व` (`र्व → व`) preserves the reph on `ो+reph` (`सर्वोच्च`).
 - `pdfToUnicodeRepair.ts` repairs a font when its map names any font-proven `PRE_BASE_MARK` or `REPH_MARK` glyph as a Devanagari consonant (`misMapsMarkAsConsonant`, excluding `REPH_MARK → "र्"` drawing order), or in a second pass when a sibling font of the same family (`fontFamilyKey`) was already repaired as mis-mapped and the subset has at least one disagreement. Sibling subsets whose map is right (zero disagreements, such as `FORKWM+Mangal-Regular` in `c3` and `ABCDEE+Mangal` in `c11`) remain untouched.
 
+## Amendment, 27 November 2026: silent corrupted pages that skip OCR (mixed unrelated scripts, glued tokens, failed fonts)
+
+Two classes of corrupted Devanagari text layers could silently skip OCR fallback when the page was too short for `canJudgeDevanagari` (15 complex + 15 plain words):
+- Older Acrobat Distiller / PDFMaker `ArialUnicodeMS` maps (e.g. RBI circular `37_bank_rbi`) map Devanagari conjunct/presentation glyph IDs into unrelated Unicode blocks (`U+1B80–U+1CFF`, producing `पिरिश᳥`, `पिरपᮢ`, `अᲦूबर`, `देखᱶ`). Now `hasMixedUnrelatedScript` in `embeddedTextVerification.ts` flags any token mixing Devanagari letters with `U+1B80–U+1CFF` or non-Devanagari/non-Latin/non-Greek letters, returning `"corrupted"` even on short pages.
+- Pages whose Hindi is glued into a few very long tokens without spaces (e.g. Rajasthan High Court order `30_court_hcraj` p4: 6 lines, 8 tokens up to 55 characters long) fell below `canJudgeDevanagari` and hit `ocr.ts`'s `FEW_DEVANAGARI_LINES` early return without falling back to OCR. Now `hasGluedDevanagariWords` flags pages where ≥ 35 % of Devanagari word characters lie in ≥ 25-character tokens (≥ 2 glued tokens, or 1 glued token ≥ 30 chars on a ≤ 4-word page), and `embeddedTextTrust.ts` (`hasFailedFont`) + `ocr.ts` also ensure short pages using a font that already failed on earlier pages bypass the early-return shortcut and are judged corrupted when fewer than 50 % of their words agree with OCR.
+
+
 
 
 

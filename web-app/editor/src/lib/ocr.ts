@@ -19,6 +19,7 @@ import {
   canJudgeDevanagari,
   combineEmbeddedLatinWithOcr,
   hasDevanagari,
+  hasIntrinsicDevanagariCorruption,
   isEmbeddedDevanagariCorrupted,
   isLikelyOcrNoise,
   readsAsHindi,
@@ -32,6 +33,7 @@ import {
 import { mergeOcrLines, mergeWordReadings, type RecognizedWord } from "./mergeOcrLines";
 import { textBandOfLine } from "./ocrLineGeometry";
 import {
+  hasFailedFont,
   mustVerifyPage,
   newFontTrust,
   noteSkippedPage,
@@ -500,6 +502,7 @@ async function verifyEmbeddedDevanagari(
   convertLegacy?: boolean,
   record?: { band: (bandText: string, bandOcrText: string) => void; page: (hindiText: string) => void },
   allowPageOcr?: () => boolean,
+  fontFailed = false,
 ): Promise<OcrLine[]> {
   // Fonts repaired from their own cmap give exact letters, but some producers leave gaps inside
   // words; the dictionary joins those before anything is judged.
@@ -516,12 +519,19 @@ async function verifyEmbeddedDevanagari(
   }
   try {
     // Too little Devanagari for a verdict: the page keeps its text whatever OCR reads, so only
-    // its Devanagari lines are read (as evidence for its fonts), not the whole page.
+    // its Devanagari lines are read (as evidence for its fonts), not the whole page — unless the
+    // page already shows intrinsic corruption (mixed unrelated scripts or glued words) or uses a
+    // font that already failed on an earlier page.
+    const converted = Boolean(convertLegacy);
     const devanagariLines = embedded.filter((line) => hasDevanagari(line.text));
+    const devanagariText = devanagariLines.map((line) => line.text).join(" ");
+    const intrinsicCorruption = !converted && hasIntrinsicDevanagariCorruption(devanagariText);
     if (
       !degraded &&
+      !fontFailed &&
+      !intrinsicCorruption &&
       devanagariLines.length <= FEW_DEVANAGARI_LINES &&
-      !canJudgeDevanagari(devanagariLines.map((line) => line.text).join(" "))
+      !canJudgeDevanagari(devanagariText)
     ) {
       const texts: string[] = [];
       for (const line of devanagariLines) texts.push(await recognizeArea(page, line));
@@ -530,8 +540,7 @@ async function verifyEmbeddedDevanagari(
     }
     // A band of the page's lines is enough to judge it, and OCR of the band takes a fraction of
     // the time. Only a passing band skips the full page; anything else reads the whole page.
-    const sample = degraded ? null : verificationSample(embedded);
-    const converted = Boolean(convertLegacy);
+    const sample = degraded || fontFailed || intrinsicCorruption ? null : verificationSample(embedded);
     if (sample) {
       const bandOcr = await recognizeArea(page, sample);
       if (embeddedDevanagariVerdict(sample.text, bandOcr, { converted }) === "ok") {
@@ -543,12 +552,12 @@ async function verifyEmbeddedDevanagari(
     const hindiPage = await recognizePage(page.backgroundImageUri, "hin");
     record?.page(hindiPage.text);
     const embeddedText = embedded.map((line) => line.text).join(" ");
-    if (!degraded && !isEmbeddedDevanagariCorrupted(embeddedText, hindiPage.text, { converted })) {
+    if (!degraded && !isEmbeddedDevanagariCorrupted(embeddedText, hindiPage.text, { converted, fontFailed })) {
       return embedded;
     }
     // Text repaired from its own font is kept when it reads as Hindi, though OCR of the page
     // disagrees: Tesseract misreads tables and small print far more often than a font lies.
-    if (!degraded && !converted && (await repairedFontsOf(pdfBytes)).length > 0) {
+    if (!degraded && !converted && !intrinsicCorruption && (await repairedFontsOf(pdfBytes)).length > 0) {
       const speller = await loadHindiSpeller().catch(() => null);
       if (speller && readsAsHindi(embeddedText, (word) => speller.isKnown(word))) return embedded;
     }
@@ -748,17 +757,33 @@ async function readPageLines(
         // glyphs are always checked.
         const trust = fontTrustFor(pdfBytes);
         const degraded = embedded.some((line) => line.source === "embedded-degraded");
-        if (!degraded && !options?.convertLegacy && !mustVerifyPage(trust, textByFont.keys(), options?.spotCheckEvery)) {
+        const intrinsicCorruption =
+          !options?.convertLegacy && hasIntrinsicDevanagariCorruption(embedded.map((line) => line.text).join(" "));
+        if (
+          !degraded &&
+          !intrinsicCorruption &&
+          !options?.convertLegacy &&
+          !mustVerifyPage(trust, textByFont.keys(), options?.spotCheckEvery)
+        ) {
           if (textByFont.size > 0) noteSkippedPage(trust);
           return embedded;
         }
+        const fontFailed = !options?.convertLegacy && hasFailedFont(trust, textByFont.keys());
         const record = options?.convertLegacy
           ? undefined
           : {
               band: (bandText: string, bandOcrText: string) => recordVerifiedBand(trust, textByFont, bandText, bandOcrText),
               page: (ocrText: string) => recordVerifiedPage(trust, textByFont, ocrText),
             };
-        return await verifyEmbeddedDevanagari(embedded, await withImage(), pdfBytes, options?.convertLegacy, record, options?.allowPageOcr);
+        return await verifyEmbeddedDevanagari(
+          embedded,
+          await withImage(),
+          pdfBytes,
+          options?.convertLegacy,
+          record,
+          options?.allowPageOcr,
+          fontFailed,
+        );
       }
     } catch (error) {
       console.warn(
