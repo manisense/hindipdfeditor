@@ -1,5 +1,8 @@
 import kru2uni from '@anthro-ai/krutidev-unicode';
 
+import { reorderDevanagariMarks } from './devanagariMarks';
+import { REPH_MARK } from './fontGlyphText';
+
 /** ि followed by virama + consonant, which no Unicode text has. */
 const I_BEFORE_VIRAMA = /\u093F(\u094D[\u0915-\u0939\u0958-\u095F]\u093C?)/u;
 
@@ -13,7 +16,10 @@ const I_BEFORE_VIRAMA = /\u093F(\u094D[\u0915-\u0939\u0958-\u095F]\u093C?)/u;
  *   Himachal and Bihar notices: प्रदेश, परिभाषाएं). See {@link usesFontQuoteGlyphs};
  * - vowel-sign fragments the mapping leaves are joined: आॅ→ऑ, ाॅ→ॉ, ाें→ों, ाे→ो, ाै→ौ, ाा→ा;
  * - the mapping reads `pkS` as चै (it is चौ: च + ौ), so a zero-width space keeps `p` and `kS` apart;
- * - ि left before a virama in long clusters (स्टि्र, स्पि्ल) moves after the cluster (स्ट्रि, स्प्लि).
+ * - ि left before a virama in long clusters (स्टि्र, स्पि्ल) moves after the cluster (स्ट्रि, स्प्लि);
+ * - `è` is the half form ध् (like `/`); the mapping reads it as a full ध (अधिासूचना);
+ * - the reph key `Z` goes before the whole syllable it follows, conjuncts included: the mapping
+ *   put it inside them (सामथर्य for सामर्थ्य), so it is placed with the reph mark instead.
  *
  * @param text KrutiDev-encoded text.
  * @param context The whole text it comes from (a page's text in that font), to judge which
@@ -24,8 +30,12 @@ export function krutiDevToUnicode(text: string, context: string = text): string 
   const straightened = text
     .replace(/[‘’]/gu, fontQuotes ? '"' : "'")
     .replace(/[“”]/gu, fontQuotes ? "'" : '"')
-    .replace(/pkS/gu, 'p\u200BkS');
-  let unicode = kru2uni(straightened).replace(/\u200B/gu, '');
+    .replace(/pkS/gu, 'p\u200BkS')
+    .replace(/è/gu, '/')
+    // `bZ` is ई, not a reph; `ZZ` is one reph (as the mapping reads them).
+    .replace(/(?<!b)Z+/gu, REPH_MARK);
+  const mapped = kru2uni(straightened).replace(/\u200B/gu, '').replace(new RegExp(`\u094D${REPH_MARK}`, 'gu'), REPH_MARK);
+  let unicode = reorderDevanagariMarks(mapped);
   while (I_BEFORE_VIRAMA.test(unicode)) unicode = unicode.replace(I_BEFORE_VIRAMA, '$1\u093F');
   return unicode
     .replace(/आॅ/gu, 'ऑ')

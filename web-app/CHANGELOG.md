@@ -1,5 +1,11 @@
 # Changelog
 
+## KrutiDev: half-ध and reph before conjuncts, 27 November 2026
+
+### Fixed
+- `è` is the half form ध् (like `/`); the mapping read it as a full ध, so अधिसूचना came out अधिासूचना and उत्तराधिकार उत्तराधिाकार (Uttarakhand UCC notification: 17 broken words on 4 pages → 0, unknown words 17.1 % → 14.1 %).
+- The reph key `Z` now goes before the whole syllable it follows, conjuncts included, through the same reph mark the font repair uses: सामर्थ्य (was सामथर्य), पुनर्व्यवस्थापन, धर्म; `bZ` (ई) and `ZZ` keep their meaning. Checked on the page images: a Himachal gazette prints विध्वा, which is now read as printed.
+
 ## KrutiDev quotes, spaced font names and Shree-Lipi, 27 November 2026
 
 ### Fixed
