@@ -42,6 +42,12 @@ function pdfStringText(bytes: number[]): string {
   return String.fromCharCode(...bytes);
 }
 
+function decodePdfName(raw: string): string {
+  return raw
+    .replace(/^\//, '')
+    .replace(/#([0-9a-fA-F]{2})/g, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)));
+}
+
 /**
  * The `BDC` operators of a decoded content stream, in order.
  *
@@ -70,7 +76,7 @@ export function markedContentStarts(content: string): MarkedContentStart[] {
       }
       tagAt = open - 1;
     }
-    starts.push({ tag: tagAt >= 0 ? source(tagAt).replace(/^\//, '') : '', actualText });
+    starts.push({ tag: tagAt >= 0 ? decodePdfName(source(tagAt)) : '', actualText });
   });
   return starts;
 }
@@ -176,12 +182,17 @@ export function applyActualText(
   const into: (number | null)[] = items.map(() => null);
   let target = -1;
   const matched = new Set<number>();
+  const omittedSpaceAfter = new Set<number>();
   let at = 0;
   let previous: number | null = null;
   // The section's text, until the first character of its glyphs is found.
   let pending: string | null = null;
+  // Text of the glyph drawn before the current one.
+  let before = '';
   for (const glyph of glyphs) {
     const section = glyph.section !== null && fixable.has(glyph.section) ? glyph.section : null;
+    const previousGlyph = before;
+    before = glyph.text;
     if (section !== previous) {
       if (pending !== null && !isSpace(pending)) return null;
       pending = section === null ? null : (actualTexts[section] ?? '');
@@ -199,7 +210,13 @@ export function applyActualText(
       // pdf.js writes compatibility characters (the ﬁ ligature) decomposed in its text.
       const expected = chars[at]?.char === char ? [char] : [...char.normalize('NFKC')];
       if (!expected.every((part, k) => chars[at + k]?.char === part)) {
-        if (isSpace(char)) continue;
+        if (isSpace(char)) {
+          // A drawn space pdf.js left out of its text is a word break (Pdftools: after a word, a
+          // danda or a matra drawn as '\n'), except right after a half form: there it is a typed
+          // joiner inside the word (Chrome draws उम्‍मीदवार's joiner as a space).
+          if (section === null && at > 0 && !previousGlyph.endsWith('्')) omittedSpaceAfter.add(at - 1);
+          continue;
+        }
         return null;
       }
       for (let k = 0; k < expected.length; k++, at++) {
@@ -232,20 +249,29 @@ export function applyActualText(
   let last = -1;
   let spaced = false;
   const letter = (item: number) => {
-    if (spaced && last >= 0 && item !== last) spaceAfter[last] = true;
+    if (spaced && last >= 0) {
+      if (item !== last) spaceAfter[last] = true;
+      else if (out[item].length > 0 && !out[item].endsWith(' ')) out[item] += ' ';
+    }
     spaced = false;
     last = item;
   };
   chars.forEach(({ char, item }, i) => {
     const text = insert.get(i);
     if (text !== undefined) {
-      out[item] += text;
       letter(item);
+      out[item] += text;
     }
-    if (drop.has(i)) return;
-    out[item] += char;
-    if (!isSpace(char)) letter(item);
-    else if (matched.has(i)) spaced = true;
+    if (!drop.has(i)) {
+      if (!isSpace(char)) {
+        letter(item);
+        out[item] += char;
+      } else {
+        out[item] += char;
+        if (matched.has(i)) spaced = true;
+      }
+    }
+    if (omittedSpaceAfter.has(i)) spaced = true;
   });
   out.forEach((text, item) => {
     if (text.length > 0) into[item] = null;

@@ -38,6 +38,8 @@ export const MISSING_GLYPH_MARK = '\uE0F2';
 const MIN_DISAGREEMENTS = 3;
 const MIN_DISAGREEMENT_SHARE = 0.05;
 const DEVANAGARI = /[ऀ-ॿ]/u;
+const RAKAR = '्र';
+const REPH = 'र्';
 const BFCHAR_BLOCK = 100;
 
 export type ToUnicodeRepair = {
@@ -131,6 +133,19 @@ export function inDrawingOrder(existing: ReadonlyMap<number, string>, fromFont: 
   });
 }
 
+function isBackwardsRakar(old: string | undefined, letters: string): boolean {
+  if (old === undefined || !letters.includes(RAKAR)) return false;
+  return old.normalize('NFC') === letters.replaceAll(RAKAR, REPH).normalize('NFC');
+}
+
+/**
+ * Whether a map reads a below-base rakar glyph (or rakar conjunct) backwards as "र्" instead of
+ * "्र". Real reph glyphs read as {@link REPH_MARK} in the font and never match this check.
+ */
+export function hasBackwardsRakar(existing: ReadonlyMap<number, string>, fromFont: ReadonlyMap<number, string>): boolean {
+  return [...fromFont].some(([gid, letters]) => isBackwardsRakar(existing.get(gid), letters));
+}
+
 /**
  * The repaired ToUnicode for a Type0 / CIDFontType2 / Identity font, or null when it needs none.
  * Exported for tests.
@@ -149,11 +164,19 @@ export function repairedToUnicode(existing: ReadonlyMap<number, string>, fromFon
     else disagree++;
   }
   const misMapped = disagree >= MIN_DISAGREEMENTS && disagree / (agree + disagree) >= MIN_DISAGREEMENT_SHARE;
-  if (!misMapped && !inDrawingOrder(existing, fromFont)) return null;
+  if (!misMapped && !inDrawingOrder(existing, fromFont) && !hasBackwardsRakar(existing, fromFont)) return null;
   const repaired = new Map(existing);
   for (const [gid, letters] of fromFont) {
     if (![...letters].some((c) => DEVANAGARI.test(c) || c === PRE_BASE_MARK || c === REPH_MARK)) continue;
-    if (misMapped || !existing.get(gid) || letters.includes(PRE_BASE_MARK) || letters.includes(REPH_MARK)) repaired.set(gid, letters);
+    if (
+      misMapped ||
+      !existing.get(gid) ||
+      letters.includes(PRE_BASE_MARK) ||
+      letters.includes(REPH_MARK) ||
+      isBackwardsRakar(existing.get(gid), letters)
+    ) {
+      repaired.set(gid, letters);
+    }
   }
   return repaired;
 }

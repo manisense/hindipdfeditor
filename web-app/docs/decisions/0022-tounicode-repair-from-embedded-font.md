@@ -36,3 +36,18 @@ Evidence: CEN p70, 160 hand-checked Hindi words (items 2–3 and the note before
 ## Amendment, 27 November 2026: text drawn as empty boxes
 
 Word sets Hindi in a font without Devanagari (Courier New, Gulim) when the chosen font lacks it; the PDF then draws glyph 0, the font's empty box, and its ToUnicode names that glyph "अ" or "क" (RRB 01/2026 pages 4, 21–22, 25, 30, 32–35). The file does not hold that text, so it cannot be repaired, and OCR reads boxes no better. In the same read-only copy, a Type0 Identity font whose map names code 0 as a letter has that entry replaced by a private-use mark that extraction drops, so boxes no longer read as "अअअअ". Pages that use such a font are kept as candidates and confirmed from their text (the mark appears); PDF to Word lists them and asks the user for the original file. Rejected: OCR of those pages (it reads the boxes as random letters) and guessing the text.
+
+## Amendment, 27 November 2026: below-base rakar (`blwf`) and backwards rakar maps
+
+OpenType Devanagari v1 (`deva`) fonts (such as Arial Unicode MS and older Mangal tables) define the below-base rakar glyph (`blwf`) on `[र, ्]` rather than `[्, र]` and compose rakar conjuncts via `vatu` (`[प, rakar] → प्र`, `[प्, rakar] → प्र्`). Reading `blwf` naively as `"र्"` turned every rakar conjunct backwards (`प्राधिकार → पर्ाधिकार`, `राजपत्र → राजपतर्`). In addition, a PDF's ToUnicode can name a below-base rakar glyph or rakar conjunct backwards as `"र्"` while agreeing on every single letter. Now:
+- `fontGlyphText.ts` reads `blwf` outputs of `[र, ्]` or `[्, र]` as `"्र"` (rakar), and composes `[half(C), rakar]` in `vatu` as `C्र्`. Real reph glyphs (`rphf`) remain marked with `REPH_MARK` (`\uE0F0`), and half-ra (`half`) stays `"र्"`.
+- `pdfToUnicodeRepair.ts` (`hasBackwardsRakar`) also triggers repair when ToUnicode maps a `"्र"` glyph or rakar conjunct backwards as `"र्"`, updating those entries without disturbing real reph glyphs.
+
+## Amendment, 27 November 2026: `/ActualText` with escaped PDF Name tags and omitted spaces
+
+Pdftools SDK exports (corpus file `c10.pdf`) embed Hindi in a simple `/TrueType` font (no Unicode cmap, no GSUB) whose ToUnicode maps the first glyph of each syllable to the entire syllable it first appeared in (leaving trailing matra glyphs unmapped, including byte `0x0A` `'\n'`), while placing exact UTF-16BE `/ActualText` on every syllable inside Word style tags such as `/Normal#20#28Web#29 <</MCID 2>> BDC`. Two bugs in `pdfActualText.ts` broke those pages:
+- `markedContentStarts` left `#XX` PDF Name escapes undecoded (`Normal#20#28Web#29`), whereas pdf.js's `Lexer.getName` decodes them (`Normal (Web)`), so `drawnGlyphs` aborted on tag mismatch and dropped all `/ActualText` spans on the page. Now `markedContentStarts` decodes `#XX` escapes to match pdf.js.
+- When a real drawn space glyph outside `/ActualText` was dropped by pdf.js from `getTextContent()` (deduplicated against a preceding `0x0A` matra byte), `applyActualText` silently skipped it and lost the word break (`के सभी → केसभी`). Now omitted drawn spaces are recorded and emitted as `spaceAfter` (across items) or an inline space (within an item).
+
+
+
