@@ -1288,10 +1288,8 @@ async function invisibleEnglishOcrCase(browser) {
   try {
     await page.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
     await page.locator("input[type=file]").first().setInputFiles(pdfPath);
-    await page.waitForFunction(
-      () => [...document.querySelectorAll(".utility-tool__note")].some((el) => /1 of 1 pages look scanned/.test(el.textContent || "")),
-      { timeout: 15000 },
-    );
+    // A locator, not waitForFunction: the site's CSP forbids evaluating code in the page.
+    await page.locator(".utility-tool__note", { hasText: /1 of 1 pages look scanned/ }).waitFor({ timeout: 15000 });
     const download = page.waitForEvent("download", { timeout: 180000 });
     await page.getByRole("button", { name: /Convert & download Word/ }).click();
     const docx = path.join(dir, "out.docx");
