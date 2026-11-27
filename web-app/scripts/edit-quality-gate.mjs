@@ -1009,6 +1009,89 @@ async function wordAlignedTableCase(browser) {
   await page.close();
 }
 
+// A 3-page two-column PDF with a running header, running footer with page numbers, Hindi
+// paragraphs and a ruled table must convert in column-by-column reading order with the running
+// header and footer appearing at most once in the body.
+async function wordStructureCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { unzipSync, strFromU8 } = require(path.join(editorModules, "fflate"));
+  const { headerFooterLeakage, readingOrder, score } = await import(path.join(here, "../benchmark/score.mjs"));
+  const pdfPath = path.join(fixtures, "two-column-structure-fixture.pdf");
+  const truthText = fs.readFileSync(path.join(fixtures, "two-column-structure-truth.txt"), "utf8");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gate-"));
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  try {
+    await page.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
+    await page.locator("input[type=file]").first().setInputFiles(pdfPath);
+    const download = page.waitForEvent("download", { timeout: 120000 });
+    await page.getByRole("button", { name: /Convert & download Word/ }).click();
+    const docx = path.join(dir, "out.docx");
+    fs.copyFileSync(await (await download).path(), docx);
+    const files = unzipSync(new Uint8Array(fs.readFileSync(docx)));
+    const xml = strFromU8(files["word/document.xml"]);
+    const bodyText = xml
+      .replace(/<w:tab\/>/g, " ")
+      .replace(/<\/w:p>/g, String.fromCharCode(10))
+      .replace(/<[^>]+>/g, "")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
+
+    const wordScore = score(bodyText, truthText);
+    assert.equal(wordScore.recall, 1, `expected 100% Hindi word recall, got ${wordScore.correct}/${wordScore.total}`);
+
+    const order = readingOrder(bodyText, truthText);
+    assert.equal(
+      order.order,
+      1,
+      `expected 100% reading order across columns, got ${order.kept}/${order.totalPairs} (${(order.order * 100).toFixed(1)}%)`,
+    );
+
+    // Explicit column-order checks across all three pages.
+    const markers = [
+      "Quarterly Operations and Hindi Documentation Review",
+      "1. Digital Archive Standards",
+      "2. Devanagari Preservation",
+      "3. Column Layout Verification",
+      "4. Release Sign-off Checklist",
+      "5. Field Station Notes",
+      "6. Regional Language Note",
+      "7. Summary of Findings",
+      "8. Hindi Verification Sample",
+      "North Division",
+      "End of quarterly bulletin. Retain this copy for audit review.",
+    ];
+    let prev = -1;
+    for (const marker of markers) {
+      const idx = bodyText.indexOf(marker);
+      assert.ok(idx > prev, `expected "${marker}" after previous marker (prev=${prev}, got=${idx})`);
+      prev = idx;
+    }
+
+    // Table on page 3 stays a Word table.
+    const tables = xml.match(/<w:tbl>[\s\S]*?<\/w:tbl>/g) ?? [];
+    assert.equal(tables.length, 1, "page 3 ruled table kept as one Word table");
+
+    // Running header and footer must appear at most once in the body.
+    const leakage = headerFooterLeakage(bodyText, [
+      "Regional Engineering Bulletin - Quarterly Issue 2026",
+      "Internal Circulation Copy - Page 1 of 3",
+    ]);
+    assert.ok(
+      leakage.maxCount <= 1,
+      `running header/footer leaked into body: ${JSON.stringify(leakage.items)}`,
+    );
+
+    console.log(
+      `WORD_STRUCTURE_OK 3-page two-column PDF kept 100% reading order (${order.kept}/${order.totalPairs}), 100% Hindi recall (${wordScore.correct}/${wordScore.total}), table intact, header/footer body leakage=${leakage.total}`,
+    );
+  } finally {
+    await page.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 // Edit PDF: a Hindi heading drawn as an image (as Word exports text with effects) becomes an
 // editable line; replacing it cleans the image's pixels and draws the new text.
 async function editTextImageCase(browser) {
@@ -1836,6 +1919,7 @@ try {
   if (wanted("editTextImageCase")) await editTextImageCase(browser);
   if (wanted("wordTableCase")) await wordTableCase(browser);
   if (wanted("wordAlignedTableCase")) await wordAlignedTableCase(browser);
+  if (wanted("wordStructureCase")) await wordStructureCase(browser);
   if (wanted("wordPictureCase")) await wordPictureCase(browser);
   if (wanted("scanTableCase")) await scanTableCase(browser);
   if (wanted("fillFormCase")) await fillFormCase(browser);
