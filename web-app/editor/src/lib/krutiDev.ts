@@ -18,6 +18,7 @@ const I_BEFORE_VIRAMA = /\u093F(\u094D[\u0915-\u0939\u0958-\u095F]\u093C?)/u;
  * - the mapping reads `pkS` as चै (it is चौ: च + ौ), so a zero-width space keeps `p` and `kS` apart;
  * - ि left before a virama in long clusters (स्टि्र, स्पि्ल) moves after the cluster (स्ट्रि, स्प्लि);
  * - `è` is the half form ध् (like `/`); the mapping reads it as a full ध (अधिासूचना);
+ * - `£` (ि with a reph) is left unread by the mapping (विनि£दष्ट for विनिर्दिष्ट);
  * - the reph key `Z` goes before the whole syllable it follows, conjuncts included: the mapping
  *   put it inside them (सामथर्य for सामर्थ्य), so it is placed with the reph mark instead.
  *
@@ -32,6 +33,8 @@ export function krutiDevToUnicode(text: string, context: string = text): string 
     .replace(/[“”]/gu, fontQuotes ? "'" : '"')
     .replace(/pkS/gu, 'p\u200BkS')
     .replace(/è/gu, '/')
+    // `£` is ि with a reph: typed before the letter it goes with, like `f` with `Z` after it.
+    .replace(/£(.)/gu, 'f$1Z')
     // `bZ` is ई, not a reph; `ZZ` is one reph (as the mapping reads them).
     .replace(/(?<!b)Z+/gu, REPH_MARK);
   const mapped = kru2uni(straightened).replace(/\u200B/gu, '').replace(new RegExp(`\u094D${REPH_MARK}`, 'gu'), REPH_MARK);

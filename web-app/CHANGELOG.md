@@ -1,5 +1,11 @@
 # Changelog
 
+## KrutiDev: `£` and sibling font styles, 28 November 2026
+
+### Fixed
+- KrutiDev `£` (ि with a reph) was left unread (विनि£दष्ट); it now reads like `f` + letter + `Z` (विनिर्दिष्ट).
+- A legacy font family judged from its text in one style now covers its sibling styles on the page, which may hold too few words to judge (an Income Tax form in Shiva-Medium whose Shiva-Medium-Italic notes came out as `nsf[k`, `;FkkfLFkfr`: now देखिए, यथास्थिति). Unrelated families are not affected; Shivaji stays a blocked font.
+
 ## Gazette of India: dates and numbers kept from the PDF, 28 November 2026
 
 ### Fixed

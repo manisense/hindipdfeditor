@@ -5,7 +5,7 @@ import { isDevanagariMark, reorderDevanagariMarks } from './devanagariMarks';
 import { PRE_BASE_MARK } from './fontGlyphText';
 import { fontHintFromPdfFont } from './fontMatch';
 import { krutiDevToUnicode } from './krutiDev';
-import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
+import { isLegacyDevanagariFontName, legacyFontSiblings, looksLikeLegacyDevanagariText } from './legacyFontDetector';
 import { CLUSTER_FILLER_MARK } from './pdfToUnicodeRepair';
 import { drawingOrderFontsOf, repairedFontsOf, sharedPdfDocument } from './sharedPdfDocument';
 import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
@@ -272,6 +272,10 @@ export async function extractEmbeddedTextLines(
           legacyFonts.add(fontName);
         }
       }
+      // Sibling styles of a legacy family hold the same encoding even with too few words to judge.
+      const names = new Map([...textByFont.keys()].map((fontName) => [fontName, fontNameOf(fontName) ?? fontName]));
+      const siblings = legacyFontSiblings([...legacyFonts].map((fontName) => names.get(fontName) ?? fontName), [...names.values()]);
+      for (const [fontName, name] of names) if (siblings.has(name)) legacyFonts.add(fontName);
     }
 
     for (const [itemIndex, item] of textContent.items.entries()) {

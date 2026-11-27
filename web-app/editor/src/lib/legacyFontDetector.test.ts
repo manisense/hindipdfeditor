@@ -4,6 +4,7 @@ import {
   detectLegacyFonts,
   isConvertibleLegacyFont,
   isLegacyDevanagariFontName,
+  legacyFontSiblings,
   LEGACY_TEXT_ENCODING_LABEL,
   looksLikeLegacyDevanagariText,
 } from "./legacyFontDetector";
@@ -65,5 +66,15 @@ describe('legacy font names seen in the 2026 corpus survey', () => {
   it('blocks Shree-Lipi (SHREE-DEV) fonts: detected, never decoded', () => {
     expect(isLegacyDevanagariFontName('CWIKXP+SHREE-DEV7-0714E-Bold')).toBe(true);
     expect(isConvertibleLegacyFont('CWIKXP+SHREE-DEV7-0714E-Bold')).toBe(false);
+  });
+});
+
+describe('legacyFontSiblings', () => {
+  it('extends a KrutiDev-style font to its sibling styles on the page (Shiva-Medium → Shiva-Medium-Italic)', () => {
+    expect([...legacyFontSiblings(['KPGOGH+Shiva-Medium'], ['KPGOGH+Shiva-Medium', 'KPGOJJ+Shiva-Medium-Italic', 'ABCDEE+Arial'])]).toEqual([
+      'KPGOGH+Shiva-Medium',
+      'KPGOJJ+Shiva-Medium-Italic',
+    ]);
+    expect([...legacyFontSiblings([], ['KPGOJJ+Shiva-Medium-Italic'])]).toEqual([]);
   });
 });
