@@ -23,3 +23,15 @@ Under Plan A (ADR 0009), untouched original text stays real PDF text, but every 
 - **Adding `wawoff2` to decode matched Latin `.woff2` fonts:** `wawoff2@2.0.1` has not been updated since May 2022; falling back to Plan A for the five `.woff2`-only matched families avoids taking on an unmaintained dependency while covering every `NotoSansDevanagari` and `NotoSerifDevanagari` edit in Plan B.
 - **Cluster-level `/ActualText` spans:** verified with Poppler 25.03.0 that GPOS `xOffset` jumps between adjacent `/Span` blocks caused `pdftotext` to split `प्रकृति` into `प्रकृ ति`; word-level `/ActualText` spans fixed it cleanly.
 - **Mobile Plan B:** out of scope; the Android app remains on Plan A (Phase 5 deferred).
+
+## Amendment — Typesetting edits in the document's own embedded font (27 November 2026)
+
+Still **off by default** inside the Plan B trial (`?planB=1` / `hpe.export.vectorText`), when an edit replaces a run on a page whose original font is an embedded TrueType/OpenType CID font (`Type0` / `CIDFontType2` / `Identity-H`, `FontFile2`), Plan B typesets the replacement in **that same embedded font program** instead of bundling Noto Sans Devanagari (`ownFont.ts`, `contentStreamText.ts`, `pdfTextRemoval.ts`, `pdfVectorText.ts`, `exportPdf.ts`).
+
+- **Font identification (`contentStreamText.ts`, `pdfTextRemoval.ts`, `exportPdf.ts`):** `removeGlyphsInRects` records the PDF font resource names and removed glyph counts per replacement mask (`removedFontsPerRect`). Candidates are ordered by removed glyph count descending and extracted lazily (only when Plan B is active) without modifying the page or source PDF.
+- **Strict fail-closed eligibility (`ownFont.ts`):** an embedded font is used only when all of the following hold; any failure falls back unchanged to the bundled Noto Plan B path:
+  1. Valid TrueType sfnt (`head`, `hhea`, `maxp`, `hmtx`, `loca`, `glyf`, `GSUB`).
+  2. `OS/2` `fsType` does not forbid embedding (bit 1, `0x0002`, restricted licence); installable (`0`), preview & print (`0x0004`), and editable (`0x0008`) are permitted because the font is already embedded in the same document.
+  3. `GSUB` contains a `deva` or `dev2` script whose `LangSys` references at least one active feature with valid lookups.
+  4. HarfBuzz loads the font at its native coordinates and shapes every line with no `.notdef` (GID 0), every whitespace glyph has positive advance, and every visible glyph (including recursive components of composite glyphs) has a real outline in `glyf`/`loca`.
+- **Non-mutating PDF emission (`pdfVectorText.ts`):** writes a **new** `Type0` / `CIDFontType2` / `Identity-H` font object (`HpeOwn*`) whose `FontDescriptor` `/FontFile2` reuses the original embedded stream's indirect `PDFRef` directly (zero duplicate font bytes and zero mutation of the original font dictionary used by untouched text), with `/W` widths from the font's `hmtx`, a complete `ToUnicode` CMap for every written GID, and word-level `/ActualText` spans. Size, position, colour, `scaleX`, italic shear, and faux-bold stroke match the existing Plan B path.

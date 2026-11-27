@@ -1,5 +1,14 @@
 # Changelog
 
+## Plan B trial: typeset Hindi edits in the document's own embedded font, 27 November 2026
+
+### Added
+- Review fix: the own font is used only when the edit keeps its weight (bold or not, from OS/2 usWeightClass) and serif style (PANOSE); an edit the user turns bold or sets in the serif face gets the bundled font they chose. Built by Gemini 4 Neon, reviewed and re-verified here (gate 26/26 with Plan B, 24/24 without).
+- **Own-font typesetting inside the opt-in Plan B trial (`?planB=1` / `hpe.export.vectorText`, off by default; ADR 0021 amendment):** when an edit replaces a run drawn with an embedded TrueType/OpenType CID font (`Type0` / `CIDFontType2` / `Identity-H`, `FontFile2`), Plan B now inspects and shapes the replacement directly in that embedded font (`ownFont.ts`, `contentStreamText.ts`, `pdfTextRemoval.ts`, `pdfVectorText.ts`, `exportPdf.ts`) instead of adding bundled Noto Sans Devanagari.
+- Strict fail-closed checks fall back unchanged to the bundled Noto Plan B path whenever the embedded font lacks active `GSUB` Devanagari features (`deva`/`dev2`), sets OS/2 `fsType` bit 1 (restricted licence), produces `.notdef` (GID 0), or omits a needed glyph outline (or composite component outline) in `glyf`/`loca`.
+- Emits a new `Type0` / `CIDFontType2` / `Identity-H` font object (`HpeOwn*`) that reuses the original `FontFile2` indirect stream reference without modifying the original font dictionary, with `/W` widths from `hmtx`, a complete `ToUnicode` CMap for every written GID, and word-level `/ActualText` spans.
+- Added unit tests (`ownFont.test.ts`, `contentStreamText.test.ts`), a synthetic retained-GID subset fixture generator (`make-subset-own-font-fixture.mjs`), and a `PLAN_B=1` edit-quality gate case (`planBOwnFontCase`) covering both own-font reuse and missing-glyph fallback.
+
 ## Editor: lines to check, 27 November 2026
 
 ### Added

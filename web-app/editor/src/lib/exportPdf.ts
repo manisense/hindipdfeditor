@@ -393,6 +393,7 @@ export async function exportPdf(
   // Text is deleted under replacements and whiteouts; only replacements get a cleaned patch where
   // deletion could not reach, since a whiteout is painted over anyway.
   const removalMasks = new Map<number, MaskEdit[]>();
+  const removedFontsByMaskId = new Map<string, { pageIndex: number; fonts: Map<string, number> }>();
   const needsPatch = new Map<number, Set<number>>();
   for (const page of editedPages) {
     const masks = page.edits.filter((e): e is MaskEdit => e.type === 'mask' && removesTextUnder(e));
@@ -403,7 +404,12 @@ export async function exportPdf(
       continue;
     }
     const userRects = masks.map((rect) => toUserRect(editorToUser(page), rect));
-    const { removedPerRect, unresolvedRects } = removePageText(out, page.pageIndex, userRects);
+    const { removedPerRect, removedFontsPerRect, unresolvedRects } = removePageText(out, page.pageIndex, userRects);
+    for (let i = 0; i < masks.length; i++) {
+      if (removedFontsPerRect[i].size > 0) {
+        removedFontsByMaskId.set(masks[i].id, { pageIndex: page.pageIndex, fonts: removedFontsPerRect[i] });
+      }
+    }
     needsPatch.set(
       page.pageIndex,
       new Set(patchable.filter((i) => removedPerRect[i] === 0 || unresolvedRects.has(i))),
@@ -436,7 +442,30 @@ export async function exportPdf(
   if (useVectorText && textEdits.length > 0) {
     const layouts = await measureTextEditLayouts(textEdits);
     try {
-      const { prepareVectorTextPlan } = await import('./pdfVectorText');
+      const [{ prepareVectorTextPlan }, { extractEmbeddedFontCandidate }] = await Promise.all([
+        import('./pdfVectorText'),
+        import('./ownFont'),
+      ]);
+      const candidatesForEdit = (edit: TextEdit) => {
+        if (!loaded || !edit.maskId) return undefined;
+        const removed = removedFontsByMaskId.get(edit.maskId);
+        if (!removed || removed.fonts.size === 0) return undefined;
+        const pdfPage = out.getPage(removed.pageIndex);
+        const orderedNames = [...removed.fonts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([name]) => name);
+        const candidates = [];
+        const seenRefs = new Set<string>();
+        for (const name of orderedNames) {
+          const candidate = extractEmbeddedFontCandidate(out, pdfPage, name);
+          if (!candidate) continue;
+          const refKey = candidate.fontFileRef.toString();
+          if (seenRefs.has(refKey)) continue;
+          seenRefs.add(refKey);
+          candidates.push(candidate);
+        }
+        return candidates.length > 0 ? candidates : undefined;
+      };
       vectorPlan = await prepareVectorTextPlan(
         out,
         [...layouts.values()].map((layout) => ({
@@ -448,6 +477,7 @@ export async function exportPdf(
           color: layout.color,
           scaleX: layout.edit.scaleX,
           strokeEm: layout.edit.strokeEm,
+          ownFontCandidates: candidatesForEdit(layout.edit),
           lines: layout.editorLines,
         })),
       );
