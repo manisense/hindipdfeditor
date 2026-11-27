@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { borrowReadings, clusterStarts, learnGlyphs, repairText, spacedLike } from './glyphRepair';
+import { borrowReadings, clusterStarts, learnGlyphs, ocrConfirmsRepair, repairText, spacedLike } from './glyphRepair';
 
 // Placeholders for three unmapped glyphs: a reph, a pre-base ि and the द्य conjunct.
 const REPH = '\u{F0000}';
@@ -12,6 +12,16 @@ describe('clusterStarts', () => {
   it('starts a syllable at each consonant or vowel, keeping conjuncts and signs together', () => {
     expect(clusterStarts('धर्म')).toEqual([0, 1]);
     expect(clusterStarts('विद्यालय')).toEqual([0, 2, 6, 7]);
+  });
+});
+
+describe('ocrConfirmsRepair', () => {
+  const map = new Map([[I, { text: 'ि', shift: 1 }]]);
+
+  it('accepts repaired words found in OCR of the line, ignoring spaces and zero-width joiners', () => {
+    // Tesseract writes दिल्‍ली with a zero-width joiner; the PDF's own text has none.
+    expect(ocrConfirmsRepair(`नई ${I}दल्ली, 12 फरवरी`, 'नई दिल्\u200Dली, 2 फरवरी', map, isUnknown)).toBe(true);
+    expect(ocrConfirmsRepair(`नई ${I}दल्ली`, 'नई दल्ली', map, isUnknown)).toBe(false);
   });
 });
 

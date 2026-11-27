@@ -98,6 +98,27 @@ function repairWord(
   return rebuilt;
 }
 
+/**
+ * Whether OCR of a line confirms every repaired word of its PDF text: each word that held an
+ * unmapped glyph must appear, once repaired, in the OCR text. Spaces and zero-width joiners are
+ * ignored on the OCR side (Tesseract writes दिल्‍ली with a joiner the PDF does not have).
+ *
+ * @param drawn The line's PDF text with glyph placeholders.
+ * @param ocr OCR of the same line.
+ */
+export function ocrConfirmsRepair(
+  drawn: string,
+  ocr: string,
+  readings: ReadonlyMap<string, GlyphReading>,
+  isPlaceholder: (char: string) => boolean,
+): boolean {
+  const compact = ocr.normalize('NFC').replace(/[\s\u200B-\u200D\uFEFF]+/gu, '');
+  return drawn
+    .split(/\s+/u)
+    .filter((word) => [...word].some(isPlaceholder))
+    .every((word) => compact.includes(repairText(word, readings, isPlaceholder).normalize('NFC')));
+}
+
 /** Known syllables taken on each side of a glyph to find it in the OCR line. */
 const CONTEXT_SYLLABLES = 2;
 /** Fewest known characters around a glyph for its context to be trusted. */
