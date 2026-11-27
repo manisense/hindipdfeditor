@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { borrowReadings, clusterStarts, learnGlyphs, ocrConfirmsRepair, repairText, spacedLike } from './glyphRepair';
+import { borrowReadings, clusterStarts, learnGlyphs, ocrConfirmsRepair, repairText, spacedLike, unresolvedLineText } from './glyphRepair';
 
 // Placeholders for three unmapped glyphs: a reph, a pre-base ि and the द्य conjunct.
 const REPH = '\u{F0000}';
@@ -22,6 +22,14 @@ describe('ocrConfirmsRepair', () => {
     // Tesseract writes दिल्‍ली with a zero-width joiner; the PDF's own text has none.
     expect(ocrConfirmsRepair(`नई ${I}दल्ली, 12 फरवरी`, 'नई दिल्\u200Dली, 2 फरवरी', map, isUnknown)).toBe(true);
     expect(ocrConfirmsRepair(`नई ${I}दल्ली`, 'नई दल्ली', map, isUnknown)).toBe(false);
+  });
+});
+
+describe('unresolvedLineText', () => {
+  it("prefers OCR of the line's own area, else keeps the repaired PDF text without unknown glyphs", () => {
+    expect(unresolvedLineText(`पद ${REPH}भती`, 'पद भर्ती', isUnknown)).toEqual({ text: 'पद भर्ती', fromOcr: true });
+    expect(unresolvedLineText(`पद ${REPH}भती`, undefined, isUnknown)).toEqual({ text: 'पद भती', fromOcr: false });
+    expect(unresolvedLineText(`${REPH}`, undefined, isUnknown)).toBeNull();
   });
 });
 

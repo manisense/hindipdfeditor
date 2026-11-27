@@ -53,6 +53,7 @@ import {
   isGlyphPlaceholder,
   learnDocumentGlyphs,
   ocrConfirmsRepair,
+  unresolvedLineText,
   ocrLineFor,
   pairLinesWithOcr,
   repairText,
@@ -424,16 +425,24 @@ async function repairedEmbeddedLines(
   const unresolved = lines.filter(
     (line, i) => hasGlyphPlaceholder(line.text) || !confirmed(line, withGlyphs[i].text),
   );
-  const repaired = lines
+  const kept = lines
     .filter((line) => !unresolved.some((open) => sameBand(open, line)))
     .map((line) => {
       const ocr = hasDevanagari(line.text) ? ocrFor(line) : null;
       return ocr ? { ...line, text: spacedLike(line.text, ocr.text) } : line;
     });
-  const hindi = repaired.filter((line) => hasDevanagari(line.text));
+  const hindi = kept.filter((line) => hasDevanagari(line.text));
   if (hindi.length === 0) return null;
   if (isEmbeddedDevanagariCorrupted(hindi.map((line) => line.text).join(" "), ocrText)) return null;
-  return repaired;
+  // A line of an unresolved row takes OCR of its own area, read sharply: page OCR merges or
+  // misses rows of dense text, which would lose the line.
+  const reread = lines
+    .filter((line) => unresolved.some((open) => sameBand(open, line)) && hasDevanagari(line.text))
+    .flatMap((line) => {
+      const kept = unresolvedLineText(line.text, ocrLineFor(line, sharp)?.text, isGlyphPlaceholder);
+      return kept ? [{ ...line, text: kept.text, source: kept.fromOcr ? ("ocr" as const) : ("embedded-degraded" as const) }] : [];
+    });
+  return [...kept, ...reread];
 }
 
 /** Render scale for re-reading lines, in px per pt: small print needs it, page images are 2. */
