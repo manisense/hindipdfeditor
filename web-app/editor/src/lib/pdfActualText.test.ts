@@ -35,6 +35,28 @@ describe('drawnGlyphs', () => {
     ]);
   });
 
+  it('marks the first glyph drawn after the text matrix moves to another line', () => {
+    const ops: MarkedContentOps = { ...OPS, setFont: 5, setTextMatrix: 6, moveText: 7 };
+    const fnArray = [5, 6, 1, 6, 1, 6, 1, 7, 1];
+    const argsArray = [
+      ['F1', 10],
+      [[1, 0, 0, -1, 10, 100]],
+      [[glyph('और')]],
+      [[1, 0, 0, -1, 30, 101]], // same line (a superscript-sized nudge)
+      [[glyph(' ')]],
+      [[1, 0, 0, -1, 10, 113]], // next line
+      [[glyph('प्र')]],
+      [5, 0],
+      [[glyph('या')]],
+    ];
+    expect(drawnGlyphs(fnArray, argsArray, [], ops)).toEqual([
+      { text: 'और', section: null },
+      { text: ' ', section: null },
+      { text: 'प्र', section: null, lineStart: true },
+      { text: 'या', section: null },
+    ]);
+  });
+
   it('gives up when the sections do not match the content stream', () => {
     expect(drawnGlyphs([3, 4], [['Span', null], null], [{ tag: 'OC', actualText: null }], OPS)).toBeNull();
     expect(drawnGlyphs([3, 4], [['Span', null], null], [], OPS)).toBeNull();
@@ -42,6 +64,20 @@ describe('drawnGlyphs', () => {
 });
 
 describe('applyActualText', () => {
+  it('moves a line-start ligature pdf.js left at the end of the line above to the next item', () => {
+    // pdf.js counts any glyph whose text holds a sign (प्र) as a zero-width mark and skips its
+    // line-break check, so the glyph ends the previous line's item.
+    const glyphs = [
+      { text: 'और', section: null },
+      { text: ' ', section: null },
+      { text: 'प्र', section: null, lineStart: true },
+      { text: 'क्रिया', section: null },
+    ];
+    expect(applyActualText(['और प्र', 'क्रिया'], glyphs, [])?.items).toEqual(['और ', 'प्रक्रिया']);
+    // A glyph that starts its own item is already in place.
+    expect(applyActualText(['और ', 'प्रक्रिया'], glyphs, [])?.items).toEqual(['और ', 'प्रक्रिया']);
+  });
+
   it('puts each section text in place of its glyphs, across items and around added spaces', () => {
     // अध्याय drawn as अ, [ध्य (unmapped), ा] in a span, य; the span's glyphs fall in two items.
     const glyphs = [
