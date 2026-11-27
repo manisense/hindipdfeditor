@@ -12,7 +12,8 @@
     "lint": "eslint src --max-warnings 0",
     "deploy": "node ../scripts/wrangler-project.mjs deploy",
     "deploy:ci": "npx wrangler deploy && (node ../scripts/indexnow.mjs || echo 'IndexNow submission failed; the deploy itself succeeded')",
-    "copy:assets": "node scripts/copy-ocr-assets.mjs && node scripts/copy-pdfjs-assets.mjs"
+    "copy:assets": "node scripts/copy-ocr-assets.mjs && node scripts/copy-pdfjs-assets.mjs",
+    "postinstall": "node scripts/patch-pdfjs.mjs"
   },
   "dependencies": {
     "@anthro-ai/krutidev-unicode": "0.1.0",

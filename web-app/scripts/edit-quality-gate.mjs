@@ -631,7 +631,8 @@ async function glyphRepairCase(browser) {
   await openPdf(page, file, 0);
   const expected = [
     "धर्म और क्षेत्र में गुरुजी ने ज्ञान दिया।",
-    "धर्म → reph (र्) | क्षेत्र → क्ष",
+    // The whole label row (pdf.js used to cut it after "क्ष", measuring conjuncts as 0 wide).
+    "धर्म → reph (र्) | क्षेत्र → क्ष conjunct +े (matra above baseline) + bonus त्र conjunct | गुरुजी →ु",
     "विद्यालय में सूर्य की रोशनी आती है।",
   ];
   const read = [];

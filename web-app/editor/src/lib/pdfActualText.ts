@@ -21,12 +21,6 @@ export type MarkedContentOps = {
   beginMarkedContent: number;
   beginMarkedContentProps: number;
   endMarkedContent: number;
-  /** Text positioning operators, read to tell where a new line starts (optional). */
-  setFont?: number;
-  setTextMatrix?: number;
-  moveText?: number;
-  setLeadingMoveText?: number;
-  nextLine?: number;
 };
 
 /** One glyph drawn on the page, in drawing order. */
@@ -35,8 +29,6 @@ export type DrawnGlyph = {
   text: string;
   /** The `/ActualText` section it is drawn in (index into the page's `BDC`s), or null. */
   section: number | null;
-  /** Set when it is the first glyph drawn after the text moved to another line. */
-  lineStart?: true;
 };
 
 const NUL = String.fromCharCode(0);
@@ -98,28 +90,8 @@ export function drawnGlyphs(
   const glyphs: DrawnGlyph[] = [];
   const open: (number | null)[] = [];
   let next = 0;
-  // Text line position (user space y of the line matrix), its vertical scale, and the font size.
-  let lineY: number | null = null;
-  let scaleY = 1;
-  let fontSize = 0;
-  let lastLineY: number | null = null;
-  let moved = false;
   for (const [i, fn] of fnArray.entries()) {
     const args = argsArray[i] as unknown[] | null;
-    if (fn === ops.setFont && typeof args?.[1] === 'number') fontSize = Math.abs(args[1]);
-    if (fn === ops.setTextMatrix) {
-      const m = (Array.isArray(args) && args.length === 6 ? args : (args?.[0] as ArrayLike<unknown> | undefined)) ?? [];
-      if (typeof m[5] === 'number' && typeof m[3] === 'number') {
-        lineY = m[5];
-        scaleY = Math.hypot(Number(m[2]) || 0, m[3]) || 1;
-        moved = true;
-      }
-    }
-    if ((fn === ops.moveText || fn === ops.setLeadingMoveText) && typeof args?.[1] === 'number' && lineY !== null) {
-      lineY += args[1] * scaleY;
-      moved = true;
-    }
-    if (fn === ops.nextLine) lineY = null;
     if (fn === ops.beginMarkedContent) open.push(open.at(-1) ?? null);
     if (fn === ops.beginMarkedContentProps) {
       const start = starts[next];
@@ -133,12 +105,7 @@ export function drawnGlyphs(
     for (const [k, glyph] of shown.entries()) {
       if (!glyph || typeof glyph !== 'object') continue;
       const text = glyph.unicode ?? '';
-      const drawn: DrawnGlyph = { text: isCancelledSpace(text, glyph.width, shown[k + 1]) ? '' : text, section: open.at(-1) ?? null };
-      // A move of more than half the font size up or down is a new line (superscripts move less).
-      if (moved && lineY !== null && lastLineY !== null && Math.abs(lineY - lastLineY) > (fontSize * scaleY) / 2) drawn.lineStart = true;
-      if (moved) lastLineY = lineY;
-      moved = false;
-      glyphs.push(drawn);
+      glyphs.push({ text: isCancelledSpace(text, glyph.width, shown[k + 1]) ? '' : text, section: open.at(-1) ?? null });
     }
   }
   return next === starts.length ? glyphs : null;
@@ -213,8 +180,6 @@ export function applyActualText(
   let previous: number | null = null;
   // The section's text, until the first character of its glyphs is found.
   let pending: string | null = null;
-  // Where line-start glyphs that hold a sign were found (see below).
-  const lineStarts: number[] = [];
   for (const glyph of glyphs) {
     const section = glyph.section !== null && fixable.has(glyph.section) ? glyph.section : null;
     if (section !== previous) {
@@ -231,7 +196,6 @@ export function applyActualText(
           at++;
         }
       }
-      if (glyph.lineStart && char === [...glyph.text][0] && /\p{Mn}/u.test(glyph.text)) lineStarts.push(at);
       // pdf.js writes compatibility characters (the ﬁ ligature) decomposed in its text.
       const expected = chars[at]?.char === char ? [char] : [...char.normalize('NFKC')];
       if (!expected.every((part, k) => chars[at + k]?.char === part)) {
@@ -252,15 +216,6 @@ export function applyActualText(
     }
   }
   if ((pending !== null && !isSpace(pending)) || chars.slice(at).some(({ char }) => !isSpace(char))) return null;
-  // pdf.js takes any glyph whose text holds a combining sign (a ligature such as प्र) for a
-  // zero-width mark and skips its line-break check, so a line that starts with one has it at the
-  // end of the line above's item. Such a glyph, and what follows it in that item, opens the next.
-  for (const start of lineStarts) {
-    const item = chars[start].item;
-    const first = chars.findIndex((c) => c.item === item && !isSpace(c.char));
-    if (first === start || item + 1 >= items.length) continue;
-    for (let i = start; i < chars.length && chars[i].item === item; i++) chars[i].item = item + 1;
-  }
   if (glyphs.some((glyph) => isSpace(glyph.text))) {
     const nearestLetter = (from: number, step: number) => {
       for (let i = from; i >= 0 && i < chars.length; i += step) if (!isSpace(chars[i].char)) return chars[i].char;
