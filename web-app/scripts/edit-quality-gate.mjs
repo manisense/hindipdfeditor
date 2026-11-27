@@ -719,6 +719,38 @@ async function spellCheckCase(browser) {
   await page.close();
 }
 
+async function lineCheckCase(browser) {
+  // A digital page read straight from its text has nothing to check.
+  const digital = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  await openPdf(digital, path.join(fixtures, "devanagari-fixture.pdf"), 0);
+  await digital.waitForTimeout(1000);
+  assert.equal(await digital.getByRole("button", { name: /to check$/ }).count(), 0, "no lines to check on a digital page");
+  await digital.close();
+  // A scan is read by OCR: every line is listed, one at a time, highlighted on the page.
+  const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
+  await openPdf(page, path.join(here, "../benchmark/notice-scanned.pdf"), 0);
+  const chip = page.getByRole("button", { name: /lines? to check$/ });
+  await chip.waitFor({ timeout: 60000 });
+  const total = Number((await chip.innerText()).match(/\d+/)[0]);
+  assert.ok(total >= 5, "a scanned page lists its OCR lines: " + total);
+  await chip.click();
+  const panel = page.locator(".line-check");
+  assert.match(await panel.innerText(), /Read by OCR/, "the panel says where the text came from");
+  assert.equal(await page.locator(".ocr-highlight-layer__box--active").count(), 1, "one line is highlighted");
+  await page.waitForTimeout(500);
+  const active = await page.locator(".ocr-highlight-layer__box--active").boundingBox();
+  const sheet = await panel.boundingBox();
+  assert.ok(active.y >= 0 && active.y + active.height <= sheet.y, "the highlighted line is in view above the panel");
+  const first = await panel.locator(".line-check__text").innerText();
+  await page.getByRole("button", { name: `Next 2/${total}` }).click();
+  assert.notEqual(await panel.locator(".line-check__text").innerText(), first, "Next moves to another line");
+  await page.getByRole("button", { name: "Edit this line" }).click();
+  await page.locator("[data-edit-id]").first().waitFor({ timeout: 20000 });
+  assert.equal(await panel.count(), 0, "the panel steps aside while the line is edited");
+  console.log(`LINE_CHECK_OK ${total} OCR lines listed on a scan, none on a digital page; highlighted in view, Next and Edit work at 390 px`);
+  await page.close();
+}
+
 async function signCase(browser) {
   const file = path.join(fixtures, "multipage-fixture.pdf");
   const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
@@ -1495,6 +1527,7 @@ try {
   if (wanted("glyphRepairCase")) await glyphRepairCase(browser);
   if (wanted("findReplaceFlowCase")) await findReplaceFlowCase(browser);
   if (wanted("spellCheckCase")) await spellCheckCase(browser);
+  if (wanted("lineCheckCase")) await lineCheckCase(browser);
   if (wanted("signCase")) await signCase(browser);
   if (wanted("signPositionsCase")) await signPositionsCase(browser);
   if (wanted("convertersCase")) await convertersCase(browser);

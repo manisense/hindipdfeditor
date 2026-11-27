@@ -158,6 +158,11 @@ export function repairedToUnicode(existing: ReadonlyMap<number, string>, fromFon
   return repaired;
 }
 
+/** A font's BaseFont as pdf.js names it: `#20` and other escapes decoded, no leading slash. */
+export function baseFontName(value: unknown): string {
+  return value instanceof PDFName ? value.decodeText() : '';
+}
+
 /**
  * Returns bytes whose mis-mapped Devanagari ToUnicode maps are rebuilt from the embedded fonts,
  * or the input unchanged. Never throws: any failure returns the input.
@@ -196,7 +201,7 @@ export async function repairMisMappedToUnicode(bytes: Uint8Array): Promise<ToUni
       object.set(PDFName.of('ToUnicode'), ref);
       changed = true;
       if (repaired.size === existing.size && [...existing].every(([code, text]) => code === 0 || repaired.get(code) === text)) continue;
-      const name = String(object.get(PDFName.of('BaseFont')) ?? '').replace(/^\//u, '');
+      const name = baseFontName(object.get(PDFName.of('BaseFont')));
       repairedFonts.push(name);
       // Re-judged here: a map can both name wrong letters and keep ि in drawing order.
       if ([...repaired].every(([gid, letters]) => existing.get(gid) === letters || !existing.has(gid) || /[\uE0F0\uE0F1]/u.test(letters))) drawingOrderFonts.push(name);

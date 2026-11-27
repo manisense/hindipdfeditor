@@ -88,6 +88,8 @@ export type OcrLine = {
   baselineYPt?: number;
   /** Look of the original font, when known, so replacement text can match it. */
   font?: FontHint;
+  /** Read through a font whose text map was rebuilt from the font itself (web ADR 0022). */
+  repaired?: true;
 };
 
 export type FontHint = {

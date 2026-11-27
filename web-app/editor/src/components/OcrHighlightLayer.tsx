@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 import { ptSizeToDp, ptToDp } from '../lib/coordinateMath';
 import type { OcrLine } from '../state/editStore';
 import './OcrHighlightLayer.css';
@@ -7,6 +9,8 @@ type Props = {
   viewWidthPx: number;
   pageWidthPt: number;
   visible?: boolean;
+  /** The line being checked (see `LineCheckPanel`): outlined and scrolled into view. */
+  activeLineId?: string;
 };
 
 /**
@@ -18,7 +22,12 @@ export function OcrHighlightLayer({
   viewWidthPx,
   pageWidthPt,
   visible = true,
+  activeLineId,
 }: Props) {
+  const activeRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: 'center', inline: 'nearest' });
+  }, [activeLineId]);
   if (!visible || lines.length === 0) return null;
 
   return (
@@ -29,7 +38,8 @@ export function OcrHighlightLayer({
         return (
           <div
             key={line.id}
-            className="ocr-highlight-layer__box"
+            ref={line.id === activeLineId ? activeRef : undefined}
+            className={`ocr-highlight-layer__box${line.id === activeLineId ? ' ocr-highlight-layer__box--active' : ''}`}
             style={{ left: xDp, top: yDp, width: wDp, height: hDp }}
             title={line.text}
           />

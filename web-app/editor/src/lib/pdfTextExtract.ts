@@ -6,7 +6,7 @@ import { PRE_BASE_MARK } from './fontGlyphText';
 import { fontHintFromPdfFont } from './fontMatch';
 import { krutiDevToUnicode } from './krutiDev';
 import { isLegacyDevanagariFontName, looksLikeLegacyDevanagariText } from './legacyFontDetector';
-import { drawingOrderFontsOf, sharedPdfDocument } from './sharedPdfDocument';
+import { drawingOrderFontsOf, repairedFontsOf, sharedPdfDocument } from './sharedPdfDocument';
 import { glyphPlaceholder, hasGlyphPlaceholder, isGlyphPlaceholder, repairText, type GlyphReading } from './glyphRepair';
 import { applyActualText, drawnGlyphs, markedContentStarts, type ActualTextResult } from './pdfActualText';
 import { imageRectsFromOperators, pictureBoxes, textImageRows, type PtBox } from './pdfImageRects';
@@ -31,6 +31,8 @@ export type EmbeddedTextRun = {
   order?: number;
   /** pdf.js measured the run as zero width (a ligature glyph without a width, seen in Word files). */
   unmeasured?: boolean;
+  /** Drawn with a font whose text map was rebuilt from the font itself (web ADR 0022). */
+  repaired?: boolean;
 };
 
 const LINE_Y_TOLERANCE_RATIO = 0.55;
@@ -211,6 +213,7 @@ export async function extractEmbeddedTextLines(
     // Chrome output merged by other tools (no Skia producer left) shows as a map in drawing order:
     // it leaves gaps inside words but draws its spaces, so only drawn spaces break its Hindi words.
     const repairedFonts = (await drawingOrderFontsOf(pdfBytes)).length > 0;
+    const repairedNames = new Set(await repairedFontsOf(pdfBytes));
     if (unmapped.length > 0 || skia || hasMarkedContent || repairedFonts) {
       // Skia pages without /ActualText (Chrome's Save as PDF) still give their drawn spaces.
       const fixed = await withActualText(pdfBytes, pageIndex, operators.fnArray, operators.argsArray, itemTexts, skia || repairedFonts);
@@ -300,6 +303,7 @@ export async function extractEmbeddedTextLines(
         hPt: fontHeightPt,
         hasEol: item.hasEOL,
         unmeasured: item.width === 0 && DEVANAGARI_LETTER.test(text),
+        ...(repairedNames.has(fontNameOf(item.fontName) ?? '') ? { repaired: true } : {}),
         leadingSpace: /^\s/u.test(normalized),
         trailingSpace: /\s$/u.test(normalized) || Boolean(spaceAfter?.[itemIndex]),
         baselineYPt: baselineY,
@@ -401,6 +405,7 @@ export async function extractEmbeddedTextLines(
       source: degraded ? 'embedded-degraded' : 'embedded',
       ...(line.baselineYPt !== undefined ? { baselineYPt: line.baselineYPt } : {}),
       ...(line.font ? { font: line.font } : {}),
+      ...(line.repaired ? { repaired: true as const } : {}),
     }));
   } finally {
     page.cleanup();
@@ -504,7 +509,14 @@ export function withUnmeasuredRunsJoined(runs: EmbeddedTextRun[]): EmbeddedTextR
     const next = runs[i + 1];
     const sameBaseline = next && Math.abs((next.baselineYPt ?? next.yPt) - (run.baselineYPt ?? run.yPt)) < run.hPt * 0.25;
     if (run.unmeasured && !run.trailingSpace && next && sameBaseline && !next.leadingSpace && next.xPt >= run.xPt - 0.5 && next.xPt - run.xPt < run.hPt) {
-      runs[i + 1] = { ...next, text: run.text.trimEnd() + next.text, xPt: run.xPt, wPt: next.xPt + next.wPt - run.xPt, leadingSpace: run.leadingSpace };
+      runs[i + 1] = {
+        ...next,
+        text: run.text.trimEnd() + next.text,
+        xPt: run.xPt,
+        wPt: next.xPt + next.wPt - run.xPt,
+        leadingSpace: run.leadingSpace,
+        ...(run.repaired || next.repaired ? { repaired: true } : {}),
+      };
       continue;
     }
     out.push(run);
@@ -651,6 +663,7 @@ export function clusterRunsIntoLines(
       trailingSpace: false,
       baselineYPt: widest.baselineYPt,
       font: widest.font,
+      ...(ordered.some((run) => run.repaired) ? { repaired: true } : {}),
     };
   }).sort((a, b) => {
     const centerDelta = a.yPt + a.hPt / 2 - (b.yPt + b.hPt / 2);

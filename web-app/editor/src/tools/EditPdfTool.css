@@ -273,3 +273,20 @@
   white-space: nowrap;
 }
 
+
+.app__check-chip {
+  display: flex;
+  grid-column: 1 / -1;
+}
+
+/* OCR / detection category colour on the icon only; the brand stays the action colour. */
+.app__check-chip-icon {
+  color: var(--hpe-teal);
+}
+
+.app__source-note {
+  color: var(--muted);
+  font-size: 12px;
+  grid-column: 1 / -1;
+  margin: 0;
+}

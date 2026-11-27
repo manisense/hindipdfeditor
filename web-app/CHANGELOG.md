@@ -1,5 +1,13 @@
 # Changelog
 
+## Editor: lines to check, 27 November 2026
+
+### Added
+- When a page's text was read by OCR, or is PDF text that OCR could not confirm, the editor shows "N lines to check" under the tools. It steps through those lines top to bottom: each is outlined on the page and scrolled to the middle, and a card at the bottom of the screen shows its text, where it came from ("Read by OCR from the page image. Check names and numbers."), Next, Edit this line and Done. Pages read straight from the PDF show nothing. Pages whose Hindi was read through fonts repaired from themselves (web ADR 0022) say so in one line instead: that text is exact, and listing every line would be noise (RRB p2: all 73 Hindi lines; the word list lacks too many formal words to pick some out). New gate case `lineCheckCase`.
+
+### Fixed
+- Repaired fonts were recorded under their escaped PDF names (`Nirmala#20UI`), so they never matched pdf.js's names; they are now decoded.
+
 ## PDF to Word: empty boxes are reported, not read as letters, 27 November 2026
 
 ### Fixed
