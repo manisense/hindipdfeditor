@@ -247,8 +247,9 @@ export async function extractEmbeddedTextLines(
     let degraded = false;
 
     const legacyFonts = new Set<string>();
+    // Each legacy font's text on the page, which judges its quote glyphs (see krutiDevToUnicode).
+    const textByFont = new Map<string, string>();
     if (options.convertLegacy) {
-      const textByFont = new Map<string, string>();
       for (const item of textContent.items) {
         if ('str' in item) textByFont.set(item.fontName, `${textByFont.get(item.fontName) ?? ''} ${item.str}`);
       }
@@ -264,7 +265,7 @@ export async function extractEmbeddedTextLines(
       if (!('str' in item)) continue;
       const str = itemTexts[itemIndex];
       const sanitized = sanitizeEmbeddedText(
-        legacyFonts.has(item.fontName) ? krutiDevToUnicode(str) : str,
+        legacyFonts.has(item.fontName) ? krutiDevToUnicode(str, textByFont.get(item.fontName)) : str,
       );
       if (sanitized.removedCodePoints > sanitized.removedPrivateUseCodePoints) degraded = true;
 

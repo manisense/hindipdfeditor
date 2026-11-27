@@ -1,5 +1,12 @@
 # Changelog
 
+## KrutiDev quotes, spaced font names and Shree-Lipi, 27 November 2026
+
+### Fixed
+- KrutiDev curly quotes: when a document uses the font's own curly-quote glyphs (curly double quotes inside words, `izns”k`), ” and “ now read as श and ’ and ‘ as ष; AutoCorrected text (the CISF notice: ’ = श) is unchanged. Judged from the font's whole text on the page (PDF) or the document's KrutiDev runs (.docx). Public corpus files (outside git, first 4 pages): UP RTI notice unknown words 12.3 % → 9.9 % (wrong ष words 31 → 11, the rest genuine: परिभाषाएं, ज्येष्ठ), BPSC 17.1 % → 12.2 %, Himachal gazette and Delhi University notice slightly better.
+- Legacy font names are compared without spaces, hyphens or underscores, so "Kruti Dev 010" is recognised by name.
+- Shree-Lipi fonts (SHREE-DEV) are now detected as a legacy encoding and blocked like Chanakya: an SBI recruitment ad used to come out of PDF to Word as Latin junk (`^maVr\` ñQ>oQ> ~¢H$`); it is now read with OCR (भारतीय स्टेट बैंक …).
+
 ## PDF to Word: no empty-box warning for glyph 0 mapped to U+0000, 27 November 2026
 
 ### Fixed

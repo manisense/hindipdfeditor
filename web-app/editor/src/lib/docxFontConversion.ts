@@ -151,8 +151,10 @@ function convertKrutiPieces(doc: Document, allPieces: Piece[]) {
     }
   }
   rejoinSplitSyllables(pieces, () => LEADING_KRUTI_MARKS);
+  // Which curly quotes stand for श and ष is judged from the document's KrutiDev text as a whole.
+  const context = pieces.map((piece) => piece.text.textContent ?? "").join(" ");
   for (const piece of pieces) {
-    setText(piece.text, krutiDevToUnicode(piece.text.textContent ?? ""));
+    setText(piece.text, krutiDevToUnicode(piece.text.textContent ?? "", context));
     setRunFont(doc, piece.run, UNICODE_HINDI_FONT, "toComplex");
   }
   return { converted: pieces.length, unsupported: [] as string[] };

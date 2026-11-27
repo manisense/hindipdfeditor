@@ -1,8 +1,9 @@
 import { PDFDocument, PDFName } from "@cantoo/pdf-lib";
-import { expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   detectLegacyFonts,
   isConvertibleLegacyFont,
+  isLegacyDevanagariFontName,
   LEGACY_TEXT_ENCODING_LABEL,
   looksLikeLegacyDevanagariText,
 } from "./legacyFontDetector";
@@ -53,4 +54,16 @@ it("converts only KrutiDev-family encodings", () => {
   expect(isConvertibleLegacyFont(LEGACY_TEXT_ENCODING_LABEL)).toBe(true);
   expect(isConvertibleLegacyFont("Chanakya")).toBe(false);
   expect(isConvertibleLegacyFont("unknown (font inspection failed)")).toBe(false);
+});
+
+describe('legacy font names seen in the 2026 corpus survey', () => {
+  it('matches KrutiDev written with spaces (Word: "Kruti Dev 010") and still converts it', () => {
+    expect(isLegacyDevanagariFontName('ABCDEE+Kruti Dev 010')).toBe(true);
+    expect(isConvertibleLegacyFont('ABCDEE+Kruti Dev 010')).toBe(true);
+  });
+
+  it('blocks Shree-Lipi (SHREE-DEV) fonts: detected, never decoded', () => {
+    expect(isLegacyDevanagariFontName('CWIKXP+SHREE-DEV7-0714E-Bold')).toBe(true);
+    expect(isConvertibleLegacyFont('CWIKXP+SHREE-DEV7-0714E-Bold')).toBe(false);
+  });
 });

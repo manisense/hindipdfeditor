@@ -16,3 +16,19 @@ it.each([
 ])('%s', (kruti, unicode) => {
   expect(krutiDevToUnicode(kruti)).toBe(unicode);
 });
+
+// Word files whose KrutiDev font draws its own curly-quote glyphs: ” and “ are श, ’ is ष (a UP
+// RTI notice, a Himachal gazette, a BPSC notice; checked against the page images). Their text has
+// curly double quotes inside words, which AutoCorrected text (the CISF notice above) does not.
+it.each([
+  ['mRrj izns”k “kklu ifjHkk’kk,a', 'उत्तर प्रदेश शासन परिभाषाएं'],
+  ['T;s’B ofj’B “kfDr', 'ज्येष्ठ वरिष्ठ शक्ति'],
+])('font quote glyphs: %s', (kruti, unicode) => {
+  expect(krutiDevToUnicode(kruti)).toBe(unicode);
+});
+
+it('reads the quote style from the whole text when given it', () => {
+  // One item of a page whose other items show the font's own glyphs: ’ alone is still ष.
+  expect(krutiDevToUnicode('ifjHkk’kk,a', 'izns”k ifjHkk’kk,a')).toBe('परिभाषाएं');
+  expect(krutiDevToUnicode('vf/k’kkflr', 'vf/k’kkflr')).toBe('अधिशासित');
+});
