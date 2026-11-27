@@ -1,5 +1,10 @@
 # Changelog
 
+## Text extraction: pdf.js measures Devanagari conjuncts, 27 November 2026
+
+### Fixed
+- pdf.js 5 counted any glyph whose text contains a combining sign (क्ष, त्र, प्र, हु) as a zero-width mark: it measured it as 0 wide and skipped its line-break check. Line boxes came out short (Gazette of India lines by up to 50 pt, so OCR crops missed line ends) and words split inside conjuncts in PDF to Word (व्य क्ति, उम् मीदवारों, प्र माण). `editor/scripts/patch-pdfjs.mjs` (postinstall) anchors the pattern as pdf.js 6 does (web ADR 0023). The line-start workaround from PR #96 is removed. Gazette page 81.0 % → 82.1 %; whole RRB and CEN files read more dictionary words; benchmarks otherwise unchanged. The glyph-repair gate case now expects the fixture's whole label row, which pdf.js used to cut after "क्ष".
+
 ## PDF to Word: two-column XY-cut layout and running headers/footers, 27 November 2026
 
 ### Added
