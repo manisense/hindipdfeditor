@@ -8,8 +8,10 @@ import { extractEmbeddedTextLines } from './pdfTextExtract';
 import {
   baseFontName,
   buildToUnicode,
+  CLUSTER_FILLER_MARK,
   fontFamilyKey,
   parseToUnicode,
+  repairedSpaceFillerToUnicode,
   repairedToUnicode,
   repairMisMappedToUnicode,
 } from './pdfToUnicodeRepair';
@@ -335,4 +337,179 @@ describe('repairedToUnicode', () => {
     const text = (await extractEmbeddedTextLines(bytes, 0)).map((line) => line.text).join(' ');
     expect(text).toContain('वत');
   }, 30000);
+
+  it('keeps Word 2021 िं and ां attached when CIDToGIDMap maps non-space Devanagari filler CIDs to space', async () => {
+    const noto = new Uint8Array(readFileSync(path.join(__dirname, '../../public/fonts/NotoSansDevanagari-Variable.ttf')));
+    const reading = fontGlyphText(noto).text;
+    const gidOf = (ch: string) => {
+      const found = [...reading.entries()].find(([, text]) => text === ch);
+      if (!found) throw new Error(`missing glyph for ${ch}`);
+      return found[0];
+    };
+    const gSpace = gidOf(' ');
+    const gSa = gidOf('स');
+    const gHa = gidOf('ह');
+    const gKa = gidOf('क');
+    const gTa = gidOf('त');
+    const gDa = gidOf('द');
+    const gNa = gidOf('न');
+    const gAa = gidOf('ा');
+    const gA = gidOf('अ');
+    const gYa = gidOf('य');
+    const gI = gidOf(PRE_BASE_MARK);
+    const gAnusvara = gidOf('ं');
+    const gU = gidOf('ु');
+
+    // Word 2021 allocates a separate CID per visual cluster slot via a CIDToGIDMap stream and maps
+    // the middle Devanagari glyph of 3-glyph clusters (सिं, किं, दां/नां) to U+0020 space.
+    const cidToGidEntries: [number, number][] = [
+      [0x00, 0],
+      [0x01, gSpace], // real space
+      [0x02, gI], // pre-base ि mapped to "स"
+      [0x03, gSa], // middle स mapped to " " (Word filler space!)
+      [0x04, gAnusvara], // zero-width ं mapped to "िं"
+      [0x05, gHa], // ह
+      [0x06, gA], // अ
+      [0x07, gNa], // न
+      [0x08, gYa], // य
+      [0x09, gI], // pre-base ि mapped to "क"
+      [0x0a, gKa], // middle क mapped to " " (Word filler space!)
+      [0x0b, gTa], // त
+      [0x0c, gU], // ु (w=0)
+      [0x0d, gI], // pre-base ि mapped to "द"
+      [0x0e, gDa], // द mapped to "ि"
+      [0x0f, gAa], // middle ा mapped to " " (Word filler space!)
+      [0x10, gAnusvara], // zero-width ं mapped to "ां"
+      [0x11, gKa], // real क
+      [0x12, gSa], // real स (so GID gSa also has a Devanagari sibling CID)
+    ];
+    const cidToGidBytes = new Uint8Array((cidToGidEntries.length + 1) * 2);
+    for (const [cid, gid] of cidToGidEntries) {
+      cidToGidBytes[cid * 2] = (gid >> 8) & 0xff;
+      cidToGidBytes[cid * 2 + 1] = gid & 0xff;
+    }
+
+    const cmap = buildToUnicode(
+      new Map<number, string>([
+        [0x01, ' '],
+        [0x02, 'स'],
+        [0x03, ' '],
+        [0x04, 'िं'],
+        [0x05, 'ह'],
+        [0x06, 'अ'],
+        [0x07, 'न'],
+        [0x08, 'य'],
+        [0x09, 'क'],
+        [0x0a, ' '],
+        [0x0b, 'त'],
+        [0x0c, 'ु'],
+        [0x0d, 'द'],
+        [0x0e, 'ि'],
+        [0x0f, ' '],
+        [0x10, 'ां'],
+        [0x11, 'क'],
+        [0x12, 'स'],
+      ]),
+    );
+
+    const doc = await PDFDocument.create();
+    const ctx = doc.context;
+    const cidFont = ctx.obj({
+      Type: 'Font',
+      Subtype: 'CIDFontType2',
+      BaseFont: 'BCDGEE+NotoSansDevanagari',
+      CIDSystemInfo: { Registry: PDFString.of('Adobe'), Ordering: PDFString.of('Identity'), Supplement: 0 },
+      CIDToGIDMap: ctx.register(ctx.flateStream(cidToGidBytes)),
+      DW: 600,
+      W: [
+        0x01, [500, 313, 730, 0, 548, 782, 678, 678, 313, 782, 665, 0, 313, 574, 261, 0, 782, 730],
+      ],
+      FontDescriptor: ctx.register(
+        ctx.obj({
+          Type: 'FontDescriptor',
+          FontName: 'BCDGEE+NotoSansDevanagari',
+          Flags: 32,
+          FontBBox: [0, -300, 1000, 900],
+          ItalicAngle: 0,
+          Ascent: 900,
+          Descent: -300,
+          CapHeight: 700,
+          StemV: 80,
+          FontFile2: ctx.register(ctx.flateStream(noto)),
+        }),
+      ),
+    });
+    const type0 = ctx.register(
+      ctx.obj({
+        Type: 'Font',
+        Subtype: 'Type0',
+        BaseFont: 'BCDGEE+NotoSansDevanagari',
+        Encoding: 'Identity-H',
+        DescendantFonts: [ctx.register(cidFont)],
+        ToUnicode: ctx.register(ctx.flateStream(cmap)),
+      }),
+    );
+
+    const page = doc.addPage([500, 300]);
+    page.node.setFontDictionary(PDFName.of('F1'), type0);
+    // Line 1: "सिंह अनय" with Word 2021 GPOS TJ shifts [-69] before zero-width िं and [+70] before ह
+    // Line 2: "सिंह" alone followed by space + "दिनांक"
+    // Line 3: "किंतु अनय" with Word 2021 GPOS TD backtrack (7.44 0.48 TD / 1.92 -0.48 TD) and a 7.5pt justified space
+    const stream = [
+      'BT /F1 12 Tf 1 0 0 1 72 240 Tm [<0002>4<0003>-69<0004>70<00050001000600070008>] TJ ET',
+      'BT /F1 12 Tf 1 0 0 1 72 200 Tm [<0002>4<0003>-69<0004>70<0005>] TJ ET',
+      'BT /F1 12 Tf 1 0 0 1 72 160 Tm [<000D000E0007000F00100011>] TJ ET',
+      'BT /F1 12 Tf 1 0 0 1 72 120 Tm <0009> Tj 3.72 0 TD <000A> Tj 7.44 0.48 TD <0004> Tj 1.92 -0.48 TD <000B000C> Tj 15.48 0 TD <000600070008> Tj ET',
+    ].join('\n');
+    page.node.addContentStream(ctx.register(ctx.flateStream(stream)));
+    const bytes = new Uint8Array(await doc.save({ useObjectStreams: false }));
+
+    const repair = await repairMisMappedToUnicode(bytes);
+    // Filler-space normalization must not falsely mark the font as cmap-rebuilt.
+    expect(repair.repairedFonts).toEqual([]);
+    const lines = await extractEmbeddedTextLines(bytes, 0);
+    expect(lines.map((line) => line.text)).toEqual(['सिंह अनय', 'सिंह', 'दिनांक', 'किंतु अनय']);
+  }, 30000);
+
+  it('replaces only non-space Devanagari filler CIDs in repairedSpaceFillerToUnicode and fails closed on empty-cmap fonts', () => {
+    const fromFont = new Map<number, string>([
+      [3, ' '],
+      [160, 'स'],
+      [545, 'ा'],
+    ]);
+    // GID 547 is a GSUB contextual ी variant absent from cmap (Word stripped GSUB) but proven by sibling CID 0x16 -> "ी".
+    const cidToGid = new Map<number, number>([
+      [0x00, 0], // .notdef
+      [0x09, 3], // real space
+      [0x16, 547], // real ी
+      [0x2c, 547], // filler ी mapped to " "
+      [0x3b, 160], // filler स mapped to " "
+      [0x7d, 545], // filler ा mapped to " "
+      [0x99, 999], // unknown non-Devanagari glyph mapped to " "
+    ]);
+    const existing = new Map<number, string>([
+      [0x00, ' '],
+      [0x09, ' '],
+      [0x16, 'ी'],
+      [0x2c, ' '],
+      [0x3b, ' '],
+      [0x7d, ' '],
+      [0x99, ' '],
+    ]);
+    const fixed = repairedSpaceFillerToUnicode(existing, (cid) => cidToGid.get(cid) ?? -1, fromFont);
+    expect(fixed?.get(0x00)).toBe(' '); // glyph 0 untouched
+    expect(fixed?.get(0x09)).toBe(' '); // real space untouched
+    expect(fixed?.get(0x2c)).toBe(CLUSTER_FILLER_MARK); // sibling-proven ी replaced
+    expect(fixed?.get(0x3b)).toBe(CLUSTER_FILLER_MARK); // cmap-proven स replaced
+    expect(fixed?.get(0x7d)).toBe(CLUSTER_FILLER_MARK); // cmap-proven ा replaced
+    expect(fixed?.get(0x99)).toBe(' '); // unproven glyph untouched
+
+    // Clean font with only real space returns null.
+    const clean = new Map<number, string>([[0x09, ' '], [0x16, 'ी']]);
+    expect(repairedSpaceFillerToUnicode(clean, (cid) => cidToGid.get(cid) ?? -1, fromFont)).toBeNull();
+
+    // Dummy OCR font (Tesseract GlyphLessFont): empty cmap, every CID mapped to GID 1 — must fail closed!
+    const glyphLess = new Map<number, string>([[0x20, ' '], [0x21, 'क']]);
+    expect(repairedSpaceFillerToUnicode(glyphLess, () => 1, new Map())).toBeNull();
+  });
 });
