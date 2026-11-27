@@ -31,6 +31,16 @@ describe('unresolvedLineText', () => {
     expect(unresolvedLineText(`पद ${REPH}भती`, undefined, isUnknown)).toEqual({ text: 'पद भती', fromOcr: false });
     expect(unresolvedLineText(`${REPH}`, undefined, isUnknown)).toBeNull();
   });
+
+  it("keeps the PDF's own numbers when OCR misreads them (Gazette: 161 read as 6)", () => {
+    expect(unresolvedLineText('सा.का.नि. 161(अ).— राष्ट्रपति, अनुच्छेद 309', 'सा.का.नि. 6(अ).-- राष्ट्रपति, अनुच्छेद 309', isUnknown)).toEqual({
+      text: 'सा.का.नि. 161(अ).-- राष्ट्रपति, अनुच्छेद 309',
+      fromOcr: true,
+    });
+    expect(unresolvedLineText('मार्च 9, 2026/फाल्गुन 18, 1947', 'मार्च 9, 2026/फाल्गुन 8, 947', isUnknown)?.text).toBe('मार्च 9, 2026/फाल्गुन 18, 1947');
+    // Different counts: OCR found more or fewer numbers, so nothing is swapped.
+    expect(unresolvedLineText('पद 12', 'पद 12 और 3', isUnknown)?.text).toBe('पद 12 और 3');
+  });
 });
 
 describe('repairText', () => {
