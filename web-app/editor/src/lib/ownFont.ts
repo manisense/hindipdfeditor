@@ -57,6 +57,10 @@ export type OwnFontProgramInfo =
       ok: true;
       metrics: TtfMetrics;
       fsType: number;
+      /** OS/2 usWeightClass (400 regular, 700 bold); 400 when the font has no OS/2 table. */
+      weightClass: number;
+      /** From PANOSE bSerifStyle: true serif, false sans, null when the font does not say. */
+      serif: boolean | null;
       devanagariScripts: readonly ('deva' | 'dev2')[];
       hasGlyphOutline(gid: number): boolean;
     }
@@ -321,10 +325,18 @@ export function inspectOwnFontProgram(fontBytes: Uint8Array): OwnFontProgramInfo
 
   // Check OS/2 fsType permission bits (bit 1 = restricted licence forbids reuse/embedding).
   let fsType = 0;
+  let weightClass = 400;
+  let serif: boolean | null = null;
   const os2 = tables.get('OS/2');
   if (os2) {
     if (os2.length < 10) return { ok: false, reason: 'invalid-sfnt' };
     fsType = view.getUint16(os2.offset + 8, false);
+    weightClass = view.getUint16(os2.offset + 4, false);
+    if (os2.length > 33) {
+      // PANOSE bSerifStyle: 2–10 serif kinds, 11–13 sans kinds; 0 and 1 say nothing.
+      const serifStyle = view.getUint8(os2.offset + 33);
+      serif = serifStyle >= 2 && serifStyle <= 10 ? true : serifStyle >= 11 && serifStyle <= 13 ? false : null;
+    }
     if ((fsType & OS2_FSTYPE_RESTRICTED_LICENSE) !== 0) {
       return { ok: false, reason: 'restricted-license' };
     }
@@ -351,9 +363,27 @@ export function inspectOwnFontProgram(fontBytes: Uint8Array): OwnFontProgramInfo
     ok: true,
     metrics,
     fsType,
+    weightClass,
+    serif,
     devanagariScripts,
     hasGlyphOutline,
   };
+}
+
+/**
+ * Whether an edit may be set in the document's own font: only when it keeps that font's weight
+ * (bold or not) and serif style. A user who turns an edit bold, or picks the serif face, gets the
+ * bundled font they chose. A font that does not state its serif style is taken as sans, the
+ * editor's default for Devanagari.
+ *
+ * @param style The edit's CSS weight (100–900) and whether its chosen family is serif.
+ */
+export function ownFontMatchesStyle(
+  info: Extract<OwnFontProgramInfo, { ok: true }>,
+  style: { weight: number; serif: boolean },
+): boolean {
+  if (info.weightClass >= 600 !== style.weight >= 600) return false;
+  return (info.serif ?? false) === style.serif;
 }
 
 /**

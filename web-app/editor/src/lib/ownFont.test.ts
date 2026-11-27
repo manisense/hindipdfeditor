@@ -11,6 +11,7 @@ import {
   evaluateOwnFontForLines,
   extractEmbeddedFontCandidate,
   inspectOwnFontProgram,
+  ownFontMatchesStyle,
 } from './ownFont';
 import { extractEmbeddedTextLines } from './pdfTextExtract';
 import { drawVectorTextEdits } from './pdfVectorText';
@@ -99,6 +100,16 @@ function withFsType(fontBytes: Uint8Array, fsType: number): Uint8Array {
   const tables = unpackSfnt(fontBytes);
   const os2 = tables.get('OS/2')!.slice();
   new DataView(os2.buffer).setUint16(8, fsType, false);
+  tables.set('OS/2', os2);
+  return packSfnt(tables);
+}
+
+/** Sets OS/2 usWeightClass and PANOSE bSerifStyle. */
+function withStyle(fontBytes: Uint8Array, weightClass: number, serifStyle: number): Uint8Array {
+  const tables = unpackSfnt(fontBytes);
+  const os2 = tables.get('OS/2')!.slice();
+  new DataView(os2.buffer).setUint16(4, weightClass, false);
+  os2[33] = serifStyle;
   tables.set('OS/2', os2);
   return packSfnt(tables);
 }
@@ -239,6 +250,24 @@ describe('ownFont eligibility checks', () => {
     }
     const restricted = evaluateOwnFontForLines(engine, withFsType(notoBytes, 0x0002), sampleLine);
     expect(restricted).toEqual({ useOwnFont: false, reason: 'restricted-license' });
+  });
+
+  it("is used only when the edit keeps the original's weight and serif style", () => {
+    const info = (weightClass: number, serifStyle: number) => {
+      const inspected = inspectOwnFontProgram(withStyle(notoBytes, weightClass, serifStyle));
+      if (!inspected.ok) throw new Error('font rejected');
+      return inspected;
+    };
+    // A regular sans font (PANOSE serif style 11: normal sans).
+    expect(ownFontMatchesStyle(info(400, 11), { weight: 400, serif: false })).toBe(true);
+    expect(ownFontMatchesStyle(info(400, 11), { weight: 700, serif: false })).toBe(false);
+    expect(ownFontMatchesStyle(info(400, 11), { weight: 400, serif: true })).toBe(false);
+    // A bold serif font (style 2: cove serif).
+    expect(ownFontMatchesStyle(info(700, 2), { weight: 700, serif: true })).toBe(true);
+    expect(ownFontMatchesStyle(info(700, 2), { weight: 400, serif: true })).toBe(false);
+    // PANOSE not given: only a sans edit, the editor's default for Devanagari, may use it.
+    expect(ownFontMatchesStyle(info(400, 0), { weight: 400, serif: false })).toBe(true);
+    expect(ownFontMatchesStyle(info(400, 0), { weight: 400, serif: true })).toBe(false);
   });
 
   it('rejects fonts without GSUB, without deva/dev2 scripts, or with empty Devanagari features', async () => {

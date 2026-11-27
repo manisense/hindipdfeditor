@@ -36,6 +36,7 @@ import {
 } from '@cantoo/pdf-lib';
 
 import type { Matrix } from './contentStreamText';
+import { isSerifFamily } from './fontAsset';
 import { cssWeight } from './fontWeight';
 import {
   type HarfBuzzEngine,
@@ -48,6 +49,7 @@ import {
   type EmbeddedFontCandidate,
   evaluateOwnFontWithShaper,
   inspectOwnFontProgram,
+  ownFontMatchesStyle,
   type OwnFontProgramInfo,
 } from './ownFont';
 import { parseTtfMetrics, type TtfMetrics } from './ttfMetrics';
@@ -711,7 +713,7 @@ export async function prepareVectorTextPlan(
         const weight = cssWeight(item.fontWeight);
         for (const candidate of item.ownFontCandidates) {
           const session = getOwnSession(candidate, weight);
-          if (!session.ok) continue;
+          if (!session.ok || !ownFontMatchesStyle(session.info, { weight, serif: isSerifFamily(item.fontFamily) })) continue;
           const decision = evaluateOwnFontWithShaper(session.info, session.shaper, item.lines);
           if (!decision.useOwnFont) continue;
 
