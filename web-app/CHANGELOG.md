@@ -1,5 +1,12 @@
 # Changelog
 
+## PDF to Word: two-column XY-cut layout and running headers/footers, 27 November 2026
+
+### Added
+- **Recursive XY-cut column detection on digital pages (`xyCut.ts`, `wordLayout.ts`, `alignedTables.ts`):** digital pages with side-by-side columns are now split at the widest empty vertical gaps (with horizontal cuts isolating full-width titles, dividers, and detected tables) so columns read column by column and paragraphs never join across the gutter. Narrow multi-column prose is rejected by `detectAlignedTables` so it is not misclassified as a borderless table, while ruled and aligned tables remain intact.
+- **Cross-page running headers and footers (`runningHeaders.ts`, `pdfToWord.ts`, `convertPdfToWord.ts`):** lines whose digit-normalised text repeats at about the same place in the top or bottom 12 % of at least 3 pages and at least half of the converted pages are omitted from the body and written once into Word's section header/footer (`Header`, `Footer`, and `PageNumber.CURRENT` for incrementing page numbers), or dropped from the body when digits vary irregularly. Unique lines are never dropped.
+- **Structure benchmark and browser gate (`score.mjs`, `score.test.mjs`, `make-two-column-fixture.mjs`, `edit-quality-gate.mjs`):** extended `score.mjs` with reading-order pair retention and `--repeated` header/footer leakage counting, generated a 3-page two-column Hindi/Latin fixture (`two-column-structure-fixture.pdf`, reading order 59.1 % → 100.0 %, body header/footer leakage 6 → 0, Hindi recall 100.0 %; `notice-digital.pdf` unchanged at 100.0 % recall / 100.0 % reading order; `notice-scanned.pdf` unchanged at 97.9 % recall / 76.9 % reading order), and added `wordStructureCase` to the default edit-quality gate.
+
 ## Glyph repair: ि before the anusvara, 27 November 2026
 
 ### Fixed

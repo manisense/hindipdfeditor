@@ -44,6 +44,7 @@ On the Word page the ToUnicode map is wrong (pre-base ि glyph → "व", थ �
 - Needs the ToUnicode bug from the Plan B review fixed first: every written glyph needs a correct ToUnicode entry, and the export must read back exactly in pdf.js.
 
 ### 6. Structure from vectors and repetition (problem 4)
+- **Status (27 Nov 2026):** shipped for PDF to Word: recursive XY-cut column detection on digital pages around detected tables (`xyCut.ts`, `wordLayout.ts`, `alignedTables.ts`), cross-page running header/footer detection and Word section header/footer output with page-number fields (`runningHeaders.ts`, `pdfToWord.ts`, `convertPdfToWord.ts`), structure scoring in `score.mjs` (reading order and `--repeated` header/footer leakage, tested in `score.test.mjs`), and a 3-page two-column Hindi/Latin fixture (`two-column-structure-fixture.pdf`) verified by `wordStructureCase` in the edit-quality gate. Not yet: cell-placement scoring in `score.mjs`, scanned-page column splitting.
 - Digital PDFs give exact rulings, glyph positions and font sizes. Detect columns with an XY-cut on glyph boxes, headers and footers by repetition across pages (the same text at the same place on most pages), and tables from rulings, or from alignment when borders are missing. This is deterministic and fast, with no model.
 - Score structure, not only words: extend `score.mjs` with reading-order and cell-placement checks.
 

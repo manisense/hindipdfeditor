@@ -1,11 +1,12 @@
 import { detectAlignedTables } from './alignedTables';
-import { buildWordDocument, type WordPage } from './pdfToWord';
+import { buildWordDocument, type WordDocumentOptions, type WordPage } from './pdfToWord';
 import { detectLegacyFonts, isConvertibleLegacyFont } from './legacyFontDetector';
 import { detectTextLines, ocrPoolSize, readAreas } from './ocr';
 import { mayShowText, type PtBox } from './pdfImageRects';
 import { getPageCount, getPageSize, renderPage, renderPageCanvas, setPdfBytes } from './pdfToImages';
 import type { Ruling } from './pdfRulings';
 import { rulingsFromImage } from './rasterRulings';
+import { detectRunningHeadersFooters } from './runningHeaders';
 import { missingGlyphPagesOf, sharedPdfDocument } from './sharedPdfDocument';
 import { OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { detectTables, type DetectedTable } from './tableDetect';
@@ -85,8 +86,17 @@ export async function convertPdfToWord(
   const total = chosen.length;
   // Fails closed: an unreadable font table means every page is read from its image.
   const warnings = await detectLegacyFonts(bytes.slice()).catch(() => null);
+  type RawPage = {
+    widthPt: number;
+    heightPt: number;
+    lines: OcrLine[];
+    tables: DetectedTable[];
+    pictures: WordPicture[];
+  };
+
   // Pages are read side by side, one per OCR worker, and kept in page order.
   const pages: WordPage[] = new Array<WordPage>(total);
+  const rawPages: (RawPage | null)[] = new Array<RawPage | null>(total).fill(null);
   let next = 0;
   let done = 0;
   let ocrPages = 0;
@@ -100,7 +110,7 @@ export async function convertPdfToWord(
     unread.add(pageIndex);
     return false;
   };
-  const readPage = async (pageIndex: number): Promise<WordPage> => {
+  const readPage = async (pageIndex: number): Promise<RawPage> => {
     const size = await getPageSize(pageIndex, READ_PX_PER_PT);
     const page: PageState = {
       pageIndex,
@@ -124,7 +134,7 @@ export async function convertPdfToWord(
     const allow = allowPageOcr(pageIndex);
     // Text in a legacy font that cannot be converted must not be used; without OCR the page is unread.
     if (unconvertible && !allow()) {
-      return { widthPt: page.widthPt, heightPt: page.heightPt, blocks: [] };
+      return { widthPt: page.widthPt, heightPt: page.heightPt, lines: [], tables: [], pictures: [] };
     }
     const forceOcr = unconvertible || (options.ocr === 'all' && allow());
     const lines = await detectTextLines(page, {
@@ -153,7 +163,7 @@ export async function convertPdfToWord(
     }
     // Tables without drawn lines, found from how their text lines up.
     tables = [...tables, ...detectAlignedTables(pageLines, tables)].sort((a, b) => a.yPt - b.yPt);
-    return { widthPt: page.widthPt, heightPt: page.heightPt, blocks: pageBlocks(pageLines, page.widthPt, tables, pictures) };
+    return { widthPt: page.widthPt, heightPt: page.heightPt, lines: pageLines, tables, pictures };
   };
   const lanes = Math.max(1, Math.min(total, ocrPoolSize()));
   await Promise.all(
@@ -166,18 +176,58 @@ export async function convertPdfToWord(
           pages[slot] = kept.page;
           if (kept.unread) unread.add(chosen[slot]);
         } else {
-          pages[slot] = await readPage(chosen[slot]);
-          await options.resume?.save(slot, { page: pages[slot], unread: unread.has(chosen[slot]) });
+          const raw = await readPage(chosen[slot]);
+          rawPages[slot] = raw;
+          if (options.resume) {
+            const provisional: WordPage = {
+              widthPt: raw.widthPt,
+              heightPt: raw.heightPt,
+              blocks: pageBlocks(raw.lines, raw.widthPt, raw.tables, raw.pictures),
+            };
+            pages[slot] = provisional;
+            await options.resume.save(slot, { page: provisional, unread: unread.has(chosen[slot]) });
+          }
         }
         done += 1;
         onProgress(done, total);
       }
     }),
   );
+
+  let docOptions: WordDocumentOptions | undefined;
+  const allRaw = rawPages.every((raw): raw is RawPage => raw !== null);
+  if (allRaw) {
+    const running = detectRunningHeadersFooters(rawPages);
+    for (let i = 0; i < total; i += 1) {
+      const raw = rawPages[i];
+      const omitted = running.omittedPerPage[i];
+      const bodyLines = omitted.size > 0 ? raw.lines.filter((line) => !omitted.has(line)) : raw.lines;
+      pages[i] = {
+        widthPt: raw.widthPt,
+        heightPt: raw.heightPt,
+        blocks: pageBlocks(bodyLines, raw.widthPt, raw.tables, raw.pictures),
+      };
+    }
+    if (running.header.length > 0 || running.footer.length > 0) {
+      docOptions = { header: running.header, footer: running.footer };
+    }
+  } else {
+    for (let i = 0; i < total; i += 1) {
+      const raw = rawPages[i];
+      if (raw && !pages[i]) {
+        pages[i] = {
+          widthPt: raw.widthPt,
+          heightPt: raw.heightPt,
+          blocks: pageBlocks(raw.lines, raw.widthPt, raw.tables, raw.pictures),
+        };
+      }
+    }
+  }
+
   const emptyPages = pages.filter((page) => page.blocks.length === 0).length;
   const missingGlyph = new Set(await missingGlyphPagesOf(bytes));
   return {
-    blob: await buildWordDocument(pages),
+    blob: await buildWordDocument(pages, docOptions),
     pages: total,
     emptyPages,
     unreadPages: [...unread].sort((a, b) => a - b).map((index) => index + 1),
