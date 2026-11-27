@@ -22,6 +22,7 @@ On the Word page the ToUnicode map is wrong (pre-base ि glyph → "व", थ �
 - Done when: RRB p2 reaches 100 % in PDF to Word with no OCR on that page.
 
 ### 2. Glyph-level OCR: classify each unique glyph once, by shape (problems 3, 5, and Skia/Type 3 files)
+- **Evidence (27 Nov 2026):** Gazette of India PDFs (egazette.gov.in, iTextSharp) use subset fonts with no GSUB and a partial cmap, so the font cannot name its ि variants and ligatures, and the ToUnicode map names them wrongly. Production PDF to Word reads 81 % of a Gazette page's Hindi words. See `docs/autonomous-log.md`.
 - When a font has no cmap or GSUB (Chrome/Skia Type 3 subsets, stripped fonts), render each **unique glyph** from its vector outline, cleanly and at any size, and identify it. A document has roughly 100–300 unique glyphs, used thousands of times. Classifying 200 clean, noise-free, isolated shapes is far easier and more reliable than OCR of whole pages, and the answer then holds everywhere that glyph is used.
 - Identify by matching outlines against a reference library we render ourselves from open fonts (Noto, Mukta, Hind, Tiro, Kalam…), using outline features such as contours, normalised point sequences and perceptual hashes. Unknown shapes go to recognition of a single glyph image, then document-level voting (`glyphRepair.ts` already votes this way for unmapped glyphs).
 - The same machinery identifies **which font** a document uses. That helps idea 5 and lets edits blend in.
