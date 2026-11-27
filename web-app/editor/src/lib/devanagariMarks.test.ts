@@ -10,6 +10,13 @@ describe('reorderDevanagariMarks', () => {
     expect(reorderDevanagariMarks(`सं${I}क्षप्त`)).toBe('संक्षिप्त');
   });
 
+  it('leaves a mark before an unfinished cluster for the pass over the whole line', () => {
+    // Text items can end inside a conjunct: व्य ि क् | तयों. Moving ि after क् alone gives कि्त.
+    const first = reorderDevanagariMarks(`व्य${I}क्`, { keepUnresolved: true });
+    expect(first).toBe(`व्य${I}क्`);
+    expect(reorderDevanagariMarks(`${first}तयों`)).toBe('व्यक्तियों');
+  });
+
   it('moves a reph before its syllable, including the syllable’s matras', () => {
     expect(reorderDevanagariMarks(`धम${R}`)).toBe('धर्म');
     expect(reorderDevanagariMarks(`नि दे${R}श`.replace(' ', ''))).toBe('निर्देश');
