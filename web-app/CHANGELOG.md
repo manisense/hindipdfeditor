@@ -3,6 +3,8 @@
 ## Devanagari PDF extraction: corpus mapping fixes, 27 November 2026
 
 ### Fixed
+- **`/ActualText` with `#XX`-escaped BDC tags and omitted drawn spaces (`pdfActualText.ts`, ADR 0022 amendment):** `markedContentStarts` now decodes `#XX` hex escapes in PDF Name tags (such as `/Normal#20#28Web#29 → Normal (Web)`) so `drawnGlyphs` matches pdf.js's decoded tags and applies `/ActualText` spans on Pdftools SDK exports instead of falling back to their polluted ToUnicode maps; `applyActualText` also preserves drawn space glyphs that pdf.js deduplicated against preceding control-byte matras (`0x0A`). Pdftools SDK corpus file `c10.pdf` (first 6 pages): unknown Hindi words 144 / 213 (67.6 %) → 25 / 174 (14.4 %, all 25 valid proper nouns, abbreviations, or out-of-dictionary Hindi terms; 0 garbled words).
+
 - **Rakar mapped backwards (`fontGlyphText.ts`, `pdfToUnicodeRepair.ts`, ADR 0022 amendment):** OpenType `deva` v1 `blwf` rules (`[र, ्] → rakar`) are now read as `"्र"` (and `vatu` `[half(C), rakar]` as `C्र्`) rather than `"र्"`, and `repairedToUnicode` now catches and repairs ToUnicode maps that map a rakar glyph or rakar conjunct backwards as `"र्"` while leaving real `rphf` reph glyphs on `REPH_MARK`. Gazette corpus file `c3.pdf` (first 6 pages): backwards-rakar words 136 → 0 (unknown Hindi words 366 → 287 of 2083).
 
 ## Text extraction: pdf.js measures Devanagari conjuncts, 27 November 2026

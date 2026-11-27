@@ -43,3 +43,11 @@ OpenType Devanagari v1 (`deva`) fonts (such as Arial Unicode MS and older Mangal
 - `fontGlyphText.ts` reads `blwf` outputs of `[र, ्]` or `[्, र]` as `"्र"` (rakar), and composes `[half(C), rakar]` in `vatu` as `C्र्`. Real reph glyphs (`rphf`) remain marked with `REPH_MARK` (`\uE0F0`), and half-ra (`half`) stays `"र्"`.
 - `pdfToUnicodeRepair.ts` (`hasBackwardsRakar`) also triggers repair when ToUnicode maps a `"्र"` glyph or rakar conjunct backwards as `"र्"`, updating those entries without disturbing real reph glyphs.
 
+## Amendment, 27 November 2026: `/ActualText` with escaped PDF Name tags and omitted spaces
+
+Pdftools SDK exports (corpus file `c10.pdf`) embed Hindi in a simple `/TrueType` font (no Unicode cmap, no GSUB) whose ToUnicode maps the first glyph of each syllable to the entire syllable it first appeared in (leaving trailing matra glyphs unmapped, including byte `0x0A` `'\n'`), while placing exact UTF-16BE `/ActualText` on every syllable inside Word style tags such as `/Normal#20#28Web#29 <</MCID 2>> BDC`. Two bugs in `pdfActualText.ts` broke those pages:
+- `markedContentStarts` left `#XX` PDF Name escapes undecoded (`Normal#20#28Web#29`), whereas pdf.js's `Lexer.getName` decodes them (`Normal (Web)`), so `drawnGlyphs` aborted on tag mismatch and dropped all `/ActualText` spans on the page. Now `markedContentStarts` decodes `#XX` escapes to match pdf.js.
+- When a real drawn space glyph outside `/ActualText` was dropped by pdf.js from `getTextContent()` (deduplicated against a preceding `0x0A` matra byte), `applyActualText` silently skipped it and lost the word break (`के सभी → केसभी`). Now omitted drawn spaces are recorded and emitted as `spaceAfter` (across items) or an inline space (within an item).
+
+
+

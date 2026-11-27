@@ -1,6 +1,12 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { PDFDocument, PDFName, PDFString } from '@cantoo/pdf-lib';
 import { describe, expect, it } from 'vitest';
 
+import { fontGlyphText } from './fontGlyphText';
 import { applyActualText, drawnGlyphs, markedContentStarts, type MarkedContentOps } from './pdfActualText';
+import { extractEmbeddedTextLines } from './pdfTextExtract';
+import { buildToUnicode } from './pdfToUnicodeRepair';
 
 const NUL = String.fromCharCode(0);
 const OPS: MarkedContentOps = { showText: 1, beginMarkedContent: 2, beginMarkedContentProps: 3, endMarkedContent: 4 };
@@ -16,6 +22,18 @@ describe('markedContentStarts', () => {
       { tag: 'Span', actualText: 'ध्या' },
       { tag: 'OC', actualText: null },
       { tag: 'Span', actualText: 'Hi' },
+    ]);
+  });
+
+  it('decodes #XX hex escapes in PDF Name BDC tags to match pdf.js', () => {
+    const content = [
+      '/Normal#20#28Web#29<</MCID 2>>BDC',
+      '/Span<</ActualText<FEFF09380947>>>BDC <010A> Tj EMC',
+      'EMC',
+    ].join('\n');
+    expect(markedContentStarts(content)).toEqual([
+      { tag: 'Normal (Web)', actualText: null },
+      { tag: 'Span', actualText: 'से' },
     ]);
   });
 });
@@ -120,7 +138,100 @@ describe('applyActualText', () => {
     expect(applyActualText(['शि', ' ', 'क्षा'], unspaced.slice(0, 6), [])?.items.join('')).toBe('शि क्षा');
   });
 
+  it('preserves a drawn space glyph that pdf.js omitted from textContent after an /ActualText span', () => {
+    // Models Pdftools SDK: "के" drawn as क + 0x0A ('\n') inside /ActualText, followed by a drawn
+    // space glyph that pdf.js deduplicated against '\n' and omitted from getTextContent().
+    const glyphs = [
+      { text: 'क', section: 0 },
+      { text: '\n', section: 0 },
+      { text: ' ', section: null },
+      { text: 'स', section: null },
+      { text: 'भी', section: null },
+    ];
+    const acrossItems = applyActualText(['क', 'सभी'], glyphs, ['के']);
+    expect(acrossItems?.items).toEqual(['के', 'सभी']);
+    expect(acrossItems?.spaceAfter).toEqual([true, false]);
+
+    const sameItem = applyActualText(['कसभी'], glyphs, ['के']);
+    expect(sameItem?.items).toEqual(['के सभी']);
+  });
+
   it('gives up when the glyphs do not match the items', () => {
     expect(applyActualText(['abc'], [{ text: 'x', section: 0 }, { text: NUL, section: 0 }], ['y'])).toBeNull();
   });
+
+  it('applies /ActualText spans nested inside a #XX-escaped BDC tag in a real PDF', async () => {
+    const noto = new Uint8Array(readFileSync(path.join(__dirname, '../../public/fonts/NotoSansDevanagari-Variable.ttf')));
+    const reading = fontGlyphText(noto).text;
+    const gidOf = (ch: string) => {
+      const found = [...reading.entries()].find(([, text]) => text === ch);
+      if (!found) throw new Error(`missing glyph for ${ch}`);
+      return found[0];
+    };
+    const gSa = gidOf('स');
+    const gE = gidOf('े');
+    const gVa = gidOf('व');
+    const gAa = gidOf('ा');
+    // Polluted ToUnicode (as Pdftools SDK produces when reusing स from "सं" in "सेवा"):
+    // स -> "सं", व -> "वा", while े and ा map to ASCII control bytes.
+    const toUni = buildToUnicode(
+      new Map<number, string>([
+        [gSa, 'सं'],
+        [gE, '\u0002'],
+        [gVa, 'वा'],
+        [gAa, '\u0005'],
+      ]),
+    );
+    const doc = await PDFDocument.create();
+    const ctx = doc.context;
+    const cid = ctx.obj({
+      Type: 'Font',
+      Subtype: 'CIDFontType2',
+      BaseFont: 'TESTCC+Mangal-Regular',
+      CIDSystemInfo: { Registry: PDFString.of('Adobe'), Ordering: PDFString.of('Identity'), Supplement: 0 },
+      CIDToGIDMap: 'Identity',
+      DW: 600,
+      FontDescriptor: ctx.register(
+        ctx.obj({
+          Type: 'FontDescriptor',
+          FontName: 'TESTCC+Mangal-Regular',
+          Flags: 32,
+          FontBBox: [0, -300, 1000, 900],
+          ItalicAngle: 0,
+          Ascent: 900,
+          Descent: -300,
+          CapHeight: 700,
+          StemV: 80,
+        }),
+      ),
+    });
+    const type0 = ctx.register(
+      ctx.obj({
+        Type: 'Font',
+        Subtype: 'Type0',
+        BaseFont: 'TESTCC+NotoSansDevanagari',
+        Encoding: 'Identity-H',
+        DescendantFonts: [ctx.register(cid)],
+        ToUnicode: ctx.register(ctx.flateStream(toUni)),
+      }),
+    );
+    const hex4 = (n: number) => n.toString(16).toUpperCase().padStart(4, '0');
+    const utf16Hex = (s: string) => `FEFF${[...s].map((c) => hex4(c.charCodeAt(0))).join('')}`;
+    const stream = [
+      '/Normal#20#28Web#29<</MCID 1>>BDC',
+      'BT /F1 12 Tf 40 120 Td',
+      `/Span<</ActualText<${utf16Hex('से')}>>>BDC <${hex4(gSa)}${hex4(gE)}> Tj EMC`,
+      `/Span<</ActualText<${utf16Hex('वा')}>>>BDC <${hex4(gVa)}${hex4(gAa)}> Tj EMC`,
+      'ET',
+      'EMC',
+    ].join('\n');
+    const page = doc.addPage([300, 200]);
+    page.node.setFontDictionary(PDFName.of('F1'), type0);
+    page.node.addContentStream(ctx.register(ctx.flateStream(stream)));
+    const bytes = new Uint8Array(await doc.save({ useObjectStreams: false }));
+
+    const text = (await extractEmbeddedTextLines(bytes, 0)).map((l) => l.text).join(' ');
+    expect(text).toContain('सेवा');
+    expect(text).not.toContain('संवा');
+  }, 30000);
 });
