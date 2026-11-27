@@ -1510,6 +1510,306 @@ async function planBDevanagariCase(browser) {
   }
 }
 
+async function planBOwnFontCase(browser) {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { unzipSync, strFromU8 } = require(path.join(editorModules, "fflate"));
+  const { PDFDocument, PDFDict, PDFName, PDFArray, PDFRef } = require(path.join(editorModules, "@cantoo/pdf-lib"));
+  const { buildSubsetOwnFontFixtureBytes, SUBSET_FIXTURE_ORIGINAL_LINE } = await import("./make-subset-own-font-fixture.mjs");
+
+  const collectPageFontFile2Refs = async (pdfBytes) => {
+    const doc = await PDFDocument.load(pdfBytes);
+    const page = doc.getPage(0);
+    const fonts = page.node.Resources()?.lookup(PDFName.of("Font"), PDFDict);
+    const result = new Map();
+    if (!fonts) return result;
+    for (const [key, val] of fonts.entries()) {
+      const f = doc.context.lookup(val);
+      if (!(f instanceof PDFDict)) continue;
+      const sub = doc.context.lookup(f.get(PDFName.of("Subtype")));
+      if (!(sub instanceof PDFName) || sub.decodeText() !== "Type0") continue;
+      const descArr = doc.context.lookup(f.get(PDFName.of("DescendantFonts")));
+      const cid = descArr instanceof PDFArray ? doc.context.lookup(descArr.get(0)) : null;
+      if (!(cid instanceof PDFDict)) continue;
+      const fd = doc.context.lookup(cid.get(PDFName.of("FontDescriptor")));
+      if (!(fd instanceof PDFDict)) continue;
+      const ff2 = fd.get(PDFName.of("FontFile2"));
+      const base = doc.context.lookup(f.get(PDFName.of("BaseFont")));
+      result.set(key.decodeText(), {
+        baseFont: base instanceof PDFName ? base.decodeText() : "",
+        fontFile2Ref: ff2 instanceof PDFRef ? ff2.toString() : null,
+        toUnicodeRef: f.get(PDFName.of("ToUnicode"))?.toString() ?? null,
+      });
+    }
+    return result;
+  };
+
+  const countDarkInkInCrop = async (pdfBytes, cropPt, dpi = 150) => {
+    const doc = await pdfjs.getDocument({ data: pdfBytes.slice(), verbosity: 0 }).promise;
+    const pdfPage = await doc.getPage(1);
+    const viewport = pdfPage.getViewport({ scale: dpi / 72 });
+    const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await pdfPage.render({ canvasContext: ctx, viewport }).promise;
+    await doc.destroy();
+    const scale = dpi / 72;
+    const x0 = Math.max(0, Math.floor(cropPt.x * scale));
+    const y0 = Math.max(0, Math.floor(cropPt.y * scale));
+    const x1 = Math.min(canvas.width, Math.ceil((cropPt.x + cropPt.w) * scale));
+    const y1 = Math.min(canvas.height, Math.ceil((cropPt.y + cropPt.h) * scale));
+    const data = ctx.getImageData(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)).data;
+    let dark = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i] + data[i + 1] + data[i + 2] < 600) dark++;
+    }
+    return dark;
+  };
+
+  const readLineViaReopen = async (pdfPath) => {
+    const reopenPage = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+    try {
+      await openPdf(reopenPage, pdfPath, 0);
+      const lines = [];
+      const count = await reopenPage.locator(".ocr-highlight-layer__box").count();
+      for (let i = 0; i < count; i++) {
+        const box = reopenPage.locator(".ocr-highlight-layer__box").nth(i);
+        await box.scrollIntoViewIfNeeded();
+        const bb = await box.boundingBox();
+        await reopenPage.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2);
+        await reopenPage.waitForTimeout(300);
+        lines.push(await reopenPage.evaluate(() => document.activeElement.value ?? ""));
+        await reopenPage.keyboard.press("Escape");
+        await reopenPage.waitForTimeout(120);
+        await reopenPage.keyboard.press("Control+z");
+        await reopenPage.waitForTimeout(150);
+      }
+      return lines;
+    } finally {
+      await reopenPage.close();
+    }
+  };
+
+  const readTextViaPdfToWord = async (pdfPath, docxPath) => {
+    const wordPage = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+    try {
+      await wordPage.goto(baseUrl + "/tools/pdf-to-word/", { waitUntil: "networkidle" });
+      await wordPage.locator("input[type=file]").first().setInputFiles(pdfPath);
+      const wordDownload = wordPage.waitForEvent("download", { timeout: 240000 });
+      await wordPage.getByRole("button", { name: /Convert & download Word/ }).click();
+      fs.copyFileSync(await (await wordDownload).path(), docxPath);
+      const xml = strFromU8(unzipSync(new Uint8Array(fs.readFileSync(docxPath)))["word/document.xml"]);
+      return [...xml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((m) => m[1]).join("\n").replace(/\s+/g, " ");
+    } finally {
+      await wordPage.close();
+    }
+  };
+
+  const editTargetLine = async (file, matchPrefix, newText, usePlanBFlag) => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+    try {
+      await page.goto(baseUrl + "/tools/edit-hindi-pdf/" + (usePlanBFlag ? "?planB=1" : ""), { waitUntil: "networkidle" });
+      await page.locator("input[type=file]").setInputFiles(file);
+      await page.getByText("Edit text — click a highlighted line").waitFor({ timeout: 120000 });
+      await page.locator(".ocr-highlight-layer__box").first().waitFor({ timeout: 120000 });
+
+      const count = await page.locator(".ocr-highlight-layer__box").count();
+      let foundIndex = -1;
+      let cropFrac = null;
+      for (let i = 0; i < count; i++) {
+        const box = page.locator(".ocr-highlight-layer__box").nth(i);
+        await box.scrollIntoViewIfNeeded();
+        const boxFrac = await page.evaluate((idx) => {
+          const boxEl = document.querySelectorAll(".ocr-highlight-layer__box")[idx];
+          const stage = boxEl?.closest(".ocr-highlight-layer");
+          if (!boxEl || !stage) return null;
+          const sr = stage.getBoundingClientRect();
+          const br = boxEl.getBoundingClientRect();
+          return {
+            xFrac: Math.max(0, (br.left - sr.left) / sr.width - 0.01),
+            yFrac: Math.max(0, (br.top - sr.top) / sr.height - 0.01),
+            wFrac: Math.min(1, br.width / sr.width + 0.15),
+            hFrac: Math.min(1, br.height / sr.height + 0.03),
+          };
+        }, i);
+        const bb = await box.boundingBox();
+        await page.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2);
+        await page.waitForTimeout(350);
+        const current = await page.evaluate(() => document.activeElement.value ?? "");
+        if (current.includes(matchPrefix)) {
+          foundIndex = i;
+          cropFrac = boxFrac;
+          await page.evaluate((value) => {
+            const el = document.activeElement;
+            const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set;
+            setter.call(el, value);
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+          }, newText);
+          await page.waitForTimeout(250);
+          await page.keyboard.press("Escape");
+          await page.waitForTimeout(250);
+          break;
+        }
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(120);
+        await page.keyboard.press("Control+z");
+        await page.waitForTimeout(150);
+      }
+      assert.ok(foundIndex >= 0 && cropFrac, "found target Hindi line containing " + JSON.stringify(matchPrefix));
+
+      const exported = await exportPdf(page);
+      const doc = await pdfjs.getDocument({ data: exported.slice(), verbosity: 0 }).promise;
+      const vp = (await doc.getPage(1)).getViewport({ scale: 1 });
+      await doc.destroy();
+      return {
+        exported,
+        cropPt: {
+          x: cropFrac.xFrac * vp.width,
+          y: cropFrac.yFrac * vp.height,
+          w: cropFrac.wFrac * vp.width,
+          h: cropFrac.hFrac * vp.height,
+        },
+      };
+    } finally {
+      await page.close();
+    }
+  };
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "plan-b-own-font-gate-"));
+  try {
+    const editedLine = "सूर्य, धर्म और क्षेत्र में विद्यालय";
+
+    // Part 1: Own-font positive case on mismapped-tounicode-fixture.pdf (embeds full Noto with GSUB).
+    const fixtureFile = path.join(fixtures, "mismapped-tounicode-fixture.pdf");
+    const origBytes = new Uint8Array(fs.readFileSync(fixtureFile));
+    const origFonts = await collectPageFontFile2Refs(origBytes);
+    const origHindiRefs = new Set(
+      [...origFonts.entries()]
+        .filter(([k]) => k.startsWith("HpeVec"))
+        .map(([, info]) => info.fontFile2Ref)
+        .filter(Boolean),
+    );
+    assert.ok(origHindiRefs.size > 0, "fixture has embedded Hindi FontFile2 stream");
+
+    const { exported: ownExported, cropPt } = await editTargetLine(fixtureFile, "किताब, विद्यालय", editedLine, true);
+    const ownPdfPath = path.join(dir, "own-font-export.pdf");
+    fs.writeFileSync(ownPdfPath, ownExported);
+
+    // 1a. Exported page must reuse the original FontFile2 stream ref (no Noto added for the edit)
+    //     and must not mutate any original font dictionary.
+    const exportedFonts = await collectPageFontFile2Refs(ownExported);
+    for (const [key, origInfo] of origFonts.entries()) {
+      const after = exportedFonts.get(key);
+      assert.ok(after, "original font dict kept: " + key);
+      assert.equal(after.toUnicodeRef, origInfo.toUnicodeRef, "original font ToUnicode untouched: " + key);
+    }
+    const addedFonts = [...exportedFonts.entries()].filter(([k]) => !origFonts.has(k));
+    assert.ok(addedFonts.length > 0, "a new font dict was added for the edited line");
+    for (const [key, info] of addedFonts) {
+      assert.ok(
+        origHindiRefs.has(info.fontFile2Ref),
+        "new font " + key + " (" + info.baseFont + ") reuses original FontFile2 ref " + [...origHindiRefs].join(",") + " instead of adding a new Noto stream (got " + info.fontFile2Ref + ")",
+      );
+    }
+
+    // 1b. pdf.js getTextContent() has zero CID-fallback garbage and maps every edited word cleanly.
+    const doc = await pdfjs.getDocument({ data: ownExported.slice(), verbosity: 0 }).promise;
+    const tc = await (await doc.getPage(1)).getTextContent();
+    await doc.destroy();
+    const rawText = tc.items.map((item) => item.str ?? "").join(" ");
+    assert.equal(rawText.match(/[\u0100-\u02FF]/g), null, "pdf.js getTextContent() has no CID-fallback garbage");
+    const compact = rawText.replace(/\s+/g, "");
+    for (const token of ["सूयर्", "धमर्", "और", "क्षेत्र", "में", "िवद्यालय"]) {
+      assert.ok(compact.includes(token), "pdf.js getTextContent() maps ToUnicode for " + token + " (got: " + JSON.stringify(rawText) + ")");
+    }
+
+    // 1c. Editor's ActualText reopen path reads exact edited line.
+    const reopenedLines = await readLineViaReopen(ownPdfPath);
+    assert.ok(
+      reopenedLines.some((l) => l.replace(/\s+/g, " ").trim() === editedLine),
+      "editor ActualText path reads exact own-font edited line: " + editedLine + " (got: " + JSON.stringify(reopenedLines) + ")",
+    );
+
+    // 1d. Editor's PDF to Word reads exact edited line.
+    const wordText = await readTextViaPdfToWord(ownPdfPath, path.join(dir, "own-font.docx"));
+    assert.ok(
+      wordText.includes(editedLine),
+      "PDF to Word reads exact own-font edited line: " + editedLine + " (got: " + JSON.stringify(wordText) + ")",
+    );
+
+    // 1e. Rendered crop is not blank and has similar ink to a Plan A render of the exact same edit.
+    const { exported: planAExported } = await editTargetLine(fixtureFile, "किताब, विद्यालय", editedLine, false);
+    const ownInk = await countDarkInkInCrop(ownExported, cropPt);
+    const planAInk = await countDarkInkInCrop(planAExported, cropPt);
+    assert.ok(ownInk > 200, "own-font rendered crop is not blank (dark px=" + ownInk + ")");
+    const inkRatio = ownInk / Math.max(1, planAInk);
+    assert.ok(
+      inkRatio >= 0.55 && inkRatio <= 1.8,
+      "own-font rendered crop has similar ink to Plan A (own=" + ownInk + ", planA=" + planAInk + ", ratio=" + inkRatio.toFixed(2) + ")",
+    );
+
+    // Part 2: Fallback case — subset font missing needed glyphs falls back to bundled Noto Plan B
+    // and still reads back exactly.
+    const subsetFixturePath = path.join(dir, "subset-missing-glyphs.pdf");
+    const subsetFixtureBytes = await buildSubsetOwnFontFixtureBytes(SUBSET_FIXTURE_ORIGINAL_LINE);
+    fs.writeFileSync(subsetFixturePath, subsetFixtureBytes);
+    const subsetOrigFonts = await collectPageFontFile2Refs(subsetFixtureBytes);
+    const subsetOrigRefs = new Set([...subsetOrigFonts.values()].map((i) => i.fontFile2Ref).filter(Boolean));
+
+    const { exported: fallbackExported, cropPt: fbCrop } = await editTargetLine(
+      subsetFixturePath,
+      "कमल भारत",
+      editedLine,
+      true,
+    );
+    const fallbackPdfPath = path.join(dir, "fallback-export.pdf");
+    fs.writeFileSync(fallbackPdfPath, fallbackExported);
+
+    const fbFonts = await collectPageFontFile2Refs(fallbackExported);
+    const fbAdded = [...fbFonts.entries()].filter(([k]) => !subsetOrigFonts.has(k));
+    assert.ok(
+      fbAdded.some(([, info]) => info.fontFile2Ref && !subsetOrigRefs.has(info.fontFile2Ref)),
+      "subset missing glyphs fell back to bundled Noto Plan B (new FontFile2 stream added)",
+    );
+
+    const fbDoc = await pdfjs.getDocument({ data: fallbackExported.slice(), verbosity: 0 }).promise;
+    const fbTc = await (await fbDoc.getPage(1)).getTextContent();
+    await fbDoc.destroy();
+    const fbRaw = fbTc.items.map((item) => item.str ?? "").join(" ");
+    assert.equal(fbRaw.match(/[\u0100-\u02FF]/g), null, "fallback pdf.js getTextContent() has no CID garbage");
+    for (const token of ["सूयर्", "धमर्", "और", "क्षेत्र", "में", "िवद्यालय"]) {
+      assert.ok(fbRaw.replace(/\s+/g, "").includes(token), "fallback pdf.js maps " + token);
+    }
+    const fbReopened = await readLineViaReopen(fallbackPdfPath);
+    assert.ok(
+      fbReopened.some((l) => l.replace(/\s+/g, " ").trim() === editedLine),
+      "fallback editor ActualText reads exact line: " + editedLine + " (got: " + JSON.stringify(fbReopened) + ")",
+    );
+    const fbWordText = await readTextViaPdfToWord(fallbackPdfPath, path.join(dir, "fallback.docx"));
+    assert.ok(
+      fbWordText.includes(editedLine),
+      "fallback PDF to Word reads exact line: " + editedLine + " (got: " + JSON.stringify(fbWordText) + ")",
+    );
+    const fbInk = await countDarkInkInCrop(fallbackExported, fbCrop);
+    assert.ok(fbInk > 200, "fallback rendered crop is not blank (dark px=" + fbInk + ")");
+
+    console.log(
+      "PLAN_B_OWN_FONT_OK own-font reused original FontFile2 ref (ink own=" +
+        ownInk +
+        " vs planA=" +
+        planAInk +
+        ", ratio=" +
+        inkRatio.toFixed(2) +
+        "); subset-missing-glyph fell back to Noto Plan B (ink=" +
+        fbInk +
+        "); pdf.js, ActualText, and PDF to Word all matched exact line",
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 // GATE_ONLY=fillFormCase,signCase runs only the named cases.
 const only = process.env.GATE_ONLY?.split(",");
 const wanted = (name) => !only || only.includes(name);
@@ -1540,6 +1840,7 @@ try {
   if (wanted("scanTableCase")) await scanTableCase(browser);
   if (wanted("fillFormCase")) await fillFormCase(browser);
   if ((planB && !only) || only?.includes("planBDevanagariCase")) await planBDevanagariCase(browser);
+  if ((planB && !only) || only?.includes("planBOwnFontCase")) await planBOwnFontCase(browser);
 } finally {
   await browser.close();
 }
