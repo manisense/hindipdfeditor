@@ -30,8 +30,8 @@ The 135-page CEN 08/2024 notice (Chrome output merged by PDFsam, so its Producer
 Evidence: CEN p70, 160 hand-checked Hindi words (items 2–3 and the note before them): OCR path 88.8 %, font path **100 %**; the page reads 621 Hindi words instead of 492, in 1.8 s instead of 17.2 s. RRB p2 100 %, sample notice 100 % / 99.3 % unchanged; gate 23/23, Plan B case, smoke clean.
 
 ## Open
-- The 135-page CEN 08/2024 notice is broken differently (not repaired by this rule); investigate next.
-- The RRB page is not in the repo (third-party file); a self-made mis-mapped fixture should be added to the gate.
+- ~~The 135-page CEN 08/2024 notice is broken differently~~: drawing-order maps, handled (amendment above, PR #87).
+- ~~A self-made mis-mapped fixture~~: `mobile-app/fixtures/mismapped-tounicode-fixture.pdf` (PR #85).
 
 ## Amendment, 27 November 2026: text drawn as empty boxes
 
