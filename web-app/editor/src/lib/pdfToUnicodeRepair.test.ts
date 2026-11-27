@@ -5,7 +5,14 @@ import { describe, expect, it } from 'vitest';
 
 import { fontGlyphText, PRE_BASE_MARK, REPH_MARK } from './fontGlyphText';
 import { extractEmbeddedTextLines } from './pdfTextExtract';
-import { baseFontName, buildToUnicode, parseToUnicode, repairedToUnicode, repairMisMappedToUnicode } from './pdfToUnicodeRepair';
+import {
+  baseFontName,
+  buildToUnicode,
+  fontFamilyKey,
+  parseToUnicode,
+  repairedToUnicode,
+  repairMisMappedToUnicode,
+} from './pdfToUnicodeRepair';
 
 describe('ToUnicode maps', () => {
   it('parses bfchar, bfrange and array bfrange entries', () => {
@@ -173,5 +180,146 @@ describe('repairedToUnicode', () => {
     expect(text).toContain('प्रा');
     expect(text).toContain('धर्म');
     expect(text).not.toContain('पर्ा');
+  }, 30000);
+
+  it('normalizes subset prefixes and weight/style suffixes in fontFamilyKey', () => {
+    expect(fontFamilyKey('ABCDEE+Mangal')).toBe('mangal');
+    expect(fontFamilyKey('ABCDEE+Mangal-Bold')).toBe('mangal');
+    expect(fontFamilyKey('ABCDEE+Mangal,Bold')).toBe('mangal');
+    expect(fontFamilyKey('FORKWM+Mangal-Regular')).toBe('mangal');
+    expect(fontFamilyKey('ABCDEE+Nirmala UI,BoldItalic')).toBe('nirmalaui');
+    expect(fontFamilyKey('NRGBNY+NotoSansDevanagari-W400')).toBe('notosansdevanagari');
+  });
+
+  it('repairs a small subset with 1-2 disagreements when a sibling font was repaired, while leaving right-mapped siblings untouched', () => {
+    const smallBroken = new Map<number, string>([[1, 'क'], [2, 'ख'], [3, 'ग'], [4, 'ि']]);
+    // Standalone with only 1 disagreement (घ -> ि): stays null without sibling context.
+    expect(repairedToUnicode(smallBroken, font)).toBeNull();
+    // With a repaired sibling font of the same family: repaired!
+    const fixed = repairedToUnicode(smallBroken, font, { siblingRepaired: true });
+    expect(fixed?.get(4)).toBe('घ');
+    // A right-mapped sibling (0 disagreements) must stay untouched even when siblingRepaired is true.
+    const rightSibling = new Map<number, string>([[1, 'क'], [2, 'ख'], [3, 'ग'], [4, 'घ']]);
+    expect(repairedToUnicode(rightSibling, font, { siblingRepaired: true })).toBeNull();
+  });
+
+  it('repairs a standalone font when its map names a font-proven pre-base ि or reph glyph as a consonant', () => {
+    const fontWithMarks = new Map<number, string>([
+      [1, 'क'],
+      [2, 'ख'],
+      [3, 'ग'],
+      [4, 'घ'],
+      [5, PRE_BASE_MARK],
+      [6, REPH_MARK],
+    ]);
+    // Pre-base ि mapped to consonant "व" (single disagreement, below 3-glyph threshold): repaired!
+    const iAsConsonant = new Map<number, string>([[1, 'क'], [2, 'ख'], [3, 'ग'], [4, 'घ'], [5, 'व']]);
+    expect(repairedToUnicode(iAsConsonant, fontWithMarks)?.get(5)).toBe(PRE_BASE_MARK);
+    // Reph mapped to consonant "ण" (single disagreement): repaired!
+    const rephAsConsonant = new Map<number, string>([[1, 'क'], [2, 'ख'], [3, 'ग'], [4, 'घ'], [6, 'ण']]);
+    expect(repairedToUnicode(rephAsConsonant, fontWithMarks)?.get(6)).toBe(REPH_MARK);
+    // Reph mapped as "र्" is drawing-order, not a mis-mapped consonant, so other disagreements are not forced.
+    const rephDrawingOrder = new Map<number, string>([[1, 'क'], [2, 'ख'], [6, 'र्'], [99, 'custom']]);
+    const drawingRepaired = repairedToUnicode(rephDrawingOrder, fontWithMarks);
+    expect(drawingRepaired?.get(6)).toBe(REPH_MARK);
+    expect(drawingRepaired?.get(99)).toBe('custom');
+  });
+
+  it('preserves reph on GSUB-proven reph ligatures whose base vowel sign was stripped from cmap', () => {
+    const subsetFont = new Map<number, string>([[1, 'स'], [2, 'व'], [3, 'च'], [4, 'च्']]);
+    // Word mapped व -> र्व and ो+reph(574) -> ो; gid 574 is in rephLigatures because ो was stripped from cmap.
+    const existing = new Map<number, string>([[1, 'स'], [2, 'र्व'], [3, 'च'], [4, 'च्'], [574, 'ो']]);
+    const repaired = repairedToUnicode(existing, subsetFont, {
+      siblingRepaired: true,
+      rephLigatures: new Set([574]),
+    });
+    expect(repaired?.get(2)).toBe('व');
+    expect(repaired?.get(574)).toBe(`${REPH_MARK}ो`);
+  });
+
+  it('repairs a small bold subset alongside a mis-mapped regular sibling in a PDF while leaving a right sibling untouched', async () => {
+    const noto = new Uint8Array(readFileSync(path.join(__dirname, '../../public/fonts/NotoSansDevanagari-Variable.ttf')));
+    const reading = fontGlyphText(noto).text;
+    const gidOf = (ch: string) => {
+      const found = [...reading.entries()].find(([, text]) => text === ch);
+      if (!found) throw new Error(`missing glyph for ${ch}`);
+      return found[0];
+    };
+    const gKa = gidOf('क');
+    const gKha = gidOf('ख');
+    const gGa = gidOf('ग');
+    const gGha = gidOf('घ');
+    const gVa = gidOf('व');
+    const gTa = gidOf('त');
+    const gSpace = gidOf(' ');
+
+    const doc = await PDFDocument.create();
+    const ctx = doc.context;
+    const makeFont = (baseName: string, cmapMap: Map<number, string>) => {
+      const cid = ctx.obj({
+        Type: 'Font',
+        Subtype: 'CIDFontType2',
+        BaseFont: baseName,
+        CIDSystemInfo: { Registry: PDFString.of('Adobe'), Ordering: PDFString.of('Identity'), Supplement: 0 },
+        CIDToGIDMap: 'Identity',
+        DW: 600,
+        FontDescriptor: ctx.register(
+          ctx.obj({
+            Type: 'FontDescriptor',
+            FontName: baseName,
+            Flags: 32,
+            FontBBox: [0, -300, 1000, 900],
+            ItalicAngle: 0,
+            Ascent: 900,
+            Descent: -300,
+            CapHeight: 700,
+            StemV: 80,
+            FontFile2: ctx.register(ctx.flateStream(noto)),
+          }),
+        ),
+      });
+      return ctx.register(
+        ctx.obj({
+          Type: 'Font',
+          Subtype: 'Type0',
+          BaseFont: baseName,
+          Encoding: 'Identity-H',
+          DescendantFonts: [ctx.register(cid)],
+          ToUnicode: ctx.register(ctx.flateStream(buildToUnicode(cmapMap))),
+        }),
+      );
+    };
+
+    // Register Bold subset BEFORE Regular body font (as in 32_court_sci.pdf) with only 1 disagreement (व -> र्व).
+    const boldFont = makeFont(
+      'ABCDEE+NotoSansDevanagari,Bold',
+      new Map([[gKa, 'क'], [gKha, 'ख'], [gGa, 'ग'], [gGha, 'घ'], [gTa, 'त'], [gVa, 'र्व'], [gSpace, ' ']]),
+    );
+    // Register a right-mapped sibling subset (0 disagreements) that must stay untouched.
+    const rightSibling = makeFont(
+      'FORKWM+NotoSansDevanagari-Regular',
+      new Map([[gKa, 'क'], [gKha, 'ख'], [gGa, 'ग'], [gSpace, ' ']]),
+    );
+    // Register Regular body font with 3 disagreements (repaired in Pass 1).
+    const bodyFont = makeFont(
+      'ABCDEE+NotoSansDevanagari',
+      new Map([[gKa, 'ख'], [gKha, 'ग'], [gGa, 'घ'], [gGha, 'घ'], [gVa, 'व'], [gTa, 'त'], [gSpace, ' ']]),
+    );
+
+    const page = doc.addPage([400, 200]);
+    page.node.setFontDictionary(PDFName.of('F1'), boldFont);
+    page.node.setFontDictionary(PDFName.of('F2'), rightSibling);
+    page.node.setFontDictionary(PDFName.of('F3'), bodyFont);
+    const hex4 = (n: number) => n.toString(16).toUpperCase().padStart(4, '0');
+    const boldRun = [gVa, gTa].map(hex4).join('');
+    page.node.addContentStream(ctx.register(ctx.flateStream(`BT /F1 14 Tf 40 120 Td <${boldRun}> Tj ET`)));
+    const bytes = new Uint8Array(await doc.save({ useObjectStreams: false }));
+
+    const repair = await repairMisMappedToUnicode(bytes);
+    expect(repair.repairedFonts).toContain('ABCDEE+NotoSansDevanagari');
+    expect(repair.repairedFonts).toContain('ABCDEE+NotoSansDevanagari,Bold');
+    expect(repair.repairedFonts).not.toContain('FORKWM+NotoSansDevanagari-Regular');
+    const text = (await extractEmbeddedTextLines(bytes, 0)).map((line) => line.text).join(' ');
+    expect(text).toContain('वत');
   }, 30000);
 });

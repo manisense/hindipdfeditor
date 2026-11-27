@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  hasFailedFont,
   mustVerifyPage,
   newFontTrust,
   noteSkippedPage,
@@ -99,5 +100,21 @@ describe('font trust', () => {
     }
     recordVerifiedPage(trust, new Map([['heading', 'अध्याय']]), goodOcr);
     expect(mustVerifyPage(trust, ['body', 'heading'])).toBe(false);
+  });
+
+  it('reports whether any font on a page already failed on earlier pages', () => {
+    const trust = newFontTrust();
+    expect(hasFailedFont(trust, ['f1'])).toBe(false);
+    recordVerifiedPage(trust, new Map([['f1', broken]]), goodOcr);
+    expect(hasFailedFont(trust, ['f1'])).toBe(true);
+    expect(hasFailedFont(trust, ['f2'])).toBe(false);
+    expect(hasFailedFont(trust, ['f2', 'f1'])).toBe(true);
+  });
+
+  it('marks a font as failed even on a short page with exotic script mixing or glued words', () => {
+    const trust = newFontTrust();
+    recordVerifiedPage(trust, new Map([['f1', 'पिरिश᳥ पिरपᮢ']]), 'परिशिष्ट परिपत्र');
+    expect(hasFailedFont(trust, ['f1'])).toBe(true);
+    expect(mustVerifyPage(trust, ['f1'])).toBe(true);
   });
 });

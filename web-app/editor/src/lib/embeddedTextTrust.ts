@@ -44,6 +44,14 @@ export function newFontTrust(): FontTrust {
   return { evidence: new Map(), trusted: new Set(), failed: new Set(), skipped: 0, seen: new Map() };
 }
 
+/** Whether any font on the page already failed Devanagari verification on an earlier page. */
+export function hasFailedFont(trust: FontTrust, fonts: Iterable<string>): boolean {
+  for (const font of fonts) {
+    if (trust.failed.has(font)) return true;
+  }
+  return false;
+}
+
 /**
  * Whether a page must be checked against OCR.
  *

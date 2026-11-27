@@ -7,6 +7,9 @@ import {
   canJudgeDevanagari,
   embeddedDevanagariVerdict,
   hasDevanagari,
+  hasGluedDevanagariWords,
+  hasIntrinsicDevanagariCorruption,
+  hasMixedUnrelatedScript,
   isEmbeddedDevanagariCorrupted,
   isLikelyOcrNoise,
   missedDevanagariRows,
@@ -199,5 +202,69 @@ describe('joinSplitHindiWords', () => {
     const speller = (word: string) => known.has(word) || /[^\u0900-\u0963\u0971-\u097F]/u.test(word);
     expect(joinSplitHindiWords('करना अपेक्षित है। उम्मीदवार', speller)).toBe('करना अपेक्षित है। उम्मीदवार');
     expect(joinSplitHindiWords('आरक्ष ण।', speller)).toBe('आरक्षण।');
+  });
+});
+
+describe("hasMixedUnrelatedScript", () => {
+  it("flags Devanagari words mixed with unrelated Unicode blocks (U+1B80–U+1CFF and other non-Latin scripts) even on short pages", () => {
+    expect(hasMixedUnrelatedScript("पिरिश᳥")).toBe(true);
+    expect(hasMixedUnrelatedScript("इस मास्टर पिरपᮢ म ᱶसमेिकत अिधसूचनाᲐ")).toBe(true);
+    expect(hasMixedUnrelatedScript("03 अᲦूबर 2003")).toBe(true);
+    expect(hasMixedUnrelatedScript("देखᱶ।")).toBe(true);
+    expect(hasMixedUnrelatedScript("हिंदीЖशब्द")).toBe(true);
+    expect(hasIntrinsicDevanagariCorruption("पिरिश᳥ पिरपᮢ")).toBe(true);
+    // Counts as corrupted for verification even when the page is far too short for canJudgeDevanagari.
+    expect(canJudgeDevanagari("पिरिश᳥ पिरपᮢ")).toBe(false);
+    expect(embeddedDevanagariVerdict("पिरिश᳥ पिरपᮢ", "परिशिष्ट परिपत्र")).toBe("corrupted");
+    expect(isEmbeddedDevanagariCorrupted("पिरिश᳥ पिरपᮢ", "परिशिष्ट परिपत्र")).toBe(true);
+  });
+
+  it("keeps clean Hindi, bilingual Hindi+English, punctuation, currency and PUA marks untouched", () => {
+    expect(hasMixedUnrelatedScript(CORRECT)).toBe(false);
+    expect(hasMixedUnrelatedScript("अध्याय 12 — Chapter 12 (₹ 500/-) ‘नोटिस’")).toBe(false);
+    expect(hasMixedUnrelatedScript("ए.पी.(डीआइआर) सं. 22/2000-आरबी")).toBe(false);
+    expect(hasMixedUnrelatedScript("स\uE0F1िवल सव\uE0F0ोच्च")).toBe(false);
+  });
+});
+
+describe("hasGluedDevanagariWords", () => {
+  const GLUED_SHORT_PAGE = [
+    "अस्वीकरण:- स्थानीयभाषामेंअनुवादितनिर्णयकेवलवादियोंकेअपनी",
+    "भाषामेंलाभकेलिएहैंतथाइनकाकिसीअन्यउद्देश्यकेलिएउपयोगनहीं",
+    "कियाजासकता।निर्णयकाअंग्रेजीसंस्करणसभीव्यावहारिकऔर",
+    "आधिकारिकउद्देश्योंकेलिएप्रामाणिकहोगाऔरइसेलागूकरनेमें",
+    "प्राथमिकतादीजाएगी।",
+    "एडवोकेटविष्णुजांगिड़",
+  ].join(" ");
+
+  it("flags pages whose Hindi is glued into a few very long tokens even when too short for canJudgeDevanagari", () => {
+    expect(canJudgeDevanagari(GLUED_SHORT_PAGE)).toBe(false);
+    expect(hasGluedDevanagariWords(GLUED_SHORT_PAGE)).toBe(true);
+    expect(hasIntrinsicDevanagariCorruption(GLUED_SHORT_PAGE)).toBe(true);
+    expect(
+      embeddedDevanagariVerdict(
+        GLUED_SHORT_PAGE,
+        "अस्वीकरण स्थानीय भाषा में अनुवादित निर्णय केवल वादियों के अपनी भाषा में लाभ के लिए हैं",
+      ),
+    ).toBe("corrupted");
+  });
+
+  it("does not flag normal Hindi pages, short normal headings, or isolated long compound words", () => {
+    expect(hasGluedDevanagariWords(CORRECT)).toBe(false);
+    expect(hasGluedDevanagariWords("कममचारी की भती")).toBe(false);
+    expect(hasGluedDevanagariWords("अध्याय 12: विश्वविद्यालय पुनर्व्यवस्थापन नियम")).toBe(false);
+    // One glued typo on an otherwise normal full paragraph stays below the character-share threshold.
+    expect(hasGluedDevanagariWords(`${CORRECT} स्थानीयभाषामेंअनुवादितनिर्णयकेवल`)).toBe(false);
+  });
+});
+
+describe("embeddedDevanagariVerdict with a previously failed font", () => {
+  it("judges a short page corrupted when its font already failed and its words disagree with OCR", () => {
+    // Without fontFailed, a 3-word page stays unknown.
+    expect(embeddedDevanagariVerdict("कममचारी की भती", "कर्मचारी की भर्ती")).toBe("unknown");
+    // With fontFailed, disagreement on the short page is judged corrupted so OCR replaces it.
+    expect(embeddedDevanagariVerdict("कममचारी की भती", "कर्मचारी की भर्ती", { fontFailed: true })).toBe("corrupted");
+    // If the short page's words actually match OCR, it stays ok.
+    expect(embeddedDevanagariVerdict("कर्मचारी की भर्ती", "कर्मचारी की भर्ती", { fontFailed: true })).toBe("ok");
   });
 });

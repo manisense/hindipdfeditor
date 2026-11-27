@@ -1,5 +1,20 @@
 # Changelog
 
+## Corrupted Hindi pages: catch exotic-script mixing, glued tokens, and failed-font short pages in OCR verification, 27 November 2026
+
+### Fixed
+- Devanagari text layers mixed with letters from unrelated Unicode blocks (`U+1B80–U+1CFF` and other non-Devanagari/non-Latin scripts, such as `पिरिश᳥`, `पिरपᮢ`, `अᲦूबर`, `देखᱶ` in `37_bank_rbi`) now count as corrupted in `embeddedDevanagariVerdict` (`hasMixedUnrelatedScript`) even on short pages, so they trigger Hindi OCR instead of returning `"unknown"`.
+- Pages whose embedded Hindi is glued into a few very long tokens without spaces (such as `30_court_hcraj` p4, 8 tokens up to 55 characters) are now detected (`hasGluedDevanagariWords`) and bypass the `FEW_DEVANAGARI_LINES` early return and font-trust skip in `ocr.ts` so they are read with Hindi OCR.
+- Short pages whose font already failed verification on earlier pages (`hasFailedFont` in `embeddedTextTrust.ts`) also bypass the `FEW_DEVANAGARI_LINES` early return and fall back to OCR when fewer than half of their words agree with OCR.
+
+## Bold heading subsets: repair small mis-mapped subsets and read GSUB type 6 `ि` variants, 27 November 2026
+
+### Fixed
+- Review (Gemini 4 Neon, survey fix 3; re-verified here): whole RRB 01/2026 and CEN 08/2024 files are word-for-word identical to production, the benchmarks and the Gazette page are unchanged, gate 26/26; a UP pay-scale order's bold heading now reads विषय (5 times; production: ववषय).
+- Small Devanagari heading subsets (such as `Mangal-Bold` / `Mangal,Bold` alongside a repaired `Mangal` body font) previously escaped ADR 0022 ToUnicode repair because Word's subsetter omits unused base `ि` and virama from `cmap` while keeping GSUB intact, leaving only 1–2 visible single-letter disagreements (below the 3-glyph threshold). Headings therefore read `ववत्त`, `ददनांकः`, `ससवर्वल`, `अधिकाररता`.
+- `fontGlyphText.ts` now reads GSUB lookup type 6 (format 3 chaining contextual `pres`) rules to identify unmapped base `ि` glyphs with ≥ 3 contextual variants before Devanagari lookaheads, infers omitted virama from Devanagari `rphf` ligatures, and tracks reph-carrying `abvs` ligatures whose base vowel sign was stripped from `cmap` (preserving `सर्वोच्च` when `व` is repaired from `र्व`).
+- `pdfToUnicodeRepair.ts` now repairs a font when its ToUnicode names a font-proven pre-base `ि` or reph glyph as a Devanagari consonant (`misMapsMarkAsConsonant`), or in a second pass when a sibling font of the same family (`fontFamilyKey`) was repaired as mis-mapped and the subset has ≥ 1 disagreement, while leaving right-mapped sibling subsets (0 disagreements) untouched.
+
 ## Scanned Hindi PDFs: ignore junk invisible English OCR layers, 27 November 2026
 
 ### Fixed
